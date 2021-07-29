@@ -1,0 +1,155 @@
+--/|ScriptCards Library: dnd5elib version 0.0.6
+--/|Provides various utility procedures for D&D 5E games
+--/|NOTES: Some procedures require ChatSetAttr to be installed, see the ScriptCards WIKI for procedure documentation
+
+
+--:Lib5E_CheckDamageModifiers|damageVariableName;damageType
+--&[%1%]|
+--?"[*T:npc_vulnerabilities]" -inc "[%2%]"|>_Lib5E_IsVulnerable;[%1%]
+--?"[*T:npc_resistances]" -inc "[%2%]"|>_Lib5E_IsResistant;[%1%]
+--?"[*T:npc_immunities]" -inc "[%2%]"|>_Lib5E_IsImmune;[%1%]
+--<|
+--:_Lib5E_IsVulnerable| --&[%1%]| * 2 [Vulnerable] --<|
+--:_Lib5E_IsResistant| --&[%1%]| \ 2 [Resistant] --<|
+--:_Lib5E_IsImmune| --&[%1%]| * 0 [Immune] --<|
+
+
+--:Lib5E_DeductSpellSlot|characterid;slotlevel
+--=_Lib5ESlotsExpended|[*[%1%]:lvl[%2%]_slots_expended] + 1
+--=_Lib5ESlotsExpended|[$_Lib5ESlotsExpended] + 1
+--~_Lib5ESlotsExpended|math;min;[$_Lib5ESlotsExpended];[*[%1%]:lvl[%2%]_slots_total]
+--@setattr|_charid [%1%] _lvl[%2%]_slots_expended|[$_Lib5ESlotsExpended] _silent
+--<|
+
+
+--:Lib5E_FindResource|character_id;resourceName;resourceReturnNameStringVariable;ResourceReturnValueStringVariable
+--C[%2%]|[*[%1%]:class_resource_name]:_Lib5E_IsResourceClass|[*[%1%]:other_resource_name]:_Lib5E_IsResourceOther
+--?"[%2%]" -eq "[*[%1%]:class_resource_name]"|_Lib5E_IsResourceClass
+--?"[%2%]" -eq "[*[%1%]:other_resource_name]"|_Lib5E_IsResourceOther
+--Rfirst|[%1%];repeating_resource
+--:_Lib5E_ResourceLoop|
+--?"[*R:resource_left_name]" -eq "[%2%]"|_Lib5E_IsResourceLeft
+--?"[*R:resource_right_name]" -eq "[%2%]"|_Lib5E_IsResourceRight
+--Rnext|
+--?"[*R:resource_left_name]" -ne "NoRepeatingAttributeLoaded"|_Lib5E_ResourceLoop
+--&[%3%]|NotFound --&[%4%]|NotFound --$[%4%]|0 
+--<|
+--:_Lib5E_IsResourceClass| --+IsClass| --&[%3%]|class_resource_name --&[%4%]|class_resource --=[%4%]|[*[%1%]:class_resource] --<|
+--:_Lib5E_IsResourceOther| --+IsOther!| --&[%3%]|class_resource_name --&[%4%]|class_resource --=[%4%]|[*[%1%]:other_resource] --<|
+--:_Lib5E_IsResourceLeft| --+IsLeft| --&[%3%]|[*R>resource_left_name] --&[%4%]|[*R>resource_left] --=[%4%]|[*R:resource_left] --<|
+--:_Lib5E_IsResourceRight| --+IsRight| --&[%3%]|[*R>resource_right_name] --&[%4%]|[*R>resource_right] --=[%4%]|[*R:resource_right] --<|
+--<|
+
+
+--:Lib5E_DivineSmiteDice|targetTokenID;SlotLevelToUse;StringVariableToSet
+--=_Lib5E_DS_DiceCount|[%2%] + 1 --=_Lib5E_DS_IsFiendOrUndead|0
+--?"[*[%1%]:npc_type]" -inc fiend|>_Lib5E_DS_IsBoosted
+--?"[*[%1%]:npc_type]" -inc undead|>_Lib5E_DS_IsBoosted
+--=_Lib5E_DS_DiceCount|[$_Lib5E_DS_DiceCount] + [$_Lib5E_DS_IsFiendOrUndead]
+--&[%3%]|[$_Lib5E_DS_DiceCount.Total]d8
+--<|
+--:_Lib5E_DS_IsBoosted| --=_Lib5E_DS_IsFiendOrUndead|1 
+--<
+
+
+--:Lib5E_Active_Global_Attack_Modifiers|character_id;StringVariableToSet
+--&_Lib5E_Temp| --Rfirst|[%1%];repeating_tohitmod
+--:_Lib5E_GAM_Loop|
+--?"[*R:global_attack_active_flag]" -eq "1"|>_Lib5EAddGAM;[*R:global_attack_name];[*R:global_attack_roll]
+--Rnext| --?"[*R:global_attack_name]" -ne "NoRepeatingAttributeLoaded"|_Lib5E_GAM_Loop
+--&[%2%]|[&_Lib5E_Temp] --<|
+--:_Lib5EAddGAM| --&_Lib5E_Temp|+ + [%2%] [[%1%]] --<|
+
+
+--:Lib5E_Active_Global_Save_Modifiers|character_id;StringVariableToSet
+--&_Lib5E_Temp| --Rfirst|[%1%];repeating_savemod
+--:_Lib5E_GSVM_Loop|
+--?"[*R:global_save_active_flag]" -eq "1"|>_Lib5EAddGSVM;[*R:global_save_name];[*R:global_save_roll]
+--Rnext| --?"[*R:global_save_name]" -ne "NoRepeatingAttributeLoaded"|_Lib5E_GSVM_Loop
+--&[%2%]|[&_Lib5E_Temp] --<|
+--:_Lib5EAddGSVM| --&_Lib5E_Temp|+ + [%2%] [[%1%]] --<|
+
+
+--:Lib5E_Active_Global_Skill_Modifiers|character_id;StringVariableToSet
+--&_Lib5E_Temp| --Rfirst|[%1%];repeating_skillmod
+--:_Lib5E_GSKM_Loop|
+--?"[*R:global_skill_active_flag]" -eq "1"|>_Lib5EAddGSKM;[*R:global_skill_name];[*R:global_skill_roll]
+--Rnext| --?"[*R:global_skill_name]" -ne "NoRepeatingAttributeLoaded"|_Lib5E_GSKM_Loop
+--&[%2%]|[&_Lib5E_Temp] --<|
+--:_Lib5EAddGSKM| --&_Lib5E_Temp|+ + [%2%] [[%1%]] --<|
+
+
+--:Lib5E_Active_Global_AC_Modifiers|character_id;StringVariableToSet
+--&_Lib5E_Temp| --Rfirst|[%1%];repeating_acmod
+--:_Lib5E_GACM_Loop|
+--?"[*R:global_ac_active_flag]" -eq "1"|>_Lib5EAddGACM;[*R:global_ac_name];[*R:global_ac_val]
+--Rnext| --?"[*R:global_ac_name]" -ne "NoRepeatingAttributeLoaded"|_Lib5E_GACM_Loop
+--&[%2%]|[&_Lib5E_Temp] --<|
+--:_Lib5EAddGACM| --&_Lib5E_Temp|+ + [%2%] [[%1%]] --<|
+
+
+--:Lib5E_Active_Global_Damage_Modifiers|character_id;StringVarNormalDamage;StringVarCritDamage
+--&_Lib5E_Temp| --&_Lib5E_Temp2| --Rfirst|[%1%];repeating_damagemod
+--:_Lib5E_GDM_Loop|
+--?"[*R:global_damage_active_flag]" -eq "1"|>_Lib5EAddGDM;[*R:global_damage_name];[*R:global_damage_damage];[*R:global_damage_critical_damage]
+--Rnext| --?"[*R:global_damage_name]" -ne "NoRepeatingAttributeLoaded"|_Lib5E_GDM_Loop
+--&[%2%]|[&_Lib5E_Temp] --&[%3%]|[&_Lib5E_Temp2] --<|
+--:_Lib5EAddGDM| --&_Lib5E_Temp|+ + [%2%] [[%1%]] --&_Lib5E_Temp2|+ + [%3%] [[%1%] CRIT] --<|
+
+
+--:Lib5E_PC_Attribute_Summary|character_id
+--+|[t][tr][td][b]Str[/b] [*[%1%]:strength] ([*[%1%]:strength_mod])[/td][td][b]Dex[/b] [*[%1%]:dexterity] ([*[%1%]:dexterity_mod])[/td][td][b]Con[/b] [*[%1%]:constitution] ([*[%1%]:constitution_mod]) [/td][/tr]
+       [tr][td][b]Int[/b] [*[%1%]:intelligence] ([*[%1%]:intelligence_mod])[/td][td][b]Wis[/b] [*[%1%]:wisdom] ([*[%1%]:wisdom_mod])[/td][td][b]Cha[/b] [*[%1%]:charisma] ([*[%1%]:charisma_mod])[/td][/tr]
+       [tr][td][b]AC[/b] [*[%1%]:ac][/td][td][b]HP[/b][*[%1%]:hp]/[*[%1%]:hp^][/td][td][/td][/tr][/t]
+--<|
+
+--:Lib5E_NPC_Attribute_Summary|character_id
+--+|[t width=100%][tr][td][b]Str[/b] [*[%1%]:strength] ([*[%1%]:strength_mod])[/td][td][b]Dex[/b] [*[%1%]:dexterity] ([*[%1%]:dexterity_mod])[/td][td][b]Con[/b] [*[%1%]:constitution] ([*[%1%]:constitution_mod]) [/td][/tr]
+       [tr][td][b]Int[/b] [*[%1%]:intelligence] ([*[%1%]:intelligence_mod])[/td][td][b]Wis[/b] [*[%1%]:wisdom] ([*[%1%]:wisdom_mod])[/td][td][b]Cha[/b] [*[%1%]:charisma] ([*[%1%]:charisma_mod])[/td][/tr]
+       [tr][td][b]AC[/b] [*[%1%]:npc_ac][/td][td][b]HP[/b][*[%1%]:hp]/[*[%1%]:hp^][/td][td][b]CR[/b] [*[%1%]:npc_challenge][/td][/tr][/t]
+
+ --<|
+
+--:Lib5E_NPC_Qualities_Summary|character_id
+--+Type|[*[%1%]:npc_type] --?"[*[%1%]:npc_vulnerabilities]" -eq ""|_Lib5E_NPCQS_Skip1 --+Vulnerable|[*[%1%]:npc_vulnerabilities]
+--:_Lib5E_NPCQS_Skip1| --?"[*[%1%]:npc_resistances]" -eq ""|_Lib5E_NPCQS_Skip2 --+Resistant|[*[%1%]:npc_resistances] --:_Lib5E_NPCQS_Skip2| --?"[*[%1%]:npc_immunities]" -eq ""|_Lib5E_NPCQS_Skip3 --+Immune|[*[%1%]:npc_immunities]
+--:_Lib5E_NPCQS_Skip3| --?"[*[%1%]:npc_condition_immunities]" -eq ""|_Lib5E_NPCQS_Skip4 --+Cond. Immune|[*[%1%]:npc_condition_immunities] --:_Lib5E_NPCQS_Skip4| --?"[*[%1%]:npc_senses]" -eq ""|_Lib5E_NPCQS_Skip5 --+Cond. Immune|[*[%1%]:npc_senses]
+--:_Lib5E_NPCQS_Skip6| --<|
+
+--:Lib5E_PC_Class_Summary|character_id
+--&_Lib5E_Temp|[t][tr][td][*[%1%]:class] - [*[%1%]:base_level][/td][/tr] --?"[*[%1%]:multiclass1_flag]" -eq "0"|_Lib5E_PC_Class_Summary_Done --&_Lib5E_Temp|+[tr][td][*[%1%]:multiclass1] - [*[%1%]:multiclass1_lvl]
+--?"[*[%1%]:multiclass2_flag]" -eq "0"|_Lib5E_PC_Class_Summary_Done --&_Lib5E_Temp|+[tr][td][*[%1%]:multiclass2] - [*[%1%]:multiclass2_lvl] --?"[*[%1%]:multiclass3_flag]" -eq "0"|_Lib5E_PC_Class_Summary_Done --&_Lib5E_Temp|+[tr][td][*[%1%]:multiclass3] - [*[%1%]:multiclass3_lvl]
+--:_Lib5E_PC_Class_Summary_Done| --&_Lib5E_Temp|+[/t] --+|[&_Lib5E_Temp] --<| 
+
+--:Lib5E_PC_Attack_List|character_id 
+--&_Lib5E_Temp| --Rfirst|[%1%];repeating_attack --:_Lib5E_PCAL_Loop| --?"[*R:atkname]" -eq "NoRepeatingAttributeLoaded"|_Lib5E_PCAL_Done 
+--&_Lib5E_NameTemp|[*R:atkname] --~_Lib5E_NameTemp|string;replace;(; ;[&_Lib5E_NameTemp] --~_Lib5E_NameTemp|string;replace;); ;[&_Lib5E_NameTemp] 
+--&_Lib5E_Temp|+[button][&_Lib5E_NameTemp]::~[%1%]|[*R>attack][/button]   --Rnext| --^_Lib5E_PCAL_Loop| --:_Lib5E_PCAL_Done| --+Available Attacks|[br][&_Lib5E_Temp] --<|
+
+--:Lib5E_NPC_Action_List|character_id
+--&_Lib5E_Temp| --&_Lib5E_FoundOne|0 --Rfirst|[%1%];repeating_npcaction --:_Lib5E_NPCAL_Loop| --?"[*R:name]" -eq "NoRepeatingAttributeLoaded"|_Lib5E_NPCAL_Done 
+--&_Lib5E_NameTemp|[*R:name] --~_Lib5E_NameTemp|string;replace;(; ;[&_Lib5E_NameTemp] --~_Lib5E_NameTemp|string;replace;); ;[&_Lib5E_NameTemp] 
+--&_Lib5E_Temp|+[button][&_Lib5E_NameTemp]::~[%1%]|[*R>npc_action][/button]   --&_Lib5E_FoundOne|1 --Rnext| --^_Lib5E_NPCAL_Loop| --:_Lib5E_NPCAL_Done| 
+--?"[&_Lib5E_FoundOne]" -eq "0"|_Lib5E_NPCAL_Skip --+Available Actions|[br][&_Lib5E_Temp] --:_Lib5E_NPCAL_Skip| --<|
+
+--:Lib5E_NPC_Legendary_Action_List|character_id
+--&_Lib5E_Temp| --&_Lib5E_FoundOne|0 --Rfirst|[%1%];repeating_npcaction-l --:_Lib5E_NPCLAL_Loop| --?"[*R:name]" -eq "NoRepeatingAttributeLoaded"|_Lib5E_NPCLAL_Done
+--&_Lib5E_NameTemp|[*R:name] --~_Lib5E_NameTemp|string;replace;(; ;[&_Lib5E_NameTemp] --~_Lib5E_NameTemp|string;replace;); ;[&_Lib5E_NameTemp]
+--&_Lib5E_Temp|+[button][&_Lib5E_NameTemp]::~[%1%]|[*R>npc_action][/button]   --&_Lib5E_FoundOne|1 --Rnext| --^_Lib5E_NPCLAL_Loop| --:_Lib5E_NPCLAL_Done| 
+--?"[&_Lib5E_FoundOne]" -eq "0"|_Lib5E_NPCLAL_Skip --+Available Legendary Actions|[br][&_Lib5E_Temp] --:_Lib5E_NPCLAL_Skip| --<|
+
+--:Lib5E_NPC_Description_List|character_id;repeatingList;Name
+--&_Lib5E_Temp| --&_Lib5E_FoundOne|0 --Rfirst|[%1%];[%2%] --:_Lib5E_NPCDESCL_Loop| --?"[*R:name]" -eq "NoRepeatingAttributeLoaded"|_Lib5E_NPCDESCL_Done
+--&_Lib5E_NameTemp|[*R:name] --~_Lib5E_NameTemp|string;replace;(; ;[&_Lib5E_NameTemp] --~_Lib5E_NameTemp|string;replace;); ;[&_Lib5E_NameTemp]
+--&_Lib5E_Temp|+[&_Lib5E_NameTemp]   --&_Lib5E_FoundOne|1 --Rnext| --^_Lib5E_NPCDESCL_Loop| --:_Lib5E_NPCDESCL_Done| --?"[&_Lib5E_FoundOne]" -eq "0"|_Lib5E_NPCDESCL_Skip 
+--+[%3%]|[&_Lib5E_Temp] --:_Lib5E_NPCDESCL_Skip| --<|
+
+--:Lib5E_PC_Summary|character_id
+-->Lib5E_PC_Attribute_Summary|[%1%] -->Lib5E_PC_Class_Summary|[%1%] -->Lib5E_PC_Attack_List|[%1%] --<|
+
+--:Lib5E_NPC_Summary|character_id
+-->Lib5E_NPC_Attribute_Summary|[%1%] -->Lib5E_NPC_Description_List|[%1%];repeating_npctrait;Traits -->Lib5E_NPC_Qualities_Summary|[%1%] -->Lib5E_NPC_Action_List|[%1%] 
+-->Lib5E_NPC_Legendary_Action_List|[%1%] -->Lib5E_NPC_Description_List|[%1%];repeating_npcreaction;Available Reactions[br] --<|
+
+--:Lib5E_Character_Summary|character_id
+--?"[*[%1%]:npc]" -eq "0"|>Lib5E_PC_Summary;[%1%]|>Lib5E_NPC_Summary;[%1%] --<|

@@ -1,0 +1,86 @@
+!script {{
+  --/Description|Deals fireball damage to all tokens that represent creations in a 20' radius around target token
+  --/|Set up the card appearance
+  --#title|@{selected|character_name} casts Fireball!
+  --#bodyFontSize|12px
+  --#titlecardbackground|#800000
+  --#leftsub|Save DC @{selected|spell_save_dc}
+
+  --/|Get a spell slot level from the caster.
+  --=SpellLevel|?{Spell Slot Level?|3|4|5|6|7|8|9}
+  --#rightsub|Slot Level: [$SpellLevel]
+
+  --/|Calculate damage based on spell slot. Fireball is 8d6 for 3rd level, so 5+SpellLevel d6 total.
+  --=DamageDice|[$SpellLevel.Total] + 5
+  --=Damage|[$DamageDice.Total]d6
+  --=HalfDamage|[$Damage.Total] \ 2
+
+  --/|Since we want to be able to hover over a roll and see the dice details, output the rolled damage at the
+  --/|top of the card. If all critters make their save, the half damage roll won't contain the details.
+  --+|[c][b]Damage Roll: [/b][$Damage][/c]
+  --+|&nbsp;
+
+  --/|Get all tokens on the page into the "alltokens" array
+  --~|array;pagetokens;alltokens;@{target|token_id}
+
+  --/|Create the "inRange" array. It will have a blank item in it to begin with, which we will remove later.
+  --~|array;define;inRange;
+
+  --/|Loop through all of the tokens in "alltokens" to check their distance
+  --~tokenid|array;getfirst;alltokens
+  --?[&tokenid] -eq ArrayError|endOutput
+  --:loopCheck|
+
+  --/|Skip targets that are not on the token layer or that don't represent creatures
+  --?[*[&tokenid]:t-layer] -ne objects|continue
+  --?"[*[&tokenid]:t-represents]" -ninc "-"|continue
+
+  --/|Check the distance between the target token and the current array token. 20 feet is 4 units
+  --~dist|distance;@{target|token_id};[&tokenid]
+  --?[$dist] -gt 4|continue
+
+  --/|If we didn't skip over this part, the token is within 20 feet, so add it to the inRange array
+  --~|array;add;inRange;[&tokenid]
+  --:continue|
+  --~tokenid|array;getnext;alltokens
+  --?[&tokenid] -ne ArrayError|loopCheck
+
+  --/|Remove the dummy first item in the inRange array
+  --~|array;removeat;inRange;0
+
+  --/|Loop through the inRange tokens and roll saves for each one and apply damage
+  --~tokenid|array;getfirst;inRange
+  --?[&tokenid] -eq ArrayError|endOutput
+  --:loopDisplay|
+  --=SaveRoll|1d20 + [*[&tokenid]:dexterity_save_bonus]
+
+  --/|Compare the save roll to the save DC and either apply full or half damage
+  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>ApplyDamageTokenmod;[&tokenid];3;-[$Damage.Total]|>ApplyDamageTokenmod;[&tokenid];3;-[$HalfDamage.Total]
+  --?[$SaveRoll.Total] -ge @{selected|spell_save_dc}|madeSave
+
+  --/|Output a lien for a failed saving throw
+  --+[*[&tokenid]:character_name]:|Save [$SaveRoll] [r][$Damage] fire damage[/r]
+  -->afterSave|
+
+  --/|Output a line for a successful saving throw
+  --:madeSave|
+  --+[*[&tokenid]:character_name]:|Save [$SaveRoll] [r][$HalfDamage] fire damage[/r]
+  --:afterSave|
+
+  --/|Put a burn-fire visual effect on impacted tokens
+  --vtoken|[&tokenid] burn-fire
+  --~tokenid|array;getnext;inRange
+  --?[&tokenid] -ne ArrayError|loopDisplay
+
+  --/|Add some extra visual effects - a nova-fire at the target, and a beam-fire from source to target
+  --vtoken|@{target|token_id} nova-fire
+  --vbetweentokens|@{selected|token_id} @{target|token_id} beam-fire
+
+  --:endOutput|
+  --X|
+
+  --/|Subroutine to apply damage with TokenMod. Could be replcaed with alterbars or chatsetattr
+  --:ApplyDamageTokenmod|Parameters are tokenid;bar#;amount
+  --@token-mod|_ignore-selected _ids [%1%] _set bar[%2%]_value|[%3%]
+  --<|
+}}

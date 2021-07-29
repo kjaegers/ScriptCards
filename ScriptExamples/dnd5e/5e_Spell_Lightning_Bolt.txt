@@ -1,0 +1,190 @@
+!script {{
+  --/|Lightning Bolt script. Can be changed to other line-based spells by updating these parameters:
+  --&spellName|Lightning Bolt
+  
+  --/|Note: because the spell will be cast at a min level of 3, we use 5 here to get the total dice (5+3=8)
+  --&spellL0DamageDice|5
+  
+  --/|Prompt for the spell level. Update this to account for the minimum level of the spell
+  --=SpellLevel|?{Spell Slot Level?|3|4|5|6|7|8|9}
+  --&spellDamageDieType|6
+  --&damageType|lightning
+  --&saveType|dexterity
+  
+  --/|Source Token is the caster, and target token is the "end of the line". Can be a non-creature (no represents) token.
+  --#sourcetoken|@{selected|token_id}
+  --#targettoken|@{target|token_id}
+  
+  --/|Get all of the tokens on the page so we can cache their positions
+  --~|array;pagetokens;alltokens;@{target|token_id}
+  --#leftsub|Save DC @{selected|spell_save_dc}
+  --#rightsub|Slot Level: [$SpellLevel]
+  --#title|[&spellName]
+
+  --/|Calculate damage based on spell slot.
+  --=DamageDice|[$SpellLevel.Total] + [&spellL0DamageDice]
+  --=Damage|[$DamageDice.Total]d[&spellDamageDieType]
+  --=HalfDamage|[$Damage.Total] \ 2
+  --=DoubleDamage|[$Damage.Total] * 2
+  --=QuarterDamage|[$Damage.Total] \ 4
+
+  --/|Since we want to be able to hover over a roll and see the dice details, output the rolled damage at the
+  --/|top of the card. If all critters make their save, the half damage roll won't contain the details.
+  --+|[c][b]Damage Roll: [/b][$Damage][/c]
+  --+|&nbsp;
+  
+  --/|Create an array to hold the tokens that are intersected by the line.
+  --~|array;define;tokensHit;
+  
+  --/|Call the "checkForTokenHits" subroutine. The passed parameter will be the per-space VFX. Leave blank for none.
+  -->checkForTokenHits|burn-frost
+
+  --/|The first item in the array will be a blank dummy item, so remove it.
+  --~|array;removeat;tokensHit;0
+  
+  --/|Loop through the tokensHit tokens and roll saves for each one and apply damage
+  --~tokenid|array;getfirst;tokensHit
+  --?[&tokenid] -eq ArrayError|endOutput
+  --:loopDisplay|
+  --=SaveRoll|1d20 + [*[&tokenid]:[&saveType]_save_bonus]
+
+  --/|Compare the save roll to the save DC and either apply full or half damage
+  --?"[*[&tokenid]:npc_immunities]" -inc "[&damageType]"|Immune
+  --?"[*[&tokenid]:npc_resistances]" -inc "[&damageType]"|Resistant
+  --?"[*[&tokenid]:npc_vulnerabilities]" -inc "[&damageType]"|Vulnerable
+  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>ApplyDamageAlterbars;[&tokenid];3;-[$Damage.Total]|>ApplyDamageAlterbars;[&tokenid];3;-[$HalfDamage.Total]
+  --?[$SaveRoll.Total] -ge @{selected|spell_save_dc}|madeSave
+
+  --/|Here are various damage applications if the creature is immune, resistant, or vulnerable. In some cases, we will reuse output lines,
+  --/|for example, a resistant creature that fails its save will jump to "madeSave", since that is the correct damage amount. (half), while
+  --/|a vulnerable creature that makes its save will jump to "FailedSave" since that will be normal damage.
+
+  --/|Output a line for a failed saving throw (we will also jump here for a vulnerable creature that MAKES its save)
+  --:FailedSave|
+  --+[*[&tokenid]:t-name]:|Save [$SaveRoll] [r][$Damage] [&damageType][/r]
+  --^afterSave|
+  
+  --:Immune|
+  --+[*[&tokenid]:t-name]:|is not effected by the spell!
+  --^afterSave|
+
+  --:Resistant|
+  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>ApplyDamageAlterbars;[&tokenid];3;-[$HalfDamage.Total]|>ApplyDamageAlterbars;[&tokenid];3;-[$QuarterDamage.Total]
+  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|madeSave
+  --+[*[&tokenid]:t-name]:|Save [$SaveRoll] [r][$QuarterDamage] [&damageType][/r]
+  --^afterSave|
+
+  --:Vulnerable|
+  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>ApplyDamageAlterbars;[&tokenid];3;-[$DoubleDamage.Total]|>ApplyDamageAlterbars;[&tokenid];3;-[$Damage.Total]
+  --?[$SaveRoll.Total] -ge @{selected|spell_save_dc}|FailedSave
+  --+[*[&tokenid]:t-name]:|Save [$SaveRoll] [r][$DoubleDamage] [&damageType][/r]
+  --^afterSave|
+
+  --/|Output a line for a successful saving throw
+  --:madeSave|
+  --+[*[&tokenid]:t-name]:|Save [$SaveRoll] [r][$HalfDamage] [&damageType][/r]
+  --:afterSave|
+
+  --~tokenid|array;getnext;tokensHit
+  --?[&tokenid] -ne ArrayError|loopDisplay
+
+  --:endOutput|
+  
+  --X|
+  
+  --:ApplyDamageTokenmod|Parameters are tokenid;bar#;amount
+  --@token-mod|_ignore-selected _ids [%1%] _set bar[%2%]_value|[%3%]
+  --<| 
+  
+  --:ApplyDamageAlterbars|Parameters are tokenid;bar#;amount
+  --@alter|_target|[%1%] _bar|[%2%] _amount|-[%3%] _show|none
+  --<|
+  
+  --:checkForTokenHits|Y as %1% for VFX
+  -->createTokenLookup|
+  --=X1|[*S:t-left] \ 70  --=Y1|[*S:t-top] \ 70
+  --=X2|[*T:t-left] \ 70  --=Y2|[*T:t-top] \ 70
+  --?[$X1] -lt [$X2]|=SX;1|=SX;-1
+  --?[$Y1] -lt [$Y2]|=SY;1|=SY;-1
+  --=DX|[$X2] - [$X1] {ABS}
+  --=DY|[$Y2] - [$Y1] {ABS}
+  --=ERR|[$DX] - [$DY]
+  --=Y|[$Y1.Total]    
+  --=X|[$X1.Total]
+  --%L|1;50
+	-->checkTokens|[$X];[$Y]
+	--/|IF we passed a visual effect specifier in %1%, create a point VFX in the square
+	--?"X[%1%]X" -ne "XX" |[
+      --=VX|[$X] * 70 + 35   
+	  --=VY|[$Y] * 70 + 35   
+	  --vpoint|[$VX] [$VY] [%1%]
+	--]|
+	--?[$X.Total] -eq [$X2.Total] -and [$Y.Total] -eq [$Y2.Total]|%!
+	--=E2|[$ERR.Total] * 2
+	--=NDY|[$DY] {NEGATE}
+	--?[$E2] -gt [$NDY]|[  --=ERR|[$ERR] - [$DY]  --=X|[$X] + [$SX]  --]|
+	--?[$E2] -lt [$DX]|[  --=ERR|[$ERR] + [$DX]  --=Y|[$Y] + [$SY]  --]|
+  --%|
+  --/|Remove the caster from the list of hit tokens
+  --~|array;remove;tokensHit;@{selected|token_id}
+  --<|
+
+  --/|Reads the variables created by createTokenLookup to find any tokens that occupy a given space.
+  --:checkTokens|x;y
+  --?"X[&tok[%1%]-[%2%]]X" -ne "XX"|[
+  --~split|string;split;!;[&tok[%1%]-[%2%]]
+  --%P|1;[$splitCount.Total];1
+    --=var|split[&P]
+	--?"X[&[$var.RollText]]X" -eq "XX"|%
+	--~exists|array;indexof;tokensHit;[&[$var.RollText]]
+    --?[&exists] -ne ArrayError|skipAdd
+	--?[&[$var.RollText]] -eq ArrayError|skipAdd
+    --~|array;add;tokensHit;[&[$var.RollText]]
+	--:skipAdd|
+  --%|
+  --<|
+  
+  --/|Creates a series of string variables with names like 'tok12-15' which represent the various squares that are
+  --/|occupied by tokens on the page. Handle 1x1, 2x2, and 3x3 tokens by simply adding extra squares in the appropriate
+  --/|pattern around the center point location. The result is that if there are two tokens at 12,15, the tok12-15 string
+  --/|will contain something like "-asln34njfn2nafd!-sdnfklaserfs" (IDs separated by exclamation points) that we can use to
+  --/|quickly evaluate hits by essentially asking "what is in square 12x15" by just reading the variable.
+  --:createTokenLookup|
+  --~tokenid|array;getfirst;alltokens
+  --:tokenSetupLoop|
+    --?[&tokenid] -eq ArrayError|endSetupLoop
+    --=tLeft|[*[&tokenid]:t-left] - 1 \ 70
+	--=tTop|[*[&tokenid]:t-top] - 1 \ 70
+	--=tWidth|[*[&tokenid]:t-width]
+	--?[$tWidth] -eq 70|[ 
+	  --&tok[$tLeft]-[$tTop]|+[&tokenid]!
+	  --/+[*[&tokenid]:character_name]|At [$tLeft],[$tTop] : [&tok[$tLeft.Total]-[$tTop.Total]]
+	--]|
+	--?[$tWidth] -eq 140|[ 
+	  --=NX|[$tLeft] + 1
+	  --=NY|[$tTop] + 1
+	  --&tok[$tLeft]-[$tTop]|+[&tokenid]!
+	  --&tok[$tLeft]-[$NY]|+[&tokenid]!
+	  --&tok[$NX]-[$tTop]|+[&tokenid]!
+	  --&tok[$NX]-[$NY]|+[&tokenid]!
+	--]|
+	--?[$tWidth] -eq 210|[ 
+	  --=PX|[$tLeft] - 1
+	  --=PY|[$tTop] - 1
+	  --=NX|[$tLeft] + 1
+	  --=NY|[$tTop] + 1
+  	  --&tok[$tLeft]-[$tTop]|+[&tokenid]!
+  	  --&tok[$PX]-[$PY]|+[&tokenid]!
+	  --&tok[$tLeft]-[$PY]|+[&tokenid]!
+	  --&tok[$NX]-[$PY]|+[&tokenid]!
+  	  --&tok[$PX]-[$tTop]|+[&tokenid]!
+	  --&tok[$NX]-[$tTop]|+[&tokenid]!
+  	  --&tok[$PX]-[$NY]|+[&tokenid]!
+  	  --&tok[$tLeft]-[$NY]|+[&tokenid]!
+  	  --&tok[$NX]-[$NY]|+[&tokenid]!
+	--]|
+	--~tokenid|array;getnext;alltokens
+	--^tokenSetupLoop|
+	--:endSetupLoop|
+  --<|
+}}
