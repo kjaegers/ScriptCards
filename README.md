@@ -1,5 +1,5 @@
 # ScriptCards
-A repository containing the current ScriptCards API development code and example/community ScriptCards macros
+A repository containing the current ScriptCards API development code for Roll20 (https://roll20.net) and example/community ScriptCards macros
 
 ## Layout
 The ScriptCards folder contains version folders for development versions of the .js file.
