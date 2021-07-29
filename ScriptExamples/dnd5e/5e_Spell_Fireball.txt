@@ -52,23 +52,13 @@
   --~tokenid|array;getfirst;inRange
   --?[&tokenid] -eq ArrayError|endOutput
   --:loopDisplay|
-  --=SaveRoll|1d20 + [*[&tokenid]:dexterity_save_bonus]
-
-  --/|Compare the save roll to the save DC and either apply full or half damage
-  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>ApplyDamageTokenmod;[&tokenid];3;-[$Damage.Total]|>ApplyDamageTokenmod;[&tokenid];3;-[$HalfDamage.Total]
-  --?[$SaveRoll.Total] -ge @{selected|spell_save_dc}|madeSave
-
-  --/|Output a lien for a failed saving throw
-  --+[*[&tokenid]:character_name]:|Save [$SaveRoll] [r][$Damage] fire damage[/r]
-  -->afterSave|
-
-  --/|Output a line for a successful saving throw
-  --:madeSave|
-  --+[*[&tokenid]:character_name]:|Save [$SaveRoll] [r][$HalfDamage] fire damage[/r]
-  --:afterSave|
+  -->MakeSavingThrow|[&tokenid];dexterity;@{selected|spell_save_dc};[$Damage.Total];fire;thisTokenDamage;saveResult;dex
+  --+[*[&tokenid]:character_name]:|Save [$savingThrow] [r][$thisTokenDamage] fire damage[/r]
 
   --/|Put a burn-fire visual effect on impacted tokens
   --vtoken|[&tokenid] burn-fire
+
+  --/|Get the next token and continue the loop until we run out.
   --~tokenid|array;getnext;inRange
   --?[&tokenid] -ne ArrayError|loopDisplay
 
@@ -79,6 +69,25 @@
   --:endOutput|
   --X|
 
+  --/|Subroutine to make saving throws and calculate damage amounts
+  --:MakeSavingThrow|tokenid;savetype;dc;damage;damagetype;damagevariable;saveresultvariable;shortabilityname
+  --?"X[*[%1%]:npc_[%8%]_save_base]" -eq "X"|>set_string;baseSaveBonus;|>set_string;baseSaveBonus; + + [*[%1%]:npc_[%8%]_save_base]
+  --=savingThrow|1d20 + [*[%1%]:[%2%]_save_bonus] [&baseSaveBonus]
+  --&dmgmult|
+  --?[$savingThrow] -ge [%3%]|>set_string;dmgmult; \ 2
+  --?[$savingThrow] -lt [%3%]|>set_string;[%7%];fail
+  --?[$savingThrow] -ge [%3%]|>set_string;[%7%];success
+  --?"[*[%1%]:npc_resistances]" -inc "[%5%]" -and [$savingThrow] -lt [%3%]|>set_string;dmgmult; \ 2
+  --?"[*[%1%]:npc_resistances]" -inc "[%5%]" -and [$savingThrow] -ge [%3%]|>set_string;dmgmult; * 0
+  --?"[*[%1%]:npc_vulnerabilities]" -inc "[%5%]" -and [$savingThrow] -ge [%3%]|>set_string;dmgmult;
+  --?"[*[%1%]:npc_vulnerabilities]" -inc "[%5%]" -and [$savingThrow] -lt [%3%]|>set_string;dmgmult; * 2
+  --?"[*[%1%]:npc_immunities]" -inc "[%5%]"|>set_string;dmgmult; * 0
+    --=[%6%]|[%4%] [&dmgmult] 
+  --<|
+  --:set_string|mod_variable;value
+  --&[%1%]|[%2%]
+  --<|
+  
   --/|Subroutine to apply damage with TokenMod. Could be replcaed with alterbars or chatsetattr
   --:ApplyDamageTokenmod|Parameters are tokenid;bar#;amount
   --@token-mod|_ignore-selected _ids [%1%] _set bar[%2%]_value|[%3%]
