@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.4
+  --/|Version     : 1.5
   --/|Requires SC : 1.3.9+
   --/|Author      : Kurt Jaegers
 
@@ -23,11 +23,13 @@
   
   --/|Give the script a reentrant name based on the selected character id so we can have multiple instances at the same time
   --#reentrant|CharacterAction @{selected|character_id}
+
+  --/|Set to "1" to enable loading of settings information from a saved format named after the character (case sensitive)
+  --&UseNamedCharacterSettings|1
   
   --/|Set up some style information for the action menu and subsequent cards. These attempt to somewhat
   --/|simulate the 5E style
   --#bodyfontface|Helvetica
-  --/#bodyfontsize|12px
   --#bodyfontcolor|#220000
   --#buttonfontsize|9px
   --#buttonbackground|#58180d
@@ -46,6 +48,10 @@
 
   --/|Store the selected character so we can use it later even if it gets de-selected
   --#sourcetoken|@{selected|token_id}
+
+  --?[&UseNamedCharacterSettings] -eq 1|[
+    --lsettings|[*S:character_name]
+  --]|
 
   --#emotestate|hidden
   --#title|[*S:character_name]
