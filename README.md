@@ -6,6 +6,6 @@ The ScriptCards folder contains version folders for development versions of the 
 
 ## See Also
 
-Will M. has also put up a repository with his ScriptCards in it : https://github.com/MadCar-Dev/Default
+Will M. has also put up a repository with his ScriptCards and other Roll20 stuff in it : https://github.com/MadCar-Dev/Default
 
 The ScriptExamples folder is divided into "libraries", "system-neutral", and folders for each system-specific set of scripts.
