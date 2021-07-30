@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.5
+  --/|Version     : 1.6
   --/|Requires SC : 1.3.9+
   --/|Author      : Kurt Jaegers
 
@@ -301,6 +301,20 @@
     --&PCSpells|[br]
     --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
       --:PCSpells_Display|
+      --?[*S:class] -eq "Sorcerer"|SKIP_PREP_CHECK
+      --?"X[*S:multiclass1_flag]" -eq "X1" -and [*S:multiclass1] -eq "Sorcerer"|SKIP_PREP_CHECK
+      --?"X[*S:multiclass2_flag]" -eq "X1" -and [*S:multiclass2] -eq "Sorcerer"|SKIP_PREP_CHECK
+      --?"X[*S:multiclass3_flag]" -eq "X1" -and [*S:multiclass3] -eq "Sorcerer"|SKIP_PREP_CHECK
+      --&isWizard|0
+      --?[*S:class] -eq "Wizard"|&isWizard|1
+      --?"X[*S:multiclass1_flag]" -eq "X1" -and [*S:multiclass1] -eq "Wizard"|&isWizard;1
+      --?"X[*S:multiclass2_flag]" -eq "X1" -and [*S:multiclass2] -eq "Wizard"|&isWizard;1
+      --?"X[*S:multiclass3_flag]" -eq "X1" -and [*S:multiclass3] -eq "Wizard"|&isWizard;1
+      --?[&isWizard] -eq 0 -and "X[*R:spellprepared]" -ne "X1"|DONE_SPELL_BUTTON
+      --?"X[*R:spellprepared]" -ne "X1" -and "X[*R:spellritual]" -ne "XYes"|DONE_SPELL_BUTTON
+      --&spellsuffix|
+      --?"X[*R:spellritual]" -eq "XYes"|&spellsuffix; [R]
+      --:SKIP_PREP_CHECK|
       --~testName|string;replace; ;-;[*R:spellname]
       --~testMule|system;findability;[&spellmulename];[&testName]
       --?[&testMule] -ne "AbilityNotFound"|MULE_SPELL
@@ -319,10 +333,10 @@
       --:SKIP_SLOT_LIST|
       --&slotString||9
       --:DONE_SLOT_LIST|
-      --&PCSpells|+ [rbutton][*R:spellname]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|&#64;{target|character_id}[&slotString][/rbutton] 
+      --&PCSpells|+ [rbutton][*R:spellname][&spellsuffix]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|&#64;{target|character_id}[&slotString][/rbutton] 
       --^DONE_SPELL_BUTTON|
       --:MULE_SPELL|
-      --&PCSpells|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
+      --&PCSpells|+ [sheetbutton][*R:spellname][&spellsuffix]::[&spellmulename]::[&testName][/sheetbutton] 
       --:DONE_SPELL_BUTTON|
       --Rnext|
       --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|PCSpells_Display
