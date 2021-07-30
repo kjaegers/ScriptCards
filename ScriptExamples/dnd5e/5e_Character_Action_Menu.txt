@@ -306,7 +306,7 @@
       --?"X[*S:multiclass2_flag]" -eq "X1" -and [*S:multiclass2] -eq "Sorcerer"|SKIP_PREP_CHECK
       --?"X[*S:multiclass3_flag]" -eq "X1" -and [*S:multiclass3] -eq "Sorcerer"|SKIP_PREP_CHECK
       --&isWizard|0
-      --?[*S:class] -eq "Wizard"|&isWizard|1
+      --?[*S:class] -eq "Wizard"|&isWizard;1
       --?"X[*S:multiclass1_flag]" -eq "X1" -and [*S:multiclass1] -eq "Wizard"|&isWizard;1
       --?"X[*S:multiclass2_flag]" -eq "X1" -and [*S:multiclass2] -eq "Wizard"|&isWizard;1
       --?"X[*S:multiclass3_flag]" -eq "X1" -and [*S:multiclass3] -eq "Wizard"|&isWizard;1
