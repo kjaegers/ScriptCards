@@ -1,5 +1,10 @@
 !script {{
-  --/Description|Deals fireball damage to all tokens that represent creations in a 20' radius around target token
+  --/|Script Name : 5E Fireball
+  --/|Version     : 1.1
+  --/|Requires SC : 1.3.1+
+  --/|Author      : Kurt Jaegers
+
+  --/|Description : Deals fireball damage to all tokens that represent creations in a 20' radius around target token
   --/|Set up the card appearance
   --#title|@{selected|character_name} casts Fireball!
   --#bodyFontSize|12px

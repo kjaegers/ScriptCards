@@ -1,5 +1,14 @@
 !script {{
-  --/|Lightning Bolt script. Can be changed to other line-based spells by updating these parameters:
+  --/|Script Name : 5E Lightning Bolt
+  --/|Version     : 1.1
+  --/|Requires SC : 1.3.1+, token-mod
+  --/|Author      : Kurt Jaegers
+
+  --/|Description : Implements a 5E lightning bolt from the selected token to the target, checking for
+  --/|              tokens in between and rolling saves and applying damage. Includes a visual effect
+  --/|              on each impacted square. Can be modified for use with other line-based spells by editing
+  --/|              the values below.
+  
   --&spellName|Lightning Bolt
   
   --/|Note: because the spell will be cast at a min level of 3, we use 5 here to get the total dice (5+3=8)
