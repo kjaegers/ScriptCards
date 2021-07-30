@@ -1,11 +1,15 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.6
+  --/|Version     : 1.6.1
   --/|Requires SC : 1.3.9+
   --/|Author      : Kurt Jaegers
 
   --/|Description : This script can be used with either a PC or NPC selected. It will generate an action menu with clickable
-  --/|              buttons to execute character actions and cast spells.
+  --/|              buttons to execute character actions and cast spells. The menu is whispered to the player executing the
+  --/|              script, while the results of clicking the action buttons are displayed in general chat.
+
+  --/|=========================================================================================================
+  --/|Settings Area - Customize the behavior of the script here
 
   --/|If you create a "spell mule" character and put its name here, it's ability list will be checked for
   --/|abilities that match the name of each spell found on PCs. If a match is found, the button that is
@@ -14,19 +18,25 @@
   --/|The name of the ability on the spell mule needs to exactly match the spell name (case sensitive)
   --&spellmulename|Spell_Mule
 
+  --/|Set to "1" to enable loading of settings information from a saved format named after the character (case sensitive)
+  --&UseNamedCharacterSettings|1
+
+  --/|If this value is set to 1, prepared spells checks will be skipped
+  --&skipPreppedSpellsCheck|0
+
   --/|If this value is set to 1, NPC attack information will be sent to the GM only, and AC will be masked from the players.
   --&sendGmInfo|0
 
   --/|These are here for future implementation, and don't do anything quite yet:
   --&hipoint_bar_number|3
   --&damageapi|token-mod
-  
+
+  --/|End Settings Area
+  --/|=========================================================================================================
+
   --/|Give the script a reentrant name based on the selected character id so we can have multiple instances at the same time
   --#reentrant|CharacterAction @{selected|character_id}
 
-  --/|Set to "1" to enable loading of settings information from a saved format named after the character (case sensitive)
-  --&UseNamedCharacterSettings|1
-  
   --/|Set up some style information for the action menu and subsequent cards. These attempt to somewhat
   --/|simulate the 5E style
   --#bodyfontface|Helvetica
@@ -301,6 +311,7 @@
     --&PCSpells|[br]
     --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
       --:PCSpells_Display|
+      --?[&skipPreppedSpellsCheck] -eq 1|SKIP_PREP_CHECK
       --?[*S:class] -eq "Sorcerer"|SKIP_PREP_CHECK
       --?"X[*S:multiclass1_flag]" -eq "X1" -and [*S:multiclass1] -eq "Sorcerer"|SKIP_PREP_CHECK
       --?"X[*S:multiclass2_flag]" -eq "X1" -and [*S:multiclass2] -eq "Sorcerer"|SKIP_PREP_CHECK
