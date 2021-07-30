@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.6.1
+  --/|Version     : 1.6.2
   --/|Requires SC : 1.3.9+
   --/|Author      : Kurt Jaegers
 
@@ -70,7 +70,9 @@
   --/|Determine if the selected character is a PC or NPC and process appropriately
   --?[*S:npc] -eq 1|proc_npc|proc_pc
 
+  --/|=========================================================================================================
   --/|Handle NPCs
+
   --:proc_npc|
   --+|[hr #58180d]
 
@@ -268,6 +270,7 @@
   --X|  
 
 
+  --/|=========================================================================================================
   --/|Handle PCs 
 
   --:proc_pc|
@@ -309,6 +312,7 @@
   --%levelCounter|1;9
     --Rfirst|[*S:character_id];repeating_spell-[&levelCounter]
     --&PCSpells|[br]
+    --=PCSpellCount|0
     --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
       --:PCSpells_Display|
       --?[&skipPreppedSpellsCheck] -eq 1|SKIP_PREP_CHECK
@@ -344,14 +348,18 @@
       --:SKIP_SLOT_LIST|
       --&slotString||9
       --:DONE_SLOT_LIST|
-      --&PCSpells|+ [rbutton][*R:spellname][&spellsuffix]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|&#64;{target|character_id}[&slotString][/rbutton] 
+      --&PCSpells|+ [rbutton][*R:spellname][&spellsuffix]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|&#64;{target|character_id}[&slotString][/rbutton]
+      --=PCSpellCount|[$PCSpellCount.Raw] + 1 
       --^DONE_SPELL_BUTTON|
       --:MULE_SPELL|
       --&PCSpells|+ [sheetbutton][*R:spellname][&spellsuffix]::[&spellmulename]::[&testName][/sheetbutton] 
+      --=PCSpellCount|[$PCSpellCount.Raw] + 1 
       --:DONE_SPELL_BUTTON|
       --Rnext|
       --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|PCSpells_Display
+      --?[$PCSpellCount] -eq 0|PC_SKIP_LEVEL_DISPLAY
       --+Level [&levelCounter] Spells|[&PCSpells]
+      --:PC_SKIP_LEVEL_DISPLAY|
      --]|
   --%|
   --X|
@@ -500,7 +508,7 @@
   --&damageRoll2|[*R:spelldamage2]
 
   --&ability_bonus|
-  --?"X[R*:spell_ability]" -eq "Xspell"|[
+    --?"X[*R:spell_ability]" -eq "Xspell"|[
       --~ability|string;before;};[*S:spellcasting_ability]
       --~ability|string;after;{;[&ability]
       --?[&ability] -eq strength_mod|&ability_bonus; + [*S:strength_mod] [Spellcasting Ability]
