@@ -191,7 +191,7 @@
   --#targettoken|[&action_target]
   --#leftsub|[*S:character_name]
   --Rfind|[*S:character_id];[&action_name];repeating_npcaction;name
-  --[*R:name] -ne "NoRepeatingAttributeLoaded"|[
+  --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
     --#leftsub|[*R:name]
     --?"[*R:attack_flag]" -ne on|NPCA_NOT_ATTACK
     --:NPCA_MAKE_AN_ATTACK|
