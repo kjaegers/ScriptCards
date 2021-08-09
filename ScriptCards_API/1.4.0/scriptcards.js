@@ -22,11 +22,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 /* Inline Update Notes - So I can keep track of what to put in the release notes :)
 
-	- Added "angle" function
+    - Added optional filter parameter to "pagetokens" array function: all, char, npc, pc, graphic will return only those types.
+    
+    - Added "sort" array function
+
+    - Added "lightColor" to the list of supported token properties
 
 */
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.0";
+	const APIVERSION = "1.4.0a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 	
@@ -155,7 +159,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	// tokenAttributes lists all of the attribute names that are valid for looking up attributes
 	// on token objects (as compared to character objects)
-	var tokenAttributes = "token_name:name:token_id:statusmarkers:bar1_value:bar1_max:bar2_value:bar2_max:bar3_value:bar3_max:top:left:width:height:rotation:layer:aura1_radius:aura1_color:aura2_radius:aura2_color:aura1_square:aura2_square:tint_color:light_radius:light_dimradius:light_angle:light_losangle:light_multiplier:light_otherplayers:light_hassight:flipv:fliph:controlledby:_cardid:_pageid:imgsrc:bar1_link:bar2_link:bar3_link:represents:layer:isdrawing:name:gmnotes:showname:showplayers_name:showplayers_bar1:showplayers_bar2:showplayers_bar3:showplayers_aura1:showplayers_aura2:playersedit_name:playersedit_bar1:playersedit_bar2:playersedit_bar3:playersedit_aura1:playersedit_aura2:lastmove:adv_fow_view_distance:has_bright_light_vision:has_night_vision:night_vision_distance:emits_bright_light:bright_light_distance:emits_low_light:low_light_distance:has_limit_field_of_vision: limit_field_of_vision_center: limit_field_of_vision_total: has_limit_field_of_night_vision: limit_field_of_night_vision_center: limit_field_of_night_vision_total: has_directional_bright_light:directional_bright_light_center:directional_bright_light_total:has_directional_dim_light:directional_dim_light_center:directional_dim_light_total:bar_location:compact_bar:light_sensitivity_multiplier:night_vision_effect";
+	var tokenAttributes = "token_name:name:token_id:statusmarkers:bar1_value:bar1_max:bar2_value:bar2_max:bar3_value:bar3_max:top:left:width:height:rotation:layer:aura1_radius:aura1_color:aura2_radius:aura2_color:aura1_square:aura2_square:tint_color:light_radius:light_dimradius:light_angle:light_losangle:light_multiplier:light_otherplayers:light_hassight:flipv:fliph:controlledby:_cardid:_pageid:imgsrc:bar1_link:bar2_link:bar3_link:represents:layer:isdrawing:name:gmnotes:showname:showplayers_name:showplayers_bar1:showplayers_bar2:showplayers_bar3:showplayers_aura1:showplayers_aura2:playersedit_name:playersedit_bar1:playersedit_bar2:playersedit_bar3:playersedit_aura1:playersedit_aura2:lastmove:adv_fow_view_distance:has_bright_light_vision:has_night_vision:night_vision_distance:emits_bright_light:bright_light_distance:emits_low_light:low_light_distance:has_limit_field_of_vision: limit_field_of_vision_center: limit_field_of_vision_total: has_limit_field_of_night_vision: limit_field_of_night_vision_center: limit_field_of_night_vision_total: has_directional_bright_light:directional_bright_light_center:directional_bright_light_total:has_directional_dim_light:directional_dim_light_center:directional_dim_light_total:bar_location:compact_bar:light_sensitivity_multiplier:night_vision_effect:lightColor";
 
 	//We use several variables to track repeating section (--R) commands
 	var repeatingSection = undefined;
@@ -1277,7 +1281,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												arrayVariables[params[2]].push(params[x]);
 											}
 											arrayIndexes[params[2]] = 0;
-										}
+                                        }
+                                        if (params[1].toLowerCase() == "sort") {
+                                            if (arrayVariables[params[2]]) {
+                                                arrayVariables[params[2]].sort();
+                                            }
+                                        }
 										if (params[1].toLowerCase() == "stringify") {
 											if (arrayVariables[params[2]]) {
 												stringVariables[variableName] = arrayVariables[params[2]].join(";");
@@ -3111,7 +3120,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function makeButton(title, url, parameters) {
-		return `<a style="${replaceStyleInformation(buttonStyle, parameters)}" href="${url}">${title}</a>`;
+        return `<a style="${replaceStyleInformation(buttonStyle, parameters)}" href="${url}">${title}</a>`;
 	}
 	
 	function removeInlineRolls(text, cardParameters) {
