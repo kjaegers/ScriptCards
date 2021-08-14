@@ -552,8 +552,8 @@
   --?[&spell_heal] -eq 1|&hittag;[b][/b]
   --?[&spell_heal] -eq 1|&hitdesc;heals for
   
-  --&damageRoll|+ [&ability_bonus]
-  --&damageRoll2|+ [&ability_bonus]
+  --/&damageRoll|+ [&ability_bonus]
+  --/&damageRoll2|+ [&ability_bonus]
 
   --=spellDamage|[&damageRoll]
   --=spellDamage2|[&damageRoll2]
