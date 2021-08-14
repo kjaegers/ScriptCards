@@ -452,7 +452,7 @@
   --&rollType|1d20
   --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
   --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
-  --=attackRoll|[&rollType] + [*S:spell_attack_bonus] [&PC_GAM]
+  --=attackRoll|[&rollType] + [*S:spell_attack_bonus] [Spell Atk Bonus] [&PC_GAM]
   --=AC|[*T:ac]
   --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
   --?[&sendGmInfo] -eq 1|[
@@ -511,7 +511,7 @@
   --&rollType|1d20
   --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
   --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
-  --=attackRoll|[&rollType] + [*S:spell_attack_bonus] [&PC_GAM]
+  --=attackRoll|[&rollType] + [*S:spell_attack_bonus] [Spell Atk Bonus] [&PC_GAM]
   --=AC|[*T:ac]
   --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
     --?[&sendGmInfo] -eq 1|[
