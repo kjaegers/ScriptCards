@@ -521,7 +521,6 @@
   --]|
   --?[$attackRoll.Base] -eq 20|=spell_crit;1
   --?[$attackRoll.Total] -lt [$AC]|SPELL_ATTACK_MISS
-  --?[$attackRoll.Base] -eq [$AC]|SPELL_ATTACK_MISS
 
   --:SPELL_DONE_ATTACK_ROLL|
   --&damageRoll|[*R:spelldamage]
