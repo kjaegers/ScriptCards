@@ -379,9 +379,29 @@
   --&rollType|1d20
   --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
   --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
-  --=attackRoll|[&rollType] + [*R:atkbonus] [&PC_GAM]
-  --&dmgroll|[*R:dmgbase] + [*R:dmgattr]
-  --&dmgroll2|[*R:dmg2base] + [*R:dmg2attr]
+  --&arString|[&rollType]
+  --?[*R:atkattr_base] -gt 0|&arString;+ + [*R:atkattr_base] [Attr]
+  --?[*R:atkattr_base] -lt 0|&arString;+ [*R:atkattr_base] [Attr]
+  --?[*R:atkmod] -gt 0|&arString;+ + [*R:atkmod] [Special]
+  --?[*R:atkmod] -lt 0|&arString;+ [*R:atkmod] [Special]
+  --?[*R:atkprofflag] -ne 0|&arString;+ + [*S:pb] [Prof]
+  --?[*R:atkmagic] -gt 0|&arString;+ + [*R:atkmagic] [Magic]
+  --?[*R:atkmagic] -lt 0|&arString;+ [*R:atkmagic] [Magic]
+  --=attackRoll|[&arString] [&PC_GAM]
+  --&dmgroll|[*R:dmgbase]
+  --?[*R:dmgattr] -gt 0|&dmgroll;+ + [*R:dmgattr] [Attr]
+  --?[*R:dmgattr] -lt 0|&dmgroll;+ [*R:dmgattr] [Attr]
+  --?[*R:dmgmod] -gt 0|&dmgroll;+ + [*R:dmgmod] [Special]
+  --?[*R:dmgmod] -lt 0|&dmgroll;+ [*R:dmgmod] [Special]
+  --?[*R:atkmagic] -gt 0|&dmgroll;+ + [*R:atkmagic] [Magic]
+  --?[*R:atkmagic] -lt 0|&dmgroll;+ [*R:atkmagic] [Magic]
+  --&dmgroll2|[*R:dmg2base]
+  --?[*R:dmg2attr] -gt 0|&dmgroll2;+ + [*R:dmg2attr] [Attr]
+  --?[*R:dmg2attr] -lt 0|&dmgroll2;+ [*R:dmg2attr] [Attr]
+  --?[*R:dmg2mod] -gt 0|&dmgroll;+ + [*R:dmg2mod] [Special]
+  --?[*R:dmg2mod] -lt 0|&dmgroll;+ [*R:dmg2mod] [Special]
+  --?[*R:atkmagic] -gt 0|&dmgroll2;+ + [*R:atkmagic] [Magic]
+  --?[*R:atkmagic] -lt 0|&dmgroll2;+ [*R:atkmagic] [Magic]
   --=AC|[*T:ac]
   --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
   --?[&sendGmInfo] -eq 1|[
@@ -432,7 +452,7 @@
   --&rollType|1d20
   --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
   --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
-  --=attackRoll|[&rollType] + [*S:spell_attack_bonus] [&PC_GAM]
+  --=attackRoll|[&rollType] + [*S:spell_attack_bonus] [Spell Atk Bonus] [&PC_GAM]
   --=AC|[*T:ac]
   --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
   --?[&sendGmInfo] -eq 1|[
@@ -491,7 +511,7 @@
   --&rollType|1d20
   --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
   --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
-  --=attackRoll|[&rollType] + [*S:spell_attack_bonus] [&PC_GAM]
+  --=attackRoll|[&rollType] + [*S:spell_attack_bonus] [Spell Atk Bonus] [&PC_GAM]
   --=AC|[*T:ac]
   --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
     --?[&sendGmInfo] -eq 1|[
@@ -501,7 +521,6 @@
   --]|
   --?[$attackRoll.Base] -eq 20|=spell_crit;1
   --?[$attackRoll.Total] -lt [$AC]|SPELL_ATTACK_MISS
-  --?[$attackRoll.Base] -eq [$AC]|SPELL_ATTACK_MISS
 
   --:SPELL_DONE_ATTACK_ROLL|
   --&damageRoll|[*R:spelldamage]
@@ -533,8 +552,8 @@
   --?[&spell_heal] -eq 1|&hittag;[b][/b]
   --?[&spell_heal] -eq 1|&hitdesc;heals for
   
-  --&damageRoll|+ [&ability_bonus]
-  --&damageRoll2|+ [&ability_bonus]
+  --/&damageRoll|+ [&ability_bonus]
+  --/&damageRoll2|+ [&ability_bonus]
 
   --=spellDamage|[&damageRoll]
   --=spellDamage2|[&damageRoll2]

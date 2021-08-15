@@ -13,7 +13,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	or executed from macros. A ScriptCard script consists of one or more lines, each delimited by a double dash (--) starting the line, followed by a statement type
 	identifier.
 
-	After the identifier, is a line tag, followed by a vertical bar (|) character, followed by the line content. The scripting language supports end-inclusion of 
+	After the identifier, is a line tag, followed by a vertical bar (|) character, followed by the line content. The scripting language supports end-inclusion of
 	function libraries with the +++libname+++ directive, which will be pre-parsed and removed from the script. Any number of libraries can be specified by separating
 	library names (case sensitive) with semicolons (;).
 
@@ -23,7 +23,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 /* Inline Update Notes - So I can keep track of what to put in the release notes :)
 
     - Added optional filter parameter to "pagetokens" array function: all, char, npc, pc, graphic will return only those types.
-    
+
     - Added "sort" array function
 
     - Added "lightColor" to the list of supported token properties
@@ -33,7 +33,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	const APIVERSION = "1.4.0a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
-	
+
 	const parameterAliases = {
 		"tablebackgroundcolor": "tablebgcolor",
 		"titlecardbackgroundcolor": "titlecardbackground",
@@ -42,14 +42,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		"buttonbackgroundcolor": "buttonbackground",
 	}
 
-	// These are the parameters that all cards will start with. This table is copied to the 
-	// cardParameters table inside the processing loop and that table is updated with settings 
+	// These are the parameters that all cards will start with. This table is copied to the
+	// cardParameters table inside the processing loop and that table is updated with settings
 	// from --# lines in the script.
 	const defaultParameters = {
 		reentrant: "0",
 		tableborder: "2px solid #000000;",
 		tablebgcolor: "#EEEEEE",
-		tableborderradius: "6px;", 
+		tableborderradius: "6px;",
 		tableshadow: "5px 3px 3px 0px #aaa;",
 		title: "ScriptCards",
 		titlecardbackground: "#1C6EA4",
@@ -67,7 +67,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		subtitlefontcolor: "#FFFFFF",
 		subtitleseperator: " &" + "#x2666; ",
 		tooltip: "Sent by ScriptCards",
-		bodyfontsize: "14px;", 
+		bodyfontsize: "14px;",
 		bodyfontface: "Helvetica",
 		oddrowbackground: "#D0E4F5",
 		evenrowbackground: "#eeeeee",
@@ -176,13 +176,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	// the dice value (J=0, A=1, B=2, etc) To get the appropriate letter to display, we can
 	// just the substring numeric position in this string to find the matching letter.
 	const diceLetters =  "JABCDEFGHIJKLMNOPQRSTUVWYZ";
-	
+
 	// Planned JSON support. Not currently implemented/documented.
 	var jsonObject = undefined;
 
 	// Used for storing parameters passed to a subroutine with --> or --?|> lines
 	var callParamList = {};
-	
+
 	on('ready', function () {
 		// if ScriptCards has never been run in this game, create state information to store
 		// configuration and values between sessions/sandbox instances.
@@ -193,7 +193,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (state[APINAME].storedSnippets == undefined) { state[APINAME].storedSnippets = {}; }
 
 		// Retrieve the list of token/status markers from the Campaign and create an associative
-		// array that links the marker name to the URL of the marker image for use in the 
+		// array that links the marker name to the URL of the marker image for use in the
 		// [sm]...[/sm] inline formatting syntax. This allows us to fully support custom token
 		// marker sets.
 		const tokenMarkers = JSON.parse(Campaign().get("token_markers"));
@@ -224,7 +224,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		// !sc-resume - resume a card paused with --i
 		// !sc-reentrant - resume execution of a card at a particular label
 		on('chat:message', function (msg) {
-			if (msg.type === "api") {		
+			if (msg.type === "api") {
 				var apiCmdText = msg.content.toLowerCase();
 				var processThisAPI = false;
 				var isResume = false;
@@ -317,9 +317,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					var tableLineCounter = 0;
 
 					// Builds up a list of lines that will appear on the output display
-					var outputLines = [];	
+					var outputLines = [];
 					var gmonlyLines = [];
-					var lineCounter = 1;			
+					var lineCounter = 1;
 
 					// Clear out any pre-existing roll variables
 					rollVariables = {};
@@ -397,7 +397,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						cardContent = cardContent.replace(/(<br ?\/?>)*/g,"");
 						cardContent = cardContent.replace(/\}\}/g," }}");
 						cardContent = cardContent.trim();
-						if (cardContent.charAt(cardContent.length-1) !== "}") { 
+						if (cardContent.charAt(cardContent.length-1) !== "}") {
 							if (cardContent.charAt(cardContent.length-2) !== "}") {
 								cardContent += "}";
 							}
@@ -405,11 +405,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 
 						var libraries = cardContent.match(/\+\+\+.+?\+\+\+/g);
-						if (libraries) { 
-							cardContent = insertLibraryContent(cardContent, libraries[0].replace(/\+\+\+/g,"")); 
+						if (libraries) {
+							cardContent = insertLibraryContent(cardContent, libraries[0].replace(/\+\+\+/g,""));
 							cardContent = cardContent.replace(/\+\+\+.+?\+\+\+/g,"")
 						}
-					
+
 						// Split the card into an array of tag-based (--) lines
 						var cardLines = parseCardContent(cardContent);
 					}
@@ -419,8 +419,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						var thisTag = getLineTag(cardLines[x],x,false)
 						var isRedef = false;
 						if (thisTag.charAt(0)==":") {
-							if (lineLabels[thisTag.substring(1)]) { 
-								log(`ScriptCards Warning: redefined label ${thisTag.substring(1)}`); 
+							if (lineLabels[thisTag.substring(1)]) {
+								log(`ScriptCards Warning: redefined label ${thisTag.substring(1)}`);
 								isRedef = true;
 							}
 							if (labelChecking[thisTag.substring(1).toLowerCase()] && !isRedef) {
@@ -435,7 +435,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								var dataElement = thisData.shift();
 								scriptData.push(dataElement);
 								saveScriptData.push(dataElement);
-							}								
+							}
 						}
 					}
 
@@ -444,23 +444,23 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						gmonlyLines = [];
 						var entryLabel = resumeArgs[1].split(";")[0];
 						stringVariables["reentryval"] = resumeArgs[1].split(";")[1];
-						if (lineLabels[entryLabel]) { 
-							lineCounter = lineLabels[entryLabel] 
-						} else { 
+						if (lineLabels[entryLabel]) {
+							lineCounter = lineLabels[entryLabel]
+						} else {
 							log(`ScriptCards Error: Label ${resumeArgs[1]} is not defined for reentrant script`)
 						};
 					}
 
 					// Process card lines starting with the first line (cardLines[0] will contain an empty string due to the split)
 					while (lineCounter < cardLines.length) {
-						
+
 						var thisTag = getLineTag(cardLines[lineCounter],x,true);
 						thisTag = replaceVariableContent(thisTag, cardParameters, false);
 						var thisContent = getLineContent(cardLines[lineCounter]);
 
 						thisContent = replaceVariableContent(thisContent, cardParameters, (thisTag.charAt(0) == "+" || thisTag.charAt(0) == "*" || thisTag.charAt(0) == "&"));
 						//thisContent = replaceCharacterAttributes(thisContent, cardParameters);
-						
+
 						if (cardParameters.debug == 1) {
 							log(`Line Counter: ${lineCounter}, Tag:${thisTag}, Content:${thisContent}`);
 						}
@@ -574,7 +574,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (charLookup !== undefined && charLookup.get("represents") !== "") {
 										cardParameters.targetcharacter = getObj("character", charLookup.get("represents"));
 									}
-									break;								
+									break;
 
 								case "activepage":
 									if (thisContent.trim().toLowerCase() === "playerpage") {
@@ -586,7 +586,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 									}
 									break;
-								
+
 								case "titlecardgradient":
 									if (thisContent.trim() !== "0") {
 										cardParameters["titlecardbackgroundimage"] = gradientStyle;
@@ -612,26 +612,26 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (thisContent.trim() !== "") {
 										cardParameters.evenrowbackground = "#00000000";
 									}
-								break;			
-								
+								break;
+
 								case "oddrowbackgroundimage":
 									if (thisContent.trim() !== "") {
 										cardParameters.oddrowbackground = "#00000000";
 									}
-								break;									
+								break;
 
 								/*
 								case "damagebuttonbackgroundimage":
 									if (thisContent.trim() !== "") {
 										cardParameters.damagebuttonbackgroundcolor = "#00000000";
 									}
-								break;		
+								break;
 
 								case "healbuttonbackgroundimage":
 									if (thisContent.trim() !== "") {
 										cardParameters.healbuttonbackgroundcolor = "#00000000";
 									}
-								break;	
+								break;
 								*/
 							}
 						}
@@ -686,20 +686,20 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											switch (jumpDest.charAt(0)) {
 												case ">" : resultType = "gosub"; break;
 												case "%" : resultType = "next"; break;
-												case "=" : 
+												case "=" :
 												case "&" :
-													jumpDest.charAt(0) == "=" ? resultType = "rollset" : resultType = "stringset"; 
-													jumpDest = jumpDest.substring(1); 
+													jumpDest.charAt(0) == "=" ? resultType = "rollset" : resultType = "stringset";
+													jumpDest = jumpDest.substring(1);
 													varName = jumpDest.split(";")[0];
 													varValue  = jumpDest.split(";")[1];
 													break;
 											}
-		
+
 											switch (resultType) {
 												case "goto":
-													if (lineLabels[jumpDest]) { 
+													if (lineLabels[jumpDest]) {
 														lineCounter = lineLabels[jumpDest] ;
-													} else { 
+													} else {
 														log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter}`);
 													}
 													break;
@@ -757,7 +757,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													break;
 											}
 											x = cases.length + 1;
-										}											
+										}
 									}
 								}
 							}
@@ -786,7 +786,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												if (char !== undefined) {
 													var abilname = params[3]
 													var ability = findObjs({type: "ability", _characterid: charid, name: abilname })
-													if (ability !== undefined && ability !== []) { 
+													if (ability !== undefined && ability !== []) {
 														ability = ability[0]
 														if (ability !== undefined) {
 															sendChat(char.get("name"), ability.get('action').replace(/@\{([^|]*?|[^|]*?\|max|[^|]*?\|current)\}/g, '@{'+(char.get('name'))+'|$1}'));
@@ -828,7 +828,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													break;
 													case "getraw":
 														stringVariables[variableName] = d.getTime();
-													break;														
+													break;
 												}
 											break;
 
@@ -853,9 +853,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													case "array":
 														for (var key in arrayVariables) {
 															log(`ArrayVariable: ${key}, Value: ${arrayVariables[key]}`)
-														}														
+														}
 													break;
-												}												
+												}
 											break;
 
 											case "findability":
@@ -910,7 +910,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													 log(`Set variable to ${turnorder[x].pr}`)
 												}
 											}
-										}											
+										}
 									}
 									if (params.length == 4) {
 										if (params[1].toLowerCase() == "addtoken") {
@@ -957,7 +957,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												custom: params[2],
 											});
 											Campaign().set("turnorder", JSON.stringify(turnorder));
-										}										
+										}
 									}
 								break;
 
@@ -1032,8 +1032,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 									}
 									rollVariables[variableName] = parseDiceRoll(result.toString(), cardParameters);
-								break;		
-									
+								break;
+
 								case "getselected":
 									if (msg.selected) {
 										for (var x=0; x < msg.selected.length; x++) {
@@ -1069,7 +1069,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													}
 												}
 											break;
-			
+
 											case "read":
 												if (params[2].toLowerCase() == "rollvariable") {
 													if (state[APINAME].storedRollVariable) { rollVariables[variableName] = Object.assign(state[APINAME].storedRollVariable); }
@@ -1078,8 +1078,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													if (state[APINAME].storedStringVariable) { stringVariables[variableName] = Object.assign(state[APINAME].storedStringVariable); }
 												}
 												if (params[2].toLowerCase() == "array") {
-													if (state[APINAME].storedArrayVariable) { 
-														arrayVariables[variableName] = Object.assign(state[APINAME].storedArrayVariable); 
+													if (state[APINAME].storedArrayVariable) {
+														arrayVariables[variableName] = Object.assign(state[APINAME].storedArrayVariable);
 														arrayIndexes[variableName] = Object.assign(state[APINAME].storedArrayIndex);
 													}
 												}
@@ -1096,7 +1096,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										var val1 = parseDiceRoll(params[2], cardParameters);
 										var val2 = parseDiceRoll(params[3], cardParameters);
 										if (val1.Total <= val2.Total) {
-											rollVariables[variableName] = val1; 
+											rollVariables[variableName] = val1;
 										} else {
 											rollVariables[variableName] = val2;
 										}
@@ -1106,7 +1106,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										var val1 = parseDiceRoll(params[2], cardParameters);
 										var val2 = parseDiceRoll(params[3], cardParameters);
 										if (val1.Total >= val2.Total) {
-											rollVariables[variableName] = val1; 
+											rollVariables[variableName] = val1;
 										} else {
 											rollVariables[variableName] = val2;
 										}
@@ -1151,7 +1151,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											stringVariables[variableName] = angle;
 										}
 									}
-								break; 
+								break;
 
 								case "attribute":
 									if (params.length > 4) {
@@ -1247,9 +1247,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													stringVariables[variableName] = params[3];
 												} else {
 													stringVariables[variableName] = params[3].substring(params[3].length-Number(params[2]));
-												}												
+												}
 												break;
-										
+
 										}
 									}
 
@@ -1262,13 +1262,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 											case "replace":
 												stringVariables[variableName] = params[4].replace(params[2], params[3]);
-												break;		
+												break;
 
 											case "replaceall":
 												var str = params[4];
 												while(str.includes(params[2])) { str = str.replace(params[2], params[3])}
 												stringVariables[variableName] = str;
-												break;		
+												break;
 										}
 									}
 									break;
@@ -1333,7 +1333,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 															var charobj = getObj("character", t[x].get("represents"));
 															if (charobj && !isBlank(charobj.get("controlledby"))) { arrayVariables[params[2]].push(t[x].id); }
 														}
-														
+
 														if (filter == "graphic") {
 															if (isBlank(t[x].get("represents"))) { arrayVariables[params[2]].push(t[x].id); }
 														}
@@ -1360,7 +1360,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											for (var x=0; x<players.length; x++) {
 												arrayVariables[params[2]].push(players[x].get("id"));
 											}
-										}										
+										}
 										if (params[1].toLowerCase() == "selectedtokens") {
 											if (msg.selected) {
 												arrayVariables[params[2]] = [];
@@ -1393,7 +1393,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											}
 										}
 										if (params[1].toLowerCase() == "remove") {
-											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) { 
+											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) {
 												for (var x=3; x<params.length; x++) {
 													for (var i=arrayVariables[params[2]].length-1; i>=0; i--) {
 														if (arrayVariables[params[2]][i] == params[x]) {
@@ -1406,11 +1406,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												delete arrayVariables[params[2]];
 												delete arrayIndexes[params[2]];
 											} else {
-												arrayIndexes[params[2]] = 0;												
+												arrayIndexes[params[2]] = 0;
 											}
 										}
 										if (params[1].toLowerCase() == "removeat") {
-											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) { 
+											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) {
 												if (Number(params[3] < arrayVariables[params[2]].length))
 												{
 													arrayVariables[params[2]].splice(Number(params[3]),1);
@@ -1420,11 +1420,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												delete arrayVariables[params[2]];
 												delete arrayIndexes[params[2]];
 											} else {
-												arrayIndexes[params[2]] = 0;												
+												arrayIndexes[params[2]] = 0;
 											}
 										}
 										if (params[1].toLowerCase() == "setindex") {
-											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) { 
+											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) {
 												if (arrayVariables[params[2]].length > Number(params[3])) {
 													arrayIndexes[params[2]] = Number(params[3]);
 												}
@@ -1432,7 +1432,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 
 										if (params[1].toLowerCase() == "getindex") {
-											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) { 
+											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) {
 												stringVariables[variableName] = arrayIndexes[params[2]];
 											} else {
 												stringVariables[variableName] = "ArrayError";
@@ -1440,13 +1440,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 
 										if (params[1].toLowerCase() == "indexof") {
-											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) { 
+											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) {
 												var wasFound = arrayVariables[params[2]].indexOf(params[3]);
 												if (wasFound >= 0) {
 														stringVariables[variableName] = wasFound.toString();
 												} else {
 														stringVariables[variableName] = "ArrayError";
-												}										
+												}
 											} else {
 												stringVariables[variableName] = "ArrayError";
 											}
@@ -1461,20 +1461,20 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 
 										if (params[1].toLowerCase() == "getcurrent") {
-											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) { 
+											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) {
 												stringVariables[variableName] = arrayVariables[params[2]][arrayIndexes[params[2]]];
 											} else {
 												stringVariables[variableName] = "ArrayError";
-											}												
+											}
 										}
 
 										if (params[1].toLowerCase() == "getfirst") {
-											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) { 
+											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) {
 												arrayIndexes[params[2]] = 0;
 												stringVariables[variableName] = arrayVariables[params[2]][arrayIndexes[params[2]]];
 											} else {
 												stringVariables[variableName] = "ArrayError";
-											}												
+											}
 										}
 
 										if (params[1].toLowerCase() == "getlast") {
@@ -1483,7 +1483,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												stringVariables[variableName] = arrayVariables[params[2]][arrayIndexes[params[2]]];
 											} else {
 												stringVariables[variableName] = "ArrayError";
-											}												
+											}
 										}
 
 										if (params[1].toLowerCase() == "getnext") {
@@ -1496,7 +1496,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												}
 											} else {
 												stringVariables[variableName] = "ArrayError";
-											}												
+											}
 										}
 
 										if (params[1].toLowerCase() == "getprevious") {
@@ -1509,12 +1509,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												}
 											} else {
 												stringVariables[variableName] = "ArrayError";
-											}												
+											}
 										}
 									}
 									if (params.length == 5) {
 										if (params[1].toLowerCase() == "replace") {
-											if (arrayVariables[params[2]]) { 
+											if (arrayVariables[params[2]]) {
 												for (var i=0; i < arrayVariables[params[2]].length; i++) {
 													if (arrayVariables[params[2]][i] == params[3]) {
 														arrayVariables[params[2]][i] = params[4];
@@ -1522,7 +1522,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												}
 
 											}
-											arrayIndexes[params[2]] = 0;												
+											arrayIndexes[params[2]] = 0;
 										}
 										if (params[1].toLowerCase() == "setatindex") {
 											if (arrayVariables[params[2]]) {
@@ -1546,7 +1546,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								case "object":
 
 									break;
-								
+
 							}
 						}
 
@@ -1579,13 +1579,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							var param = thisContent.split(";");
 							switch (command.toLowerCase()) {
 								// Find parameters are character id, value name (ie, Greatsword), section name (attack), and field to search (atkname)
-								case "find": 
-									repeatingSection = getSectionAttrs(param[0], param[1], param[2], param[3]); 
+								case "find":
+									repeatingSection = getSectionAttrs(param[0], param[1], param[2], param[3]);
 									fillCharAttrs(findObjs({_type: 'attribute', _characterid: param[0]}));
 									repeatingCharID = param[0];
 									repeatingSectionName = param[2];
 									if (repeatingSection && repeatingSection[0]) {
-										repeatingSectionIDs = [];									
+										repeatingSectionIDs = [];
 										repeatingSectionIDs.push(repeatingSection[0].split("|")[1]);
 										repeatingIndex = 0;
 									} else {
@@ -1595,33 +1595,33 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									}
 									if (repeatingSection) { parseRepeatingSection() };
 									break;
-								case "first": 
-									repeatingSectionIDs = getRepeatingSectionIDs(param[0], param[1]); 
+								case "first":
+									repeatingSectionIDs = getRepeatingSectionIDs(param[0], param[1]);
 									if (repeatingSectionIDs) {
 										repeatingIndex = 0;
 										repeatingCharID = param[0];
 										repeatingSectionName = param[1];
 										fillCharAttrs(findObjs({_type: 'attribute', _characterid: repeatingCharID}));
-										repeatingSection = getSectionAttrsByID(repeatingCharID, repeatingSectionName, repeatingSectionIDs[repeatingIndex]); 
+										repeatingSection = getSectionAttrsByID(repeatingCharID, repeatingSectionName, repeatingSectionIDs[repeatingIndex]);
 										parseRepeatingSection();
-										repeatingIndex=0; 
+										repeatingIndex=0;
 									} else {
 										repeatingSection = undefined;
 									}
 									break;
-								case "next": 
+								case "next":
 									if (repeatingSectionIDs) {
 										if (repeatingSectionIDs[repeatingIndex + 1]) {
 											repeatingIndex++;
 											repeatingSection = getSectionAttrsByID(repeatingCharID, repeatingSectionName, repeatingSectionIDs[repeatingIndex]);
 											parseRepeatingSection();
 										} else {
-											repeatingSection = undefined; 
-											repeatingSectionIDs = undefined; 
+											repeatingSection = undefined;
+											repeatingSectionIDs = undefined;
 										}
-									} else { 
-										repeatingSection = undefined; 
-										repeatingSectionIDs = undefined; 
+									} else {
+										repeatingSection = undefined;
+										repeatingSectionIDs = undefined;
 									}
 									break;
 								case "dump":
@@ -1638,7 +1638,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							var rollIDName = thisTag.substring(1).trim();
 							rollVariables[rollIDName] = parseDiceRoll(replaceVariableContent(thisContent, cardParameters), cardParameters, true);
 						}
-		
+
 						// Handle direct output lines
 						if (thisTag.charAt(0) === "+") {
 							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent,cardParameters, true));
@@ -1654,7 +1654,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								//while(rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.oddrowbackground}; `); }
 							}
 							rowData = processInlineFormatting(rowData, cardParameters);
-					
+
 							outputLines.push(rowData);
 						}
 
@@ -1699,10 +1699,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									case ">" : resultType = "gosub"; break;
 									case "%" : resultType = "next"; break;
 									case "[" : resultType = "block"; break;
-									case "=" : 
+									case "=" :
 									case "&" :
-										jumpDest.charAt(0) == "=" ? resultType = "rollset" : resultType = "stringset"; 
-										jumpDest = jumpDest.substring(1); 
+										jumpDest.charAt(0) == "=" ? resultType = "rollset" : resultType = "stringset";
+										jumpDest = jumpDest.substring(1);
 										varName = jumpDest.split(";")[0];
 										varValue  = jumpDest.split(";")[1];
 										break;
@@ -1710,9 +1710,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 								switch (resultType) {
 									case "goto":
-										if (lineLabels[jumpDest]) { 
+										if (lineLabels[jumpDest]) {
 											lineCounter = lineLabels[jumpDest] ;
-										} else { 
+										} else {
 											log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter}`);
 										}
 										break;
@@ -1794,7 +1794,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						// Handle X lines (exit)
 						if (thisTag.charAt(0).toLowerCase() == "x") {
 							if (cardParameters["reentrant"] !== 0) {
-								stashAScript(cardParameters["reentrant"], cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, varList, "X", arrayVariables, arrayIndexes, gmonlyLines);								
+								stashAScript(cardParameters["reentrant"], cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, varList, "X", arrayVariables, arrayIndexes, gmonlyLines);
 							}
 							lineCounter = cardLines.length+1;
 						}
@@ -1810,7 +1810,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						//	var arrayName = thisTag.substring(1);
 						//	var addItems = false;
 						//	if (thisContent.charAt(0) == "+") { addItems = true; thisContent = thisContent.substring(1); }
-						//	if (!addItems || !arrays[arrayName]) { arrays[arrayName] = []; } 
+						//	if (!addItems || !arrays[arrayName]) { arrays[arrayName] = []; }
 						//	var items = thisContent.split("|");
 						//	for (var x=0; x<items.length; x++) { arrays[arrayName].push(items[x]); }
 						//}
@@ -1831,7 +1831,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												var effectInfo = findObjs({
 													_type : "custfx",
 													name : params[1].trim()
-												});											
+												});
 												if (!_.isEmpty(effectInfo)) {
 													spawnFxWithDefinition(x, y, effectInfo[0].get('definition'), pid);
 												} else {
@@ -1843,7 +1843,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											}
 										}
 										break;
-									case "betweentokens": 
+									case "betweentokens":
 										var params = thisContent.split(" ");
 										if (params.length >= 3) {
 											var s = getObj("graphic", params[0]);
@@ -1851,7 +1851,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											if (s && p) {
 												var x1 = s.get("left");
 												var y1 = s.get("top");
-												var x2 = p.get("left"); 
+												var x2 = p.get("left");
 												var y2 = p.get("top");
 												var pid = s.get("_pageid");
 												var effectInfo = findObjs({
@@ -1875,12 +1875,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											}
 										}
 										break;
-									
+
 									case "point":
 										var params = thisContent.split(" ");
 										var x = params[0];
 										var y = params[1];
-										var pid = Campaign().get("playerpageid");	
+										var pid = Campaign().get("playerpageid");
 										if (cardParameters.activepage !== "") {
 											pid = cardParameters.activepage;
 										}
@@ -1931,7 +1931,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										state[APINAME].storedStrings[thisContent.trim()] = JSON.parse(JSON.stringify(stringVariables));
 									}
 									break;
-									
+
 								case "settings":
 									if (thisContent.trim().length > 0) {
 										state[APINAME].storedSettings[thisContent.trim()] = {};
@@ -1965,7 +1965,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 									}
 									break;
-	
+
 								case "settings":
 									if (thisContent.trim().length > 0) {
 										if (thisContent.trim().length > 0 && state[APINAME].storedSettings[thisContent.trim()] !== undefined) {
@@ -2043,7 +2043,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 						lineCounter++;
 					}
-					
+
 					var subtitle = "";
 					if ((cardParameters.leftsub !== "") && (cardParameters.rightsub !== "")) {
 						subtitle = cardParameters.leftsub + cardParameters.subtitleseperator + cardParameters.rightsub;
@@ -2066,7 +2066,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					} else {
 						cardOutput = htmlTemplateHiddenTitle.replace("=X=TITLE=X=", cardParameters.title).replace("=X=SUBTITLE=X=", subtitle);
 					}
-					
+
 					for (var x=0; x<outputLines.length; x++) {
 						//cardOutput += processInlineFormatting(outputLines[x], cardParameters);
 						cardOutput += outputLines[x];
@@ -2076,7 +2076,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						//gmoutput += processInlineFormatting(gmonlyLines[x], cardParameters);
 						gmoutput += gmonlyLines[x];
 					}
-					
+
 
 					cardOutput += htmlTemplateEnd;
 					cardOutput = replaceStyleInformation(cardOutput, cardParameters);
@@ -2158,7 +2158,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			}
 		});
 	});
-	
+
 	// Breaks the passed text into a series of lines and returns them as an object
 	function parseCardContent(content) {
 		// Strip off the !pc and the opening {{ and closing }}
@@ -2166,7 +2166,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		work = work.substr(0,work.lastIndexOf("}}") -1);
 		work=work.trim();
 		work = " " + work;
-		
+
 		// Split into an array on the -- divider
 		if (work !== undefined) {
 			return work.split("--");
@@ -2183,13 +2183,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var contentIn = content;
 		var charId = "";
 		while(content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
-			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];			
+			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];
 			var replacement = "";
 			matchCount++;
 			switch (thisMatch.charAt(1)) {
 				case "&":
 					// Replace a string variable
-					var vName = thisMatch.substring(2,thisMatch.length-1);					
+					var vName = thisMatch.substring(2,thisMatch.length-1);
 					if (stringVariables[vName] !== undefined) {
 						replacement = stringVariables[vName];
 					} else {
@@ -2268,13 +2268,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						var character = getObj("character", activeCharacter);
 						if (character === undefined) {
 							token = getObj("graphic", activeCharacter);
-							if (token !== undefined) { 
+							if (token !== undefined) {
 								character = getObj("character", token.get("represents"));
 							}
 						}
 						if (character !== undefined) {
 							charId = character.get("_id");
-							var opType = "current";							
+							var opType = "current";
 							if (attrName.endsWith("^")) {
 								attrName = attrName.substring(0,attrName.length-1);
 								opType = "max";
@@ -2313,7 +2313,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							opType = "_max";
 						}
 						var searchText = attrName+opType+"|";
-						if (thisMatch.charAt(3) == ":") {							
+						if (thisMatch.charAt(3) == ":") {
 							if (repeatingSectionIDs) {
 								for (var i in repeatingSection) {
 									if (repeatingSection[i].startsWith(searchText)) {
@@ -2326,7 +2326,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							replacement = repeatingSectionName + "_" + repeatingSectionIDs[repeatingIndex] + "_" + attrName + opType;
 						}
 						if (!repeatingSection) { replacement = "NoRepeatingAttributeLoaded" };
-						if (repeatingSection && repeatingSection.length <= 1) { replacement = "NoRepeatingAttributeLoaded" };	
+						if (repeatingSection && repeatingSection.length <= 1) { replacement = "NoRepeatingAttributeLoaded" };
 					}
 
 					break;
@@ -2371,7 +2371,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			return "/Error - No Line Tag Specified";
 		}
 	}
-	
+
 	function getLineContent(line) {
 		if (line.indexOf("|") >= 0) {
 			return line.substring(line.indexOf("|")+1).trim();
@@ -2405,7 +2405,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var hadAce = false;
 		rollResult.Style = defaultParameters.stylenormal;
 		var currentOperator = "+";
-		
+
 		for (var x=0; x<rollComponents.length; x++) {
 			var text = rollComponents[x];
 			var componentHandled = false;
@@ -2434,7 +2434,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				}
 				rollResult.Text += ") ";
 			}
-			
+
 			// A die specifier in XdXkhX or XdXklX format
 			if (text.match(/^\d+d\d+k[lh]\d+$/)) {
 				componentHandled = true;
@@ -2443,22 +2443,22 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				var keepType = text.split("k")[1].substring(0,1);
 				var keepCount = Number(text.split("k")[1].substring(1));
 				var rollSet = [];
-				
+
 				if (keepCount > sides) { keepCount = sides; }
-				
+
 				rollResult.Text += `${count}d${sides}k${keepType}${keepCount} (`;
-				
+
 				for (c=0; c<count; c++) {
 					var thisRoll = randomInteger(sides);
 					rollSet.push(thisRoll);
 				}
-				
+
 				if (keepType === "l") {
 					rollSet.sort(function(a, b){return a-b});
 				} else {
 					rollSet.sort(function(a, b){return b-a});
 				}
-				
+
 				for (c=0; c<count; c++) {
 					if (c < keepCount) {
 						switch (currentOperator) {
@@ -2492,14 +2492,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				var rollSet = [];
 				if (rerollThreshold == sides && rerolltype == "<") { rerollThreshold = sides - 1 }
 				if (rerollThreshold == 1 && rerolltype == ">" ) { rerollThreshold = 2 }
-				
+
 				if (keepCount > sides) { keepCount = sides; }
-				
+
 				rollResult.Text += `${count}d${sides}k${keepType}${keepCount}r${rerolltexttype}${rerollThreshold} (`;
-				
+
 				for (c=0; c<count; c++) {
 					var thisRoll = randomInteger(sides);
-					if (rerolltype == "<") { 
+					if (rerolltype == "<") {
 						while (thisRoll <= rerollThreshold) {
 							thisRoll = randomInteger(sides);
 						}
@@ -2511,7 +2511,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					rollSet.push(thisRoll);
 				}
-				
+
 				if (keepType === "l") {
 					rollSet.sort(function(a, b){return a-b});
 				} else {
@@ -2551,7 +2551,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				if (rerollThreshold == sides && rerolltype == "<") { rerollThreshold = sides - 1 }
 				if (rerollThreshold == 1 && rerolltype == ">" ) { rerollThreshold = 2 }
 				rollResult.Text += `${count}d${sides}ro${rerolltexttype}${rerollThreshold} (`;
-				
+
 				for (c=0; c<count; c++) {
 					var thisRoll = 0;
 					var thisRollText = "";
@@ -2570,7 +2570,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					rollSet.push(thisRoll);
 					rollTextSet.push(thisRollText);
 				}
-						
+
 				for (c=0; c<count; c++) {
 					switch (currentOperator) {
 						case "+": rollResult.Total += rollSet[c]; rollResult.Base += rollSet[c]; break;
@@ -2586,7 +2586,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (c<count-1) { rollResult.Text += "," }
 				}
 				rollResult.Text += ") ";
-			}		
+			}
 
 			// A die specifier in XdXr<X or XdXr>X format (reroll above/below number)
 			if (text.match(/^\d+d\d+r[\<\>]\d+$/)) {
@@ -2601,7 +2601,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				if (rerollThreshold == sides && rerolltype == "<") { rerollThreshold = sides - 1 }
 				if (rerollThreshold == 1 && rerolltype == ">" ) { rerollThreshold = 2 }
 				rollResult.Text += `${count}d${sides}ro${rerolltexttype}${rerollThreshold} (`;
-				
+
 				var thisRoll=-1;
 
 				for (c=0; c<count; c++) {
@@ -2616,7 +2616,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					rollSet.push(thisRoll);
 				}
-						
+
 				for (c=0; c<count; c++) {
 					switch (currentOperator) {
 						case "+": rollResult.Total += rollSet[c]; rollResult.Base += rollSet[c]; break;
@@ -2632,8 +2632,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (c<count-1) { rollResult.Text += "," }
 				}
 				rollResult.Text += ") ";
-			}		
-			
+			}
+
 			// A die specifier in XdX! or XdX!>X format (exploding dice)
 			if (text.match(/^\d+d\d+!([\<\>]\d+)?$/)) {
 				componentHandled = true;
@@ -2651,7 +2651,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					rerollnumber = Number(text.split("d")[1].split("!")[1].substring(1));
 				}
 				if (comptype == "G" && rerollnumber == 1) { rerollnumber += 1 }
-				if (comptype == "L" && rerollnumber == sides) { rerollnumber -= 1 } 
+				if (comptype == "L" && rerollnumber == sides) { rerollnumber -= 1 }
 				var rollSet = [];
 				var rollTextSet = [];
 				rollResult.Text += `${count}d${sides}!${comptype}${rerollnumber} (`;
@@ -2683,7 +2683,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					rollSet.push(thisRoll);
 					rollTextSet.push(thisRollText);
 				}
-						
+
 				for (c=0; c<count; c++) {
 					switch (currentOperator) {
 						case "+": rollResult.Total += rollSet[c]; rollResult.Base += rollSet[c]; break;
@@ -2699,7 +2699,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (c<count-1) { rollResult.Text += " ," }
 				}
 				rollResult.Text += ") ";
-			}					
+			}
 
 			// A die specifier in XdX>X or XdX<X format
 			if (text.match(/^(\d+)d(\d+)([\>\<])(\d+)$/)) {
@@ -2728,14 +2728,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (c<count-1) { rollResult.Text += "," }
 				}
 				rollResult.Text += ") ";
-			}			
+			}
 
 			// A mathmatical function
 			if (text.match(/^\{.*\}$/)) {
 				var operation = text.substring(1, text.length-1);
 				switch (operation.toLowerCase()) {
-					case "abs": 
-						rollResult.Total = Math.abs(rollResult.Total); 
+					case "abs":
+						rollResult.Total = Math.abs(rollResult.Total);
 						rollResult.Text += "{ABS}";
 						break;
 
@@ -2752,15 +2752,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					case "round":
 						rollResult.Total = Math.round(rollResult.Total);
 						rollResult.Text += "{ROUND}";
-						break;	
-						
+						break;
+
 					case "negate":
 						rollResult.Total = rollResult.Total * -1;
 						rollResult.Text += "{NEGATE}";
-						break;								
+						break;
 				}
 			}
-			
+
 			// An operator
 			if (text.match(/^[\+\-\*\/\\\%]$/)) {// && !text.match(/^-\d*$/)) {
 				componentHandled = true;
@@ -2785,14 +2785,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						case "/": rollResult.Total /= Number(text); break;
 						case "%": rollResult.Total %= Number(text); break;
 						case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / Number(text)) : Math.ceil(rollResult.Total / Number(text)); break;
-					}			    
+					}
 				}
 			}
-			
+
 			// A card variable
-			if (text.match(/^\[\$.+\]$/)) {				
+			if (text.match(/^\[\$.+\]$/)) {
 				componentHandled = true;
-				var thisKey = text.substring(2,text.length-1);				
+				var thisKey = text.substring(2,text.length-1);
 				//var thisValue = Number(inlineReplaceRollVariables(thisKey, cardParameters), cardParameters);
 				var thisValue = Number(replaceVariableContent(thisKey, cardParameters, false));
 
@@ -2801,7 +2801,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				} else {
 					rollResult.Text += `${thisValue} `;
 				}
-				
+
 				switch (currentOperator) {
 					case "+": rollResult.Total += thisValue; break;
 					case "-": rollResult.Total -= thisValue; break;
@@ -2809,7 +2809,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					case "/": rollResult.Total /= thisValue; break;
 					case "%": rollResult.Total %= thisValue; break;
 					case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisValue) : Math.ceil(rollResult.Total / thisValue); break;
-				}			    				
+				}
 			}
 
 			// Flavor Text
@@ -2844,7 +2844,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				rollResult.Text += `${text} `;
 			}
 		}
-		
+
 		if (hadOne && hadAce) { rollResult.Style = cardParameters.styleboth; }
 		if (hadOne && !hadAce) { rollResult.Style = cardParameters.stylefumble; }
 		if (!hadOne && hadAce) { rollResult.Style = cardParameters.stylecrit; }
@@ -2870,16 +2870,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		input = input.replace(/\s+/g, " ");
 		return input;
 	}
-	
+
 	function buildRowOutput(tag, content) {
 		return htmlRowTemplate.replace("=X=ROWDATA=X=", `<strong>${tag}</strong> ${content}`);
 	}
 
 	function buildTooltip(text,tip,style){
 		var tooltipStyle = ` font-family: ${defaultParameters.titlefont}; font-size: ${defaultParameters.titlefontsize}; font-weight: normal; font-style: normal; ${style} `;
-		return `<span style='${tooltipStyle}' class='showtip tipsy' title='${tip.toString().replace(/\~/g,"")}'>${text}</span>`; 
+		return `<span style='${tooltipStyle}' class='showtip tipsy' title='${tip.toString().replace(/\~/g,"")}'>${text}</span>`;
 	};
-	
+
 	function processFullConditional(conditional, cardParameters) {
 		// Remove multiple spaces
 		var trimmed = conditional.replace(/\s+/g, ' ').trim();
@@ -3002,7 +3002,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var title = sheetbuttons[button].split("::")[0].replace("[sheetbutton]","").replace("[Sheetbutton]", "").replace("[SHEETBUTTON]","");
 			var actor = "";
 			var tryID = sheetbuttons[button].split("::")[1];
-			if (getObj("character", tryID)) { 
+			if (getObj("character", tryID)) {
 				actor = tryID;
 			} else {
 				if (getObj("graphic", tryID)) {
@@ -3061,7 +3061,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			theseButtons +=  " " + makeButton("+" + amount.toString(), action, buttonParameters);
 			outputLine = outputLine.replace(applybuttons[button], theseButtons);
 		}
-		
+
 		var applybuttons = outputLine.match(/\[apply\](.*?)\[\/apply\]/gi);
 		for (var button in applybuttons) {
 			var buttonParameters = {};
@@ -3081,7 +3081,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			outputLine = outputLine.replace(applybuttons[button], theseButtons);
 		}
 		*/
-		
+
 		//DiceFont Stuff
 		var dicefontchars = diceLetters;
 		if (cardParameters.usehollowdice !== "0") { dicefontchars = dicefontchars.toLowerCase(); }
@@ -3126,7 +3126,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	function makeButton(title, url, parameters) {
         return `<a style="${replaceStyleInformation(buttonStyle, parameters)}" href="${url}">${title}</a>`;
 	}
-	
+
 	function removeInlineRolls(text, cardParameters) {
 		if (cardParameters.allowinlinerollsinoutput !== "0") { return text; }
 		return text.replace(/\[\[/g, " ").replace(/\]\]/g, " ");
@@ -3178,7 +3178,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				.map(a => a[1]))];
 		const repRowIds = [...new Set(repOrder.filter(x => unorderedIds.includes(x)).concat(unorderedIds))];
 		return [repRowIds, repeatingAttrs];
-	}	
+	}
 
 	function getRepeatingSectionIDs(charid, prefix) {
 		const repeatingAttrs = {};
@@ -3204,7 +3204,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				.map(a => a[1]))];
 		const repRowIds = [...new Set(repOrder.filter(x => unorderedIds.includes(x)).concat(unorderedIds))];
 		return repRowIds;
-	}	
+	}
 
 	function getSectionAttrs(charid, entryname, sectionname, searchtext) {
 		var return_set = [];
@@ -3213,7 +3213,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var action_prefix = char_attrs
 			.filter(function(z) {
 				return (z.get("name").startsWith(sectionname) && z.get("name").endsWith(searchtext))
-			})	
+			})
 			.filter(entry => entry.get("current") == entryname)[0]
 			.get("name").slice(0, -searchtext.length);
 		} catch {
@@ -3259,7 +3259,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			} catch { }
 		})
 		return (return_set);
-	}	
+	}
 
 	function rollOnRollableTable(tableName, resultType) {
 		var theTable = findObjs({type: "rollabletable", name:tableName })[0];
@@ -3288,13 +3288,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			}
 		}
 	}
-	
+
 	function loadLibraryHandounts() {
 		ScriptCardsLibrary = {};
 		var handouts = filterObjs(function(obj){
-			if (obj.get("type") == "handout" && obj.get("name").startsWith("ScriptCards Library")) { return true;} else { return false; } 
+			if (obj.get("type") == "handout" && obj.get("name").startsWith("ScriptCards Library")) { return true;} else { return false; }
 		});
-		if (handouts) { 
+		if (handouts) {
 			handouts.forEach(function (handout) {
 				var libraryName = handout.get("name").replace("ScriptCards Library", "").trim();
 				var libraryContent = "";
@@ -3333,7 +3333,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		scriptCardsStashedScripts[stashIndex].arrayVariables = JSON.stringify(arrayVariables);
 		scriptCardsStashedScripts[stashIndex].arrayIndexes = JSON.stringify(arrayIndexes);
 		scriptCardsStashedScripts[stashIndex].returnStack = JSON.stringify(returnStack);
-		scriptCardsStashedScripts[stashIndex].parameterStack = JSON.stringify(parameterStack);	
+		scriptCardsStashedScripts[stashIndex].parameterStack = JSON.stringify(parameterStack);
 		scriptCardsStashedScripts[stashIndex].outputLines = JSON.stringify(outputLines);
 		scriptCardsStashedScripts[stashIndex].gmonlyLines = JSON.stringify(gmonlyLines);
 		scriptCardsStashedScripts[stashIndex].repeatingSectionIDs = JSON.stringify(repeatingSectionIDs);
@@ -3341,7 +3341,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		scriptCardsStashedScripts[stashIndex].repeatingCharAttrs = JSON.stringify(repeatingCharAttrs);
 		scriptCardsStashedScripts[stashIndex].repeatingCharID = repeatingCharID;
 		scriptCardsStashedScripts[stashIndex].repeatingSectionName = repeatingSectionName;
-		scriptCardsStashedScripts[stashIndex].repeatingIndex = repeatingIndex;		
+		scriptCardsStashedScripts[stashIndex].repeatingIndex = repeatingIndex;
 		scriptCardsStashedScripts[stashIndex].programCounter = programCounter;
 		scriptCardsStashedScripts[stashIndex].resultStringName = resultStringName;
 		scriptCardsStashedScripts[stashIndex].stashType = stashType;
@@ -3369,7 +3369,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			];
 		}
 	}
-	
+
 	function uuidv4() {
 		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
 		var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
@@ -3395,20 +3395,20 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			log("ScriptCards Error: Parameter content is not valid. Do you have unescaped quotes or qoutes not surrounding escaped values?")
 			return null;
 		}
-	
+
 		var a = []; // Initialize array to receive values.
 		text.replace(re_value, // "Walk" the string using replace with callback.
 			function(m0, m1, m2, m3) {
-	
+
 				// Remove backslash from \' in single quoted values.
 				if (m1 !== undefined) a.push(m1.replace(/\\'/g, "'"));
-	
+
 				// Remove backslash from \" in double quoted values.
 				else if (m2 !== undefined) a.push(m2.replace(/\\"/g, '"'));
 				else if (m3 !== undefined) a.push(m3);
 				return ''; // Return empty string.
 			});
-	
+
 		// Handle special case of empty last value.
 		if (/,\s*$/.test(text)) a.push('');
 		return a;
@@ -3451,6 +3451,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return (!str || /^\s*$/.test(str));
 	}
 
+	return {}
 })();
 
 // Meta marker for the end of ScriptCards
