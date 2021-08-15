@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.6.3
+  --/|Version     : 1.6.4
   --/|Requires SC : 1.3.9+
   --/|Author      : Kurt Jaegers
 
