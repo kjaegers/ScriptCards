@@ -2769,6 +2769,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				rollResult.Text += currentOperator == "*" ? "x " : currentOperator + " ";
 			}
 
+			// A bare number within parens (just strip them)
+			if (text.match(/^\([+-]?(\d*\.)?\d*\)$/)) {
+				text = text.substring(1, text.length - 1)
+			}
 			// Just a number
 			if (text.match(/^[+-]?(\d*\.)?\d*$/)) {
 				componentHandled = true;
