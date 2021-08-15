@@ -3447,6 +3447,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return (!str || /^\s*$/.test(str));
 	}
 
+	return {}
 })();
 
 // Meta marker for the end of ScriptCards
