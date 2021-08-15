@@ -30,7 +30,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 */
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.0a";
+	const APIVERSION = "1.4.0b";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2859,8 +2859,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function cleanUpRollSpacing(input) {
 		input = input.replace(/\+/g, " + ");
-		//input = input.replace(/\-/g, " - ");
-		input = input.replace(/(?<!\[)\-\b(?![\w\s]*[\]])/g," - ");
+		input = input.replace(/\-(?![^[]*?])/g, " - ");
 		input = input.replace(/\*/g, " * ");
 		input = input.replace(/\//g, " / ");
 		input = input.replace(/\\/g, " \\ ")
