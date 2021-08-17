@@ -20,17 +20,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	Please see the ScriptCards Wiki Entry on Roll20 at https://wiki.roll20.net/Script:ScriptCards for details.
 */
 
-/* Inline Update Notes - So I can keep track of what to put in the release notes :)
-
-    - Added optional filter parameter to "pagetokens" array function: all, char, npc, pc, graphic will return only those types.
-
-    - Added "sort" array function
-
-    - Added "lightColor" to the list of supported token properties
-
-*/
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.0b";
+	const APIVERSION = "1.4.0c";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2384,6 +2375,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	function parseDiceRoll(rollText, cardParameters) {
 		if (cardParameters.disablerollprocessing !== "0") { return content; }
 		rollText = replaceVariableContent(rollText, cardParameters, false);
+		rollText = removeBRs(rollText);
+		rollText = removeTags(rollText);
 		rollText = cleanUpRollSpacing(rollText);
 		rollText = rollText.trim();
 		var rollComponents = rollText.split(" ");
@@ -3449,6 +3442,21 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	function isBlank(str) {
 		return (!str || /^\s*$/.test(str));
 	}
+
+	function removeTags(str) {
+		if ((str===null) || (str===''))
+			return false;
+		else
+			return str.toString().replace(/(<([^>]+)>)/ig, '');
+	}
+
+	function removeBRs(str) {
+		if ((str===null) || (str===''))
+			return false;
+		else
+			return str.toString().replace(/<br \/\>/ig, '').replace(/<br\/\>/ig, '');
+	}
+
 
 	return {}
 })();
