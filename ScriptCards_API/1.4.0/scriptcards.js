@@ -1285,9 +1285,20 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												stringVariables[variableName] = "";
 											}
 										}
+										if (params[1].toLowerCase() == "pageobjects") {
+                                            var pages = findObjs({_type:"page"});
+                                            arrayVariables[params[2]] = [];
+                                            for (var x=0; x<pages.length; x++) {
+                                                arrayVariables[params[2]].push(pages[x].get("id"));
+                                            }
+                                        }
 										if (params[1].toLowerCase() == "pagetokens") {
 											arrayVariables[params[2]] = [];
+											var pageid = params[3];
 											var templateToken = getObj("graphic", params[3]);
+											if (templateToken) { 
+												pageid = templateToken.get("_pageid");
+											}
 											var filter="all";
 											if (params[4]) {
 												if (params[4].toLowerCase() == "char" || params[3].toLowerCase() == "chars") {
@@ -1303,8 +1314,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													filter = "graphic";
 												}
 											}
-											if (templateToken) {
-												var t = findObjs({_type:"graphic", _pageid: templateToken.get("_pageid") });
+											if (getObj("page", pageid)) {
+												var t = findObjs({_type:"graphic", _pageid: pageid });
 												if (t) {
 													for (var x=0; x<t.length; x++) {
 														if (filter == "all") {
