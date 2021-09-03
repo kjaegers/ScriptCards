@@ -21,7 +21,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.0c";
+	const APIVERSION = "1.4.0d";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -73,8 +73,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		targettoken: "",
 		activepage: "",
 		emotebackground: "#f5f5ba",
-		emotefont: "font-family: Georgia, serif; font-weight: bold; ",
+		emotefont: "Georgia",
+		emotefontweight: "bold",
+		emotefontsize: "14px",
 		emotestate: "visible",
+		emotefontcolor: "",
 		rollfontface: "helvetica",
 		leftsub: "",
 		rightsub: "",
@@ -2108,7 +2111,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						if (cardParameters.emotetext !== "" || emoteLeft !== "" || emoteRight !== "") {
 							if (emoteLeft == "") { emoteLeft = "&nbsp;"}
 							if (emoteRight == "") { emoteRight = "&nbsp;"}
-							emote = "<div style='display: table; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal; background: " + cardParameters.emotebackground + "'>" + emoteLeft + "<div style='display: table-cell; width: 100%; " + cardParameters.emotefont + " vertical-align: middle; text-align: center; padding: 0px 2px;'>" + cardParameters.emotetext + "</div><div style='display: table-cell; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal;'>" + emoteRight + "</div></div>"
+							emote = "<div style='display: table; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal; background: " + cardParameters.emotebackground + "'>" + emoteLeft + "<div style='display: table-cell; width: 100%; " + " font-size: " + cardParameters.emotefontsize + "; font-weight: " + cardParameters.emotefontweight + "; color: " + cardParameters.emotefontcolor + "; font-family: " + cardParameters.emotefont + "; " + "vertical-align: middle; text-align: center; padding: 0px 2px;'>" + cardParameters.emotetext + "</div><div style='display: table-cell; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal;'>" + emoteRight + "</div></div>"
 							//emote = inlineReplaceRollVariables(emote, cardParameters);
 							emote = replaceVariableContent(emote, cardParameters, false);
 						}
@@ -3127,7 +3130,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function makeButton(title, url, parameters) {
-        return `<a style="${replaceStyleInformation(buttonStyle, parameters)}" href="${url}">${title}</a>`;
+        return `<a style="${replaceStyleInformation(buttonStyle, parameters)}" href="${removeTags(removeBRs(url))}">${removeTags(removeBRs(title))}</a>`;
 	}
 
 	function removeInlineRolls(text, cardParameters) {
