@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.6.4
+  --/|Version     : 1.6.5
   --/|Requires SC : 1.3.9+
   --/|Author      : Kurt Jaegers
 
@@ -85,7 +85,7 @@
       --+[*R:name]|[*R:description]
       --^skip_ma_button|
       --:skip_multiattack|
-      --&NPCActions|+ [rbutton][*R:name]::EXEC_NPC_ACTION;[*R:name]|&#64;{target|character_id}[/rbutton] 
+      --&NPCActions|+ [rbutton][*R:name]::EXEC_NPC_ACTION;[*R:name]|&#64;{target|token_id}[/rbutton] 
       --:skip_ma_button|
       --Rnext|
       --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Action_Display
@@ -97,7 +97,7 @@
   --&NPCBonusActions|[br]
   --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
     --:NPC_Bonus_Action_Display|
-      --&NPCBonusActions|+ [rbutton][*R:name]::EXEC_NPC_BONUS_ACTION;[*R:name]|&#64;{target|character_id}[/rbutton] 
+      --&NPCBonusActions|+ [rbutton][*R:name]::EXEC_NPC_BONUS_ACTION;[*R:name]|&#64;{target|token_id}[/rbutton] 
       --Rnext|
       --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Bonus_Action_Display
     --+Bonus Actions|[&NPCBonusActions]
@@ -108,7 +108,7 @@
   --&NPCReactions|[br]
   --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
     --:NPC_Reaction_Display|
-      --&NPCReactions|+ [rbutton][*R:name]::EXEC_NPC_REACTION;[*R:name]|&#64;{target|character_id}[/rbutton] 
+      --&NPCReactions|+ [rbutton][*R:name]::EXEC_NPC_REACTION;[*R:name]|&#64;{target|token_id}[/rbutton] 
       --Rnext|
       --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Reaction_Display
     --+Reactions|[&NPCReactions]
@@ -119,7 +119,7 @@
   --&NPCLegendaryActions|[br]
   --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
     --:NPC_Legendary_Action_Display|
-      --&NPCLegendaryActions|+ [rbutton][*R:name]::EXEC_NPC_LEGENDARY_ACTION;[*R:name]|&#64;{target|character_id}[/rbutton] 
+      --&NPCLegendaryActions|+ [rbutton][*R:name]::EXEC_NPC_LEGENDARY_ACTION;[*R:name]|&#64;{target|token_id}[/rbutton] 
       --Rnext|
       --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Legendary_Action_Display
       --+Legendary Actions|[&NPCLegendaryActions]
@@ -137,7 +137,7 @@
       --&PCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|NONE[/rbutton]
       --^NPC_CANTRIP_END_GENERATE|
       --:NPC_CANTRIP_GENERATE_WITH_TARGET|
-      --&NPCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|&#64;{target|character_id}[/rbutton] 
+      --&NPCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|&#64;{target|token_id}[/rbutton] 
       --^NPC_CANTRIP_END_GENERATE|
       --:MULE_NPC_CANTRIP|
       --&PCCantrips|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
@@ -169,7 +169,7 @@
       --:NPC_SKIP_SLOT_LIST|
       --&slotString||9
       --:NPC_DONE_SLOT_LIST|
-      --&NPCSpells|+ [rbutton][*R:spellname]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|&#64;{target|character_id}[&slotString][/rbutton] 
+      --&NPCSpells|+ [rbutton][*R:spellname]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|&#64;{target|token_id}[&slotString][/rbutton] 
       --^NPC_DONE_SPELL_BUTTON|
       --:MULE_NPC_SPELL|
       --&NPCSpells|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
@@ -186,10 +186,12 @@
 
   --:EXEC_NPC_ACTION|action_name
   --#whisper|
+  --#emotestate|visible
   --~action_name|string;before;|;[&reentryval]
   --~action_target|string;after;|;[&reentryval]
   --#targettoken|[&action_target]
   --#leftsub|[*S:character_name]
+  --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]
   --Rfind|[*S:character_id];[&action_name];repeating_npcaction;name
   --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
     --#leftsub|[*R:name]
@@ -240,7 +242,9 @@
   --~action_name|string;before;|;[&reentryval]
   --~action_target|string;after;|;[&reentryval]
   --#whisper|
+  --#emotestate|visible
   --#targettoken|[&action_target]
+  --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]
   --Rfind|[*S:character_id];[&action_name];repeating_npcbonusaction;name
   --#leftsub|[*R:name]
   --?"[*R:attack_flag]" -eq on|NPCA_MAKE_AN_ATTACK
@@ -251,7 +255,9 @@
   --~action_name|string;before;|;[&reentryval]
   --~action_target|string;after;|;[&reentryval]
   --#whisper|
+  --#emotestate|visible
   --#targettoken|[&action_target]
+  --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]
   --Rfind|[*S:character_id];[&action_name];repeating_npcreaction;name
   --#leftsub|[*R:name]
   --?"[*R:attack_flag]" -eq on|NPCA_MAKE_AN_ATTACK
@@ -260,9 +266,11 @@
 
   --:EXEC_NPC_LEGENDARY_ACTION|action_name
   --#whisper|
+  --#emotestate|visible
   --~action_name|string;before;|;[&reentryval]
   --~action_target|string;after;|;[&reentryval]
   --#targettoken|[&action_target]
+  --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]  
   --Rfind|[*S:character_id];[&action_name];repeating_npcaction-l;name
   --#leftsub|[*R:name]
   --?"[*R:attack_flag]" -eq on|NPCA_MAKE_AN_ATTACK
@@ -283,7 +291,7 @@
   --?"[*R:atkname]" -ne "NoRepeatingAttributeLoaded"|[
     --:PCAttacks_Display|
       --?"X[*R:spelldesc_link]" -ne "X"|SKIP_SPELL_ATTACK
-      --&PCAttacks|+ [rbutton][*R:atkname]::EXEC_PC_ATTACK;[*R:atkname]|&#64;{target|character_id}[/rbutton] 
+      --&PCAttacks|+ [rbutton][*R:atkname]::EXEC_PC_ATTACK;[*R:atkname]|&#64;{target|token_id}[/rbutton] 
       --:SKIP_SPELL_ATTACK|
       --Rnext|
       --?"[*R:atkname]" -ne "NoRepeatingAttributeLoaded"|PCAttacks_Display
@@ -300,7 +308,7 @@
       --&PCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|NONE[/rbutton]
       --^CANTRIP_END_GENERATE|
       --:CANTRIP_GENERATE_WITH_TARGET|
-      --&PCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|&#64;{target|character_id}[/rbutton] 
+      --&PCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|&#64;{target|token_id}[/rbutton] 
       --^CANTRIP_END_GENERATE|
       --:MULE_CANTRIP|
       --&PCCantrips|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
@@ -348,7 +356,7 @@
       --:SKIP_SLOT_LIST|
       --&slotString||9
       --:DONE_SLOT_LIST|
-      --&PCSpells|+ [rbutton][*R:spellname][&spellsuffix]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|&#64;{target|character_id}[&slotString][/rbutton]
+      --&PCSpells|+ [rbutton][*R:spellname][&spellsuffix]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|&#64;{target|token_id}[&slotString][/rbutton]
       --=PCSpellCount|[$PCSpellCount.Raw] + 1 
       --^DONE_SPELL_BUTTON|
       --:MULE_SPELL|
@@ -366,11 +374,12 @@
 
   --:EXEC_PC_ATTACK|
   --+|[hr #58180d]
+  --#whisper|
+  --#emotestate|visible
+  --~attack_name|string;before;|;[&reentryval]
   --~attack_target|string;after;|;[&reentryval]
   --#targettoken|[&attack_target]
-  --#whisper|
-  --~attack_name|string;before;|;[&reentryval]
-  --~attack_target|string;after;|;[$reentryval]
+  --#emotetext|[*S:t-name] uses [&attack_name] against [*T:t-name]
   -->Find_Active_Global_Attack_Modifiers|[*S:character_id];PC_GAM
   --Rfind|[*S:character_id];[&attack_name];repeating_attack;atkname
   --#title|[*R:atkname]
@@ -441,7 +450,10 @@
   --~cantrip_name|string;before;|;[&reentryval]
   --~cantrip_target|string;after;|;[&reentryval]
   --#whisper|
+  --#emotestate|visible
+  --+target|[&cantrip_target]
   --#targettoken|[&cantrip_target]
+  --#emotetext|[*S:t-name] uses [&cantrip_name] against [*T:t-name]
   -->Find_Active_Global_Attack_Modifiers|[*S:character_id];PC_GAM
   --Rfind|[*S:character_id];[&cantrip_name];repeating_spell-cantrip;spellname
   --?"[*R:spelloutput]" -eq ATTACK|PC_ATTACK_CANTRIP|PC_CARD_CANTRIP
@@ -497,7 +509,9 @@
   --#title|[&spellInfo2]
   --#leftsub|[*S:character_name]
   --#whisper|
+  --#emotestate|visible
   --#targettoken|[&action_target]
+  --#emotetext|[*S:t-name] uses [&spellInfo2] against [*T:t-name]
   -->Find_Active_Global_Attack_Modifiers|[*S:character_id];PC_GAM
   --Rfind|[*S:character_id];[&spellInfo2];repeating_spell-[&spellInfo1];spellname
   --#targettoken|[&spellInfo3]
