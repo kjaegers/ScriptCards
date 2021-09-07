@@ -1,7 +1,7 @@
 !script {{
   --/|Script Name : 5E Dragonborn Breath
   --/|Version     : 1.0
-  --/|Requires SC : 1.3.1+, alterbars or token-mod to apply damage
+  --/|Requires SC : 1.4.0+, alterbars or token-mod to apply damage
   --/|Author      : Kurt Jaegers
 
   --/|Description : Handles a dragonborn's draconic breath weapon. IF your character was created with the 
