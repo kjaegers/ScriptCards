@@ -1,12 +1,24 @@
 !script {{
   --/|Script Name : 5E Burning Hands
-  --/|Version     : 1.0
+  --/|Version     : 1.2
   --/|Requires SC : 1.3.1+, token-mod
   --/|Author      : Kurt Jaegers
 
   --/|Description : Burning Hands script. Can be changed to other 15' cone-based spells by updating these parameters.
   --/|              larger cones can be defined by updating the array definitions for the diretions to include additional 
   --/|              offsets. Larger cube shaped spells could be acocmodated in a similar way.
+
+  --/|Set this to either "token-mod", "alterbars", or anything else to not apply damage
+  --&damageApplyScript|token-mod
+
+  --/|Set this to the bar number you use to track hit points
+  --&hitPointsBar|3
+
+  --/|Set this to a list of layers to a semicolon separated check for tokens on. By default, objects and gmlayer are checked.
+  --/|possible values are objects, gmlayer, and map, so to check all three, use "objects;gmlayer;map"
+  --&checkLayers|objects;gmlayer
+
+    --/|===================== There are no customization options below this line =====================
 
   --&spellName|Burning Hands
   
@@ -34,6 +46,11 @@
   --=HalfDamage|[$Damage.Total] \ 2
   --=DoubleDamage|[$Damage.Total] * 2
   --=QuarterDamage|[$Damage.Total] \ 4
+
+  --/|Determine damage subroutine. Start by assuming we aren't going to apply damage
+  --&damageRoutine|DontApplyDamage
+  --?[&damageApplyScript] -eq "token-mod"|&damageRoutine;ApplyDamageTokenmod
+  --?[&damageApplyScript] -eq "alterbars"|&damageRoutine;ApplyDamageAlterbars
 
   --/|Since we want to be able to hover over a roll and see the dice details, output the rolled damage at the
   --/|top of the card. If all critters make their save, the half damage roll won't contain the details.
@@ -71,7 +88,7 @@
   --?"[*[&tokenid]:npc_immunities]" -inc "[&damageType]"|Immune
   --?"[*[&tokenid]:npc_resistances]" -inc "[&damageType]"|Resistant
   --?"[*[&tokenid]:npc_vulnerabilities]" -inc "[&damageType]"|Vulnerable
-  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>ApplyDamageAlterbars;[&tokenid];3;-[$Damage.Total]|>ApplyDamageAlterbars;[&tokenid];3;-[$HalfDamage.Total]
+  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>[&damageRoutine];[&tokenid];3;-[$Damage.Total]|>[&damageRoutine];[&tokenid];3;-[$HalfDamage.Total]
   --?[$SaveRoll.Total] -ge @{selected|spell_save_dc}|madeSave
 
   --/|Here are various damage applications if the creature is immune, resistant, or vulnerable. In some cases, we will reuse output lines,
@@ -88,13 +105,13 @@
   --^afterSave|
 
   --:Resistant|
-  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>ApplyDamageAlterbars;[&tokenid];3;-[$HalfDamage.Total]|>ApplyDamageAlterbars;[&tokenid];3;-[$QuarterDamage.Total]
+  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>[&damageRoutine];[&tokenid];3;-[$HalfDamage.Total]|>[&damageRoutine];[&tokenid];3;-[$QuarterDamage.Total]
   --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|madeSave
   --+[*[&tokenid]:t-name]:|Save [$SaveRoll] [r][$QuarterDamage] [&damageType][/r]
   --^afterSave|
 
   --:Vulnerable|
-  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>ApplyDamageAlterbars;[&tokenid];3;-[$DoubleDamage.Total]|>ApplyDamageAlterbars;[&tokenid];3;-[$Damage.Total]
+  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>[&damageRoutine];[&tokenid];3;-[$DoubleDamage.Total]|>[&damageRoutine];[&tokenid];3;-[$Damage.Total]
   --?[$SaveRoll.Total] -ge @{selected|spell_save_dc}|FailedSave
   --+[*[&tokenid]:t-name]:|Save [$SaveRoll] [r][$DoubleDamage] [&damageType][/r]
   --^afterSave|
@@ -111,12 +128,26 @@
   
   --X|
   
+  --/|===================== Subroutines =====================
+  
+  --/|There are three "ApplyDamage" subroutines - one for alterbars, one for token-mod, and one to not apply damage
+  
+  --/|Token-Mod doesn't have a "set to a relative number", so we get the current bar value, subtract thedamage amount
+  --/|make sure it doesn't fall below 0, and set the amount back into the bar.
   --:ApplyDamageTokenmod|Parameters are tokenid;bar#;amount
-  --@token-mod|_ignore-selected _ids [%1%] _set bar[%2%]_value|[%3%]
+  --=newValue|[*[%1%]:t-bar[%2%]_value] - [%3%]
+  --?[$newValue] -lt 0|=newValue|0
+  --@token-mod|_ignore-selected _ids [%1%] _set bar[%2%]_value|[$newValue.Raw]
   --<| 
   
+  --/|AlterBars supports relative values for the amount parameter, so we just pass it the value with a "-" in front of it.
   --:ApplyDamageAlterbars|Parameters are tokenid;bar#;amount
   --@alter|_target|[%1%] _bar|[%2%] _amount|-[%3%] _show|none
+  --<|
+
+  --/|Just a dummy routine that doesn't do anything, but it is easier to do it this way than adding logic to see if we are
+  --/|skipping applying damage in the main routine.
+  --:DontApplyDamage|
   --<|
   
   --:checkForTokenHits|parameter is vfx descriptor
@@ -164,6 +195,7 @@
   --~tokenid|array;getfirst;alltokens
   --:tokenSetupLoop|
     --?[&tokenid] -eq ArrayError|endSetupLoop
+    --?[&checkLayers] -ninc [*[&tokenid]:t-layer]|skipThisToken
     --=tLeft|[*[&tokenid]:t-left] - 1 \ 70
   --=tTop|[*[&tokenid]:t-top] - 1 \ 70
   --=tWidth|[*[&tokenid]:t-width]
@@ -194,6 +226,7 @@
       --&tok[$tLeft]-[$NY]|+[&tokenid]!
       --&tok[$NX]-[$NY]|+[&tokenid]!
   --]|
+  --:skipThisToken|
   --~tokenid|array;getnext;alltokens
   --^tokenSetupLoop|
   --:endSetupLoop|

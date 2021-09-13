@@ -1,13 +1,16 @@
 !script {{
   --/|Script Name : 5E Dragonborn Breath
-  --/|Version     : 1.0
-  --/|Requires SC : 1.4.0+, alterbars or token-mod to apply damage
+  --/|Version     : 1.2
+  --/|Requires SC : 1.4.0+, alterbars or token-mod to apply damage (Optional)
   --/|Author      : Kurt Jaegers
 
   --/|Description : Handles a dragonborn's draconic breath weapon. IF your character was created with the 
   --/|              charactermancer, you don't need to do anything. If it wasn't, you'll need to add a 
   --/|              "draconicheritage" attribute to the character with the dragon type (black, red, green, etc.)
   --/|              listed in it. If all else fails, a black dragon's acid breath will be assumed.
+  --/|
+  --/|              You can optionally have damage applied to impacted tokens. The script defaults to using
+  --/|              TokenMod to update Bar 3. These can be changed by altering the settings below.
   
   --/|Set this to either "token-mod", "alterbars", or anything else to not apply damage
   --&damageApplyScript|token-mod
@@ -15,43 +18,57 @@
   --/|Set this to the bar number you use to track hit points
   --&hitPointsBar|3
 
+  --/|Set this to a list of layers to a semicolon separated check for tokens on. By default, objects and gmlayer are checked.
+  --/|possible values are objects, gmlayer, and map, so to check all three, use "objects;gmlayer;map"
+  --&checkLayers|objects;gmlayer
+
   --/|===================== There are no customization options below this line =====================
+  
+  --/|Set some default values in case we can't determine a dragon heritage
   --&damageType|Acid
   --&damageShape|Line
   --&breathSaveType|Dexterity
-  --&spellName|Dragonborn [&damageType] Breath
-  --#sourcetoken|@{selected|token_id}
-  --&damageSides|6
-  --&damageDice|2
-  --=breathSaveDCTemp|8 + [*S:constitution_mod] + [*S:pb]
-  --&breathSaveDC|[$breathSaveDCTemp.Raw]
   --&breathEffect|burn-acid
 
-  --/|Account for the number of damage dice based on the character's level (2d6 at 1st, 3d6 at 4th, 4d6 at 11th, and 5d6 at 16th)
+  --#sourcetoken|@{selected|token_id}
+
+  --/|Damage for dragonborn breath starts at 2d6 at first level
+  --&damageDice|2
+  --&damageSides|6
+
+  --/|Save DC is 8 + Constitution Modifier + Proficiency Bonus
+  --=breathSaveDCTemp|8 + [*S:constitution_mod] + [*S:pb]
+  --&breathSaveDC|[$breathSaveDCTemp.Raw]
+
+  --/|Damage scales based on the character's level (2d6 at 1st, 3d6 at 4th, 4d6 at 11th, and 5d6 at 16th)
   --?[*S:level] -gt 6|&damageDice;3
   --?[*S:level] -gt 11|&damageDice;4
   --?[*S:level] -gt 16|&damageDice;5
   
-  --/|Attempts to determine the dragon type. If the characeter wasn't built with the charactermancer, this will fail. In that case,
-  --/|edit the two items at the top of the script (damageType and damageShape)
+  --/|Attempts to determine the dragon type, via either the repeating traits list or an attribute on the character (see above)
   --&work|Unknown
+
+  --/|Start by trying to find a Trait entry named "Breath Weapon" and break down the description
   --RFind|[*S:character_id];Breath Weapon;repeating_traits;name
   --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
   --~work|string;before; draconic ;[*R:description]
   --~work|string;after;. Your ;[&work]
   --~work|string;tolowercase;[&work]
   --]|
-
   --?[&work] -ne "Unknown"|doneDetermineType
-  --?"X[*S:draconicheritage]X" -ne "XX"|doReadAttribute
-  --&work|black
-  -->doneDetermineType|
 
-  --:doReadAttribute|
+  --/|If a trait wasn't found, look for a "draconicheritage" attribute on the character
+  --?"X[*S:draconicheritage]X" -eq "XX"|assumeBlackDragon
   --~work|string;tolowercase;[*S:draconicheritage]
+  --^doneDetermineType|
+
+  --/|Both lookup methods failed. Fall back to the default (black) dragon
+  --:assumeBlackDragon|
+  --&work|black
 
   --:doneDetermineType|
 
+  --/|Use the determined dragon type to set the parameters used for the dragon breath, including damage type, damage shape, saving throw, and visual effect
   --C[&work]|black:&damageType;Acid|blue:&damageType;Lightning|brass:&damageType;Fire|bronze:&damageType;Lightning|copper:&damageType;Acid|gold:&damageType;Fire|green:&damageType;Poison|red:&damageType;Fire|silver:&damageType;Cold|white:&damageType;Cold
   --C[&work]|black:&breathEffect;burn-acid|blue:&breathEffect;burn-holy|brass:&breathEffect;burn-Fire|bronze:&breathEffect;burn-holy|copper:&breathEffect;burn-acid|gold:&breathEffect;burn-fire|green:&breathEffect;burn-slime|red:&breathEffect;burn-fire|silver:&breathEffect;burn-frost|white:&breathEffect;burn-frost
   --&damageShape|Line
@@ -61,12 +78,17 @@
 
   --~saveAttributeName|string;tolowercase;[&breathSaveType]_save_bonus
 
-  --/|Prompt for a direction for the breath, and define arrays that indicate the relative spaces that will be hit.
+  --/|Set the card headers based on the determine dragon type and save information
+  --#leftsub|Save DC [&breathSaveDC]
+  --#rightsub|Save Type [&breathSaveType]
+  --#title|[&damageType] Dragonborn Breath
+
+  --/|Prompt for a direction for the breath. The damageDirection variable will end up containting something like "LU" for Line Up, "CDR" for Cone Down Right, etc.
   --&direction|?{Direction|&#x2B06; (UP),U|&#x2197; (UP-RIGHT),UR|&#x27A1; (RIGHT),R|&#x2198; (DOWN-RIGHT),DR|&#x2B07; (DOWN),D|&#x2199; (DOWN-LEFT),DL|&#x2B05; (LEFT),L|&#x2196 (UP-LEFT);,UL|}
   --?[&damageShape] -eq "Cone"|&damageDirection;C[&direction]
   --?[&damageShape] -eq "Line"|&damageDirection;L[&direction]
-  --/+Direction|[&direction]
-  --/+Damage Dir|[&damageDirection]
+  
+  --/|Define arrays listing the impacted squares relative to the caster at 0,0
   --~|array;define;CU;0,-1;0,-2;-1,-2;-1,-3;0,-3;1,-3
   --~|array;define;CD;0,1;0,2;1,2;-1,3;0,3;1,3
   --~|array;define;CR;1,0;2,0;2,-1;3,-1;3,0;3,1
@@ -84,13 +106,9 @@
   --~|array;define;LDL;-1,1;-2,2;-3,3;-4,4;-5,5;-6,6
   --~|array;define;LDR;1,1;2,2;3,3;4,4;5,5;6,6
 
-  --/|Get all of the tokens on the page so we can cache their positions
+  --/|Get all of the character tokens on the page so we can cache their positions
   --~|array;pagetokens;alltokens;@{selected|token_id};char
   -->createTokenLookup|
-
-  --#leftsub|Save DC [&breathSaveDC]
-  --#rightsub|Save Type [&breathSaveType]
-  --#title|[&damageType] Dragonborn Breath
 
   --/|Calculate damage
   --=Damage|[&damageSides]d[&damageDice]
@@ -98,20 +116,21 @@
   --=DoubleDamage|[$Damage.Total] * 2
   --=QuarterDamage|[$Damage.Total] \ 4
 
-  --/|Determine damage subroutine
+  --/|Determine damage subroutine. Start by assuming we aren't going to apply damage
   --&damageRoutine|DontApplyDamage
   --?[&damageApplyScript] -eq "token-mod"|&damageRoutine;ApplyDamageTokenmod
   --?[&damageApplyScript] -eq "alterbars"|&damageRoutine;ApplyDamageAlterbars
 
-    --/|Since we want to be able to hover over a roll and see the dice details, output the rolled damage at the
+  --/|Since we want to be able to hover over a roll and see the dice details, output the rolled damage at the
   --/|top of the card. If all critters make their save, the half damage roll won't contain the details.
   --+|[c][b]Damage Roll: [/b][$Damage][/c]
   --+|&nbsp;
   
-  --/|Create an array to hold the tokens that are intersected by the effect area.
+  --/|Create an array to hold the tokens that within the impacted squares.
   --~|array;define;tokensHit;
   
-  --/|Call the "checkForTokenHits" subroutine. The passed parameter will be the per-space VFX. Leave blank for none.
+  --/|Call the "checkForTokenHits" subroutine, passing the visual effect that will be spawned in each square.
+  --/|The tokensHit array will be updated with a list of all of the tokens that should be impacted by the breath.
   -->checkForTokenHits|[&breathEffect]
 
   --/|The first item in the array will be a blank dummy item, so remove it.
@@ -160,32 +179,48 @@
   --+[*[&tokenid]:t-name]:|Save [$SaveRoll] [r][$HalfDamage] [&damageType][/r]
   --:afterSave|
 
+  --/|Continue on to the next hit token
   --~tokenid|array;getnext;tokensHit
   --?[&tokenid] -ne ArrayError|loopDisplay
 
   --:endOutput|
   
   --X|
+
+  --/|===================== Subroutines =====================
   
+  --/|There are three "ApplyDamage" subroutines - one for alterbars, one for token-mod, and one to not apply damage
+  
+  --/|Token-Mod doesn't have a "set to a relative number", so we get the current bar value, subtract thedamage amount
+  --/|make sure it doesn't fall below 0, and set the amount back into the bar.
   --:ApplyDamageTokenmod|Parameters are tokenid;bar#;amount
   --=newValue|[*[%1%]:t-bar[%2%]_value] - [%3%]
   --?[$newValue] -lt 0|=newValue|0
   --@token-mod|_ignore-selected _ids [%1%] _set bar[%2%]_value|[$newValue.Raw]
   --<| 
   
+  --/|AlterBars supports relative values for the amount parameter, so we just pass it the value with a "-" in front of it.
   --:ApplyDamageAlterbars|Parameters are tokenid;bar#;amount
   --@alter|_target|[%1%] _bar|[%2%] _amount|-[%3%] _show|none
   --<|
 
+  --/|Just a dummy routine that doesn't do anything, but it is easier to do it this way than adding logic to see if we are
+  --/|skipping applying damage in the main routine.
   --:DontApplyDamage|
   --<|
   
+  --/|Runs through the array named after the damageDirection variable (LU, CDR, etc.) and identify tokens that were
+  --/|in those squares. Also accepts a parameter for a visual effect to play in each square (token hit or not)
   --:checkForTokenHits|parameter is vfx descriptor
+
+  --/|Get the square location of the "caster"
   --=baseX|[*S:t-left] - 1 \ 70
   --=baseY|[*S:t-top] - 1 \ 70
   --~offset|array;getfirst;[&damageDirection]
   --:checkTokenLoop|
   --?"[&offset]" -eq "ArrayError"|endCheckForTokenHits
+
+  --/|Use the relative offsets to determine an absolute X/Y position
   --~split|string;split;,;[&offset]
   --=thisX|[$baseX.Raw] + [&split1]
   --=thisY|[$baseY.Raw] + [&split2]
@@ -195,16 +230,22 @@
     --=VY|[$thisY] * 70 + 35   
     --vpoint|[$VX] [$VY] [%1%]
   --]|
+  --/|Call "checkTokens" to see if there are any tokens in this square that need to be added
+  --/|to the hit tokens array.
   -->checkTokens|[$thisX.Raw];[$thisY.Raw]
   --~offset|array;getnext;[&damageDirection]
   --^checkTokenLoop|
   --:endCheckForTokenHits|
   --<|
     
-  --/|Reads the variables created by createTokenLookup to find any tokens that occupy a given space.
+  --/|Reads the variables created by createTokenLookup to find any tokens that occupy a given space. The variables are
+  --/|named "tokX-Y" where X and Y are the absolute coordinates of the space, and contain an ! separated list of the
+  --/|tokens in that square
   --:checkTokens|x;y
   --?"X[&tok[%1%]-[%2%]]X" -ne "XX"|[
   --~split|string;split;!;[&tok[%1%]-[%2%]]
+
+  --/|Loop through each token listed in the variable
   --%P|1;[$splitCount.Total];1
   --=var|split[&P]
   --?"X[&[$var.RollText]]X" -eq "XX"|%
@@ -225,6 +266,7 @@
   --~tokenid|array;getfirst;alltokens
   --:tokenSetupLoop|
     --?[&tokenid] -eq ArrayError|endSetupLoop
+    --?[&checkLayers] -ninc [*[&tokenid]:t-layer]|skipThisToken
     --=tLeft|[*[&tokenid]:t-left] - 1 \ 70
     --=tTop|[*[&tokenid]:t-top] - 1 \ 70
     --=tWidth|[*[&tokenid]:t-width]
@@ -255,9 +297,9 @@
       --&tok[$tLeft.Raw]-[$NY]|+[&tokenid]!
       --&tok[$NX]-[$NY]|+[&tokenid]!
   --]|
+  --:skipThisToken|
   --~tokenid|array;getnext;alltokens
   --^tokenSetupLoop|
   --:endSetupLoop|
   --<|
-
 }}
