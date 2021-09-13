@@ -78,7 +78,7 @@
   --?"[*[&tokenid]:npc_immunities]" -inc "[&damageType]"|Immune
   --?"[*[&tokenid]:npc_resistances]" -inc "[&damageType]"|Resistant
   --?"[*[&tokenid]:npc_vulnerabilities]" -inc "[&damageType]"|Vulnerable
-  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>[&damageRoutine];[&tokenid];3;-[$Damage.Total]|>[&damageRoutine];[&tokenid];3;-[$HalfDamage.Total]
+  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>[&damageRoutine];[&tokenid];[&hitPointsBar];-[$Damage.Total]|>[&damageRoutine];[&tokenid];[&hitPointsBar];-[$HalfDamage.Total]
   --?[$SaveRoll.Total] -ge @{selected|spell_save_dc}|madeSave
 
   --/|Here are various damage applications if the creature is immune, resistant, or vulnerable. In some cases, we will reuse output lines,
@@ -95,13 +95,13 @@
   --^afterSave|
 
   --:Resistant|
-  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>[&damageRoutine];[&tokenid];3;-[$HalfDamage.Total]|>[&damageRoutine];[&tokenid];3;-[$QuarterDamage.Total]
+  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>[&damageRoutine];[&tokenid];[&hitPointsBar];-[$HalfDamage.Total]|>[&damageRoutine];[&tokenid];[&hitPointsBar];-[$QuarterDamage.Total]
   --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|madeSave
   --+[*[&tokenid]:t-name]:|Save [$SaveRoll] [r][$QuarterDamage] [&damageType][/r]
   --^afterSave|
 
   --:Vulnerable|
-  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>[&damageRoutine];[&tokenid];3;-[$DoubleDamage.Total]|>[&damageRoutine];[&tokenid];3;-[$Damage.Total]
+  --?[$SaveRoll.Total] -lt @{selected|spell_save_dc}|>[&damageRoutine];[&tokenid];[&hitPointsBar];-[$DoubleDamage.Total]|>[&damageRoutine];[&tokenid];[&hitPointsBar];-[$Damage.Total]
   --?[$SaveRoll.Total] -ge @{selected|spell_save_dc}|FailedSave
   --+[*[&tokenid]:t-name]:|Save [$SaveRoll] [r][$DoubleDamage] [&damageType][/r]
   --^afterSave|
