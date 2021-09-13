@@ -1,2 +1,99 @@
-V 1.4.1 - Added math/sqrt function and {SQRT} roll modifier.
-        - Fixed abs, min, and max functions that got broken at some point.
+ScriptCards Roll20 API Script Changelog
+
+v 1.4.1  - Added math/sqrt function and {SQRT} roll modifier.
+         - Fixed abs, min, and max functions that got broken at some point.
+         - Fixed a potential sandbox crash if incorrect/missing parameters were passed to replaceVariableContent
+
+v 1.4.0  - (Notes cover 1.4.0 thru 1.4.0e)
+         - Switched to all GitHub based distribution - The GISTs will no longer be updated
+         - Added code to clean HTML out of button captions to prevent non-working buttons
+         - New settings (--#) to support emote fonts: emotefont, emotefontweight, emotefontsize, emotefontcolor
+         - Added option parameter to the array/pagetokens function to specify "all", "char", "pc", "npc", or "graphic" to filter returned tokens
+         - Added array/sort function
+         - Added support for t-lightcolor token attribute
+         - Fixed a bug in the Roll Parser that would prevent it from rolling on rollable tables with "-" in the name.
+         - Cleaned up spacing in the script (JSherwood)
+         - The roll parser now treats numbers in parenthesis as just plain numbers (JSherwood)
+
+v 1.3.9  - (Notes cover 1.3.9 thru 1.3.9c)
+         - Added math/angle function to get the angle between two tokens
+         - Rewrote the repeating function code to vastly speed up dealing with repeating sections
+         - Added array/setatindex function
+         - Rewrote [hr] replacement code to be more visually friendly.
+         - Added system/findability function to return the object id reference of an ability on a character
+         - Added setting (--#) for titlefontshadow
+
+v 1.3.8  - Bug fixes for & variable references and use of non-existant variable names
+         - Added system/date/getraw function
+         - Added support for settings name aliases for nominmaxhilight/nominmaxhighlight
+
+v 1.3.7  - New Background Image Settings: "bodybackgroundimage", "evenrowbackgroundimage", "oddrowbackgroundimage" and "buttonbackgroundimage". Setting body, even, or odd 
+           to anything will result in the colors for those items (both for body, odd for odd, and even for even) being set to #00000000 (transparent) automatically, so if 
+           you want some color to overlay the background image, you'll need to set the appropriate color after setting the background image.
+         - The buttontextcolor setting can how accept named colors instead of just hex codes.
+         - Added system/dumpvariables function for debugging scripts
+         - Bug Fix: Corrected a bug that could (in very rare circumstances) cause unexpected behavior when setting the activepage setting.
+         - Bug Fix: Tokens that don't represent characters can now have their properties retrieved with t- notation.
+
+v 1.3.6  - (Notes cover 1.3.6 thru 1.3.6b)
+         - The buttontextcolor has been modified to accept either hex color codes or named colors.
+         - Tweaked regex expression for variable substitution that supports extended characters (accented, etc.)
+         - If you save a card setting list (with --ssettings) and name it "Default" (case sensitive) it will be loaded at the start of every script. You can always load 
+           another set (which will be merged with Default) or remove the "Default" set to alter this behavior.
+         - Bug Fix: The nominmaxhighlight "fix" from 1.3.5 broke roll highlighting completely. It is repaired now.
+         - New Setting: norollhighlight. If set to a value other than the default ("0"), will not place any highlight box around rolls generated while the setting is active. 
+           This will still add a tooltop, and can be used when you wish to pass the roll to something else without the yellow/green/blue/red box around the roll.
+         - New Setting: titlecardbackgroundimage. Default is empty. If set, the value will be applied to the css "background-image" tag for the title card. This should be a 
+           full CSS specifier, like "url(https://mywebsite.domain/path/to/image.png)".
+         - New Setting: titlecardgradient. If not "0", will apply a gradient overlay to the title card background color. Default is no gradient. NOTE: This setting actually 
+           overrides the titlecardbackground setting, and the two cannot be used together. You can either have a gradient or have a background image.
+
+v 1.3.5  - Bug Fix: Restored functionality to the "nominmaxhilight" setting.
+         - New readsetting sub-function: This function is part of the "system" function group, and allows you to retrieve the current value of a ScriptCards setting as a string
+         - New findtoken Sub-function: Added the "findtoken" subfunction to turn order, which will return the initiative tracker value of the indicated token
+         - New Settings: Added two new settings (locale and timezone) to support the date functions below.
+         - New system/date functions: Added the "date" sub-function category with three options: "getdatetime", "getdate" and "gettime". These functions utilize the "timezone" 
+           and "locale" settings to return localized time. Note that the locale setting currently has no effect, as this does not appear to be active/enabled in the Roll20 
+           javascript engine - but timezone does work properly.
+
+v 1.3.1  - Behavior Change: Rewrote all content substitution code as a single function that works from the innermost set of references outward, so something like  &wow[$count[&suffix]]] 
+           will process [&suffix] first, then [$countX] where X is the result of [&suffix] and finally [&wow1] where 1 is the result of [$countX]. This makes the language more logical 
+           and variable resolution more deterministic. It is also a huge performance improvement, since the way variables were replaced previously was highly non-optimal. NOTE: as a 
+           side effect of this change, some of the uncommonly used settings (disablerollvariableexpansion and similar) will not function at this time. They were primarily for debugging 
+           purposes and will return in a future update, but won't have an effect at this time.
+         - Array Referencing: It is now possible to reference array items directly with the [@arrayName(index)] syntax. The first element of the array is index 0, etc.
+         - Additional Roll Variable Suffix: You can now use ".Raw" suffix when referencing a roll variable to skip formatting the result as a roll. This shouldn't normally be necessary, 
+           as roll formatting is only done on --+ and --* lines, but it is available, especially given the special note in the previous item.
+         - Behavior Change: When generating tooltips (and only when generating tooltips) for roll variable display, the "~" character will be removed. This makes it easier to hide 
+           what look like rolls from the chat server when referencing nested values (ie, [~[&shortSaveNameUpper]~]) when you just want the value of the variable in square brackets as 
+           an explanation, since using [[&shortSaveNameUpper]] would look like an inline roll to the chat server.
+         - Feature Update: Added support for new token properties added to Roll20 on 2021-06-03 (bar_location, compact_bar, light_sensitivity_multiplier, and night_vision_effect). 
+           As with all token references, these are made with the "t-" prefix.
+
+v 1.2.9  - Bug Fix - The "after" string function will now omit the specified separator from the value it returns.
+         - Formatting - No functional change, but apparently at some point I hilighted the whole script in VSCode and hit tab a couple of times and indented everything. I fixed that :) 
+           I've also begin adding more verbose comments throughout the code. That will continue as a work in progress.
+         - Custom VFX for Point effects - The relatively new "--Vpoint" effect statement now supports custom FX.
+         - New Distance Functions - Two new distance functions are available. "euclideanpixel" will return the raw pixel distance between two tokens (without dividing by 70). "euclideanlong"
+           will return the unit distance, but divides the result by 70 AFTER calculating the distance to reduce rounding errors over very long ranges.
+         - New String Functions - "replaceall" will replace all occurrences of the search string in the source text (replace replaces only the first occurrence). "trim" will remove spaces 
+           from the beginning and end of the string.
+         - Behavior Change - I have added a new setting value called "executionlimit", with a default of 30000. When processing a script, the number of lines executed is tracked. If that 
+           number exceeds "executionlimit", ScriptCards will log an error message to the API console and abort execution of the script. If you need to execute more than 30000 lines of code, 
+           just set the parameter higher for that particular script (i.e. : --#executionlimit|100000). The intent here is to prevent scripting logic errors from crashing the sandbox with an 
+           infinite loop. My lightningbolt and fireball macros in VERY crowded areas don't hit the 30000 limit, so it should be good for most scripts. I can always up the default if there 
+           are issues.
+         - Deferred Meta Script Resolution - I mentioned this in 1.2.8a, but I've expanded on it a bit. As some more detail, when calling another API script with ScriptCards via 
+           the --@ statement, it is now possible to include some meta script (SelectManager, Fetch) by inserting a deferral character into the meta call. 
+
+v 1.2.8  - Added beginnings of deferral character support for including references to meta scripts inside a scriptcard.
+         - New String Functions: replaceall and trim. replaceall works just like replace except it will replace all occurrences of the search string. Trim will remove spaces from the 
+           beginning and end of the string.
+         - New VFX Option: You can now spawn visual effects and arbitrary points with the --Vpoint| command. The parameters (separated by spaces) are X Y shape-color, and are measured in pixels. 
+           If #activepage is set, the VFX will play on that page. Otherwise it will default to the player ribbon page. 
+         - New Roll Parser Functions: As you may know, the ScriptCards roll parser works from left to right, always maintaining a current value and applying whatever comes next to the total. 
+           This has allowed me to add some in-line functions to the roll parser. These are {ABS} - Absolute value, {CEIL} - Ceiling value (round up to the next whole number) {FLOOR} - Floor value 
+           (round down to the next whole number), {ROUND} - Round value (round up if the decimal portion is greater than 0.5, otherwise round down), {NEGATE} - Multiply the value by negative one.
+
+    
+        
