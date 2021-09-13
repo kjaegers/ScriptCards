@@ -1,0 +1,2 @@
+V 1.4.1 - Added math/sqrt function and {SQRT} roll modifier.
+        - Fixed abs, min, and max functions that got broken at some point.

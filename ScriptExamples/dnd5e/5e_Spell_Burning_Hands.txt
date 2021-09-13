@@ -18,7 +18,7 @@
   --/|possible values are objects, gmlayer, and map, so to check all three, use "objects;gmlayer;map"
   --&checkLayers|objects;gmlayer
 
-    --/|===================== There are no customization options below this line =====================
+  --/|===================== There are no customization options below this line =====================
 
   --&spellName|Burning Hands
   

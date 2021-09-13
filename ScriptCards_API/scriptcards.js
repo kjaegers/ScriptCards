@@ -21,7 +21,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.0e";
+	const APIVERSION = "1.4.1";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1108,7 +1108,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 									if (params[1].toLowerCase() == "abs" && params.length == 3) {
 										if (!isNaN(parseFloat((params[2])))) {
-											rollVariables[variableName] = Math.abs(params[2])
+											rollVariables[variableName] = parseDiceRoll(Math.abs(parseFloat(params[2])), cardParameters)
+										}
+									}
+
+									if ((params[1].toLowerCase() == "sqrt" || params[1].toLowerCase() == "squareroot") && params.length == 3) {
+										if (!isNaN(parseFloat((params[2])))) {
+											rollVariables[variableName] = parseDiceRoll(Math.sqrt(parseFloat(params[2])), cardParameters)
 										}
 									}
 
@@ -2188,6 +2194,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var contentIn = content;
 		var charId = "";
 		if (content === undefined) { return content }
+		if (!(typeof content.match == 'function')) { return content }
 		while(content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
 			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];
 			var replacement = "";
@@ -2747,6 +2754,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						rollResult.Text += "{ABS}";
 						break;
 
+					case "sqrt":
+					case "squareroot":
+						rollResult.Total = Math.sqrt(rollResult.Total);
+						rollResult.Text += "{SQRT}";
+						break;
+
 					case "ceil":
 						rollResult.Total = Math.ceil(rollResult.Total);
 						rollResult.Text += "{CEIL}";
@@ -2762,6 +2775,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						rollResult.Text += "{ROUND}";
 						break;
 
+					case "neg":
 					case "negate":
 						rollResult.Total = rollResult.Total * -1;
 						rollResult.Text += "{NEGATE}";
