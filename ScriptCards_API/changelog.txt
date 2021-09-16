@@ -1,5 +1,10 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.4.2  - Added several additional roll modifiers, including {SIN}, {COS}, {TAN}, {ASIN}, {ACOS}, {ATAN}, {SQUARE}, {CUBEROOT}, {CUBE}
+         - Added setting (--#) called "rollhilightlineheight" which can be used to set the size of the roll hilight box. This is useful if you
+           have increased the lineheight setting and want the hilight box to expand as well.
+         - Fixed the incorrect handling of negative numbers in roll parsing for operations other than addition (which just became subtraction :))
+
 v 1.4.1  - Added math/sqrt function and {SQRT} roll modifier.
          - Fixed abs, min, and max functions that got broken at some point.
          - Fixed a potential sandbox crash if incorrect/missing parameters were passed to replaceVariableContent
@@ -95,5 +100,44 @@ v 1.2.8  - Added beginnings of deferral character support for including referenc
            This has allowed me to add some in-line functions to the roll parser. These are {ABS} - Absolute value, {CEIL} - Ceiling value (round up to the next whole number) {FLOOR} - Floor value 
            (round down to the next whole number), {ROUND} - Round value (round up if the decimal portion is greater than 0.5, otherwise round down), {NEGATE} - Multiply the value by negative one.
 
-    
-        
+v 1.2.7  - Bug Fix: Corrected a bug introduced in 1.2.3 that would return "undefined" for token/character references ([*x:] syntax) that were 0 or null. (Thanks Will M.)
+         - Data Statements: Support for BASIC-style read/data statements with the --d statement has been added. Data can be defined anywhere in your script with the --d!|element1;element2;element3;etc... 
+           statement. Data is pre-processed into a structure that can be read with the --dVarName| command to read the next available data element into a string variable called "VarName". When attempting 
+           to read past the last available element, a value of "EndOfDataError" will be returned. You can reset the data pointer to begin reading again from the beginning with --d<|. 
+         - For...Next Loops: It is now possible to create For...Next loops in ScriptCards with the --% statement type. A loop is defined by starting off with --%LoopCounter|<start>;<end>;[step]
+           The <start> and <end> values are required, while the [step] parameter is optional. If the step is omitted, it will be assumed to be 1. A string variable (in this case called "LoopCounter")
+           will be created and will hold the current iteration value for the loop. The end of the loop is signified by --%|, which will increment the counter and check to see if the end point has been
+           passed. If not, execution will return to the statement after the initial --% statement. Loops CAN be nested within each other, and the step value can be negative if you wish to run a loop 
+           downwards. A conditional can end the current iteration of a loop with the % character, or break out of the loop entirely with %!. Finally, modifying the LoopCounter variable will not have any 
+           impact on the loop or the number of iterations it runs. When execution returns to the top of the loop, the value of the variable will be reset to the current loop counter, which is 
+           tracked internally.
+         - Conditional Code Blocks: Added the ability to define blocks of code in association with conditional statements. This is similar to begin...end or curly braces in some languages, though a bit 
+           more limited. As part of the true or false execution branch of a conditional, you can use the "[" character to begin a code block. If that execution path is taken, the code in the block will be 
+           executed. Otherwise, the code in the block will be skipped. Blocks are completed with the --]| statement, and can optionally include an "else" block by using --]|[ as the block terminator. 
+           At this time, blocks cannot be nested, and can only be created as part of a conditional (--[ is not a valid statement type)
+
+v 1.2.3  - It is now possible to retrieve object properties from characters (as opposed to just attributes). Things like "controlledby" are now available. Unfortunately, notes, gmnotes, and bio are not
+           available because of the way they have to be retrieved by the API.
+         - Tag portions of a line are now trimmed, meaning trailing spaces should no longer cause them to be included at the end of variable names. Spaces inside variable names should still be fine. 
+           Trimming was already happening on the content side of a statement.
+         - ScriptCards will now replace inline rolls with their total results, so it should be possible to use a syntax like:
+                  --=AC|[[ @{selected|armorclass} ]]
+                  --+AC|[$AC]
+           but note that ONLY the total result will be used by ScriptCards. It will not break the roll down into components like to normal roll parser does. This does allow quite a bit more flexibility
+           for totally insane sheet calculations, however :) I still recommend using the internal roll parser for most things, but at least this will let you set variables for things like 3.5 AC.
+         - New Functions: Added three new string functions: tolowercase, touppercase, and totitlecase. Each just takes the string to process as the only additional parameter and returns the result 
+           to the string variable named in the tag portion of the statement. "tolowercase" and "touppercase" are fairly obvious. "totitlecase" capitalizes the first letter of each word in the string 
+           (note that it doesn't account for things like not capitalizing "a" or "of", etc.)
+         - Behavior Change: setting the sourcetoken or targettoken to a non-existent token or something that doesn't represent a character will now clear the internal cached character object as well. 
+           This would be useful it you wanted to set a source/target for use with [*S:] or [*T:] notation but didn't want to display tokens in the emote section. Simply setting them to nothing 
+           (--#sourcetoken|) before the end of the script will remove the references.
+
+v 1.2.2  - Passing empty parameters should once again be supported.
+         - You can also use either single or double quotes around parameters that contain a semicolon (I found some regex to parse CSV files and just changed the comma to a semicolon). 
+         - You can now set an active page with the --#activepage|pageid setting. If you use "playerpage" as the page id, the current ribbon page will be used (so, --#activepage|playerpage) 
+           or (see next item) --#activepage|[*C:playerpageid]
+         - There are two new [*X:] attribute accessing options : [*C:attribute] will retrieve campaign-level attributes. Probably the only really useful one is "playerpageid", but they are all 
+           available. [*P:attribute] will retrieve attributes on the activepage (which must be set beforehand). All of the UDL items should be available here, though I don't use UDL so I'm not 
+           familiar with them.
+         - Retrieving token GMNotes will (with something like [*T:t-gmnotes], or [*-sometokenid:t-gmnotes] will now run the result through decodeURIcomponent to get rid of the URI encoding as 
+           return the notes as expected. Formatting like bold and italics, etc. should still work. 

@@ -21,7 +21,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.1";
+	const APIVERSION = "1.4.2";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -52,6 +52,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		titlefontlineheight: "1.2em",
 		titlefontshadow: "-1px 1px 0 #000, 1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000;",
 		lineheight: "normal",
+		rollhilightlineheight: "1.0em",
 		titlefontcolor: "#FFFFFF",
 		subtitlefontsize: "13px",
 		subtitlefontface: "Tahoma",
@@ -122,11 +123,17 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		timezone:"America/New_York",
 		hpbar: "3",
 		styleTableTag: " border-collapse:separate; border: solid black 2px; border-radius: 6px; -moz-border-radius: 6px; ",
-		stylenone: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; ",
-		stylenormal:" text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #FFFEA2; border-color: #87850A; color: #000000;",
-		stylefumble: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #FFAAAA; border-color: #660000; color: #660000;",
-		stylecrit: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #88CC88; border-color: #004400; color: #004400;",
-		styleboth: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #8FA4D4; border-color: #061539; color: #061539;",
+		stylenone: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; ",
+		stylenormal:" text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #FFFEA2; border-color: #87850A; color: #000000;",
+		stylefumble: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #FFAAAA; border-color: #660000; color: #660000;",
+		stylecrit: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #88CC88; border-color: #004400; color: #004400;",
+		styleboth: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #8FA4D4; border-color: #061539; color: #061539;",
+		//stylenone: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; ",
+		//stylenormal:" text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #FFFEA2; border-color: #87850A; color: #000000;",
+		//stylefumble: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #FFAAAA; border-color: #660000; color: #660000;",
+		//stylecrit: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #88CC88; border-color: #004400; color: #004400;",
+		//styleboth: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #8FA4D4; border-color: #061539; color: #061539;",
+
 	};
 
 	// HTML Templates for the various pieces of the output card. Replaced sections are marked with
@@ -2780,6 +2787,54 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						rollResult.Total = rollResult.Total * -1;
 						rollResult.Text += "{NEGATE}";
 						break;
+
+					case "sin":
+						rollResult.Total = Math.sin(rollResult.Total);
+						rollResult.Text += "{SIN}";
+						break;
+
+					case "cos":
+						rollResult.Total = Math.cos(rollResult.Total);
+						rollResult.Text += "{COS}";
+						break;
+
+					case "tan":
+						rollResult.Total = Math.tan(rollResult.Total);
+						rollResult.Text += "{TAN}";
+						break;					
+
+					case "asin":
+						rollResult.Total = Math.asin(rollResult.Total);
+						rollResult.Text += "{ASIN}";
+						break;
+
+					case "acos":
+						rollResult.Total = Math.acos(rollResult.Total);
+						rollResult.Text += "{ACOS}";
+						break;
+
+					case "atan":
+						rollResult.Total = Math.atan(rollResult.Total);
+						rollResult.Text += "{ATAN}";
+						break;											
+
+					case "square":
+						rollResult.Total = rollResult.Total * rollResult.Total;
+						rollResult.Text += "{SQUARE}";
+						break;					
+
+					case "cube":
+					case "cubed":
+						rollResult.Total = rollResult.Total * rollResult.Total * rollResult.Total;
+						rollResult.Text += "{CUBE}";
+						break;					
+
+					case "cbrt":
+					case "cuberoot":
+						rollResult.Total = Math.cbrt(rollResult.Total);
+						rollResult.Text += "{CUBEROOT}";
+						break;					
+
 				}
 			}
 
@@ -2889,6 +2944,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		input = input.replace(/\[/g, " [");
 		input = input.replace(/\]/g, "] ");
 		input = input.replace(/\s+/g, " ");
+		input = input.replace(/\* \- /g, "* -");
+		input = input.replace(/\- \- /g, "- -");
+		input = input.replace(/\/ \- /g, "/ -");
+		input = input.replace(/\\ \- /g, "\ -");
+		input = input.replace(/\% \- /g, "% -");
 		return input;
 	}
 
@@ -2966,6 +3026,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			"titlefontsize", "titlefontlineheight", "titlefontcolor", "bodyfontsize", "subtitlefontsize", "subtitlefontcolor", "titlefontshadow",
 			"titlefontface", "bodyfontface", "subtitlefontface", "buttonbackground", "buttonbackgroundimage", "buttontextcolor", "buttonbordercolor",
 			"dicefontcolor", "dicefontsize", "lineheight", "buttonfontsize", "buttonfontface", "titlecardbackgroundimage", "bodybackgroundimage",
+			"rollhilightlineheight",
 		];
 
 		for (var x=0; x< styleList.length; x++) {
