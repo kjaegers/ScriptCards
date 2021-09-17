@@ -1,5 +1,10 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.4.3  - Integer (rounded) division was only valid when using constants as the divisior. For other types of divisors the integer division
+           operator was being ignored. This has been fixed.
+         - Removed some extraneous debug console logging.
+         - Added more detail to the missing label error message that gets logged to the console to help identify the problematic line.
+
 v 1.4.2  - Added several additional roll modifiers, including {SIN}, {COS}, {TAN}, {ASIN}, {ACOS}, {ATAN}, {SQUARE}, {CUBEROOT}, {CUBE}
          - Added setting (--#) called "rollhilightlineheight" which can be used to set the size of the roll hilight box. This is useful if you
            have increased the lineheight setting and want the hilight box to expand as well.

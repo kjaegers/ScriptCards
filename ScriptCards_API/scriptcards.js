@@ -21,7 +21,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.2";
+	const APIVERSION = "1.4.3";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -701,7 +701,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													if (lineLabels[jumpDest]) {
 														lineCounter = lineLabels[jumpDest] ;
 													} else {
-														log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter}`);
+														log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`);
 													}
 													break;
 												case "gosub":
@@ -721,7 +721,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													if (lineLabels[jumpDest]) {
 														lineCounter = lineLabels[jumpDest] ;
 													} else {
-														log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter}`);
+														log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`);
 													}
 													break;
 												case "rollset":
@@ -806,7 +806,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												var d = new Date();
 												switch (params[2].toLowerCase()) {
 													case "getdatetime":
-														log(cardParameters.locale);
+														//log(cardParameters.locale);
 														try {
 															stringVariables[variableName] = d.toLocaleString(cardParameters.locale, {timeZone: cardParameters.timezone});
 														} catch {
@@ -908,7 +908,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											for (var x=turnorder.length-1; x>=0; x--) {
 												if (turnorder[x].id.trim() == params[2].trim()) {
 													 stringVariables[variableName] = turnorder[x].pr;
-													 log(`Set variable to ${turnorder[x].pr}`)
+													 //log(`Set variable to ${turnorder[x].pr}`)
 												}
 											}
 										}
@@ -1731,7 +1731,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (lineLabels[jumpDest]) {
 											lineCounter = lineLabels[jumpDest] ;
 										} else {
-											log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter}`);
+											log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`);
 										}
 										break;
 									case "gosub":
@@ -1751,7 +1751,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (lineLabels[jumpDest]) {
 											lineCounter = lineLabels[jumpDest] ;
 										} else {
-											log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter}`);
+											log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`);
 										}
 										break;
 									case "rollset":
@@ -1926,7 +1926,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										var y2 = params[3];
 										var t = params[4];
 										var pid = Campaign().get("playerpageid");
-										log(`${x1} ${y1} ${x2} ${y2} ${t} ${pid}`)
+										//log(`${x1} ${y1} ${x2} ${y2} ${t} ${pid}`)
 										if (x1 && y1 && x2 && y2 && t && pid) {
 											spawnFxBetweenPoints({x:x1, y:y1}, {x:x2, y:y2}, t, pid);
 										}
@@ -2000,7 +2000,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						// Handle branch lines
 						if (thisTag.charAt(0) === "^") {
 							var jumpTo = thisTag.substring(1);
-							if (lineLabels[jumpTo]) { lineCounter = lineLabels[jumpTo] } else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter}`)};
+							if (lineLabels[jumpTo]) { lineCounter = lineLabels[jumpTo] } else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`)};
 						}
 
 						if (thisTag.charAt(0) === "]") {
@@ -2043,7 +2043,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (lineLabels[jumpTo]) {
 								returnStack.push(lineCounter);
 								lineCounter = lineLabels[jumpTo];
-							} else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter}`)};
+							} else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`)};
 						}
 
 						// Handle return from gosub
@@ -2447,6 +2447,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						case "*": rollResult.Total *= thisRoll; rollResult.Base *= thisRoll; break;
 						case "/": rollResult.Total /= thisRoll; rollResult.Base /= thisRoll; break;
 						case "%": rollResult.Total %= thisRoll; rollResult.Base %= thisRoll; break;
+						case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
 					}
 					if (thisRoll == 1) { rollResult.Ones++; hadOne = true; }
 					if (thisRoll == sides) { rollResult.Aces++; hadAce = true; }
@@ -2489,6 +2490,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							case "*": rollResult.Total *= rollSet[c]; rollResult.Base *= rollSet[c]; break;
 							case "/": rollResult.Total /= rollSet[c]; rollResult.Base /= rollSet[c]; break;
 							case "%": rollResult.Total %= rollSet[c]; rollResult.base %= rollSet[c]; break;
+							case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
 						}
 						if (rollSet[c] == 1) { rollResult.Ones++; hadOne = true; }
 						if (rollSet[c] == sides) { rollResult.Aces++; hadAce = true; }
@@ -2548,6 +2550,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							case "*": rollResult.Total *= rollSet[c]; rollResult.Base *= rollSet[c]; break;
 							case "/": rollResult.Total /= rollSet[c]; rollResult.Base /= rollSet[c]; break;
 							case "%": rollResult.Total %= rollSet[c]; rollResult.base %= rollSet[c]; break;
+							case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
 						}
 						if (rollSet[c] == 1) { rollResult.Ones++; hadOne = true; }
 						if (rollSet[c] == sides) { rollResult.Aces++; hadAce = true; }
@@ -2600,6 +2603,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						case "*": rollResult.Total *= rollSet[c]; rollResult.Base *= rollSet[c]; break;
 						case "/": rollResult.Total /= rollSet[c]; rollResult.Base /= rollSet[c]; break;
 						case "%": rollResult.Total %= rollSet[c]; rollResult.base %= rollSet[c]; break;
+						case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
 					}
 					if (rollSet[c] == 1) { rollResult.Ones++; hadOne = true; }
 					if (rollSet[c] == sides) { rollResult.Aces++; hadAce = true; }
@@ -2646,6 +2650,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						case "*": rollResult.Total *= rollSet[c]; rollResult.Base *= rollSet[c]; break;
 						case "/": rollResult.Total /= rollSet[c]; rollResult.Base /= rollSet[c]; break;
 						case "%": rollResult.Total %= rollSet[c]; rollResult.base %= rollSet[c]; break;
+						case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
 					}
 					if (rollSet[c] == 1) { rollResult.Ones++; hadOne = true; }
 					if (rollSet[c] == sides) { rollResult.Aces++; hadAce = true; }
@@ -2713,6 +2718,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						case "*": rollResult.Total *= rollSet[c]; rollResult.Base *= rollSet[c]; break;
 						case "/": rollResult.Total /= rollSet[c]; rollResult.Base /= rollSet[c]; break;
 						case "%": rollResult.Total %= rollSet[c]; rollResult.base %= rollSet[c]; break;
+						case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
 					}
 					if (rollSet[c] == 1) { rollResult.Ones++; hadOne = true; }
 					if (rollSet[c] == sides) { rollResult.Aces++; hadAce = true; }
@@ -2993,6 +2999,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function evaluateConditional(conditional, cardParameters) {
+		var newComponents = conditional.split(/-\w+/);
+		//log(newComponents);
 		var components = conditional.match(/(?:[^\s"]+|"[^"]*")+/g);
 		if (!components) { return false; }
 		if (components.length !== 3) {
