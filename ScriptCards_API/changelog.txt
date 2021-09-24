@@ -1,5 +1,9 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.4.4  - Updated distance calculations to take page scale (snapping_increment) into account
+         - Added setting options for rollhilightcolornormal, rollhilightcolorcrit, rollhilightcolorfumble, and rollhilightcolorboth to allow the
+           color of the box around rolls to be customized.
+
 v 1.4.3  - Integer (rounded) division was only valid when using constants as the divisior. For other types of divisors the integer division
            operator was being ignored. This has been fixed.
          - Removed some extraneous debug console logging.
