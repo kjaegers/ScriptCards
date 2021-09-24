@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Lightning Bolt
-  --/|Version     : 1.2
+  --/|Version     : 1.3
   --/|Requires SC : 1.3.1+, token-mod
   --/|Author      : Kurt Jaegers
 
@@ -36,6 +36,12 @@
   --#sourcetoken|@{selected|token_id}
   --#targettoken|@{target|token_id}
   
+  --#activepage|[*s:t-_pageid]
+  --=scaler|[*P:snapping_increment] * 70
+  --=halfscaler|[$scaler] \ 2
+  --=doublescaler|[$scaler] * 2
+  --=triplescaler|[$scaler] * 3
+
   --/|Get all of the tokens on the page so we can cache their positions
   --~|array;pagetokens;alltokens;@{target|token_id}
   --#leftsub|Save DC @{selected|spell_save_dc}
@@ -142,8 +148,8 @@
   
   --:checkForTokenHits|Y as %1% for VFX
   -->createTokenLookup|
-  --=X1|[*S:t-left] \ 70  --=Y1|[*S:t-top] \ 70
-  --=X2|[*T:t-left] \ 70  --=Y2|[*T:t-top] \ 70
+  --=X1|[*S:t-left] \ [$scaler]  --=Y1|[*S:t-top] \ [$scaler]
+  --=X2|[*T:t-left] \ [$scaler]  --=Y2|[*T:t-top] \ [$scaler]
   --?[$X1] -lt [$X2]|=SX;1|=SX;-1
   --?[$Y1] -lt [$Y2]|=SY;1|=SY;-1
   --=DX|[$X2] - [$X1] {ABS}
@@ -155,8 +161,8 @@
 	-->checkTokens|[$X];[$Y]
 	--/|IF we passed a visual effect specifier in %1%, create a point VFX in the square
 	--?"X[%1%]X" -ne "XX" |[
-      --=VX|[$X] * 70 + 35   
-	  --=VY|[$Y] * 70 + 35   
+      --=VX|[$X] * [$scaler] + $[halfscaler]
+	  --=VY|[$Y] * [$scaler] + $[halfscaler]
 	  --vpoint|[$VX] [$VY] [%1%]
 	--]|
 	--?[$X.Total] -eq [$X2.Total] -and [$Y.Total] -eq [$Y2.Total]|%!
@@ -194,14 +200,14 @@
   --:tokenSetupLoop|
   --?[&tokenid] -eq ArrayError|endSetupLoop
   --?[&checkLayers] -ninc [*[&tokenid]:t-layer]|skipThisToken
-  --=tLeft|[*[&tokenid]:t-left] - 1 \ 70
-	--=tTop|[*[&tokenid]:t-top] - 1 \ 70
+  --=tLeft|[*[&tokenid]:t-left] - 1 \ [$scaler]
+	--=tTop|[*[&tokenid]:t-top] - 1 \ [$scaler]
 	--=tWidth|[*[&tokenid]:t-width]
-	--?[$tWidth] -eq 70|[ 
+	--?[$tWidth] -eq [$scaler]|[ 
 	  --&tok[$tLeft]-[$tTop]|+[&tokenid]!
 	  --/+[*[&tokenid]:character_name]|At [$tLeft],[$tTop] : [&tok[$tLeft.Total]-[$tTop.Total]]
 	--]|
-	--?[$tWidth] -eq 140|[ 
+	--?[$tWidth] -eq [$doublescaler]|[ 
 	  --=NX|[$tLeft] + 1
 	  --=NY|[$tTop] + 1
 	  --&tok[$tLeft]-[$tTop]|+[&tokenid]!
@@ -209,7 +215,7 @@
 	  --&tok[$NX]-[$tTop]|+[&tokenid]!
 	  --&tok[$NX]-[$NY]|+[&tokenid]!
 	--]|
-	--?[$tWidth] -eq 210|[ 
+	--?[$tWidth] -eq [$triplescaler]|[ 
 	  --=PX|[$tLeft] - 1
 	  --=PY|[$tTop] - 1
 	  --=NX|[$tLeft] + 1

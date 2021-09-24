@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Burning Hands
-  --/|Version     : 1.2
+  --/|Version     : 1.3
   --/|Requires SC : 1.3.1+, token-mod
   --/|Author      : Kurt Jaegers
 
@@ -25,7 +25,7 @@
   --/|Note: because the spell will be cast at a min level of 1, we use 2 here to get the total dice (2+1=3)
   --&spellL0DamageDice|2
   
-  --/|Prompt for the spell level. Update this to account for the minimum level of the spell
+    --/|Prompt for the spell level. Update this to account for the minimum level of the spell
   --=SpellLevel|?{Spell Slot Level?|1|2|3|4|5|6|7|8|9}
   --&spellDamageDieType|6
   --&damageType|fire
@@ -34,6 +34,12 @@
   --/|Source Token is the caster, and target token is the "end of the line". Can be a non-creature (no represents) token.
   --#sourcetoken|@{selected|token_id}
   
+  --#activepage|[*s:t-_pageid]
+  --=scaler|[*P:snapping_increment] * 70
+  --=halfscaler|[$scaler] \ 2
+  --=doublescaler|[$scaler] * 2
+  --=triplescaler|[$scaler] * 3
+
   --/|Get all of the tokens on the page so we can cache their positions
   --~|array;pagetokens;alltokens;@{selected|token_id}
   --#leftsub|Save DC @{selected|spell_save_dc}
@@ -151,8 +157,8 @@
   --<|
   
   --:checkForTokenHits|parameter is vfx descriptor
-  --=baseX|[*S:t-left] - 1 \ 70
-  --=baseY|[*S:t-top] - 1 \ 70
+  --=baseX|[*S:t-left] - 1 \ [$scaler]
+  --=baseY|[*S:t-top] - 1 \ [$scaler]
   --~offset|array;getfirst;?{Direction}
   --:checkTokenLoop|
   --?"[&offset]" -eq "ArrayError"|endCheckForTokenHits
@@ -161,8 +167,8 @@
   --=thisY|[$baseY] + [&split2]
   --/|IF we passed a visual effect specifier in %1%, create a point VFX in the square
   --?"X[%1%]X" -ne "XX" |[
-    --=VX|[$thisX] * 70 + 35   
-    --=VY|[$thisY] * 70 + 35   
+    --=VX|[$thisX] * [$scaler] + [$halfscaler]
+    --=VY|[$thisY] * [$scaler] + [$halfscaler]
     --vpoint|[$VX] [$VY] [%1%]
   --]|
   -->checkTokens|[$thisX];[$thisY]
@@ -196,14 +202,14 @@
   --:tokenSetupLoop|
     --?[&tokenid] -eq ArrayError|endSetupLoop
     --?[&checkLayers] -ninc [*[&tokenid]:t-layer]|skipThisToken
-    --=tLeft|[*[&tokenid]:t-left] - 1 \ 70
-  --=tTop|[*[&tokenid]:t-top] - 1 \ 70
+    --=tLeft|[*[&tokenid]:t-left] - 1 \ [$scaler]
+  --=tTop|[*[&tokenid]:t-top] - 1 \ [$scaler]
   --=tWidth|[*[&tokenid]:t-width]
-  --?[$tWidth] -eq 70|[ 
+  --?[$tWidth] -eq [$scaler]|[ 
     --&tok[$tLeft]-[$tTop]|+[&tokenid]!
     --/+[*[&tokenid]:character_name]|At [$tLeft],[$tTop] : [&tok[$tLeft.Total]-[$tTop.Total]]
   --]|
-  --?[$tWidth] -eq 140|[ 
+  --?[$tWidth] -eq [$doublescaler]|[ 
     --=NX|[$tLeft] + 1
     --=NY|[$tTop] + 1
     --&tok[$tLeft]-[$tTop]|+[&tokenid]!
@@ -211,7 +217,7 @@
     --&tok[$NX]-[$tTop]|+[&tokenid]!
     --&tok[$NX]-[$NY]|+[&tokenid]!
   --]|
-  --?[$tWidth] -eq 210|[ 
+  --?[$tWidth] -eq [$triplescaler]|[ 
     --=PX|[$tLeft] - 1
     --=PY|[$tTop] - 1
     --=NX|[$tLeft] + 1

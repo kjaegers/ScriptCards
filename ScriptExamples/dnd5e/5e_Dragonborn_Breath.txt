@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Dragonborn Breath
-  --/|Version     : 1.3
+  --/|Version     : 1.4
   --/|Requires SC : 1.4.0+, alterbars or token-mod to apply damage (Optional)
   --/|Author      : Kurt Jaegers
 
@@ -31,6 +31,13 @@
   --&breathEffect|burn-acid
 
   --#sourcetoken|@{selected|token_id}
+
+  --/|Set up scaling values to handle non-1.0 snapping increment grids.
+  --#activepage|[*s:t-_pageid]
+  --=scaler|[*P:snapping_increment] * 70
+  --=halfscaler|[$scaler] \ 2
+  --=doublescaler|[$scaler] * 2
+  --=triplescaler|[$scaler] * 3
 
   --/|Damage for dragonborn breath starts at 2d6 at first level
   --&damageDice|2
@@ -214,8 +221,8 @@
   --:checkForTokenHits|parameter is vfx descriptor
 
   --/|Get the square location of the "caster"
-  --=baseX|[*S:t-left] - 1 \ 70
-  --=baseY|[*S:t-top] - 1 \ 70
+  --=baseX|[*S:t-left] - 1 \ [$scaler]
+  --=baseY|[*S:t-top] - 1 \ [$scaler]
   --~offset|array;getfirst;[&damageDirection]
   --:checkTokenLoop|
   --?"[&offset]" -eq "ArrayError"|endCheckForTokenHits
@@ -226,8 +233,8 @@
   --=thisY|[$baseY.Raw] + [&split2]
   --/|IF we passed a visual effect specifier in %1%, create a point VFX in the square
   --?"X[%1%]X" -ne "XX" |[
-    --=VX|[$thisX] * 70 + 35   
-    --=VY|[$thisY] * 70 + 35   
+    --=VX|[$thisX] * [$scaler] + $halfscaler]   
+    --=VY|[$thisY] * [$scaler] + $halfscaler]   
     --vpoint|[$VX] [$VY] [%1%]
   --]|
   --/|Call "checkTokens" to see if there are any tokens in this square that need to be added
@@ -267,14 +274,14 @@
   --:tokenSetupLoop|
     --?[&tokenid] -eq ArrayError|endSetupLoop
     --?[&checkLayers] -ninc [*[&tokenid]:t-layer]|skipThisToken
-    --=tLeft|[*[&tokenid]:t-left] - 1 \ 70
-    --=tTop|[*[&tokenid]:t-top] - 1 \ 70
+    --=tLeft|[*[&tokenid]:t-left] - 1 \ [$scaler]
+    --=tTop|[*[&tokenid]:t-top] - 1 \ [$scaler]
     --=tWidth|[*[&tokenid]:t-width]
-    --?[$tWidth] -eq 70|[ 
+    --?[$tWidth] -eq [$scaler]|[ 
       --&tok[$tLeft.Raw]-[$tTop.Raw]|+[&tokenid]!
       --/+[*[&tokenid]:character_name]|At [$tLeft.Raw],[$tTop.Raw] : [&tok[$tLeft.Raw.Total]-[$tTop.Raw.Total]]
     --]|
-  --?[$tWidth] -eq 140|[ 
+  --?[$tWidth] -eq [$doublescaler]|[ 
     --=NX|[$tLeft.Raw] + 1
     --=NY|[$tTop.Raw] + 1
     --&tok[$tLeft.Raw]-[$tTop.Raw]|+[&tokenid]!
@@ -282,7 +289,7 @@
     --&tok[$NX]-[$tTop.Raw]|+[&tokenid]!
     --&tok[$NX]-[$NY]|+[&tokenid]!
   --]|
-  --?[$tWidth] -eq 210|[ 
+  --?[$tWidth] -eq [$triplescaler]|[ 
     --=PX|[$tLeft.Raw] - 1
     --=PY|[$tTop.Raw] - 1
     --=NX|[$tLeft.Raw] + 1
