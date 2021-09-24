@@ -132,7 +132,7 @@
   --/|make sure it doesn't fall below 0, and set the amount back into the bar.
   --:ApplyDamageTokenmod|Parameters are tokenid;bar#;amount
   --=newValue|[*[%1%]:t-bar[%2%]_value] - [%3%]
-  --?[$newValue] -lt 0|=newValue|0
+  --?[$newValue] -lt 0|=newValue;0
   --@token-mod|_ignore-selected _ids [%1%] _set bar[%2%]_value|[$newValue.Raw]
   --<| 
   
