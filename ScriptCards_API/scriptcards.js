@@ -21,7 +21,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.3";
+	const APIVERSION = "1.4.4";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -53,6 +53,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		titlefontshadow: "-1px 1px 0 #000, 1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000;",
 		lineheight: "normal",
 		rollhilightlineheight: "1.0em",
+		rollhilightcolornormal: "#FFFEA2",
+		rollhilightcolorcrit: "#88CC88",
+		rollhilightcolorfumble: "#FFAAAA",
+		rollhilightcolorboth: "#8FA4D4",
 		titlefontcolor: "#FFFFFF",
 		subtitlefontsize: "13px",
 		subtitlefontface: "Tahoma",
@@ -124,10 +128,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		hpbar: "3",
 		styleTableTag: " border-collapse:separate; border: solid black 2px; border-radius: 6px; -moz-border-radius: 6px; ",
 		stylenone: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; ",
-		stylenormal:" text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #FFFEA2; border-color: #87850A; color: #000000;",
-		stylefumble: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #FFAAAA; border-color: #660000; color: #660000;",
-		stylecrit: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #88CC88; border-color: #004400; color: #004400;",
-		styleboth: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #8FA4D4; border-color: #061539; color: #061539;",
+		stylenormal:" text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolornormal}; border-color: #87850A; color: #000000;",
+		stylefumble: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolorfumble}; border-color: #660000; color: #660000;",
+		stylecrit: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolorcrit}; border-color: #004400; color: #004400;",
+		styleboth: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolorboth}; border-color: #061539; color: #061539;",
 		//stylenone: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; ",
 		//stylenormal:" text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #FFFEA2; border-color: #87850A; color: #000000;",
 		//stylefumble: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #FFAAAA; border-color: #660000; color: #660000;",
@@ -969,12 +973,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (params.length >= 3) {
 										var token1 = getObj("graphic", params[1]);
 										var token2 = getObj("graphic", params[2]);
+										var scale = 1.0;
+										var page = getObj("page", token1.get("_pageid"));
+										if (page) { scale = page.get("snapping_increment")}
+										
 										if (token1 && token2) {
 											// Calculate the Chebyshev Distance between the grid points
-											var x1 = token1.get("left") / 70;
-											var x2 = token2.get("left") / 70;
-											var y1 = token1.get("top") / 70;
-											var y2 = token2.get("top") / 70;
+											var x1 = token1.get("left") / (scale * 70);
+											var x2 = token2.get("left") / (scale * 70);
+											var y1 = token1.get("top") / (scale * 70);
+											var y2 = token2.get("top") / (scale * 70);
 											result = Math.floor(Math.max(Math.abs(x1 - x2), Math.abs(y1-y2)));
 										}
 									}
@@ -986,12 +994,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (params.length >= 3) {
 										var token1 = getObj("graphic", params[1]);
 										var token2 = getObj("graphic", params[2]);
+										var scale = 1.0;
+										var page = getObj("page", token1.get("_pageid"));
+										if (page) { scale = page.get("snapping_increment")}
 										if (token1 && token2) {
 											// Calculate the euclidean unit distance between two tokens (params[1] and params[2])
-											var x1 = token1.get("left") / 70;
-											var x2 = token2.get("left") / 70;
-											var y1 = token1.get("top") / 70;
-											var y2 = token2.get("top") / 70;
+											var x1 = token1.get("left") / (scale * 70);
+											var x2 = token2.get("left") / (scale * 70);
+											var y1 = token1.get("top") / (scale * 70);
+											var y2 = token2.get("top") / (scale * 70);
 											result = Math.floor(Math.sqrt(Math.pow((x1-x2),2)+Math.pow((y1-y2),2)));
 										}
 									}
@@ -1004,6 +1015,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (params.length >= 3) {
 										var token1 = getObj("graphic", params[1]);
 										var token2 = getObj("graphic", params[2]);
+										var scale = 1.0;
+										var page = getObj("page", token1.get("_pageid"));
+										if (page) { scale = page.get("snapping_increment")}
 										if (token1 && token2) {
 											// Calculate the euclidean unit distance between two tokens (params[1] and params[2])
 											var x1 = token1.get("left");
@@ -1011,7 +1025,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											var y1 = token1.get("top");
 											var y2 = token2.get("top");
 											result = Math.floor(Math.sqrt(Math.pow((x1-x2),2)+Math.pow((y1-y2),2)));
-											if (params[0].toLowerCase() == "euclideanlong") { result = result / 70; }
+											if (params[0].toLowerCase() == "euclideanlong") { result = result / (scale * 70); }
 										}
 									}
 									rollVariables[variableName] = parseDiceRoll(result.toString(), cardParameters);
@@ -1023,12 +1037,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (params.length >= 3) {
 										var token1 = getObj("graphic", params[1]);
 										var token2 = getObj("graphic", params[2]);
+										var scale = 1.0;
+										var page = getObj("page", token1.get("_pageid"));
+										if (page) { scale = page.get("snapping_increment")}
 										if (token1 && token2) {
 											// Calculate the manhattan unit distance between two tokens (params[1] and params[2])
-											var x1 = token1.get("left") / 70;
-											var x2 = token2.get("left") / 70;
-											var y1 = token1.get("top") / 70;
-											var y2 = token2.get("top") / 70;
+											var x1 = token1.get("left") / (scale * 70);
+											var x2 = token2.get("left") / (scale * 70);
+											var y1 = token1.get("top") / (scale * 70);
+											var y2 = token2.get("top") / (scale * 70);
 											result = Math.abs(x2-x1) + Math.abs(y2-y1);
 										}
 									}
@@ -3034,7 +3051,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			"titlefontsize", "titlefontlineheight", "titlefontcolor", "bodyfontsize", "subtitlefontsize", "subtitlefontcolor", "titlefontshadow",
 			"titlefontface", "bodyfontface", "subtitlefontface", "buttonbackground", "buttonbackgroundimage", "buttontextcolor", "buttonbordercolor",
 			"dicefontcolor", "dicefontsize", "lineheight", "buttonfontsize", "buttonfontface", "titlecardbackgroundimage", "bodybackgroundimage",
-			"rollhilightlineheight",
+			"rollhilightlineheight", "rollhilightcolornormal", "rollhilightcolorfumble", "rollhilightcolorcrit", "rollhilightcolorboth"
 		];
 
 		for (var x=0; x< styleList.length; x++) {
