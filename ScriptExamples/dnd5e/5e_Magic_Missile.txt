@@ -1,0 +1,122 @@
+!script {{
+  --/|Script Name : 5E Magic Missile
+  --/|Version     : 2.0
+  --/|Requires SC : 1.4.0+, alterbars or token-mod to apply damage (Optional)
+  --/|Author      : Kurt Jaegers
+
+  --/|Description : Handles the D&D 5E spell Magic Missile, with the ability to select a dynamic
+  --/|              number of targets. 
+  --/|
+  --/|              You can optionally have damage applied to impacted tokens. The script defaults to using
+  --/|              TokenMod to update Bar 3. These can be changed by altering the settings below.
+  --/|              If you use one die roll for Magic Missile, update the damageMode variable below.
+  
+  --/|Set this to either "token-mod", "alterbars", or anything else to not apply damage
+  --&damageApplyScript|token-mod
+
+  --/|Set this to the bar number you use to track hit points
+  --&hitPointsBar|3
+
+  --/|If damageMode is 1, a separate die will be rolled for each missile. Set this variable to 0 to, 
+  --/|only have a single damage die roll applied to each missile.
+  --&damageMode|1
+
+  --/|Magic Missile by the book does Force damage.
+  --&damageType|force
+
+  --/|===================== There are no customization options below this line =====================
+
+  --=SlotLevel|?{Spell Slot Level?|1|2|3|4|5|6|7|8|9}
+  --=MissileCount|[$SlotLevel] + 2
+  --=OneMissileDamage|1d4+1
+  -->BuildAndAskTargets|[$MissileCount.Total]
+  --=DisplayCount|1
+  --=MissileDamage|0
+  --#leftsub|Slot level [$SlotLevel]
+  --#rightsub|Ranged Attack
+  --#emoteText|@{selected|character_name} uses a level [$SlotLevel.Total] spell slot to fire [$MissileCount.Total] missiles of magical force!
+
+  --/|Determine damage subroutine. Start by assuming we aren't going to apply damage
+  --&damageRoutine|DontApplyDamage
+  --?[&damageApplyScript] -eq "token-mod"|&damageRoutine;ApplyDamageTokenmod
+  --?[&damageApplyScript] -eq "alterbars"|&damageRoutine;ApplyDamageAlterbars
+
+  --:MissileLoop|
+  -->FireMissile|[$DisplayCount.Total]
+  --=DisplayCount|[$DisplayCount] + 1
+  --?[$DisplayCount] -le [$MissileCount]|MissileLoop
+  --+Total|Total damage is [$MissileDamage]
+  -->DeductSpellSlot|
+  --#rightsub|Level [$SlotLevel] Left: [$SlotsRemaining] 
+  --X|
+
+  --:FireMissile|
+  --&ThisTarget|[&target[%1%]]
+  --?[&damageMode] -eq 1|=ThisMissile;1d4+1|=ThisMissile;[$OneMissileDamage]
+  --=MissileDamage|[$MissileDamage] + [$ThisMissile]
+  --+Missile|[$DisplayCount.Total] Hits [*[&ThisTarget]:character_name] for [$ThisMissile] [b]force[/b] damage
+  -->PlayEffects|@{selected|token_id};[&ThisTarget];none;burst-smoke;beam-magic;spell_01
+  --=ResultantDamage|[$ThisMissile.Raw]
+  --?"[*[&tokenid]:npc_immunities]" -inc "[&damageType]"|Immune
+  --?"[*[&tokenid]:npc_resistances]" -inc "[&damageType]"|Resistant
+  --?"[*[&tokenid]:npc_vulnerabilities]" -inc "[&damageType]"|Vulnerable
+  --^DoneResist|
+  --:Immune|
+  --=ResultantDamage|0
+  --^DoneResist|
+  --:Resistant|
+  --=ResultantDamage|[$ThisMissile] \ 2
+  --^DoneResist|
+  --:Vulnerable|
+  --=ResultantDamage|[$ThisMissile] * 2
+  --^DoneResist|
+
+  --:DoneResist|
+  -->[&damageRoutine]|[&ThisTarget];[&hitPointsBar];[$ResultantDamage.Raw]
+  --<|
+
+  --:BuildAndAskTargets|
+  --&TargetString|
+  --=targetCount|1
+  --:TargetLoop|
+  --&TargetString|+t;target[$targetCount.Raw];Missile [$targetCount.Raw] Target
+  --=targetCount|[$targetCount.Raw] + 1
+  --?[$targetCount] -le [%1%]|>AddSeparator
+  --?[$targetCount] -le [%1%]|TargetLoop
+  --iPlease click the button below to select magic missile targets. The same target can be selected multiple times;Select [%1%] Targets|[&TargetString]
+  --/|
+  --<|
+
+  --:AddSeparator|
+  --&TargetString|+||
+  --<|
+  
+  --/|===================== Subroutines =====================
+  
+  --/|There are three "ApplyDamage" subroutines - one for alterbars, one for token-mod, and one to not apply damage
+  
+  --/|Token-Mod doesn't have a "set to a relative number", so we get the current bar value, subtract thedamage amount
+  --/|make sure it doesn't fall below 0, and set the amount back into the bar.
+  --:ApplyDamageTokenmod|Parameters are tokenid;bar#;amount
+  --=newValue|[*[%1%]:t-bar[%2%]_value] - [%3%]
+  --?[$newValue] -lt 0|=newValue;0
+  --@token-mod|_ignore-selected _ids [%1%] _set bar[%2%]_value|[$newValue.Raw]
+  --<| 
+  
+  --/|AlterBars supports relative values for the amount parameter, so we just pass it the value with a "-" in front of it.
+  --:ApplyDamageAlterbars|Parameters are tokenid;bar#;amount
+  --@alter|_target|[%1%] _bar|[%2%] _amount|-[%3%] _show|none
+  --<|
+
+  --/|Just a dummy routine that doesn't do anything, but it is easier to do it this way than adding logic to see if we are
+  --/|skipping applying damage in the main routine.
+  --:DontApplyDamage|
+  --<|
+
+  --:PlayEffects|Parameters are : sourcetoken; targettoken; source effect; target effect; line effect; sound effect
+  --vtoken|[%1%] [%3%]
+  --vtoken|[%2%] [%4%]
+  --vbetweentokens|[%1%] [%2%] [%5%]
+  --@roll20AM|_audio,play,nomenu|[%6%]
+  --<|
+}}
