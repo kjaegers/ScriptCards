@@ -1,4 +1,4 @@
---/|ScriptCards Library: dnd5elib version 0.0.6
+--/|ScriptCards Library: dnd5elib version 0.0.6a
 --/|Provides various utility procedures for D&D 5E games
 --/|NOTES: Some procedures require ChatSetAttr to be installed, see the ScriptCards WIKI for procedure documentation
 
@@ -34,10 +34,10 @@
 --?"[*R:resource_left_name]" -ne "NoRepeatingAttributeLoaded"|_Lib5E_ResourceLoop
 --&[%3%]|NotFound --&[%4%]|NotFound --$[%4%]|0 
 --<|
---:_Lib5E_IsResourceClass| --+IsClass| --&[%3%]|class_resource_name --&[%4%]|class_resource --=[%4%]|[*[%1%]:class_resource] --<|
---:_Lib5E_IsResourceOther| --+IsOther!| --&[%3%]|class_resource_name --&[%4%]|class_resource --=[%4%]|[*[%1%]:other_resource] --<|
---:_Lib5E_IsResourceLeft| --+IsLeft| --&[%3%]|[*R>resource_left_name] --&[%4%]|[*R>resource_left] --=[%4%]|[*R:resource_left] --<|
---:_Lib5E_IsResourceRight| --+IsRight| --&[%3%]|[*R>resource_right_name] --&[%4%]|[*R>resource_right] --=[%4%]|[*R:resource_right] --<|
+--:_Lib5E_IsResourceClass| --&[%3%]|class_resource_name --&[%4%]|class_resource --=[%4%]|[*[%1%]:class_resource] --<|
+--:_Lib5E_IsResourceOther| --&[%3%]|class_resource_name --&[%4%]|class_resource --=[%4%]|[*[%1%]:other_resource] --<|
+--:_Lib5E_IsResourceLeft| --&[%3%]|[*R>resource_left_name] --&[%4%]|[*R>resource_left] --=[%4%]|[*R:resource_left] --<|
+--:_Lib5E_IsResourceRight| --&[%3%]|[*R>resource_right_name] --&[%4%]|[*R>resource_right] --=[%4%]|[*R:resource_right] --<|
 --<|
 
 
