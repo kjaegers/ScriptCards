@@ -1,5 +1,9 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.4.5  - Added deferral character support for get and set Meta APIs. "get" or "set" followed by the deferral character (default ^) and a . will
+           be replaced with "get.", so "get^.mule" becomes "get.mule" when the --@ call is made. Currently multiple deferral characters are not
+           supported (ie, get^^.) but I can look to add that support if necessary.
+
 v 1.4.4  - Updated distance calculations to take page scale (snapping_increment) into account
          - Added setting options for rollhilightcolornormal, rollhilightcolorcrit, rollhilightcolorfumble, and rollhilightcolorboth to allow the
            color of the box around rolls to be customized.

@@ -21,7 +21,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.4";
+	const APIVERSION = "1.4.5";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1318,6 +1318,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												stringVariables[variableName] = "";
 											}
 										}
+										if (params[1].toLowerCase() == "rollabletables") {
+											arrayVariables[params[2]] = [];
+											var tables = findObjs({_type: "rollabletable"});
+											for (var x=0; x<tables.length; x++) {
+												arrayVariables[params[2]].push(tables.get("name"));
+											}
+										}
 										if (params[1].toLowerCase() == "pageobjects") {
                                             var pages = findObjs({_type:"page"});
                                             arrayVariables[params[2]] = [];
@@ -1603,8 +1610,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							params = params.replace(regex, "@($1)");
 							regex = new RegExp(`${slash}*${slash}${cardParameters.deferralcharacter}${slash}((.*?)${slash})`,"g");
 							params = params.replace(regex, "*($1)");
+							regex = new RegExp(`get${slash}${cardParameters.deferralcharacter}${slash}.`,"g");
+							params = params.replace(regex, "get.");
+							regex = new RegExp(`set${slash}${cardParameters.deferralcharacter}${slash}.`,"g");
+							params = params.replace(regex, "set.");
 
 							var apiMessage = `!${apicmd}${spacer}${params}`.trim();
+							if (cardParameters.debug !== 0) {
+								log(`ScriptCards: Making API call - ${apiMessage}`);
+							}
 							sendChat(msg.who, apiMessage);
 						}
 
@@ -2219,8 +2233,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var charId = "";
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
-		while(content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
-			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];
+		while(content.match(/\[(?:[\$|\&|\#|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
+			var thisMatch = content.match(/\[(?:[\$|\&|\#|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];
 			var replacement = "";
 			matchCount++;
 			switch (thisMatch.charAt(1)) {
@@ -2239,12 +2253,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 				case "$":
 					// Replace a roll variable
-					var vName = thisMatch.match(/(?<=\[\$|\#).*?(?=[\.|\]])/g)[0];
+					//var vName = thisMatch.match(/(?<=\[\$|\#).*?(?=[\.|\]])/g)[0];
+					var vName = thisMatch.match(/(?<=\[\$).*?(?=[\.|\]])/g)[0];
 					var vSuffix = "Total";
 					if (thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g) !== null) {
 						vSuffix = thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g)[0];
-					}
-					var replacement = "";
+					}					
 					if (rollVariables[vName] !== undefined) {
 						replacement = vSuffix == "Raw" ? rollVariables[vName]["Total"] : rollVariables[vName][vSuffix]
 					}
@@ -2257,6 +2271,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					break;
 
+				case "#":
+					var tableName = thisMatch.match(/(?<=\[\#).*?(?=[\.|\]])/g)[0];
+					var table = findObj({_type: "rollabletable", name: tableName});					
+					if (table) { table = table[0] } else { log(`ScriptCards Error: Table ${tableName} not found in game.`)}
+					if (table) {
+						var vSuffix = "name";
+						if (thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g) !== null) {
+							vSuffix = thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g)[0];
+						}
+						if (table.get(vSuffix)) { replacement = table.get(vSuffix); }
+					}
+					break;
+
 				case "@":
 					// Replace Array References
 					var vName = thisMatch.match(/(?<=\[\$|\@).*?(?=[\(])/g)[0];
@@ -2264,7 +2291,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (thisMatch.match(/(?<=\().*?(?=[)]])/g) !== null) {
 						vIndex = parseInt(thisMatch.match(/(?<=\().*?(?=[)]])/g)[0]);
 					}
-					var replacement = "";
 					if (arrayVariables[vName] && arrayVariables[vName].length > vIndex) {
 						replacement = arrayVariables[vName][vIndex];
 					}
