@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.6";
+	const APIVERSION = "1.4.6a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2234,8 +2234,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var charId = "";
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
-		while(content.match(/\[(?:[\$|\&|\#|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
-			var thisMatch = content.match(/\[(?:[\$|\&|\#|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];
+		while(content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
+			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];
 			var replacement = "";
 			matchCount++;
 			switch (thisMatch.charAt(1)) {
@@ -2272,7 +2272,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					break;
 
-				case "#":
+/* 				case "#":
 					var tableName = thisMatch.match(/(?<=\[\#).*?(?=[\.|\]])/g)[0];
 					var table = findObjs({_type: "rollabletable", name: tableName});					
 					if (table) { table = table[0] } else { log(`ScriptCards Error: Table ${tableName} not found in game.`)}
@@ -2284,7 +2284,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						if (table.get(vSuffix)) { replacement = table.get(vSuffix); }
 					}
 					break;
-
+ */
 				case "@":
 					// Replace Array References
 					var vName = thisMatch.match(/(?<=\[\$|\@).*?(?=[\(])/g)[0];
