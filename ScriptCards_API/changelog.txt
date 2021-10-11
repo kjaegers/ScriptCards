@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.4.6  - Corrected sandbox crash introduced in 1.4.5 (findObj vs findObjs)... *sigh*
+           Added support for AirBag Crash Handler API Script (if installed)
+
 v 1.4.5  - Added deferral character support for get and set Meta APIs. "get" or "set" followed by the deferral character (default ^) and a . will
            be replaced with "get.", so "get^.mule" becomes "get.mule" when the --@ call is made. Currently multiple deferral characters are not
            supported (ie, get^^.) but I can look to add that support if necessary.

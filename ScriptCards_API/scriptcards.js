@@ -1,9 +1,10 @@
 // Github:   https://gist.github.com/kjaegers/515dff0f04c006d7192e0fec534d96bf
 // By:       Kurt Jaegers
 // Contact:  https://app.roll20.net/users/2365448/kurt-j
+if (typeof MarkStart === "function") MarkStart('ScriptCards');
 var API_Meta = API_Meta||{};
 API_Meta.ScriptCards={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
-{try{throw new Error('');}catch(e){API_Meta.ScriptCards.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-6);}}
+{try{throw new Error('');}catch(e){API_Meta.ScriptCards.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-7);}}
 
 var scriptCardsStashedScripts = {};
 
@@ -21,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.5";
+	const APIVERSION = "1.4.6";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2273,7 +2274,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 				case "#":
 					var tableName = thisMatch.match(/(?<=\[\#).*?(?=[\.|\]])/g)[0];
-					var table = findObj({_type: "rollabletable", name: tableName});					
+					var table = findObjs({_type: "rollabletable", name: tableName});					
 					if (table) { table = table[0] } else { log(`ScriptCards Error: Table ${tableName} not found in game.`)}
 					if (table) {
 						var vSuffix = "name";
@@ -3604,3 +3605,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 // Meta marker for the end of ScriptCards
 {try{throw new Error('');}catch(e){API_Meta.ScriptCards.lineCount=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-API_Meta.ScriptCards.offset);}}
+
+// Support for AirBag Crash Handler (if installed)
+if (typeof MarkStop === "function") MarkStop('ScriptCards');
