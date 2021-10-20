@@ -1,4 +1,4 @@
---/|ScriptCards Library: dnd5elib version 0.0.6a
+--/|ScriptCards Library: dnd5elib version 0.0.6b
 --/|Provides various utility procedures for D&D 5E games
 --/|NOTES: Some procedures require ChatSetAttr to be installed, see the ScriptCards WIKI for procedure documentation
 
