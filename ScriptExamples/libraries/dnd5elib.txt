@@ -35,7 +35,7 @@
 --&[%3%]|NotFound --&[%4%]|NotFound --$[%4%]|0 
 --<|
 --:_Lib5E_IsResourceClass| --&[%3%]|class_resource_name --&[%4%]|class_resource --=[%4%]|[*[%1%]:class_resource] --<|
---:_Lib5E_IsResourceOther| --&[%3%]|class_resource_name --&[%4%]|class_resource --=[%4%]|[*[%1%]:other_resource] --<|
+--:_Lib5E_IsResourceOther| --&[%3%]|other_resource_name --&[%4%]|other_resource --=[%4%]|[*[%1%]:other_resource] --<|
 --:_Lib5E_IsResourceLeft| --&[%3%]|[*R>resource_left_name] --&[%4%]|[*R>resource_left] --=[%4%]|[*R:resource_left] --<|
 --:_Lib5E_IsResourceRight| --&[%3%]|[*R>resource_right_name] --&[%4%]|[*R>resource_right] --=[%4%]|[*R:resource_right] --<|
 --<|
