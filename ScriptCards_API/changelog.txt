@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.4.7  - Added XdY!h and XdY!l roll formulas to support Deadlands-style rolls. This notation means roll dY X times, with exploding dice on accessing
+           (the max value on the die) and keep either the highest (h) or lowest (l) result.
+
 v 1.4.6  - Corrected sandbox crash introduced in 1.4.5 (findObj vs findObjs)... *sigh*
            Added support for AirBag Crash Handler API Script (if installed)
 

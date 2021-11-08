@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.6a";
+	const APIVERSION = "1.4.7";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2772,6 +2772,64 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				}
 				rollResult.Text += ") ";
 			}
+
+			// A die specifier in XdX!h, XdX!l or XdX!>Xh or XdX!>Xl format (exploding dice, keep highest or lowest)
+			if (text.match(/^\d+d\d+!([hl])?$/)) {
+				componentHandled = true;
+				var count = Number(text.split("d")[0]);
+				var sides = Number(text.split("d")[1].split("!")[0]);
+				var rerollnumber = sides;
+				var rollSet = [];
+				var rollTextSet = [];
+				var keepType = text.split("!")[1];
+				var comptype = "G";
+				rollResult.Text += `${count}d${sides}!${keepType} (`;
+				for (c=0; c<count; c++) {
+					var thisRoll = 0;
+					var subroll = 0
+					var thisRollText = ""
+
+					subroll = randomInteger(sides);
+					if (comptype == "G") {
+						thisRoll = subroll;
+						thisRollText += subroll.toString();
+						while (subroll >= rerollnumber) {
+							subroll = randomInteger(sides);
+							thisRoll += subroll;
+							thisRollText += "!" + subroll.toString();
+						}
+					}
+					rollSet.push(thisRoll);
+					rollTextSet.push(thisRollText);
+				}
+
+				if (keepType === "l") {
+					rollSet.sort(function(a, b){return a-b});
+				} else {
+					rollSet.sort(function(a, b){return b-a});
+				}
+
+				var keepCount = 1;
+
+				for (c=0; c<count; c++) {
+					if (c < keepCount) {
+						switch (currentOperator) {
+							case "+": rollResult.Total += rollSet[c]; rollResult.Base += rollSet[c]; break;
+							case "-": rollResult.Total -= rollSet[c]; rollResult.Base -= rollSet[c]; break;
+							case "*": rollResult.Total *= rollSet[c]; rollResult.Base *= rollSet[c]; break;
+							case "/": rollResult.Total /= rollSet[c]; rollResult.Base /= rollSet[c]; break;
+							case "%": rollResult.Total %= rollSet[c]; rollResult.base %= rollSet[c]; break;
+							case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
+						}
+					}
+					if (rollSet[c] == 1) { rollResult.Ones++; hadOne = true; }
+					if (rollSet[c] == sides) { rollResult.Aces++; hadAce = true; }
+					if (rollSet[c] % 2 == 0) { rollResult.Evens++; } else { rollResult.Odds++; }
+					rollResult.Text += rollTextSet[c];
+					if (c<count-1) { rollResult.Text += " ," }
+				}
+				rollResult.Text += ") ";
+			}			
 
 			// A die specifier in XdX>X or XdX<X format
 			if (text.match(/^(\d+)d(\d+)([\>\<])(\d+)$/)) {
