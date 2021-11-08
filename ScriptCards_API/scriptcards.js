@@ -2774,7 +2774,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			}
 
 			// A die specifier in XdX!h, XdX!l or XdX!>Xh or XdX!>Xl format (exploding dice, keep highest or lowest)
-			if (text.match(/^\d+d\d+!([hl])?$/)) {
+			if (text.match(/^\d+d\d+!([hl])$/)) {
 				componentHandled = true;
 				var count = Number(text.split("d")[0]);
 				var sides = Number(text.split("d")[1].split("!")[0]);
