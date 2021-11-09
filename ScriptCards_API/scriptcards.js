@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.7";
+	const APIVERSION = "1.4.8";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -3179,21 +3179,51 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var work = statusmarkers[sm].replace("[sm","<img ").replace("[/sm]","></img>").replace("]", " src=" + tokenMarkerURLs[markername]);
 			outputLine = outputLine.replace(statusmarkers[sm], work);
 		}
-		var buttons = outputLine.match(/\[button\](.*?)\:\:(.*?)\[\/button\]/gi);
+		//var buttons = outputLine.match(/\[button\](.*?)\:\:(.*?)\[\/button\]/gi);
+		var buttons = outputLine.match(/\[button(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?\](.*?)\:\:(.*?)\[\/button\]/gi);
 		for (var button in buttons) {
-			var title = buttons[button].split("::")[0].replace("[button]","").replace("[Button]", "").replace("[BUTTON]","");
-			var action = buttons[button].split("::")[1].replace("[/button]","").replace("[/Button]", "").replace("[/BUTTON]","");
+			var customTextColor = undefined;
+			var customBackgroundColor = undefined;
+			var basebutton = buttons[button].replace(/\[button(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?\](.*?)/gi, "[button]");
+			if (basebutton.toLowerCase() !== buttons[button].toLowerCase()) {
+				var tempbutton = buttons[button].replace("[button:", "").replace("[Button:","").replace("[BUTTON:", "").split("]")[0];
+				var customs = tempbutton.split(":");
+				if (customs.length >= 1) {
+					customTextColor = customs[0];
+					if (customs.length == 2) {
+						customBackgroundColor = customs[1];
+					}
+				}
+			}
+			//var title = buttons[button].split("::")[0].replace("[button]","").replace("[Button]", "").replace("[BUTTON]","");
+			//var action = buttons[button].split("::")[1].replace("[/button]","").replace("[/Button]", "").replace("[/BUTTON]","");
+			var title = basebutton.split("::")[0].replace("[button]","").replace("[Button]", "").replace("[BUTTON]","");
+			var action = basebutton.split("::")[1].replace("[/button]","").replace("[/Button]", "").replace("[/BUTTON]","");
 			if (cardParameters.dontcheckbuttonsforapi == "0") {
 				action = action.replace(/(^|\ +)_/g, " --");
 			}
-			outputLine = outputLine.replace(buttons[button], makeButton(title,action, cardParameters));
+			outputLine = outputLine.replace(buttons[button], makeButton(title,action, cardParameters, customTextColor, customBackgroundColor));
 		}
 
-		var sheetbuttons = outputLine.match(/\[sheetbutton\](.*?)\:\:(.*?)\:\:(.*?)\[\/sheetbutton\]/gi);
+		//var sheetbuttons = outputLine.match(/\[sheetbutton\](.*?)\:\:(.*?)\:\:(.*?)\[\/sheetbutton\]/gi);
+		var sheetbuttons = outputLine.match(/\[sheetbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?\](.*?)\:\:(.*?)\:\:(.*?)\[\/sheetbutton\]/gi);
 		for (var button in sheetbuttons) {
-			var title = sheetbuttons[button].split("::")[0].replace("[sheetbutton]","").replace("[Sheetbutton]", "").replace("[SHEETBUTTON]","");
+			var customTextColor = undefined;
+			var customBackgroundColor = undefined;
+			var basebutton = sheetbuttons[button].replace(/\[sheetbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?\](.*?)/gi, "[sheetbutton]");
+			if (basebutton.toLowerCase() !== sheetbuttons[button].toLowerCase()) {
+				var tempbutton = sheetbuttons[button].replace("[sheetbutton:", "").replace("[Sheetbutton:","").replace("[SHEETBUTTON:", "").split("]")[0];
+				var customs = tempbutton.split(":");
+				if (customs.length >= 1) {
+					customTextColor = customs[0];
+					if (customs.length == 2) {
+						customBackgroundColor = customs[1];
+					}
+				}
+			}
+			var title = basebutton.split("::")[0].replace("[sheetbutton]","").replace("[Sheetbutton]", "").replace("[SHEETBUTTON]","");
 			var actor = "";
-			var tryID = sheetbuttons[button].split("::")[1];
+			var tryID = basebutton.split("::")[1];
 			if (getObj("character", tryID)) {
 				actor = tryID;
 			} else {
@@ -3210,20 +3240,33 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				}
 			}
 			if (actor !== "") {
-				var action = "~" + actor + "|" + sheetbuttons[button].split("::")[2].replace("[/sheetbutton]","").replace("[/Sheetbutton]", "").replace("[/SHEETBUTTON]","");
+				var action = "~" + actor + "|" + basebutton.split("::")[2].replace("[/sheetbutton]","").replace("[/Sheetbutton]", "").replace("[/SHEETBUTTON]","");
 				if (cardParameters.dontcheckbuttonsforapi == "0") {
 					action = action.replace(/(^|\ +)_/g, " --");
 				}
-				outputLine = outputLine.replace(sheetbuttons[button], makeButton(title,action, cardParameters));
+				outputLine = outputLine.replace(sheetbuttons[button], makeButton(title,action, cardParameters, customTextColor, customBackgroundColor));
 			}
 		}
 
-		var reentrantbuttons = outputLine.match(/\[rbutton\](.*?)\:\:(.*?)\[\/rbutton\]/gi);
+		var reentrantbuttons = outputLine.match(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?\](.*?)\:\:(.*?)\[\/rbutton\]/gi);
 		for (var button in reentrantbuttons) {
-			var title = reentrantbuttons[button].split("::")[0].replace("[rbutton]","").replace("[Rbutton]", "").replace("[RBUTTON]","");
-			var reentrylabel = reentrantbuttons[button].split("::")[1].replace("[/rbutton]","").replace("[/Rbutton]", "").replace("[/RBUTTON]","");
+			var customTextColor = undefined;
+			var customBackgroundColor = undefined;
+			var basebutton = reentrantbuttons[button].replace(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?\](.*?)/gi, "[rbutton]");
+			if (basebutton.toLowerCase() !== reentrantbuttons[button].toLowerCase()) {
+				var tempbutton = reentrantbuttons[button].replace("[rbutton:", "").replace("[Rbutton:","").replace("[RBUTTON:", "").split("]")[0];
+				var customs = tempbutton.split(":");
+				if (customs.length >= 1) {
+					customTextColor = customs[0];
+					if (customs.length == 2) {
+						customBackgroundColor = customs[1];
+					}
+				}
+			}
+			var title = basebutton.split("::")[0].replace("[rbutton]","").replace("[Rbutton]", "").replace("[RBUTTON]","");
+			var reentrylabel = basebutton.split("::")[1].replace("[/rbutton]","").replace("[/Rbutton]", "").replace("[/RBUTTON]","");
 			var action = "!sc-reentrant " + cardParameters["reentrant"] + "-|-" + reentrylabel
-			outputLine = outputLine.replace(reentrantbuttons[button], makeButton(title,action,cardParameters));
+			outputLine = outputLine.replace(reentrantbuttons[button], makeButton(title,action,cardParameters, customTextColor, customBackgroundColor));
 		}
 
 		// [apply]15[/apply]
@@ -3315,8 +3358,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return attrCount;
 	}
 
-	function makeButton(title, url, parameters) {
-        return `<a style="${replaceStyleInformation(buttonStyle, parameters)}" href="${removeTags(removeBRs(url))}">${removeTags(removeBRs(title))}</a>`;
+	function makeButton(title, url, parameters, customTextColor, customBackgroundColor) {
+		var thisButtonStyle = buttonStyle;
+		if (customTextColor) { thisButtonStyle = thisButtonStyle.replace("!{buttontextcolor}", customTextColor) }
+		if (customBackgroundColor) { thisButtonStyle = thisButtonStyle.replace("!{buttonbackground}", customBackgroundColor) }
+        return `<a style="${replaceStyleInformation(thisButtonStyle, parameters)}" href="${removeTags(removeBRs(url))}">${removeTags(removeBRs(title))}</a>`;
 	}
 
 	function removeInlineRolls(text, cardParameters) {
