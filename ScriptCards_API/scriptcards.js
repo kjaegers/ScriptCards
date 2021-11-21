@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.8";
+	const APIVERSION = "1.4.9";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2497,6 +2497,32 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (thisRoll == sides) { rollResult.Aces++; hadAce = true; }
 					if (thisRoll % 2 == 0) { rollResult.Evens++; } else { rollResult.Odds++; }
 					rollResult.Text += thisRoll;
+					if (c<count-1) { rollResult.Text += "," }
+				}
+				rollResult.Text += ") ";
+			}
+
+			// Fudge dice (XdF)
+			if (text.match(/^\d+d[Ff]$/)) {
+				componentHandled = true;
+				var count=text.split("d")[0];
+				var sides=3;
+				rollResult.Text += `${count}dF (`;
+				for (c=0; c<count; c++) {
+					var thisRoll = randomInteger(sides) - 2;
+					switch (currentOperator) {
+						case "+": rollResult.Total += thisRoll; rollResult.Base += thisRoll; break;
+						case "-": rollResult.Total -= thisRoll; rollResult.Base -= thisRoll; break;
+						case "*": rollResult.Total *= thisRoll; rollResult.Base *= thisRoll; break;
+						case "/": rollResult.Total /= thisRoll; rollResult.Base /= thisRoll; break;
+						case "%": rollResult.Total %= thisRoll; rollResult.Base %= thisRoll; break;
+						case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
+					}
+					switch (thisRoll) {
+						case -1: rollResult.Text += "[-]"; break;
+						case  0: rollResult.Text += "[&nbsp;]"; break;
+						case  1: rollResult.Text += "[+]"; break; 
+					}
 					if (c<count-1) { rollResult.Text += "," }
 				}
 				rollResult.Text += ") ";
