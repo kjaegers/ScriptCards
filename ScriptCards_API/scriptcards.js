@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.9";
+	const APIVERSION = "1.4.9a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2519,9 +2519,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
 					}
 					switch (thisRoll) {
-						case -1: rollResult.Text += "[-]"; break;
-						case  0: rollResult.Text += "[&nbsp;]"; break;
-						case  1: rollResult.Text += "[+]"; break; 
+						case -1: rollResult.Text += "-"; break;
+						case  0: rollResult.Text += "0"; break;
+						case  1: rollResult.Text += "+"; break; 
 					}
 					if (c<count-1) { rollResult.Text += "," }
 				}

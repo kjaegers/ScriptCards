@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.4.9a - Minor tweak to visual style of hover-over text for Fudge dice.
+
 v 1.4.9  - Added support for Fudge dice rolling (XdF) with values of "-", " ", and "+".
 
 v 1.4.8  - Added the ability to set button colors (text and background) inline using [button:#aabbcc:#ddeeff]. The first set of color codes is the text
