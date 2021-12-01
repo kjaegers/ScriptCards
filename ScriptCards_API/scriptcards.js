@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.9a";
+	const APIVERSION = "1.4.10";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1311,7 +1311,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
                                             if (arrayVariables[params[2]]) {
                                                 arrayVariables[params[2]].sort();
                                             }
-                                        }
+										}
+										if (params[1].toLowerCase() == "numericsort") {
+                                            if (arrayVariables[params[2]]) {
+                                                arrayVariables[params[2]].sort(function(a, b){return parseInt(a) - parseInt(b)});
+                                            }
+										}
 										if (params[1].toLowerCase() == "stringify") {
 											if (arrayVariables[params[2]]) {
 												stringVariables[variableName] = arrayVariables[params[2]].join(";");
