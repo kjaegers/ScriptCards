@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.4.10 - Added function array;numericsort. Same as the array;sort function, except it sorts numerically instead of alphabetically.
+
 v 1.4.9a - Minor tweak to visual style of hover-over text for Fudge dice.
 
 v 1.4.9  - Added support for Fudge dice rolling (XdF) with values of "-", " ", and "+".
