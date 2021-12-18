@@ -1,8 +1,12 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.6.6
+  --/|Version     : 1.6.7
   --/|Requires SC : 1.3.9+
   --/|Author      : Kurt Jaegers
+
+  --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
+  --/|                to make settings changes, make them in an external editor (like NOTEPAD) and copy/paste the whole
+  --/|                macro into the Roll20 editor.
 
   --/|Description : This script can be used with either a PC or NPC selected. It will generate an action menu with clickable
   --/|              buttons to execute character actions and cast spells. The menu is whispered to the player executing the
@@ -27,8 +31,11 @@
   --/|If this value is set to 1, prepared spell checks for NPCs will be skipped
   --&skipNPCPrepCheck|0
 
-  --/|If this value is set to 1, NPC attack information will be sent to the GM only, and AC will be masked from the players.
+  --/|If this value is set to 1 PC attack rolls will have the target's AC masked from players.
   --&sendGmInfo|0
+
+  --/|If this value is set to 1, NPC actions (except spellcasting) will be whispered to the sender only and not displayed to everyone
+  --&AllNPCActionsToSender|0
 
   --/|These are here for future implementation, and don't do anything quite yet:
   --&hipoint_bar_number|3
@@ -191,7 +198,11 @@
   --/|of the EXEC_NPC_ACTION code
 
   --:EXEC_NPC_ACTION|action_name
+  --?[&AllNPCActionsToSender] -eq 1|[
+  --#whisper|self
+  --]|[
   --#whisper|
+  --]|
   --#emotestate|visible
   --~action_name|string;before;|;[&reentryval]
   --~action_target|string;after;|;[&reentryval]
@@ -247,7 +258,11 @@
   --:EXEC_NPC_BONUS_ACTION|action_name
   --~action_name|string;before;|;[&reentryval]
   --~action_target|string;after;|;[&reentryval]
+  --?[&AllNPCActionsToSender] -eq 1|[
+  --#whisper|self
+  --]|[
   --#whisper|
+  --]|
   --#emotestate|visible
   --#targettoken|[&action_target]
   --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]
@@ -260,7 +275,11 @@
   --:EXEC_NPC_REACTION|action_name
   --~action_name|string;before;|;[&reentryval]
   --~action_target|string;after;|;[&reentryval]
+  --?[&AllNPCActionsToSender] -eq 1|[
+  --#whisper|self
+  --]|[
   --#whisper|
+  --]|
   --#emotestate|visible
   --#targettoken|[&action_target]
   --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]
@@ -271,7 +290,11 @@
   --X|
 
   --:EXEC_NPC_LEGENDARY_ACTION|action_name
+  --?[&AllNPCActionsToSender] -eq 1|[
+  --#whisper|self
+  --]|[
   --#whisper|
+  --]|
   --#emotestate|visible
   --~action_name|string;before;|;[&reentryval]
   --~action_target|string;after;|;[&reentryval]
