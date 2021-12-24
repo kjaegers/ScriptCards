@@ -2895,11 +2895,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			if (text.match(/^\{.*\}$/)) {
 				var operation = text.substring(1, text.length-1);
 				var precision = 0;
-				log(`Operation: ${operation}, Precision: ${precision}`);
 				if (operation.startsWith("ROUND:")) {
 					precision = Math.min(6,parseInt(operation.substring(6)));
 					operation = "ROUND:";
-					log(`Operation: ${operation}, Precision: ${precision}`);
 				}
 				switch (operation.toLowerCase()) {
 					case "abs":
