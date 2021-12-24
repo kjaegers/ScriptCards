@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.4.11 - Extended the {ROUND} roll modifier to accept a precision level (ie, {ROUND:2} will round the current value to 2 decimal places). The maximum
+           supported precision level is 6.
+
 v 1.4.10 - Added function array;numericsort. Same as the array;sort function, except it sorts numerically instead of alphabetically.
 
 v 1.4.9a - Minor tweak to visual style of hover-over text for Fudge dice.

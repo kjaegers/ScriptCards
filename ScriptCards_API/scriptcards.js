@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.10";
+	const APIVERSION = "1.4.11";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2894,6 +2894,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			// A mathmatical function
 			if (text.match(/^\{.*\}$/)) {
 				var operation = text.substring(1, text.length-1);
+				var precision = 0;
+				log(`Operation: ${operation}, Precision: ${precision}`);
+				if (operation.startsWith("ROUND:")) {
+					precision = Math.min(6,parseInt(operation.substring(6)));
+					operation = "ROUND:";
+					log(`Operation: ${operation}, Precision: ${precision}`);
+				}
 				switch (operation.toLowerCase()) {
 					case "abs":
 						rollResult.Total = Math.abs(rollResult.Total);
@@ -2973,6 +2980,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						rollResult.Total = Math.cbrt(rollResult.Total);
 						rollResult.Text += "{CUBEROOT}";
 						break;					
+
+					case "round:":
+						rollResult.Total = rollResult.Total.toFixed(precision);
+						break;
 
 				}
 			}
@@ -3412,6 +3423,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	// Check the active repeating section for any attribute references that need to be replaced
 	function parseRepeatingSection() {
 		if (!repeatingSection) { return; }
+		/*
 		for (var i in repeatingSection) {
 			var matches = repeatingSection[i].match(/\@\{(.+?)\}/g);
 			if (matches) {
@@ -3420,6 +3432,39 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					while (repeatingSection[i].indexOf(item) >= 0) { repeatingSection[i] = repeatingSection[i].replace(item, attribute); }
 				});
 			}
+		}
+		*/
+
+		var repChar = getObj("character", repeatingCharID) || undefined;
+		if (repChar) {
+			for (var i in repeatingSection) {
+				log(i);
+				log(repeatingSection[i]);
+				if (repeatingSection[i].match(/\@\{[^{}]+\}/g)) {
+					var matches = repeatingSection[i].match(/\@\{[^{}]+\}/g);
+					matches.forEach(function(thisMatch) {
+						log(thisMatch);
+						var thisAttr = thisMatch.replace("@{", "").replace("}", "");
+						log(thisAttr);
+						var attribute = "";
+						attribute - repeatingCharAttrs[thisAttr]; 
+						if (attribute == "") { attribute = getAttrByName(repeatingCharID, thisAttr); }
+						log(attribute);
+						repeatingSection[i] = repeatingSection[i].replace(thisMatch, attribute);
+						log(repeatingSection[i]);
+					});
+				}
+				/*
+				while (repeatingSection[i].match(/\@\{[^{}]+\}/g)) {
+					var thisMatch = repeatingSection[i].match(/\@\{[^{}]+\}/g);
+					var thisAttr = thisMatch[0].replace("^\@\{", "").replace("}$", "");
+					var attribute = repChar.get(thisAttr) || "";
+					repeatingSection[i] = repeatingSection[i].replace(thisMatch, attribute);
+					var crash = null; log(crash.ToString());
+				}
+				*/
+			}
+	
 		}
 	}
 
