@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.6.7
+  --/|Version     : 1.6.8
   --/|Requires SC : 1.3.9+
   --/|Author      : Kurt Jaegers
 
@@ -476,6 +476,11 @@
 
   --:EXEC_PC_CANTRIP|
   --+|[hr #58180d]
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender]||[
+  --#whisper|self
+  --]|[
+  --#whisper|
+  --]|
   --~cantrip_name|string;before;|;[&reentryval]
   --~cantrip_target|string;after;|;[&reentryval]
   --#whisper|
@@ -533,6 +538,11 @@
 
   --:EXEC_PC_SPELL|spellInfo1=Spell Level, 2=SpellName, 3=Target ID, 4=Slot Level
   --+|[hr #58180d]
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender]||[
+  --#whisper|self
+  --]|[
+  --#whisper|
+  --]|
   --~spellInfo|string;split;|;[&reentryval]
   --=UpCast|[&spellInfo4] - [&spellInfo1]
   --#title|[&spellInfo2]
