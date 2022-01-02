@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.12";
+	const APIVERSION = "1.5.0";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -639,6 +639,151 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									}
 								break;
 								*/
+							}
+						}
+
+						// Handle setting object values
+						if (thisTag.charAt(0) === "!") {
+							if (thisTag.length > 1) {
+								var objectType = thisTag.substring(1,2).toLowerCase();
+								switch (objectType) {
+									case "t":
+										var tokenID = thisTag.substring(3);
+										if (tokenID.toLowerCase() == "s") {
+											if (cardParameters.sourcetoken) {
+												tokenID = cardParameters.sourcetoken;
+											}
+										}
+										if (tokenID.toLowerCase() == "t") {
+											if (cardParameters.targettoken) {
+												tokenID = cardParameters.targettoken;
+											}
+										}
+										var settings = thisContent.split("|");
+										var theToken = getObj("graphic", tokenID);
+										if (theToken) {
+											for (var i=0; i < settings.length; i++) {
+												var thisSetting = settings[i].split(":");
+												var settingName = thisSetting[0];
+												var settingValue = thisSetting[1];
+												if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
+													var currentValue = theToken.get(settingName);
+													var delta = settingValue.substring(2);
+													if (isNumber(currentValue) && isNumber(delta)) {
+														settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
+													} else {
+														settingValue = currentValue + delta;
+													}
+												}
+												theToken.set(settingName, settingValue);
+											}
+										} else {
+											log(`ScriptCards Error: Modify Token called without valid TokenID`)
+										}
+										break;
+									
+									case "c":
+										var charID = thisTag.substring(3);
+										if (charID.toLowerCase() == "s") {
+											if (cardParameters.sourcecharacter) {
+												tokenID = cardParameters.sourcecharacter.id;
+											}
+										}
+										if (charID.toLowerCase() == "t") {
+											if (cardParameters.targetcharacter) {
+												tokenID = cardParameters.targetcharacter.id;
+											}
+										}
+										var settings = thisContent.split("|");
+										var theCharacter = getObj("graphic", charID);
+										if (theCharacter) {
+											for (var i=0; i < settings.length; i++) {
+												var thisSetting = settings[i].split(":");
+												var settingName = thisSetting[0];
+												var settingValue = thisSetting[1];
+												if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
+													var currentValue = theCharacter.get(settingName);
+													var delta = settingValue.substring(2);
+													if (isNumber(currentValue) && isNumber(delta)) {
+														settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
+													} else {
+														settingValue = currentValue + delta;
+													}
+												}												
+												theCharacter.set(settingName, settingValue);
+											}
+										} else {
+											log(`ScriptCards Error: Modify character called without valid characterID`)
+										}
+										break;
+
+										case "a":
+											var objectID = thisTag.substring(3);
+											if (objectID.toLowerCase() == "s") {
+												if (cardParameters.sourcecharacter) {
+													objectID = cardParameters.sourcecharacter.id;
+												}
+											}
+											if (objectID.toLowerCase() == "t") {
+												if (cardParameters.targetcharacter) {
+													objectID = cardParameters.targetcharacter.id;
+												}
+											}
+											var characterObj = undefined;
+											var tokenTest = getObj("graphic", objectID);
+											if (tokenTest) {
+												characterObj = getObj("character", tokenTest.get("represents"));
+											} else {
+												characterObj = getObj("character", objectID);
+											}
+											if (characterObj !== undefined) {
+												var settings = thisContent.split("|");
+												for (var i=0; i < settings.length; i++) {
+													var thisSetting = settings[i].split(":");
+													var settingName = thisSetting[0];
+													var createAttribute = false;
+													var setType = "current";
+													if (settingName.startsWith("!")) {
+														createAttribute = true;
+														settingName = settingName.substring(1);
+													}
+													if (settingName.endsWith("^")) {
+														setType = "max";
+														settingName = settingName.slice(0,-1);
+													}
+													var settingValue = thisSetting[1];
+													var theAttribute = findObjs({
+														type: 'attribute',
+														characterid: characterObj.id,
+														name: settingName
+													}, {caseInsensitive: true})[0];
+													if (theAttribute) {
+														if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
+															var currentValue = theAttribute.get(setType);
+															var delta = settingValue.substring(2);
+															if (isNumber(currentValue) && isNumber(delta)) {
+																settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
+															} else {
+																settingValue = currentValue + delta;
+															}
+														}														
+														theAttribute.set(setType, settingValue);
+													} else {
+														if (createAttribute) {
+															theAttribute = createObj('attribute', {
+																characterid: characterObj.id,
+																name: settingName,
+																current: setType == "current" ? settingValue : "",
+																max: setType == "max" ? settingValue : ""
+															});
+														}
+													}
+												}													
+											} else {
+												log(`ScriptCards Error: Modify attribute called without valid ID`)
+											}
+											break;										
+								}
 							}
 						}
 
@@ -3738,6 +3883,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function isNumeric(n) {
 		return !isNaN(parseInt(n));
+	}
+
+	function isNumber(n) {
+		return !isNaN(Number(n));
 	}
 
 	function decodeGMNotes(notes) {

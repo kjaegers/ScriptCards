@@ -1,5 +1,45 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.5.0  - Object modification support is now available in ScriptCards. As of 1.5.0, you can use the --! command to modify object properties in the game. 
+           This may help reduce the reliance on the --@ command to run other API commands to modify token/character values. The biggest benefit of this is
+           that the changes happen as the script is processing, so the new values are available right away. 
+           
+           The format of the command is:
+           --!<objectType>:<objectId>|setting:value|setting:value|setting:value...
+           objectType can be one of "t" for token, "c" for character, or "a" for character attribute
+           objectId can be a token id or a character id (or "S"/"T" for the Source/Target token/char defined with --#sourcetoken and --#targettoken)
+           settings and value pairs can be chained in a single statement separated by | to impact more than one property/attribute with a single line
+
+           Values can be prefixed with += or -= to add/subtract from the current value (no bounds checking is done). Using [*X] notation, the updated
+           values can be read immediately. Using += or -= on non-numeric data will simply result in a string append.
+
+           For "a" types, setting names can be prefixed with a ! to create the attribute if it doesn't exist, and postfixed with ^ to set the max
+           value instead of the current value.
+
+           Note that there are VERY few attributes associated with a character object, and there are likely few cases where you would want to set anything
+           on the character object, but it *is* still possible.
+           
+           Examples:
+             Set the value of bar1_value for the selected token to 5
+             --!t:@{selected|token_id}|bar1_value:5
+
+             Add 1 to the bar3_value for the selected token
+             --!t:@{selected|token_id}|bar3_value:+=1
+
+             Set bar2_value to 5 and bar2_max to 10 for the selecte token
+             --!t:@{selected|token_id}|bar2_value:5|bar2_max:10
+
+             For the character the selected token represents, set "dndstying" attribute on, set "size" to enormous, and set "attitude" to epic. The 
+             attitude attribute will be created if it doesn't exist on the character already. The same is not true for dndstying and size:
+             --!a:@{selected|token_id}|dndstyling:on|size:enormous|!attitude:epic
+
+             Adds 50 to the npc_xp attribute for the character represented by the selected token, displaying the value before and after the update:
+             !script {{
+               --+XP|[*@{selected|token_id}:npc_xp]
+               --!a:@{selected|token_id}|npc_xp:+=50
+               --+XP|[*@{selected|token_id}:npc_xp]
+             }}
+
 v 1.4.12 - Added three new roll modifiers: {MAX:X}, {MIN:X}, and {CLAMP:X:Y}. For MAX, the current value of the roll will be reduced to X if it is
            greater than X. For MIN, the current value of the roll will be increased to X if it is lower than X. CLAMP will ensure that the value is
            between the X and Y value (inclusive). X is the smallest allowed value and Y is the largest.
