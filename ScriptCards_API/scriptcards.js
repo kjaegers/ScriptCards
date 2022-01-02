@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.4.11";
+	const APIVERSION = "1.4.12";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1622,7 +1622,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							params = params.replace(regex, "set.");
 
 							var apiMessage = `!${apicmd}${spacer}${params}`.trim();
-							if (cardParameters.debug !== 0) {
+							if (cardParameters.debug !== "0") {
 								log(`ScriptCards: Making API call - ${apiMessage}`);
 							}
 							sendChat(msg.who, apiMessage);
@@ -2895,9 +2895,28 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			if (text.match(/^\{.*\}$/)) {
 				var operation = text.substring(1, text.length-1);
 				var precision = 0;
+				var value1 = 0;
+				var value2 = 0;
 				if (operation.toLowerCase().startsWith("round:")) {
 					precision = Math.min(6,parseInt(operation.substring(6)));
 					operation = "ROUND:";
+				}
+				if (operation.toLowerCase().startsWith("min:")) {
+					log(operation);
+					value1 = parseFloat(operation.substring(4));
+					operation = "MIN";
+				}
+				if (operation.toLowerCase().startsWith("max:")) {
+					value1 = parseFloat(operation.substring(4));
+					operation = "MAX";
+				}
+				if (operation.toLowerCase().startsWith("clamp:")) {
+					var range = operation.substring(6);
+					if (range.indexOf(":") > 0) {
+						value1 = parseInt(range.split(":")[0]);
+						value2 = parseInt(range.split(":")[1]);
+						operation = "CLAMP";
+					}
 				}
 				switch (operation.toLowerCase()) {
 					case "abs":
@@ -2983,6 +3002,33 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						rollResult.Total = rollResult.Total.toFixed(precision);
 						break;
 
+					case "min":
+						log(`Opertaion: ${operation}, Total : ${rollResult.Total}, Min: ${value1}`)
+						if (rollResult.Total < value1) {
+							rollResult.Total = value1
+						}
+						rollResult.Text += `{MIN:${value1}}`;
+						break;
+
+					case "max":
+						log(`Opertaion: ${operation}, Total : ${rollResult.Total}, Max: ${value1}`)
+						if (rollResult.Total > value1) {
+							rollResult.Total = value1
+						}
+						rollResult.Text += `{MAX:${value1}}`;
+						break;
+
+					case "clamp":
+						log(`Opertaion: ${operation}, Total : ${rollResult.Total}, Min: ${value1}, Max: ${Value2}`)
+						if (rollResult.Total < value1) {
+							rollResult.Total = value1
+						}
+						if (rollResult.Total > value2) {
+							rollResult.Total = value2
+						}
+						rollResult.Text += `{CLAMP:${value1}:${value2}}`;
+						break;
+								
 				}
 			}
 
@@ -3084,7 +3130,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function cleanUpRollSpacing(input) {
 		input = input.replace(/\+/g, " + ");
-		input = input.replace(/\-(?![^[]*?])/g, " - ");
+		//input = input.replace(/\-(?![^[]*?])/g, " - ");
+		input = input.replace(/(?<![:])\-(?![^[]*?])/g," - ");
 		input = input.replace(/\*/g, " * ");
 		input = input.replace(/\//g, " / ");
 		input = input.replace(/\\/g, " \\ ")

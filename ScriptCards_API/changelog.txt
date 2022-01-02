@@ -1,5 +1,10 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.4.12 - Added three new roll modifiers: {MAX:X}, {MIN:X}, and {CLAMP:X:Y}. For MAX, the current value of the roll will be reduced to X if it is
+           greater than X. For MIN, the current value of the roll will be increased to X if it is lower than X. CLAMP will ensure that the value is
+           between the X and Y value (inclusive). X is the smallest allowed value and Y is the largest.
+           Corrected an extraneous debug message displayed when making API calls.
+
 v 1.4.11 - Extended the {ROUND} roll modifier to accept a precision level (ie, {ROUND:2} will round the current value to 2 decimal places). The maximum
            supported precision level is 6.
 

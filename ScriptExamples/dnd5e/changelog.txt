@@ -1,0 +1,4 @@
+Chang Log for items in the ScriptExamples/dnd5e Folder:
+
+2022-01-02 - 5e Burning Hands (1.5) - Added logic to ensure damage is applied in the correct direction (ie, not healing).
+           - 5e Character Action Menu (1.7.0) - NPC Spellcasting can now be set to be whispered to sender by setting AllNPCActionsToSender to 1
