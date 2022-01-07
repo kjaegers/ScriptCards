@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.5.0";
+	const APIVERSION = "1.5.1";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -757,26 +757,30 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														characterid: characterObj.id,
 														name: settingName
 													}, {caseInsensitive: true})[0];
-													if (theAttribute) {
-														if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
-															var currentValue = theAttribute.get(setType);
-															var delta = settingValue.substring(2);
-															if (isNumber(currentValue) && isNumber(delta)) {
-																settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
-															} else {
-																settingValue = currentValue + delta;
+													if (settingName.toLowerCase() !== "bio" && settingName.toLowerCase() !== "gmnotes" && settingName.toLowerCase() !== "notes") {
+														if (theAttribute) {
+															if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
+																var currentValue = theAttribute.get(setType);
+																var delta = settingValue.substring(2);
+																if (isNumber(currentValue) && isNumber(delta)) {
+																	settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
+																} else {
+																	settingValue = currentValue + delta;
+																}
+															}														
+															theAttribute.set(setType, settingValue);
+														} else {
+															if (createAttribute) {
+																theAttribute = createObj('attribute', {
+																	characterid: characterObj.id,
+																	name: settingName,
+																	current: setType == "current" ? settingValue : "",
+																	max: setType == "max" ? settingValue : ""
+																});
 															}
-														}														
-														theAttribute.set(setType, settingValue);
-													} else {
-														if (createAttribute) {
-															theAttribute = createObj('attribute', {
-																characterid: characterObj.id,
-																name: settingName,
-																current: setType == "current" ? settingValue : "",
-																max: setType == "max" ? settingValue : ""
-															});
 														}
+													} else {
+														log(`ScriptCards Error: Setting notes, gmnotes, or bio are not currently supported.`);
 													}
 												}													
 											} else {
@@ -3006,6 +3010,98 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				}
 				rollResult.Text += ") ";
 			}			
+
+			// A die specifier in XdXW, or XdXWD (Wild Die - like an exploding die, but only the last die. If "D" is appended, drops highest die if wild die is a 1)
+			if (text.toLowerCase().match(/^\d+d\d+ws?x?$/)) {
+				componentHandled = true;
+				var count = Number(text.toLowerCase().split("d")[0]);
+				var sides = Number(text.toLowerCase().split("d")[1].split("w")[0]);
+				var rerollnumber = sides;
+				var rollSet = [];
+				var rollTextSet = [];
+				var comptype = "G";
+				var keepOne = true;
+				var keepHighest = true;
+				var highest = -1;
+				var highestRoll = 0;
+				if (text.toLowerCase().indexOf("s") >= 0) {
+					keepOne = false;
+				}
+				if (text.toLowerCase().indexOf("x") >=0) {
+					keepHighest = false;
+				}
+
+				rollResult.Text += `${count}d${sides}W${keepOne?"":"S"}${keepHighest?"":"X"} (`;
+
+				// Roll the regular dice
+				for (c=0; c<count - 1; c++) {
+					var thisRoll = 0;
+					var subroll = 0;
+					var thisRollText = ""
+
+					subroll = randomInteger(sides);
+					if (comptype == "G") {
+						thisRoll = subroll;
+						thisRollText += subroll.toString();
+					}
+					if (highestRoll < thisRoll) { highest = c; highestRoll = thisRoll }
+					rollSet.push(thisRoll);
+					rollTextSet.push(thisRollText);
+				}
+
+				var wildTotal = 0;
+
+				// Roll the wild die, rerolling if SIDES is rolled.
+				for (c=0; c<1; c++) {
+					var thisRoll = 0;
+					var subroll = 0
+					var thisRollText = "[W:"
+
+					subroll = randomInteger(sides);
+					if (comptype == "G") {
+						thisRoll = subroll;
+						thisRollText += subroll.toString();
+						while (subroll >= rerollnumber) {
+							subroll = randomInteger(sides);
+							thisRoll += subroll;
+							thisRollText += "!" + subroll.toString();
+						}
+					}
+					thisRollText += "]";
+					if (!keepOne && thisRoll == 1) {
+						thisRoll = 0;
+						thisRollText = "[W:1(X)]"
+					}
+					if (thisRoll > 1) {
+						keepHighest = true;
+					}
+					wildTotal = thisRoll;
+					rollSet.push(thisRoll);
+					rollTextSet.push(thisRollText);
+				}
+
+				for (c=0; c<count; c++) {
+					var wasKept = true;
+					if (keepHighest || c != highest) {
+						switch (currentOperator) {
+							case "+": rollResult.Total += rollSet[c]; rollResult.Base += rollSet[c]; break;
+							case "-": rollResult.Total -= rollSet[c]; rollResult.Base -= rollSet[c]; break;
+							case "*": rollResult.Total *= rollSet[c]; rollResult.Base *= rollSet[c]; break;
+							case "/": rollResult.Total /= rollSet[c]; rollResult.Base /= rollSet[c]; break;
+							case "%": rollResult.Total %= rollSet[c]; rollResult.base %= rollSet[c]; break;
+							case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
+						}
+					} else {
+						wasKept = false;
+					}
+					if (rollSet[c] == 1) { rollResult.Ones++; hadOne = true; }
+					if (rollSet[c] == sides) { rollResult.Aces++; hadAce = true; }
+					if (rollSet[c] % 2 == 0) { rollResult.Evens++; } else { rollResult.Odds++; }
+					rollResult.Text += rollTextSet[c] + (wasKept ? "" : "(X)");
+					if (c<count-1) { rollResult.Text += ", " }
+				}
+				rollResult.Text += ") ";
+			}						
 
 			// A die specifier in XdX>X or XdX<X format
 			if (text.match(/^(\d+)d(\d+)([\>\<])(\d+)$/)) {

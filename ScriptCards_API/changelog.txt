@@ -1,5 +1,12 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.5.1  - Added support for wild die rolling, signified by a W after the side sides. Optionally, can include "S" to drop an initial 1 on the wild die,
+           and/or a "X" to drop the highest die rolled if the Wild die is a 1. For example:
+           4d6W - Roll 3d6 and 1d6 as a wild die. If the Wild Die acts as an exploding die, rerolling and increasing the total for every 6 rolled.
+           4d6WS - As above, but if the Wild Die's first roll is a 1, it will be treated as a 0.
+           4d6WX - As above, but if the Wild Die's first roll is a 1, it will replace the highest die among the 3d6.
+           4D6WSX - As above, but if the Wild Die's first roll is a 1, it will be treated as a 0 and the highest die among the 3d6 will be eliminated.
+
 v 1.5.0  - Object modification support is now available in ScriptCards. As of 1.5.0, you can use the --! command to modify object properties in the game. 
            This may help reduce the reliance on the --@ command to run other API commands to modify token/character values. The biggest benefit of this is
            that the changes happen as the script is processing, so the new values are available right away. 
