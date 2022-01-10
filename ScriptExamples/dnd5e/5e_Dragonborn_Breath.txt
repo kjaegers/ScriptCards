@@ -1,7 +1,7 @@
 !script {{
   --/|Script Name : 5E Dragonborn Breath
-  --/|Version     : 1.4
-  --/|Requires SC : 1.4.0+, alterbars or token-mod to apply damage (Optional)
+  --/|Version     : 1.5
+  --/|Requires SC : 1.4.2+ when used with token-mod or alterbars. 1.5.2+ standalone
   --/|Author      : Kurt Jaegers
 
   --/|Description : Handles a dragonborn's draconic breath weapon. IF your character was created with the 
@@ -12,11 +12,14 @@
   --/|              You can optionally have damage applied to impacted tokens. The script defaults to using
   --/|              TokenMod to update Bar 3. These can be changed by altering the settings below.
   
-  --/|Set this to either "token-mod", "alterbars", or anything else to not apply damage
-  --&damageApplyScript|token-mod
+  --/|Set this to either "scriptcards", "token-mod", "alterbars", or anything else to not apply damage
+  --&damageApplyScript|scriptcards
 
   --/|Set this to the bar number you use to track hit points
   --&hitPointsBar|3
+
+  --/|Set this variable to the (case sensitive) name of a Jukebox track to play when the spell is cast
+  --&SoundEffectTrack|Spell_FireBurst
 
   --/|Set this to a list of layers to a semicolon separated check for tokens on. By default, objects and gmlayer are checked.
   --/|possible values are objects, gmlayer, and map, so to check all three, use "objects;gmlayer;map"
@@ -125,6 +128,7 @@
 
   --/|Determine damage subroutine. Start by assuming we aren't going to apply damage
   --&damageRoutine|DontApplyDamage
+  --?[&damageApplyScript] -eq "scriptcards"|&damageRoutine;ApplyDamageScriptCards
   --?[&damageApplyScript] -eq "token-mod"|&damageRoutine;ApplyDamageTokenmod
   --?[&damageApplyScript] -eq "alterbars"|&damageRoutine;ApplyDamageAlterbars
 
@@ -132,6 +136,8 @@
   --/|top of the card. If all critters make their save, the half damage roll won't contain the details.
   --+|[c][b]Damage Roll: [/b][$Damage][/c]
   --+|&nbsp;
+
+  --a|[&SoundEffectTrack]
   
   --/|Create an array to hold the tokens that within the impacted squares.
   --~|array;define;tokensHit;
@@ -196,18 +202,27 @@
 
   --/|===================== Subroutines =====================
   
-  --/|There are three "ApplyDamage" subroutines - one for alterbars, one for token-mod, and one to not apply damage
+  --/|There are four "ApplyDamage" subroutines - one for scriptcards built-in functions, one for alterbars, one for token-mod, and one to not apply damage
   
+  --/|Apply damage via ScriptCards' built-in object modification function (new in ScriptCards 1.5.0)
+  --:ApplyDamageScriptCards|Parameters are tokenid;bar#;amount
+  --!t:[%1%]|bar[%2%]_value:+=[%3%]
+  --<|
+
   --/|Token-Mod doesn't have a "set to a relative number", so we get the current bar value, subtract thedamage amount
   --/|make sure it doesn't fall below 0, and set the amount back into the bar.
   --:ApplyDamageTokenmod|Parameters are tokenid;bar#;amount
-  --=newValue|[*[%1%]:t-bar[%2%]_value] - [%3%]
+  --=applyValue|[%3%]
+  --?[$applyValue] -lt 0|=applyValue;[$applyValue] {NEG}
+  --=newValue|[*[%1%]:t-bar[%2%]_value] - [$applyValue]
   --?[$newValue] -lt 0|=newValue;0
   --@token-mod|_ignore-selected _ids [%1%] _set bar[%2%]_value|[$newValue.Raw]
   --<| 
   
   --/|AlterBars supports relative values for the amount parameter, so we just pass it the value with a "-" in front of it.
   --:ApplyDamageAlterbars|Parameters are tokenid;bar#;amount
+  --=applyValue|[%3%]
+  --?[$applyValue] -lt 0|=applyValue;[$applyValue] {NEG}
   --@alter|_target|[%1%] _bar|[%2%] _amount|-[%3%] _show|none
   --<|
 
@@ -233,8 +248,8 @@
   --=thisY|[$baseY.Raw] + [&split2]
   --/|IF we passed a visual effect specifier in %1%, create a point VFX in the square
   --?"X[%1%]X" -ne "XX" |[
-    --=VX|[$thisX] * [$scaler] + $halfscaler]   
-    --=VY|[$thisY] * [$scaler] + $halfscaler]   
+    --=VX|[$thisX] * [$scaler] + [$halfscaler]
+    --=VY|[$thisY] * [$scaler] + [$halfscaler]
     --vpoint|[$VX] [$VY] [%1%]
   --]|
   --/|Call "checkTokens" to see if there are any tokens in this square that need to be added
