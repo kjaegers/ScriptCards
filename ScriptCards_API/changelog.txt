@@ -1,5 +1,11 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.5.2  - Added the --a statement, which will play a jukebox track (specified by the Content of the statement). No external APIs are needed for this
+           statement to function. Example:
+             --a|SwordHitSound
+           Tracks need to exist in your Roll20 jukebox, and the name of the track is case senstivie. If the track does not exist in your game, a warning
+           message will be sent to the API console log.
+
 v 1.5.1  - Added support for wild die rolling, signified by a W after the side sides. Optionally, can include "S" to drop an initial 1 on the wild die,
            and/or a "X" to drop the highest die rolled if the Wild die is a 1. For example:
            4d6W - Roll 3d6 and 1d6 as a wild die. If the Wild Die acts as an exploding die, rerolling and increasing the total for every 6 rolled.

@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.5.1";
+	const APIVERSION = "1.5.2";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -789,6 +789,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											break;										
 								}
 							}
+						}
+
+						if (thisTag.toLowerCase().charAt(0) == "a") {
+							playJukeboxTrack(thisContent);
 						}
 
 						// Handle setting string values
@@ -4069,6 +4073,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			return str.toString().replace(/<br \/\>/ig, '').replace(/<br\/\>/ig, '');
 	}
 
+    var playJukeboxTrack = function(trackname) {
+        var track = findObjs({type: 'jukeboxtrack', title: trackname})[0];
+        if(track) {
+            track.set('softstop',false);
+			track.set('playing',true);
+        } else {
+			log(`ScriptCards warning: Jukebox track ${trackname} not found in game.`);
+		}
+    }	
 
 	return {}
 })();
