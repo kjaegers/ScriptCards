@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.7.0
+  --/|Version     : 1.7.1
   --/|Requires SC : 1.3.9+
   --/|Author      : Kurt Jaegers
 
@@ -423,6 +423,7 @@
   --?[*R:atkmod] -gt 0|&arString;+ + [*R:atkmod] [Special]
   --?[*R:atkmod] -lt 0|&arString;+ [*R:atkmod] [Special]
   --?[*R:atkprofflag] -ne 0|&arString;+ + [*S:pb] [Prof]
+  --?"X[*R:atkprofflag]" -eq "X"|&arString;+ + [*S:pb] [Prof]
   --?[*R:atkmagic] -gt 0|&arString;+ + [*R:atkmagic] [Magic]
   --?[*R:atkmagic] -lt 0|&arString;+ [*R:atkmagic] [Magic]
   --=attackRoll|[&arString] [&PC_GAM]
