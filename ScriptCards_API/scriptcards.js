@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 */
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.5.2";
+	const APIVERSION = "1.5.3";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -3080,6 +3080,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						keepHighest = true;
 					}
 					wildTotal = thisRoll;
+					if (wildTotal == 1) { hadOne = true;}
+					if (wildTotal >= sides) { hadAce = true;}
 					rollSet.push(thisRoll);
 					rollTextSet.push(thisRollText);
 				}
@@ -3098,8 +3100,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					} else {
 						wasKept = false;
 					}
-					if (rollSet[c] == 1) { rollResult.Ones++; hadOne = true; }
-					if (rollSet[c] == sides) { rollResult.Aces++; hadAce = true; }
+					if (rollSet[c] == 1) { rollResult.Ones++; }
+					if (rollSet[c] == sides) { rollResult.Aces++; }
 					if (rollSet[c] % 2 == 0) { rollResult.Evens++; } else { rollResult.Odds++; }
 					rollResult.Text += rollTextSet[c] + (wasKept ? "" : "(X)");
 					if (c<count-1) { rollResult.Text += ", " }

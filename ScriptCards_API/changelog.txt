@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.5.3  - Updated the Wild Die support to color-code based on the Wild Die. Red=1 rolled on first die, Green=Ace rolled on first die, yellow for any other 
+           value on the wild die.
+
 v 1.5.2  - Added the --a statement, which will play a jukebox track (specified by the Content of the statement). No external APIs are needed for this
            statement to function. Example:
              --a|SwordHitSound
