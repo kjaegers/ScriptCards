@@ -2,27 +2,27 @@
 // By:       Kurt Jaegers
 // Contact:  https://app.roll20.net/users/2365448/kurt-j
 if (typeof MarkStart === "function") MarkStart('ScriptCards');
-var API_Meta = API_Meta||{};
-API_Meta.ScriptCards={offset:Number.MAX_SAFE_INTEGER,lineCount:-1};
-{try{throw new Error('');}catch(e){API_Meta.ScriptCards.offset=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-7);}}
+var API_Meta = API_Meta || {};
+API_Meta.ScriptCards = { offset: Number.MAX_SAFE_INTEGER, lineCount: -1 };
+{ try { throw new Error(''); } catch (e) { API_Meta.ScriptCards.offset = (parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/, '$1'), 10) - 7); } }
 
 var scriptCardsStashedScripts = {};
 
 const ScriptCards = (() => { // eslint-disable-line no-unused-vars
-/*
-	ScriptCards is a run-time script interpreter for use in Roll20. Scripts for ScriptCards are entered into the chat window, either directly, through cut/paste,
-	or executed from macros. A ScriptCard script consists of one or more lines, each delimited by a double dash (--) starting the line, followed by a statement type
-	identifier.
-
-	After the identifier, is a line tag, followed by a vertical bar (|) character, followed by the line content. The scripting language supports end-inclusion of
-	function libraries with the +++libname+++ directive, which will be pre-parsed and removed from the script. Any number of libraries can be specified by separating
-	library names (case sensitive) with semicolons (;).
-
-	Please see the ScriptCards Wiki Entry on Roll20 at https://wiki.roll20.net/Script:ScriptCards for details.
-*/
+	/*
+		ScriptCards is a run-time script interpreter for use in Roll20. Scripts for ScriptCards are entered into the chat window, either directly, through cut/paste,
+		or executed from macros. A ScriptCard script consists of one or more lines, each delimited by a double dash (--) starting the line, followed by a statement type
+		identifier.
+	
+		After the identifier, is a line tag, followed by a vertical bar (|) character, followed by the line content. The scripting language supports end-inclusion of
+		function libraries with the +++libname+++ directive, which will be pre-parsed and removed from the script. Any number of libraries can be specified by separating
+		library names (case sensitive) with semicolons (;).
+	
+		Please see the ScriptCards Wiki Entry on Roll20 at https://wiki.roll20.net/Script:ScriptCards for details.
+	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.5.3";
+	const APIVERSION = "1.5.4 (EXPERIMENTAL)";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -122,14 +122,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		disablerollprocessing: "0",
 		disableattributereplacement: "0",
 		disableinlineformatting: "0",
-		executionlimit:"40000",
-		deferralcharacter:"^",
-		locale:"en-US", //apparently not supported by Roll20's Javascript implementation...
-		timezone:"America/New_York",
+		executionlimit: "40000",
+		deferralcharacter: "^",
+		locale: "en-US", //apparently not supported by Roll20's Javascript implementation...
+		timezone: "America/New_York",
 		hpbar: "3",
 		styleTableTag: " border-collapse:separate; border: solid black 2px; border-radius: 6px; -moz-border-radius: 6px; ",
 		stylenone: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; ",
-		stylenormal:" text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolornormal}; border-color: #87850A; color: #000000;",
+		stylenormal: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolornormal}; border-color: #87850A; color: #000000;",
 		stylefumble: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolorfumble}; border-color: #660000; color: #660000;",
 		stylecrit: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolorcrit}; border-color: #004400; color: #004400;",
 		styleboth: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolorboth}; border-color: #061539; color: #061539;",
@@ -160,7 +160,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	// The rollComponents list determines what suffixes are available when reporting out the value
 	// of rollVariables (i.e., AttackRoll.Base)
 	var rollComponents = [
-		'Base','Total','Ones','Aces','Odds','Evens','Odds','RollText','Text','Style', 'tableEntryText', 'tableEntryImgURL', 'tableEntryValue', 'Raw'
+		'Base', 'Total', 'Ones', 'Aces', 'Odds', 'Evens', 'Odds', 'RollText', 'Text', 'Style', 'tableEntryText', 'tableEntryImgURL', 'tableEntryValue', 'Raw'
 	];
 
 	// tokenAttributes lists all of the attribute names that are valid for looking up attributes
@@ -181,7 +181,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	// The Dice Fonts in Roll20 use these letters to represent the characters that display
 	// the dice value (J=0, A=1, B=2, etc) To get the appropriate letter to display, we can
 	// just the substring numeric position in this string to find the matching letter.
-	const diceLetters =  "JABCDEFGHIJKLMNOPQRSTUVWYZ";
+	const diceLetters = "JABCDEFGHIJKLMNOPQRSTUVWYZ";
 
 	// Planned JSON support. Not currently implemented/documented.
 	var jsonObject = undefined;
@@ -192,8 +192,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	on('ready', function () {
 		// if ScriptCards has never been run in this game, create state information to store
 		// configuration and values between sessions/sandbox instances.
-		if (!state[APINAME]) { state[APINAME] = {module: APINAME, schemaVersion: APIVERSION, config: {}, persistentVariables: {} }; }
-		if (state[APINAME].storedVariables == undefined) { state[APINAME].storedVariables = {};	}
+		if (!state[APINAME]) { state[APINAME] = { module: APINAME, schemaVersion: APIVERSION, config: {}, persistentVariables: {} }; }
+		if (state[APINAME].storedVariables == undefined) { state[APINAME].storedVariables = {}; }
 		if (state[APINAME].storedSettings == undefined) { state[APINAME].storedSettings = {}; }
 		if (state[APINAME].storedStrings == undefined) { state[APINAME].storedStrings = {}; }
 		if (state[APINAME].storedSnippets == undefined) { state[APINAME].storedSnippets = {}; }
@@ -203,7 +203,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		// [sm]...[/sm] inline formatting syntax. This allows us to fully support custom token
 		// marker sets.
 		const tokenMarkers = JSON.parse(Campaign().get("token_markers"));
-		for (var x=0;x<tokenMarkers.length;x++) {
+		for (var x = 0; x < tokenMarkers.length; x++) {
 			tokenMarkerURLs[tokenMarkers[x].name] = tokenMarkers[x].url;
 		}
 
@@ -296,15 +296,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 				}
 
-				if (apiCmdText.startsWith ("!scriptcards ")) { processThisAPI = true; }
-				if (apiCmdText.startsWith ("!scriptcard ")) { processThisAPI = true; }
-				if (apiCmdText.startsWith ("!script ")) { processThisAPI = true; }
-				if (apiCmdText.startsWith ("!scriptcards{{")) { processThisAPI = true; }
-				if (apiCmdText.startsWith ("!scriptcard{{")) { processThisAPI = true; }
-				if (apiCmdText.startsWith ("!script{{")) { processThisAPI = true; }
+				if (apiCmdText.startsWith("!scriptcards ")) { processThisAPI = true; }
+				if (apiCmdText.startsWith("!scriptcard ")) { processThisAPI = true; }
+				if (apiCmdText.startsWith("!script ")) { processThisAPI = true; }
+				if (apiCmdText.startsWith("!scriptcards{{")) { processThisAPI = true; }
+				if (apiCmdText.startsWith("!scriptcard{{")) { processThisAPI = true; }
+				if (apiCmdText.startsWith("!script{{")) { processThisAPI = true; }
 				if (processThisAPI) {
 					var cardParameters = {};
-					Object.assign(cardParameters,defaultParameters);
+					Object.assign(cardParameters, defaultParameters);
 					if (state[APINAME].storedSettings["Default"] !== undefined) {
 						newSettings = state[APINAME].storedSettings["Default"];
 						for (var key in newSettings) {
@@ -372,7 +372,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						repeatingIndex = scriptCardsStashedScripts[stashIndex].repeatingIndex;
 						lineCounter = scriptCardsStashedScripts[stashIndex].programCounter;
 
-						if(cardParameters.sourcetoken) {
+						if (cardParameters.sourcetoken) {
 							var charLookup = getObj("graphic", cardParameters.sourcetoken);
 							if (charLookup !== undefined && charLookup.get("represents") !== "") {
 								cardParameters.sourcecharacter = getObj("character", charLookup.get("represents"));
@@ -381,7 +381,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 
-						if(cardParameters.targettoken) {
+						if (cardParameters.targettoken) {
 							var charLookup = getObj("graphic", cardParameters.targettoken);
 							if (charLookup !== undefined && charLookup.get("represents") !== "") {
 								cardParameters.targetcharacter = getObj("character", charLookup.get("represents"));
@@ -391,7 +391,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 
 						if (!isReentrant) {
-							for (var x=1; x<resumeArgs.length; x++) {
+							for (var x = 1; x < resumeArgs.length; x++) {
 								var thisInfo = resumeArgs[x].split(";");
 								stringVariables[thisInfo[0].trim()] = thisInfo[1].trim();
 							}
@@ -400,11 +400,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					} else {
 						// Strip out all newlines in the input text
 						cardContent = msg.content.replace(/(\r\n|\n|\r)/gm, "");
-						cardContent = cardContent.replace(/(<br ?\/?>)*/g,"");
-						cardContent = cardContent.replace(/\}\}/g," }}");
+						cardContent = cardContent.replace(/(<br ?\/?>)*/g, "");
+						cardContent = cardContent.replace(/\}\}/g, " }}");
 						cardContent = cardContent.trim();
-						if (cardContent.charAt(cardContent.length-1) !== "}") {
-							if (cardContent.charAt(cardContent.length-2) !== "}") {
+						if (cardContent.charAt(cardContent.length - 1) !== "}") {
+							if (cardContent.charAt(cardContent.length - 2) !== "}") {
 								cardContent += "}";
 							}
 							cardContent += "}";
@@ -412,8 +412,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 						var libraries = cardContent.match(/\+\+\+.+?\+\+\+/g);
 						if (libraries) {
-							cardContent = insertLibraryContent(cardContent, libraries[0].replace(/\+\+\+/g,""));
-							cardContent = cardContent.replace(/\+\+\+.+?\+\+\+/g,"")
+							cardContent = insertLibraryContent(cardContent, libraries[0].replace(/\+\+\+/g, ""));
+							cardContent = cardContent.replace(/\+\+\+.+?\+\+\+/g, "")
 						}
 
 						// Split the card into an array of tag-based (--) lines
@@ -421,10 +421,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 
 					// pre-parse line labels and store line numbers for branching and for data lines to store in the data structure
-					for (var x=0; x<cardLines.length; x++) {
-						var thisTag = getLineTag(cardLines[x],x,false)
+					for (var x = 0; x < cardLines.length; x++) {
+						var thisTag = getLineTag(cardLines[x], x, false)
 						var isRedef = false;
-						if (thisTag.charAt(0)==":") {
+						if (thisTag.charAt(0) == ":") {
 							if (lineLabels[thisTag.substring(1)]) {
 								log(`ScriptCards Warning: redefined label ${thisTag.substring(1)}`);
 								isRedef = true;
@@ -460,7 +460,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					// Process card lines starting with the first line (cardLines[0] will contain an empty string due to the split)
 					while (lineCounter < cardLines.length) {
 
-						var thisTag = getLineTag(cardLines[lineCounter],x,true);
+						var thisTag = getLineTag(cardLines[lineCounter], x, true);
 						thisTag = replaceVariableContent(thisTag, cardParameters, false);
 						var thisContent = getLineContent(cardLines[lineCounter]);
 
@@ -478,7 +478,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							var stashList = thisContent.split("||");
 							var buildLine = "";
 							var varList = "";
-							for (var x=0; x<stashList.length; x++) {
+							for (var x = 0; x < stashList.length; x++) {
 								var theseParams = stashList[x].split(";");
 								if (theseParams[0].toLowerCase() == "t") {
 									if (buildLine !== "") { buildLine += "-|-"; varList += ";"; }
@@ -509,7 +509,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								if (params.length === 2) { params.push("1"); } // Add a "1" as the assumed step value if only two parameters
 								if (params.length === 3) {
 									if (isNumeric(params[0]) && isNumeric(params[1]) && isNumeric(params[2]) && parseInt(params[2]) != 0) {
-										loopControl[loopCounter] = { initial:parseInt(params[0]), current:parseInt(params[0]), end:parseInt(params[1]), step:parseInt(params[2]), nextIndex: lineCounter }
+										loopControl[loopCounter] = { initial: parseInt(params[0]), current: parseInt(params[0]), end: parseInt(params[1]), step: parseInt(params[2]), nextIndex: lineCounter }
 										stringVariables[loopCounter] = params[0];
 										loopStack.push(loopCounter);
 										if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
@@ -523,7 +523,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								}
 							} else {
 								if (loopStack.length >= 1) {
-									var currentLoop = loopStack[loopStack.length-1];
+									var currentLoop = loopStack[loopStack.length - 1];
 									if (loopControl[currentLoop]) {
 										loopControl[currentLoop].current += loopControl[currentLoop].step;
 										stringVariables[currentLoop] = loopControl[currentLoop].current.toString();
@@ -532,11 +532,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											loopCounter == "!") {
 											loopStack.pop();
 											delete loopControl[currentLoop];
-											if (cardParameters.debug == 1) { log(`ScriptCards: Info - End of loop ${currentLoop}`)}
+											if (cardParameters.debug == 1) { log(`ScriptCards: Info - End of loop ${currentLoop}`) }
 											if (loopCounter == "!") {
 												var line = lineCounter;
-												for (line = lineCounter + 1; line<cardLines.length; line++) {
-													if (getLineTag(cardLines[line],line,"").trim() == "%") {
+												for (line = lineCounter + 1; line < cardLines.length; line++) {
+													if (getLineTag(cardLines[line], line, "").trim() == "%") {
 														lineCounter = line;
 														break;
 													}
@@ -562,9 +562,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							paramName = parameterAliases[paramName] || paramName;
 							if (cardParameters[paramName] !== undefined) {
 								cardParameters[paramName] = thisContent;
-								if (cardParameters.debug == "1") { log(`Setting parameter ${paramName} to value ${thisContent}`)}
+								if (cardParameters.debug == "1") { log(`Setting parameter ${paramName} to value ${thisContent}`) }
 							} else {
-								if (cardParameters.debug == "1") { log(`Unable to set parameter ${paramName} to value ${thisContent}`)}
+								if (cardParameters.debug == "1") { log(`Unable to set parameter ${paramName} to value ${thisContent}`) }
 							}
 
 							switch (paramName) {
@@ -612,19 +612,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										cardParameters.oddrowbackground = "#00000000";
 										cardParameters.evenrowbackground = "#00000000";
 									}
-								break;
+									break;
 
 								case "evenrowbackgroundimage":
 									if (thisContent.trim() !== "") {
 										cardParameters.evenrowbackground = "#00000000";
 									}
-								break;
+									break;
 
 								case "oddrowbackgroundimage":
 									if (thisContent.trim() !== "") {
 										cardParameters.oddrowbackground = "#00000000";
 									}
-								break;
+									break;
 
 								/*
 								case "damagebuttonbackgroundimage":
@@ -645,7 +645,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						// Handle setting object values
 						if (thisTag.charAt(0) === "!") {
 							if (thisTag.length > 1) {
-								var objectType = thisTag.substring(1,2).toLowerCase();
+								var objectType = thisTag.substring(1, 2).toLowerCase();
 								switch (objectType) {
 									case "t":
 										var tokenID = thisTag.substring(3);
@@ -662,7 +662,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										var settings = thisContent.split("|");
 										var theToken = getObj("graphic", tokenID);
 										if (theToken) {
-											for (var i=0; i < settings.length; i++) {
+											for (var i = 0; i < settings.length; i++) {
 												var thisSetting = settings[i].split(":");
 												var settingName = thisSetting[0];
 												var settingValue = thisSetting[1];
@@ -681,7 +681,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											log(`ScriptCards Error: Modify Token called without valid TokenID`)
 										}
 										break;
-									
+
 									case "c":
 										var charID = thisTag.substring(3);
 										if (charID.toLowerCase() == "s") {
@@ -697,7 +697,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										var settings = thisContent.split("|");
 										var theCharacter = getObj("graphic", charID);
 										if (theCharacter) {
-											for (var i=0; i < settings.length; i++) {
+											for (var i = 0; i < settings.length; i++) {
 												var thisSetting = settings[i].split(":");
 												var settingName = thisSetting[0];
 												var settingValue = thisSetting[1];
@@ -709,7 +709,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													} else {
 														settingValue = currentValue + delta;
 													}
-												}												
+												}
 												theCharacter.set(settingName, settingValue);
 											}
 										} else {
@@ -717,76 +717,76 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 										break;
 
-										case "a":
-											var objectID = thisTag.substring(3);
-											if (objectID.toLowerCase() == "s") {
-												if (cardParameters.sourcecharacter) {
-													objectID = cardParameters.sourcecharacter.id;
+									case "a":
+										var objectID = thisTag.substring(3);
+										if (objectID.toLowerCase() == "s") {
+											if (cardParameters.sourcecharacter) {
+												objectID = cardParameters.sourcecharacter.id;
+											}
+										}
+										if (objectID.toLowerCase() == "t") {
+											if (cardParameters.targetcharacter) {
+												objectID = cardParameters.targetcharacter.id;
+											}
+										}
+										var characterObj = undefined;
+										var tokenTest = getObj("graphic", objectID);
+										if (tokenTest) {
+											characterObj = getObj("character", tokenTest.get("represents"));
+										} else {
+											characterObj = getObj("character", objectID);
+										}
+										if (characterObj !== undefined) {
+											var settings = thisContent.split("|");
+											for (var i = 0; i < settings.length; i++) {
+												var thisSetting = settings[i].split(":");
+												var settingName = thisSetting[0];
+												var createAttribute = false;
+												var setType = "current";
+												if (settingName.startsWith("!")) {
+													createAttribute = true;
+													settingName = settingName.substring(1);
 												}
-											}
-											if (objectID.toLowerCase() == "t") {
-												if (cardParameters.targetcharacter) {
-													objectID = cardParameters.targetcharacter.id;
+												if (settingName.endsWith("^")) {
+													setType = "max";
+													settingName = settingName.slice(0, -1);
 												}
-											}
-											var characterObj = undefined;
-											var tokenTest = getObj("graphic", objectID);
-											if (tokenTest) {
-												characterObj = getObj("character", tokenTest.get("represents"));
-											} else {
-												characterObj = getObj("character", objectID);
-											}
-											if (characterObj !== undefined) {
-												var settings = thisContent.split("|");
-												for (var i=0; i < settings.length; i++) {
-													var thisSetting = settings[i].split(":");
-													var settingName = thisSetting[0];
-													var createAttribute = false;
-													var setType = "current";
-													if (settingName.startsWith("!")) {
-														createAttribute = true;
-														settingName = settingName.substring(1);
-													}
-													if (settingName.endsWith("^")) {
-														setType = "max";
-														settingName = settingName.slice(0,-1);
-													}
-													var settingValue = thisSetting[1];
-													var theAttribute = findObjs({
-														type: 'attribute',
-														characterid: characterObj.id,
-														name: settingName
-													}, {caseInsensitive: true})[0];
-													if (settingName.toLowerCase() !== "bio" && settingName.toLowerCase() !== "gmnotes" && settingName.toLowerCase() !== "notes") {
-														if (theAttribute) {
-															if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
-																var currentValue = theAttribute.get(setType);
-																var delta = settingValue.substring(2);
-																if (isNumber(currentValue) && isNumber(delta)) {
-																	settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
-																} else {
-																	settingValue = currentValue + delta;
-																}
-															}														
-															theAttribute.set(setType, settingValue);
-														} else {
-															if (createAttribute) {
-																theAttribute = createObj('attribute', {
-																	characterid: characterObj.id,
-																	name: settingName,
-																	current: setType == "current" ? settingValue : "",
-																	max: setType == "max" ? settingValue : ""
-																});
+												var settingValue = thisSetting[1];
+												var theAttribute = findObjs({
+													type: 'attribute',
+													characterid: characterObj.id,
+													name: settingName
+												}, { caseInsensitive: true })[0];
+												if (settingName.toLowerCase() !== "bio" && settingName.toLowerCase() !== "gmnotes" && settingName.toLowerCase() !== "notes") {
+													if (theAttribute) {
+														if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
+															var currentValue = theAttribute.get(setType);
+															var delta = settingValue.substring(2);
+															if (isNumber(currentValue) && isNumber(delta)) {
+																settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
+															} else {
+																settingValue = currentValue + delta;
 															}
 														}
+														theAttribute.set(setType, settingValue);
 													} else {
-														log(`ScriptCards Error: Setting notes, gmnotes, or bio are not currently supported.`);
+														if (createAttribute) {
+															theAttribute = createObj('attribute', {
+																characterid: characterObj.id,
+																name: settingName,
+																current: setType == "current" ? settingValue : "",
+																max: setType == "max" ? settingValue : ""
+															});
+														}
 													}
-												}													
-											} else {
-												log(`ScriptCards Error: Modify attribute called without valid ID`)
+												} else {
+													log(`ScriptCards Error: Setting notes, gmnotes, or bio are not currently supported.`);
+												}
 											}
-											break;										
+										} else {
+											log(`ScriptCards Error: Modify attribute called without valid ID`)
+										}
+										break;
 								}
 							}
 						}
@@ -801,7 +801,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (thisContent.charAt(0) == "+") {
 								stringVariables[variableName] = (stringVariables[variableName] || "") + replaceVariableContent(thisContent.substring(1), cardParameters, true);
 							} else {
-								stringVariables[variableName] = replaceVariableContent(thisContent,cardParameters, true);
+								stringVariables[variableName] = replaceVariableContent(thisContent, cardParameters, true);
 							}
 						}
 
@@ -834,7 +834,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							var testvalue = thisTag.substring(1);
 							var cases = thisContent.split("|");
 							if (cases) {
-								for (var x=0; x<cases.length; x++) {
+								for (var x = 0; x < cases.length; x++) {
 									var testcase = cases[x].split(":")[0];
 									if (testvalue.toLowerCase() == testcase.toLowerCase()) {
 										var jumpDest = cases[x].split(":")[1];
@@ -843,21 +843,21 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										var varValue = undefined;
 										if (jumpDest) {
 											switch (jumpDest.charAt(0)) {
-												case ">" : resultType = "gosub"; break;
-												case "%" : resultType = "next"; break;
-												case "=" :
-												case "&" :
+												case ">": resultType = "gosub"; break;
+												case "%": resultType = "next"; break;
+												case "=":
+												case "&":
 													jumpDest.charAt(0) == "=" ? resultType = "rollset" : resultType = "stringset";
 													jumpDest = jumpDest.substring(1);
 													varName = jumpDest.split(";")[0];
-													varValue  = jumpDest.split(";")[1];
+													varValue = jumpDest.split(";")[1];
 													break;
 											}
 
 											switch (resultType) {
 												case "goto":
 													if (lineLabels[jumpDest]) {
-														lineCounter = lineLabels[jumpDest] ;
+														lineCounter = lineLabels[jumpDest];
 													} else {
 														log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`);
 													}
@@ -869,7 +869,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													callParamList = {};
 													var paramCount = 0;
 													if (paramList) {
-														paramList.forEach(function(item) {
+														paramList.forEach(function (item) {
 															callParamList[paramCount] = item.toString().trim();
 															paramCount++;
 														});
@@ -877,7 +877,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													returnStack.push(lineCounter);
 													jumpDest = jumpDest.split(";")[0];
 													if (lineLabels[jumpDest]) {
-														lineCounter = lineLabels[jumpDest] ;
+														lineCounter = lineLabels[jumpDest];
 													} else {
 														log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`);
 													}
@@ -888,16 +888,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												case "stringset":
 													if (varName && varValue) {
 														if (resultType == "stringset" && varValue.charAt(0) == "+") {
-															varValue = (stringVariables[varName] || "") +  varValue.substring(1);
+															varValue = (stringVariables[varName] || "") + varValue.substring(1);
 														}
-														stringVariables[varName] = replaceVariableContent(varValue,cardParameters, true);
+														stringVariables[varName] = replaceVariableContent(varValue, cardParameters, true);
 													} else {
 														log(`ScriptCards Error: Variable name or value not specified in conditional on line ${lineCounter}`);
 													}
 													break;
 												case "next":
 													if (loopStack.length >= 1) {
-														var currentLoop = loopStack[loopStack.length-1];
+														var currentLoop = loopStack[loopStack.length - 1];
 														if (loopControl[currentLoop]) {
 															loopControl[currentLoop].current += loopControl[currentLoop].step;
 															stringVariables[currentLoop] = loopControl[currentLoop].current.toString();
@@ -905,7 +905,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 																(loopControl[currentLoop].step < 0 && loopControl[currentLoop].current < loopControl[currentLoop].end) ||
 																jumpDest.charAt(1) == "!") {
 																loopStack.pop();
-															delete loopControl[currentLoop];
+																delete loopControl[currentLoop];
 															} else {
 																lineCounter = loopControl[currentLoop].nextIndex;
 															}
@@ -944,18 +944,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												}
 												if (char !== undefined) {
 													var abilname = params[3]
-													var ability = findObjs({type: "ability", _characterid: charid, name: abilname })
+													var ability = findObjs({ type: "ability", _characterid: charid, name: abilname })
 													if (ability !== undefined && ability !== []) {
 														ability = ability[0]
 														if (ability !== undefined) {
-															sendChat(char.get("name"), ability.get('action').replace(/@\{([^|]*?|[^|]*?\|max|[^|]*?\|current)\}/g, '@{'+(char.get('name'))+'|$1}'));
+															sendChat(char.get("name"), ability.get('action').replace(/@\{([^|]*?|[^|]*?\|max|[^|]*?\|current)\}/g, '@{' + (char.get('name')) + '|$1}'));
 														}
 													}
 												}
-											break;
+												break;
 										}
 									}
-								break;
+									break;
 
 								case "system":
 									if (params.length >= 3) {
@@ -966,34 +966,34 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													case "getdatetime":
 														//log(cardParameters.locale);
 														try {
-															stringVariables[variableName] = d.toLocaleString(cardParameters.locale, {timeZone: cardParameters.timezone});
+															stringVariables[variableName] = d.toLocaleString(cardParameters.locale, { timeZone: cardParameters.timezone });
 														} catch {
 															stringVariables[variableName] = "Unknown/Invalid Locale or TimeZone";
 														}
-													break;
+														break;
 													case "gettime":
 														try {
-															stringVariables[variableName] = d.toLocaleTimeString(cardParameters.locale,  {timeZone: cardParameters.timezone});
+															stringVariables[variableName] = d.toLocaleTimeString(cardParameters.locale, { timeZone: cardParameters.timezone });
 														} catch {
 															stringVariables[variableName] = "Unknown/Invalid Locale or TimeZone";
 														}
-													break;
+														break;
 													case "getdate":
 														try {
-															stringVariables[variableName] = d.toLocaleDateString(cardParameters.locale, {timeZone: cardParameters.timezone});
+															stringVariables[variableName] = d.toLocaleDateString(cardParameters.locale, { timeZone: cardParameters.timezone });
 														} catch {
 															stringVariables[variableName] = "Unknown/Invalid Locale or TimeZone";
 														}
-													break;
+														break;
 													case "getraw":
 														stringVariables[variableName] = d.getTime();
-													break;
+														break;
 												}
-											break;
+												break;
 
 											case "readsetting":
 												stringVariables[variableName] = cardParameters[params[2].toLowerCase()] || "UnknownSetting";
-											break;
+												break;
 
 											case "dumpvariables":
 												switch (params[2].toLowerCase()) {
@@ -1001,36 +1001,36 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														for (var key in rollVariables) {
 															log(`RollVariable: ${key}, Value: ${rollVariables[key]}`)
 														}
-													break;
+														break;
 
 													case "string":
 														for (var key in stringVariables) {
 															log(`StringVariable: ${key}, Value: ${stringVariables[key]}`)
 														}
-													break;
+														break;
 
 													case "array":
 														for (var key in arrayVariables) {
 															log(`ArrayVariable: ${key}, Value: ${arrayVariables[key]}`)
 														}
-													break;
+														break;
 												}
-											break;
+												break;
 
 											case "findability":
 												// Params: 2-character name, 3-ability name
 												stringVariables[variableName] = "AbilityNotFound";
-												var theChar = findObjs({_type:"character", name: params[2]});
+												var theChar = findObjs({ _type: "character", name: params[2] });
 												if (theChar[0]) {
-													var theAbility = findObjs({_type:"ability", _characterid: theChar[0].id, name:params[3]});
+													var theAbility = findObjs({ _type: "ability", _characterid: theChar[0].id, name: params[3] });
 													if (theAbility[0]) {
 														stringVariables[variableName] = theAbility[0].id;
 													}
 												}
-											break;
+												break;
 										}
 									}
-								break;
+									break;
 
 								case "turnorder":
 									var variableName = thisTag.substring(1);
@@ -1054,19 +1054,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											if (Campaign().get("turnorder") !== "") {
 												turnorder = JSON.parse(Campaign().get("turnorder"));
 											}
-											for (var x=turnorder.length-1; x>=0; x--) {
+											for (var x = turnorder.length - 1; x >= 0; x--) {
 												if (turnorder[x].id == params[2]) {
-													turnorder.splice(x,1);
+													turnorder.splice(x, 1);
 												}
 											}
 											Campaign().set("turnorder", JSON.stringify(turnorder));
 										}
 										if (params[1].toLowerCase() == "findtoken") {
 											var turnorder = JSON.parse(Campaign().get("turnorder"));
-											for (var x=turnorder.length-1; x>=0; x--) {
+											for (var x = turnorder.length - 1; x >= 0; x--) {
 												if (turnorder[x].id.trim() == params[2].trim()) {
-													 stringVariables[variableName] = turnorder[x].pr;
-													 //log(`Set variable to ${turnorder[x].pr}`)
+													stringVariables[variableName] = turnorder[x].pr;
+													//log(`Set variable to ${turnorder[x].pr}`)
 												}
 											}
 										}
@@ -1090,10 +1090,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												turnorder = JSON.parse(Campaign().get("turnorder"));
 											}
 											var wasfound = false;
-											for (var x=turnorder.length-1; x>=0; x--) {
+											for (var x = turnorder.length - 1; x >= 0; x--) {
 												if (turnorder[x].id.trim() == params[2].trim()) {
 													turnorder[x].pr = params[3];
-													wasfound=true;
+													wasfound = true;
 												}
 											}
 											if (!wasfound) {
@@ -1118,7 +1118,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											Campaign().set("turnorder", JSON.stringify(turnorder));
 										}
 									}
-								break;
+									break;
 
 								// Chebyshev Unit distance between two tokens (params[1] and params[2]) (4E/5E)
 								case "chebyshevdistance":
@@ -1129,19 +1129,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										var token2 = getObj("graphic", params[2]);
 										var scale = 1.0;
 										var page = getObj("page", token1.get("_pageid"));
-										if (page) { scale = page.get("snapping_increment")}
-										
+										if (page) { scale = page.get("snapping_increment") }
+
 										if (token1 && token2) {
 											// Calculate the Chebyshev Distance between the grid points
 											var x1 = token1.get("left") / (scale * 70);
 											var x2 = token2.get("left") / (scale * 70);
 											var y1 = token1.get("top") / (scale * 70);
 											var y2 = token2.get("top") / (scale * 70);
-											result = Math.floor(Math.max(Math.abs(x1 - x2), Math.abs(y1-y2)));
+											result = Math.floor(Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2)));
 										}
 									}
 									rollVariables[variableName] = parseDiceRoll(result.toString(), cardParameters);
-								break;
+									break;
 
 								case "euclideandistance":
 									var result = 0;
@@ -1150,18 +1150,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										var token2 = getObj("graphic", params[2]);
 										var scale = 1.0;
 										var page = getObj("page", token1.get("_pageid"));
-										if (page) { scale = page.get("snapping_increment")}
+										if (page) { scale = page.get("snapping_increment") }
 										if (token1 && token2) {
 											// Calculate the euclidean unit distance between two tokens (params[1] and params[2])
 											var x1 = token1.get("left") / (scale * 70);
 											var x2 = token2.get("left") / (scale * 70);
 											var y1 = token1.get("top") / (scale * 70);
 											var y2 = token2.get("top") / (scale * 70);
-											result = Math.floor(Math.sqrt(Math.pow((x1-x2),2)+Math.pow((y1-y2),2)));
+											result = Math.floor(Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2)));
 										}
 									}
 									rollVariables[variableName] = parseDiceRoll(result.toString(), cardParameters);
-								break;
+									break;
 
 								case "euclideanpixel":
 								case "euclideanlong":
@@ -1171,19 +1171,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										var token2 = getObj("graphic", params[2]);
 										var scale = 1.0;
 										var page = getObj("page", token1.get("_pageid"));
-										if (page) { scale = page.get("snapping_increment")}
+										if (page) { scale = page.get("snapping_increment") }
 										if (token1 && token2) {
 											// Calculate the euclidean unit distance between two tokens (params[1] and params[2])
 											var x1 = token1.get("left");
 											var x2 = token2.get("left");
 											var y1 = token1.get("top");
 											var y2 = token2.get("top");
-											result = Math.floor(Math.sqrt(Math.pow((x1-x2),2)+Math.pow((y1-y2),2)));
+											result = Math.floor(Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2)));
 											if (params[0].toLowerCase() == "euclideanlong") { result = result / (scale * 70); }
 										}
 									}
 									rollVariables[variableName] = parseDiceRoll(result.toString(), cardParameters);
-								break;
+									break;
 
 								case "manhattandistance":
 								case "taxicabdistance":
@@ -1193,24 +1193,24 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										var token2 = getObj("graphic", params[2]);
 										var scale = 1.0;
 										var page = getObj("page", token1.get("_pageid"));
-										if (page) { scale = page.get("snapping_increment")}
+										if (page) { scale = page.get("snapping_increment") }
 										if (token1 && token2) {
 											// Calculate the manhattan unit distance between two tokens (params[1] and params[2])
 											var x1 = token1.get("left") / (scale * 70);
 											var x2 = token2.get("left") / (scale * 70);
 											var y1 = token1.get("top") / (scale * 70);
 											var y2 = token2.get("top") / (scale * 70);
-											result = Math.abs(x2-x1) + Math.abs(y2-y1);
+											result = Math.abs(x2 - x1) + Math.abs(y2 - y1);
 										}
 									}
 									rollVariables[variableName] = parseDiceRoll(result.toString(), cardParameters);
-								break;
+									break;
 
 								case "getselected":
 									if (msg.selected) {
-										for (var x=0; x < msg.selected.length; x++) {
+										for (var x = 0; x < msg.selected.length; x++) {
 											var obj = getObj(msg.selected[x]._type, msg.selected[x]._id);
-											stringVariables[variableName + (x+1).toString()] = obj.get("id");
+											stringVariables[variableName + (x + 1).toString()] = obj.get("id");
 										}
 										stringVariables[variableName + "Count"] = msg.selected.length.toString();
 										rollVariables[variableName + "Count"] = parseDiceRoll(msg.selected.length.toString(), cardParameters);
@@ -1218,7 +1218,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										stringVariables[variableName + "Count"] = "0";
 										rollVariables[variableName + "Count"] = parseDiceRoll("0", cardParameters);
 									}
-								break;
+									break;
 
 								case "stateitem":
 									if (params.length == 3) {
@@ -1240,7 +1240,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														state[APINAME].storedArrayIndex = Object.assign(arrayIndexes[variableName]);
 													}
 												}
-											break;
+												break;
 
 											case "read":
 												if (params[2].toLowerCase() == "rollvariable") {
@@ -1255,10 +1255,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														arrayIndexes[variableName] = Object.assign(state[APINAME].storedArrayIndex);
 													}
 												}
-											break;
+												break;
 										}
 									}
-								break;
+									break;
 
 								case "math": //min,max,clamp,round,floor,ceil
 								case "round":
@@ -1325,20 +1325,20 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											var angle = Math.atan2(token2.get("top") - token1.get("top"), token2.get("left") - token1.get("left"));
 											angle *= 180 / Math.PI;
 											angle -= 270;
-											while (angle < 0) { angle = 360 + angle}
+											while (angle < 0) { angle = 360 + angle }
 											stringVariables[variableName] = angle;
 										}
 									}
-								break;
+									break;
 
 								case "attribute":
 									if (params.length > 4) {
 										if (params[1].toLowerCase() == "set") {
 											var theCharacter = getObj("character", params[2]);
 											if (theCharacter) {
-												var oldAttrs = findObjs({ _type:"attribute", _characterid: params[2], name: params[3].trim()});
+												var oldAttrs = findObjs({ _type: "attribute", _characterid: params[2], name: params[3].trim() });
 												if (oldAttrs.length > 0) {
-													oldAttrs.forEach(function(element) { element.remove(); });
+													oldAttrs.forEach(function (element) { element.remove(); });
 												}
 												if (params[4] !== "") {
 													createObj("attribute", { _characterid: params[2], name: params[3].trim(), current: params[4].trim() });
@@ -1373,7 +1373,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											case "totitlecase":
 												stringVariables[variableName] = params[2].toLowerCase()
 													.split(' ')
-													.map(function(word) {
+													.map(function (word) {
 														return (word.charAt(0).toUpperCase() + word.slice(1));
 													})
 													.join(" ")
@@ -1386,9 +1386,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											//stringfuncs;split;delimeter;string
 											case "split":
 												var splits = params[3].split(params[2]);
-												rollVariables[variableName+"Count"] = parseDiceRoll(splits.length.toString(), cardParameters);
-												for (var x=0; x<splits.length; x++) {
-													stringVariables[variableName+(x+1).toString()] = splits[x];
+												rollVariables[variableName + "Count"] = parseDiceRoll(splits.length.toString(), cardParameters);
+												for (var x = 0; x < splits.length; x++) {
+													stringVariables[variableName + (x + 1).toString()] = splits[x];
 												}
 												break;
 
@@ -1397,7 +1397,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												if (params[3].indexOf(params[2]) < 0) {
 													stringVariables[variableName] = params[3];
 												} else {
-													stringVariables[variableName] = params[3].substring(0,params[3].indexOf(params[2]));
+													stringVariables[variableName] = params[3].substring(0, params[3].indexOf(params[2]));
 												}
 												break;
 
@@ -1406,7 +1406,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												if (params[3].indexOf(params[2]) < 0) {
 													stringVariables[variableName] = params[3];
 												} else {
-													stringVariables[variableName] = params[3].substring(params[3].indexOf(params[2])+params[2].length);
+													stringVariables[variableName] = params[3].substring(params[3].indexOf(params[2]) + params[2].length);
 												}
 												break;
 
@@ -1415,7 +1415,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												if (params[3].length < Number(params[2])) {
 													stringVariables[variableName] = params[3];
 												} else {
-													stringVariables[variableName] = params[3].substring(0,Number(params[2]));
+													stringVariables[variableName] = params[3].substring(0, Number(params[2]));
 												}
 												break;
 
@@ -1424,7 +1424,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												if (params[3].length < Number(params[2])) {
 													stringVariables[variableName] = params[3];
 												} else {
-													stringVariables[variableName] = params[3].substring(params[3].length-Number(params[2]));
+													stringVariables[variableName] = params[3].substring(params[3].length - Number(params[2]));
 												}
 												break;
 
@@ -1435,7 +1435,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										switch (params[1].toLowerCase()) {
 											//stringfuncs0;substring1;start2;length3;string4
 											case "substring":
-												stringVariables[variableName] = params[4].substring(Number(params[2]) - 1, Number(params[3]) + Number(params[2])-1);
+												stringVariables[variableName] = params[4].substring(Number(params[2]) - 1, Number(params[3]) + Number(params[2]) - 1);
 												break;
 
 											case "replace":
@@ -1444,7 +1444,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 											case "replaceall":
 												var str = params[4];
-												while(str.includes(params[2])) { str = str.replace(params[2], params[3])}
+												while (str.includes(params[2])) { str = str.replace(params[2], params[3]) }
 												stringVariables[variableName] = str;
 												break;
 										}
@@ -1455,20 +1455,20 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (params.length > 2) {
 										if (params[1].toLowerCase() == "define") {
 											arrayVariables[params[2]] = [];
-											for (var x=3; x<params.length; x++) {
+											for (var x = 3; x < params.length; x++) {
 												arrayVariables[params[2]].push(params[x]);
 											}
 											arrayIndexes[params[2]] = 0;
-                                        }
-                                        if (params[1].toLowerCase() == "sort") {
-                                            if (arrayVariables[params[2]]) {
-                                                arrayVariables[params[2]].sort();
-                                            }
+										}
+										if (params[1].toLowerCase() == "sort") {
+											if (arrayVariables[params[2]]) {
+												arrayVariables[params[2]].sort();
+											}
 										}
 										if (params[1].toLowerCase() == "numericsort") {
-                                            if (arrayVariables[params[2]]) {
-                                                arrayVariables[params[2]].sort(function(a, b){return parseInt(a) - parseInt(b)});
-                                            }
+											if (arrayVariables[params[2]]) {
+												arrayVariables[params[2]].sort(function (a, b) { return parseInt(a) - parseInt(b) });
+											}
 										}
 										if (params[1].toLowerCase() == "stringify") {
 											if (arrayVariables[params[2]]) {
@@ -1479,26 +1479,26 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 										if (params[1].toLowerCase() == "rollabletables") {
 											arrayVariables[params[2]] = [];
-											var tables = findObjs({_type: "rollabletable"});
-											for (var x=0; x<tables.length; x++) {
+											var tables = findObjs({ _type: "rollabletable" });
+											for (var x = 0; x < tables.length; x++) {
 												arrayVariables[params[2]].push(tables.get("name"));
 											}
 										}
 										if (params[1].toLowerCase() == "pageobjects") {
-                                            var pages = findObjs({_type:"page"});
-                                            arrayVariables[params[2]] = [];
-                                            for (var x=0; x<pages.length; x++) {
-                                                arrayVariables[params[2]].push(pages[x].get("id"));
-                                            }
-                                        }
+											var pages = findObjs({ _type: "page" });
+											arrayVariables[params[2]] = [];
+											for (var x = 0; x < pages.length; x++) {
+												arrayVariables[params[2]].push(pages[x].get("id"));
+											}
+										}
 										if (params[1].toLowerCase() == "pagetokens") {
 											arrayVariables[params[2]] = [];
 											var pageid = params[3];
 											var templateToken = getObj("graphic", params[3]);
-											if (templateToken) { 
+											if (templateToken) {
 												pageid = templateToken.get("_pageid");
 											}
-											var filter="all";
+											var filter = "all";
 											if (params[4]) {
 												if (params[4].toLowerCase() == "char" || params[3].toLowerCase() == "chars") {
 													filter = "char";
@@ -1514,9 +1514,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												}
 											}
 											if (getObj("page", pageid)) {
-												var t = findObjs({_type:"graphic", _pageid: pageid });
+												var t = findObjs({ _type: "graphic", _pageid: pageid });
 												if (t) {
-													for (var x=0; x<t.length; x++) {
+													for (var x = 0; x < t.length; x++) {
 														if (filter == "all") {
 															arrayVariables[params[2]].push(t[x].id);
 														}
@@ -1549,23 +1549,23 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											}
 										}
 										if (params[1].toLowerCase() == "playerobjects") {
-											var players = findObjs({_type:"player"});
+											var players = findObjs({ _type: "player" });
 											arrayVariables[params[2]] = [];
-											for (var x=0; x<players.length; x++) {
+											for (var x = 0; x < players.length; x++) {
 												arrayVariables[params[2]].push(players[x].get("id"));
 											}
 										}
 										if (params[1].toLowerCase() == "handoutobjects") {
-											var players = findObjs({_type:"handout"});
+											var players = findObjs({ _type: "handout" });
 											arrayVariables[params[2]] = [];
-											for (var x=0; x<players.length; x++) {
+											for (var x = 0; x < players.length; x++) {
 												arrayVariables[params[2]].push(players[x].get("id"));
 											}
 										}
 										if (params[1].toLowerCase() == "selectedtokens") {
 											if (msg.selected) {
 												arrayVariables[params[2]] = [];
-												for (var x=0; x < msg.selected.length; x++) {
+												for (var x = 0; x < msg.selected.length; x++) {
 													var obj = getObj(msg.selected[x]._type, msg.selected[x]._id);
 													arrayVariables[params[2]].push(obj.get("id"));
 												}
@@ -1581,7 +1581,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											var theToken = getObj("graphic", params[3]);
 											if (theToken) {
 												var markers = theToken.get("statusmarkers").split(",");
-												for (var x=0; x<markers.length; x++) {
+												for (var x = 0; x < markers.length; x++) {
 													arrayVariables[params[2]].push(markers[x]);
 												}
 												arrayIndexes[params[2]] = 0;
@@ -1589,16 +1589,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 										if (params[1].toLowerCase() == "add") {
 											if (!arrayVariables[params[2]]) { arrayVariables[params[2]] = []; arrayIndexes[params[2]] = 0; }
-											for (var x=3; x<params.length; x++) {
+											for (var x = 3; x < params.length; x++) {
 												arrayVariables[params[2]].push(params[x]);
 											}
 										}
 										if (params[1].toLowerCase() == "remove") {
 											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) {
-												for (var x=3; x<params.length; x++) {
-													for (var i=arrayVariables[params[2]].length-1; i>=0; i--) {
+												for (var x = 3; x < params.length; x++) {
+													for (var i = arrayVariables[params[2]].length - 1; i >= 0; i--) {
 														if (arrayVariables[params[2]][i] == params[x]) {
-															arrayVariables[params[2]].splice(i,1);
+															arrayVariables[params[2]].splice(i, 1);
 														}
 													}
 												}
@@ -1612,9 +1612,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 										if (params[1].toLowerCase() == "removeat") {
 											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) {
-												if (Number(params[3] < arrayVariables[params[2]].length))
-												{
-													arrayVariables[params[2]].splice(Number(params[3]),1);
+												if (Number(params[3] < arrayVariables[params[2]].length)) {
+													arrayVariables[params[2]].splice(Number(params[3]), 1);
 												}
 											}
 											if (arrayVariables[params[2]] && arrayVariables[params[2]].length == 0) {
@@ -1644,9 +1643,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											if (arrayVariables[params[2]] && arrayVariables[params[2]].length > 0) {
 												var wasFound = arrayVariables[params[2]].indexOf(params[3]);
 												if (wasFound >= 0) {
-														stringVariables[variableName] = wasFound.toString();
+													stringVariables[variableName] = wasFound.toString();
 												} else {
-														stringVariables[variableName] = "ArrayError";
+													stringVariables[variableName] = "ArrayError";
 												}
 											} else {
 												stringVariables[variableName] = "ArrayError";
@@ -1680,7 +1679,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 										if (params[1].toLowerCase() == "getlast") {
 											if (arrayVariables[params[2]]) {
-												arrayIndexes[params[2]] = arrayVariables[params[2]].length-1;
+												arrayIndexes[params[2]] = arrayVariables[params[2]].length - 1;
 												stringVariables[variableName] = arrayVariables[params[2]][arrayIndexes[params[2]]];
 											} else {
 												stringVariables[variableName] = "ArrayError";
@@ -1689,7 +1688,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 										if (params[1].toLowerCase() == "getnext") {
 											if (arrayVariables[params[2]]) {
-												if (arrayIndexes[params[2]] < arrayVariables[params[2]].length-1) {
+												if (arrayIndexes[params[2]] < arrayVariables[params[2]].length - 1) {
 													arrayIndexes[params[2]]++;
 													stringVariables[variableName] = arrayVariables[params[2]][arrayIndexes[params[2]]];
 												} else {
@@ -1716,7 +1715,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (params.length == 5) {
 										if (params[1].toLowerCase() == "replace") {
 											if (arrayVariables[params[2]]) {
-												for (var i=0; i < arrayVariables[params[2]].length; i++) {
+												for (var i = 0; i < arrayVariables[params[2]].length; i++) {
 													if (arrayVariables[params[2]][i] == params[3]) {
 														arrayVariables[params[2]][i] = params[4];
 													}
@@ -1736,7 +1735,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (params[1].toLowerCase() == "fromstring") {
 											arrayVariables[params[2]] = [];
 											var splitString = params[4].split(params[3]);
-											for (var x=0; x<splitString.length; x++) {
+											for (var x = 0; x < splitString.length; x++) {
 												arrayVariables[params[2]].push(splitString[x]);
 											}
 											arrayIndexes[params[2]] = 0;
@@ -1755,7 +1754,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						if (thisTag.charAt(0) === "@") {
 							var apicmd = thisTag.substring(1);
 							var spacer = " ";
-							const slash="\\";
+							const slash = "\\";
 
 							// Replace _ with --
 							var params = thisContent.replace(/(^|\ +)_/g, " --");
@@ -1765,13 +1764,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							params = params.replace(regex, "{$1}");
 
 							// Remove deferral markers from deferred Fetch calls
-							regex = new RegExp(`${slash}@${slash}${cardParameters.deferralcharacter}${slash}((.*?)${slash})`,"g");
+							regex = new RegExp(`${slash}@${slash}${cardParameters.deferralcharacter}${slash}((.*?)${slash})`, "g");
 							params = params.replace(regex, "@($1)");
-							regex = new RegExp(`${slash}*${slash}${cardParameters.deferralcharacter}${slash}((.*?)${slash})`,"g");
+							regex = new RegExp(`${slash}*${slash}${cardParameters.deferralcharacter}${slash}((.*?)${slash})`, "g");
 							params = params.replace(regex, "*($1)");
-							regex = new RegExp(`get${slash}${cardParameters.deferralcharacter}${slash}.`,"g");
+							regex = new RegExp(`get${slash}${cardParameters.deferralcharacter}${slash}.`, "g");
 							params = params.replace(regex, "get.");
-							regex = new RegExp(`set${slash}${cardParameters.deferralcharacter}${slash}.`,"g");
+							regex = new RegExp(`set${slash}${cardParameters.deferralcharacter}${slash}.`, "g");
 							params = params.replace(regex, "set.");
 
 							var apiMessage = `!${apicmd}${spacer}${params}`.trim();
@@ -1789,7 +1788,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								// Find parameters are character id, value name (ie, Greatsword), section name (attack), and field to search (atkname)
 								case "find":
 									repeatingSection = getSectionAttrs(param[0], param[1], param[2], param[3]);
-									fillCharAttrs(findObjs({_type: 'attribute', _characterid: param[0]}));
+									fillCharAttrs(findObjs({ _type: 'attribute', _characterid: param[0] }));
 									repeatingCharID = param[0];
 									repeatingSectionName = param[2];
 									if (repeatingSection && repeatingSection[0]) {
@@ -1809,10 +1808,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										repeatingIndex = 0;
 										repeatingCharID = param[0];
 										repeatingSectionName = param[1];
-										fillCharAttrs(findObjs({_type: 'attribute', _characterid: repeatingCharID}));
+										fillCharAttrs(findObjs({ _type: 'attribute', _characterid: repeatingCharID }));
 										repeatingSection = getSectionAttrsByID(repeatingCharID, repeatingSectionName, repeatingSectionIDs[repeatingIndex]);
 										parseRepeatingSection();
-										repeatingIndex=0;
+										repeatingIndex = 0;
 									} else {
 										repeatingSection = undefined;
 									}
@@ -1834,7 +1833,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									break;
 								case "dump":
 									if (repeatingSection) {
-										for(var x=0; x<repeatingSection.length; x++) {
+										for (var x = 0; x < repeatingSection.length; x++) {
 											log(repeatingSection[x]);
 										}
 									}
@@ -1849,16 +1848,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 						// Handle direct output lines
 						if (thisTag.charAt(0) === "+") {
-							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent,cardParameters, true));
+							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent, cardParameters, true));
 
 							tableLineCounter += 1;
 							if (tableLineCounter % 2 == 0) {
-								while(rowData.indexOf("=X=FONTCOLOR=X=") > 0) { rowData = rowData.replace("=X=FONTCOLOR=X=", cardParameters.evenrowfontcolor); }
-								while(rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.evenrowbackground}; background-image: ${cardParameters.evenrowbackgroundimage}; `); }
+								while (rowData.indexOf("=X=FONTCOLOR=X=") > 0) { rowData = rowData.replace("=X=FONTCOLOR=X=", cardParameters.evenrowfontcolor); }
+								while (rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.evenrowbackground}; background-image: ${cardParameters.evenrowbackgroundimage}; `); }
 								//while(rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.evenrowbackground}; `); }
 							} else {
-								while(rowData.indexOf("=X=FONTCOLOR=X=") > 0) { rowData = rowData.replace("=X=FONTCOLOR=X=", cardParameters.oddrowfontcolor); }
-								while(rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.oddrowbackground}; background-image: ${cardParameters.oddrowbackgroundimage}; `); }
+								while (rowData.indexOf("=X=FONTCOLOR=X=") > 0) { rowData = rowData.replace("=X=FONTCOLOR=X=", cardParameters.oddrowfontcolor); }
+								while (rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.oddrowbackground}; background-image: ${cardParameters.oddrowbackgroundimage}; `); }
 								//while(rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.oddrowbackground}; `); }
 							}
 							rowData = processInlineFormatting(rowData, cardParameters);
@@ -1867,16 +1866,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 
 						if (thisTag.charAt(0) === "*") {
-							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent,cardParameters, true));
+							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent, cardParameters, true));
 
 							tableLineCounter += 1;
 							if (tableLineCounter % 2 == 0) {
-								while(rowData.indexOf("=X=FONTCOLOR=X=") > 0) { rowData = rowData.replace("=X=FONTCOLOR=X=", cardParameters.evenrowfontcolor); }
-								while(rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.evenrowbackground}; background-image: ${cardParameters.evenrowbackgroundimage}; `); }
+								while (rowData.indexOf("=X=FONTCOLOR=X=") > 0) { rowData = rowData.replace("=X=FONTCOLOR=X=", cardParameters.evenrowfontcolor); }
+								while (rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.evenrowbackground}; background-image: ${cardParameters.evenrowbackgroundimage}; `); }
 								//while(rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.evenrowbackground}; `); }
 							} else {
-								while(rowData.indexOf("=X=FONTCOLOR=X=") > 0) { rowData = rowData.replace("=X=FONTCOLOR=X=", cardParameters.oddrowfontcolor); }
-								while(rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.oddrowbackground}; background-image: ${cardParameters.oddrowbackgroundimage}; `); }
+								while (rowData.indexOf("=X=FONTCOLOR=X=") > 0) { rowData = rowData.replace("=X=FONTCOLOR=X=", cardParameters.oddrowfontcolor); }
+								while (rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.oddrowbackground}; background-image: ${cardParameters.oddrowbackgroundimage}; `); }
 								//while(rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.oddrowbackground}; `); }
 							}
 							rowData = processInlineFormatting(rowData, cardParameters);
@@ -1904,22 +1903,22 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (!isTrue && trueDest == "[") { blockSkip = true; }
 							if (jumpDest) {
 								switch (jumpDest.charAt(0)) {
-									case ">" : resultType = "gosub"; break;
-									case "%" : resultType = "next"; break;
-									case "[" : resultType = "block"; break;
-									case "=" :
-									case "&" :
+									case ">": resultType = "gosub"; break;
+									case "%": resultType = "next"; break;
+									case "[": resultType = "block"; break;
+									case "=":
+									case "&":
 										jumpDest.charAt(0) == "=" ? resultType = "rollset" : resultType = "stringset";
 										jumpDest = jumpDest.substring(1);
 										varName = jumpDest.split(";")[0];
-										varValue  = jumpDest.split(";")[1];
+										varValue = jumpDest.split(";")[1];
 										break;
 								}
 
 								switch (resultType) {
 									case "goto":
 										if (lineLabels[jumpDest]) {
-											lineCounter = lineLabels[jumpDest] ;
+											lineCounter = lineLabels[jumpDest];
 										} else {
 											log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`);
 										}
@@ -1931,7 +1930,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										callParamList = {};
 										var paramCount = 0;
 										if (paramList) {
-											paramList.forEach(function(item) {
+											paramList.forEach(function (item) {
 												callParamList[paramCount] = item.toString().trim();
 												paramCount++;
 											});
@@ -1939,7 +1938,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										returnStack.push(lineCounter);
 										jumpDest = jumpDest.split(";")[0];
 										if (lineLabels[jumpDest]) {
-											lineCounter = lineLabels[jumpDest] ;
+											lineCounter = lineLabels[jumpDest];
 										} else {
 											log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`);
 										}
@@ -1950,16 +1949,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									case "stringset":
 										if (varName && varValue) {
 											if (resultType == "stringset" && varValue.charAt(0) == "+") {
-												varValue = (stringVariables[varName] || "") +  varValue.substring(1);
+												varValue = (stringVariables[varName] || "") + varValue.substring(1);
 											}
-											stringVariables[varName] = replaceVariableContent(varValue,cardParameters, false);
+											stringVariables[varName] = replaceVariableContent(varValue, cardParameters, false);
 										} else {
 											log(`ScriptCards Error: Variable name or value not specified in conditional on line ${lineCounter}`);
 										}
 										break;
 									case "next":
 										if (loopStack.length >= 1) {
-											var currentLoop = loopStack[loopStack.length-1];
+											var currentLoop = loopStack[loopStack.length - 1];
 											if (loopControl[currentLoop]) {
 												loopControl[currentLoop].current += loopControl[currentLoop].step;
 												stringVariables[currentLoop] = loopControl[currentLoop].current.toString();
@@ -1986,8 +1985,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (blockSkip) {
 								var line = lineCounter;
 								if (blockChar === "]") { lastBlockAction = "S"; }
-								for (line = lineCounter + 1; line<cardLines.length; line++) {
-									if (getLineTag(cardLines[line],line,"").trim() == blockChar) {
+								for (line = lineCounter + 1; line < cardLines.length; line++) {
+									if (getLineTag(cardLines[line], line, "").trim() == blockChar) {
 										lineCounter = line + (blockChar == "]" ? 0 : 0);
 										break;
 									}
@@ -2004,7 +2003,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (cardParameters["reentrant"] !== 0) {
 								stashAScript(cardParameters["reentrant"], cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, varList, "X", arrayVariables, arrayIndexes, gmonlyLines);
 							}
-							lineCounter = cardLines.length+1;
+							lineCounter = cardLines.length + 1;
 						}
 
 						// Handle E lines (echo)
@@ -2037,15 +2036,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												var y = s.get("top");
 												var pid = s.get("_pageid");
 												var effectInfo = findObjs({
-													_type : "custfx",
-													name : params[1].trim()
+													_type: "custfx",
+													name: params[1].trim()
 												});
 												if (!_.isEmpty(effectInfo)) {
 													spawnFxWithDefinition(x, y, effectInfo[0].get('definition'), pid);
 												} else {
 													var t = params[1].trim();
 													if (t !== "" && t !== "none") {
-														spawnFx(x,y,t,pid);
+														spawnFx(x, y, t, pid);
 													}
 												}
 											}
@@ -2063,8 +2062,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												var y2 = p.get("top");
 												var pid = s.get("_pageid");
 												var effectInfo = findObjs({
-													_type : "custfx",
-													name : params[2].trim()
+													_type: "custfx",
+													name: params[2].trim()
 												});
 												if (!_.isEmpty(effectInfo)) {
 													var angleDeg = Math.atan2(y2 - y1, x2 - x1) * 180 / Math.PI;
@@ -2076,8 +2075,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													spawnFxWithDefinition(x1, y1, definition, pid);
 												} else {
 													var t = params[2].trim();
-													if (t !== "" && t !== "none" ) {
-														spawnFxBetweenPoints({x:x1, y:y1}, {x:x2, y:y2}, t, pid);
+													if (t !== "" && t !== "none") {
+														spawnFxBetweenPoints({ x: x1, y: y1 }, { x: x2, y: y2 }, t, pid);
 													}
 												}
 											}
@@ -2093,8 +2092,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											pid = cardParameters.activepage;
 										}
 										var effectInfo = findObjs({
-											_type : "custfx",
-											name : params[2].trim()
+											_type: "custfx",
+											name: params[2].trim()
 										});
 										if (!_.isEmpty(effectInfo)) {
 											spawnFxWithDefinition(x, y, effectInfo[0].get('definition'), pid);
@@ -2102,7 +2101,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											var t = params[2].trim();
 											if (x && y) {
 												if (t !== "" && t !== "none") {
-													spawnFx(x,y,t,pid);
+													spawnFx(x, y, t, pid);
 												}
 											}
 										}
@@ -2118,7 +2117,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										var pid = Campaign().get("playerpageid");
 										//log(`${x1} ${y1} ${x2} ${y2} ${t} ${pid}`)
 										if (x1 && y1 && x2 && y2 && t && pid) {
-											spawnFxBetweenPoints({x:x1, y:y1}, {x:x2, y:y2}, t, pid);
+											spawnFxBetweenPoints({ x: x1, y: y1 }, { x: x2, y: y2 }, t, pid);
 										}
 										break;
 								}
@@ -2190,7 +2189,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						// Handle branch lines
 						if (thisTag.charAt(0) === "^") {
 							var jumpTo = thisTag.substring(1);
-							if (lineLabels[jumpTo]) { lineCounter = lineLabels[jumpTo] } else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`)};
+							if (lineLabels[jumpTo]) { lineCounter = lineLabels[jumpTo] } else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`) };
 						}
 
 						if (thisTag.charAt(0) === "]") {
@@ -2200,8 +2199,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								}
 								if (lastBlockAction === "E") {
 									var line = lineCounter;
-									for (line = lineCounter + 1; line<cardLines.length; line++) {
-										if (getLineTag(cardLines[line],line,"").trim() === "]") {
+									for (line = lineCounter + 1; line < cardLines.length; line++) {
+										if (getLineTag(cardLines[line], line, "").trim() === "]") {
 											lineCounter = line;
 											break;
 										}
@@ -2224,7 +2223,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							callParamList = {};
 							var paramCount = 1;
 							if (paramList) {
-								paramList.forEach(function(item) {
+								paramList.forEach(function (item) {
 									callParamList[paramCount] = item.toString().trim();
 									paramCount++;
 								});
@@ -2233,7 +2232,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (lineLabels[jumpTo]) {
 								returnStack.push(lineCounter);
 								lineCounter = lineLabels[jumpTo];
-							} else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`)};
+							} else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`) };
 						}
 
 						// Handle return from gosub
@@ -2247,7 +2246,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						executionCounter++;
 						if (executionCounter > cardParameters.executionlimit) {
 							log("ScriptCards Error: Execution Limit Reached. Terminating Script;")
-							lineCounter = cardLines.length+1;
+							lineCounter = cardLines.length + 1;
 						}
 						lineCounter++;
 					}
@@ -2275,12 +2274,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						cardOutput = htmlTemplateHiddenTitle.replace("=X=TITLE=X=", cardParameters.title).replace("=X=SUBTITLE=X=", subtitle);
 					}
 
-					for (var x=0; x<outputLines.length; x++) {
+					for (var x = 0; x < outputLines.length; x++) {
 						//cardOutput += processInlineFormatting(outputLines[x], cardParameters);
 						cardOutput += outputLines[x];
 					}
 
-					for (var x=0; x<gmonlyLines.length; x++) {
+					for (var x = 0; x < gmonlyLines.length; x++) {
 						//gmoutput += processInlineFormatting(gmonlyLines[x], cardParameters);
 						gmoutput += gmonlyLines[x];
 					}
@@ -2312,8 +2311,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 						if (cardParameters.emotetext !== "" || emoteLeft !== "" || emoteRight !== "") {
-							if (emoteLeft == "") { emoteLeft = "&nbsp;"}
-							if (emoteRight == "") { emoteRight = "&nbsp;"}
+							if (emoteLeft == "") { emoteLeft = "&nbsp;" }
+							if (emoteRight == "") { emoteRight = "&nbsp;" }
 							emote = "<div style='display: table; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal; background: " + cardParameters.emotebackground + "'>" + emoteLeft + "<div style='display: table-cell; width: 100%; " + " font-size: " + cardParameters.emotefontsize + "; font-weight: " + cardParameters.emotefontweight + "; color: " + cardParameters.emotefontcolor + "; font-family: " + cardParameters.emotefont + "; " + "vertical-align: middle; text-align: center; padding: 0px 2px;'>" + cardParameters.emotetext + "</div><div style='display: table-cell; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal;'>" + emoteRight + "</div></div>"
 							//emote = inlineReplaceRollVariables(emote, cardParameters);
 							emote = replaceVariableContent(emote, cardParameters, false);
@@ -2328,7 +2327,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (cardParameters.hidecard == "0") {
 						if (emote !== "") {
 							if (cardParameters.whisper == "" || cardParameters.whisper == "0") {
-								sendChat(from, "/desc " + emote + " " + cardOutput );
+								sendChat(from, "/desc " + emote + " " + cardOutput);
 							} else {
 								var whispers = cardParameters.whisper.split(",");
 								for (var w in whispers) {
@@ -2343,7 +2342,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						} else {
 							if (cardParameters.whisper == "" || cardParameters.whisper == "0") {
-								sendChat(from, "/desc " + cardOutput );
+								sendChat(from, "/desc " + cardOutput);
 							} else {
 								var whispers = cardParameters.whisper.split(",");
 								for (var w in whispers) {
@@ -2370,9 +2369,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	// Breaks the passed text into a series of lines and returns them as an object
 	function parseCardContent(content) {
 		// Strip off the !pc and the opening {{ and closing }}
-		var work = content.substr(content.indexOf("{{") + 2) ;
-		work = work.substr(0,work.lastIndexOf("}}") -1);
-		work=work.trim();
+		var work = content.substr(content.indexOf("{{") + 2);
+		work = work.substr(0, work.lastIndexOf("}}") - 1);
+		work = work.trim();
 		work = " " + work;
 
 		// Split into an array on the -- divider
@@ -2392,14 +2391,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var charId = "";
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
-		while(content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
+		while (content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
 			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];
 			var replacement = "";
 			matchCount++;
 			switch (thisMatch.charAt(1)) {
 				case "&":
 					// Replace a string variable
-					var vName = thisMatch.substring(2,thisMatch.length-1);
+					var vName = thisMatch.substring(2, thisMatch.length - 1);
 					if (stringVariables[vName] !== undefined) {
 						replacement = stringVariables[vName];
 					} else {
@@ -2417,7 +2416,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					var vSuffix = "Total";
 					if (thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g) !== null) {
 						vSuffix = thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g)[0];
-					}					
+					}
 					if (rollVariables[vName] !== undefined) {
 						replacement = vSuffix == "Raw" ? rollVariables[vName]["Total"] : rollVariables[vName][vSuffix]
 					}
@@ -2430,19 +2429,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					break;
 
-/* 				case "#":
-					var tableName = thisMatch.match(/(?<=\[\#).*?(?=[\.|\]])/g)[0];
-					var table = findObjs({_type: "rollabletable", name: tableName});					
-					if (table) { table = table[0] } else { log(`ScriptCards Error: Table ${tableName} not found in game.`)}
-					if (table) {
-						var vSuffix = "name";
-						if (thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g) !== null) {
-							vSuffix = thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g)[0];
-						}
-						if (table.get(vSuffix)) { replacement = table.get(vSuffix); }
-					}
-					break;
- */
+				/* 				case "#":
+									var tableName = thisMatch.match(/(?<=\[\#).*?(?=[\.|\]])/g)[0];
+									var table = findObjs({_type: "rollabletable", name: tableName});					
+									if (table) { table = table[0] } else { log(`ScriptCards Error: Table ${tableName} not found in game.`)}
+									if (table) {
+										var vSuffix = "name";
+										if (thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g) !== null) {
+											vSuffix = thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g)[0];
+										}
+										if (table.get(vSuffix)) { replacement = table.get(vSuffix); }
+									}
+									break;
+				 */
 				case "@":
 					// Replace Array References
 					var vName = thisMatch.match(/(?<=\[\$|\@).*?(?=[\(])/g)[0];
@@ -2461,7 +2460,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				case "%":
 					// Replace gosub parameter references
 					var vName = thisMatch.match(/(?:\[\%)(.*?)(?:\%\])/g)[0];
-					vName = vName.substring(2,vName.length-2);
+					vName = vName.substring(2, vName.length - 2);
 					if (callParamList[vName] !== undefined) {
 						replacement = callParamList[vName];
 					}
@@ -2481,12 +2480,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 					}
 					if (thisMatch.charAt(2) == "-") {
-						activeCharacter = thisMatch.substring(2,thisMatch.indexOf(":"));
+						activeCharacter = thisMatch.substring(2, thisMatch.indexOf(":"));
 					}
 					if (activeCharacter !== "") {
 						var token;
 						var attribute = "";
-						var attrName = thisMatch.substring(thisMatch.indexOf(":") + 1, thisMatch.length-1);
+						var attrName = thisMatch.substring(thisMatch.indexOf(":") + 1, thisMatch.length - 1);
 						var character = getObj("character", activeCharacter);
 						if (character === undefined) {
 							token = getObj("graphic", activeCharacter);
@@ -2498,14 +2497,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							charId = character.get("_id");
 							var opType = "current";
 							if (attrName.endsWith("^")) {
-								attrName = attrName.substring(0,attrName.length-1);
+								attrName = attrName.substring(0, attrName.length - 1);
 								opType = "max";
 							}
 						}
 						if (token !== undefined && attrName.toLowerCase().startsWith("t-") && tokenAttributes.indexOf(attrName.substring(2)) >= 0) {
 							attribute = token.get(attrName.substring(2));
 						}
-						if (character !== undefined &&  (!attrName.toLowerCase().startsWith("t-"))) {
+						if (character !== undefined && (!attrName.toLowerCase().startsWith("t-"))) {
 							attribute = getAttrByName(character.id, attrName, opType);
 							if (attribute === undefined) {
 								attribute = character.get(attrName);
@@ -2516,30 +2515,30 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 					if (thisMatch.charAt(2).toLowerCase() == "p") {
 						// page attributes
-						var attrName = thisMatch.substring(4, thisMatch.length-1);
+						var attrName = thisMatch.substring(4, thisMatch.length - 1);
 						replacement = cardParameters.activepageobject.get(attrName) || "";
 					}
 
 					if (thisMatch.charAt(2).toLowerCase() == "c") {
 						// campaign attributes
-						var attrName = thisMatch.substring(4, thisMatch.length-1);
+						var attrName = thisMatch.substring(4, thisMatch.length - 1);
 						replacement = Campaign().get(attrName) || "";
 					}
 
 					if (thisMatch.charAt(2).toLowerCase() == "r") {
 						// Repeating section attributes
 						var opType = "";
-						var attrName = thisMatch.substring(4,thisMatch.length-1);
+						var attrName = thisMatch.substring(4, thisMatch.length - 1);
 						if (attrName.endsWith("^")) {
 							attrName = attrName.substring(0, attrName.length - 1);
 							opType = "_max";
 						}
-						var searchText = attrName+opType+"|";
+						var searchText = attrName + opType + "|";
 						if (thisMatch.charAt(3) == ":") {
 							if (repeatingSectionIDs) {
 								for (var i in repeatingSection) {
 									if (repeatingSection[i].startsWith(searchText)) {
-										replacement = repeatingSection[i].split("|").slice(1,999).join("|");
+										replacement = repeatingSection[i].split("|").slice(1, 999).join("|");
 										charId = repeatingCharID;
 									}
 								}
@@ -2571,7 +2570,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var attrName = "";
 			var theCharacter = getObj("character", characterid);
 			if (theCharacter !== undefined) {
-				attrName = thisMatch.substring(2,thisMatch.length-1);
+				attrName = thisMatch.substring(2, thisMatch.length - 1);
 				debugOutput(`AttrName: ${attrName}, char: ${theCharacter}, Attr: ${theCharacter.get(attrName)}`);
 				replacement = getAttrByName(characterid, attrName);
 			}
@@ -2583,7 +2582,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return content;
 	}
 
-	function getLineTag(line,linenum,logerror) {
+	function getLineTag(line, linenum, logerror) {
 		if (line.indexOf("|") >= 0) {
 			return line.split("|")[0].trim();
 		} else {
@@ -2596,7 +2595,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function getLineContent(line) {
 		if (line.indexOf("|") >= 0) {
-			return line.substring(line.indexOf("|")+1).trim();
+			return line.substring(line.indexOf("|") + 1).trim();
 		} else {
 			return "/Error - No Line Content Specified";
 		}
@@ -2630,730 +2629,272 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		rollResult.Style = defaultParameters.stylenormal;
 		var currentOperator = "+";
 
-		for (var x=0; x<rollComponents.length; x++) {
+		for (var x = 0; x < rollComponents.length; x++) {
 			var text = rollComponents[x];
 			var componentHandled = false;
 
-			// A die specifier in XdX format
-			if (text.match(/^\d+d\d+$/)) {
+			if (text.match(/^(\d+[dD][fF\d]+)([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(\#)?$/)) {
+				var thisRollHandled = handleDiceFormats(text);
 				componentHandled = true;
-				var count=text.split("d")[0];
-				var sides=text.split("d")[1];
-				rollResult.Text += `${count}d${sides} (`;
-				for (c=0; c<count; c++) {
 
-					var thisRoll = randomInteger(sides);
-					switch (currentOperator) {
-						case "+": rollResult.Total += thisRoll; rollResult.Base += thisRoll; break;
-						case "-": rollResult.Total -= thisRoll; rollResult.Base -= thisRoll; break;
-						case "*": rollResult.Total *= thisRoll; rollResult.Base *= thisRoll; break;
-						case "/": rollResult.Total /= thisRoll; rollResult.Base /= thisRoll; break;
-						case "%": rollResult.Total %= thisRoll; rollResult.Base %= thisRoll; break;
-						case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
+				if (thisRollHandled.wasWild) { hadOne = thisRollHandled.hadOne; hadAce = thisRollHandled.hadAce; }
+
+				var dieCount = thisRollHandled.rollSet.length;
+
+				for (var i = 0; i < dieCount; i++) {
+					if (thisRollHandled.rollSet[i] == 1) {
+						rollResult.Ones++;
+						if (!thisRollHandled.dontHilight) { hadOne = true; }
 					}
-					if (thisRoll == 1) { rollResult.Ones++; hadOne = true; }
-					if (thisRoll == sides) { rollResult.Aces++; hadAce = true; }
-					if (thisRoll % 2 == 0) { rollResult.Evens++; } else { rollResult.Odds++; }
-					rollResult.Text += thisRoll;
-					if (c<count-1) { rollResult.Text += "," }
-				}
-				rollResult.Text += ") ";
-			}
-
-			// Fudge dice (XdF)
-			if (text.match(/^\d+d[Ff]$/)) {
-				componentHandled = true;
-				var count=text.split("d")[0];
-				var sides=3;
-				rollResult.Text += `${count}dF (`;
-				for (c=0; c<count; c++) {
-					var thisRoll = randomInteger(sides) - 2;
-					switch (currentOperator) {
-						case "+": rollResult.Total += thisRoll; rollResult.Base += thisRoll; break;
-						case "-": rollResult.Total -= thisRoll; rollResult.Base -= thisRoll; break;
-						case "*": rollResult.Total *= thisRoll; rollResult.Base *= thisRoll; break;
-						case "/": rollResult.Total /= thisRoll; rollResult.Base /= thisRoll; break;
-						case "%": rollResult.Total %= thisRoll; rollResult.Base %= thisRoll; break;
-						case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
+					if (thisRollHandled.rollSet[i] == thisRollHandled.sides) {
+						rollResult.Aces++;
+						if (!thisRollHandled.dontHilight) { hadAce = true; }
 					}
-					switch (thisRoll) {
-						case -1: rollResult.Text += "-"; break;
-						case  0: rollResult.Text += "0"; break;
-						case  1: rollResult.Text += "+"; break; 
-					}
-					if (c<count-1) { rollResult.Text += "," }
-				}
-				rollResult.Text += ") ";
-			}
-
-			// A die specifier in XdXkhX or XdXklX format
-			if (text.match(/^\d+d\d+k[lh]\d+$/)) {
-				componentHandled = true;
-				var count = Number(text.split("d")[0]);
-				var sides = Number(text.split("d")[1].split("k")[0]);
-				var keepType = text.split("k")[1].substring(0,1);
-				var keepCount = Number(text.split("k")[1].substring(1));
-				var rollSet = [];
-
-				if (keepCount > sides) { keepCount = sides; }
-
-				rollResult.Text += `${count}d${sides}k${keepType}${keepCount} (`;
-
-				for (c=0; c<count; c++) {
-					var thisRoll = randomInteger(sides);
-					rollSet.push(thisRoll);
-				}
-
-				if (keepType === "l") {
-					rollSet.sort(function(a, b){return a-b});
-				} else {
-					rollSet.sort(function(a, b){return b-a});
-				}
-
-				for (c=0; c<count; c++) {
-					if (c < keepCount) {
-						switch (currentOperator) {
-							case "+": rollResult.Total += rollSet[c]; rollResult.Base += rollSet[c]; break;
-							case "-": rollResult.Total -= rollSet[c]; rollResult.Base -= rollSet[c]; break;
-							case "*": rollResult.Total *= rollSet[c]; rollResult.Base *= rollSet[c]; break;
-							case "/": rollResult.Total /= rollSet[c]; rollResult.Base /= rollSet[c]; break;
-							case "%": rollResult.Total %= rollSet[c]; rollResult.base %= rollSet[c]; break;
-							case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
-						}
-						if (rollSet[c] == 1) { rollResult.Ones++; hadOne = true; }
-						if (rollSet[c] == sides) { rollResult.Aces++; hadAce = true; }
-						if (rollSet[c] % 2 == 0) { rollResult.Evens++; } else { rollResult.Odds++; }
-					}
-					rollResult.Text += rollSet[c];
-					if (c<count-1) { rollResult.Text += "," }
-				}
-				rollResult.Text += ") ";
-			}
-
-			// A die specifier in XdXkhXr<>X or XdXklXr<>X format
-			if (text.match(/^\d+d\d+k[lh]\d+r[\<\>]\d+$/)) {
-				componentHandled = true;
-				var count = Number(text.split("d")[0]);
-				var sides = Number(text.split("d")[1].split("k")[0]);
-				var keepType = text.split("k")[1].substring(0,1);
-				var keepCount = Number(text.split("k")[1].substring(1).split("r")[0]);
-				var rerolltype = text.split("r")[1].substring(0,1);
-				var rerolltexttype = "L";
-				if (rerolltype == ">") {rerolltexttype = "G"}
-				var rerollThreshold = Number(text.split("r")[1].substring(1));
-				var rollSet = [];
-				if (rerollThreshold == sides && rerolltype == "<") { rerollThreshold = sides - 1 }
-				if (rerollThreshold == 1 && rerolltype == ">" ) { rerollThreshold = 2 }
-
-				if (keepCount > sides) { keepCount = sides; }
-
-				rollResult.Text += `${count}d${sides}k${keepType}${keepCount}r${rerolltexttype}${rerollThreshold} (`;
-
-				for (c=0; c<count; c++) {
-					var thisRoll = randomInteger(sides);
-					if (rerolltype == "<") {
-						while (thisRoll <= rerollThreshold) {
-							thisRoll = randomInteger(sides);
-						}
-					}
-					if (rerolltype == ">") {
-						while (thisRoll >= rerollThreshold) {
-							thisRoll = randomInteger(sides);
-						}
-					}
-					rollSet.push(thisRoll);
-				}
-
-				if (keepType === "l") {
-					rollSet.sort(function(a, b){return a-b});
-				} else {
-					rollSet.sort(function(a, b){return b-a});
-				}
-
-				for (c=0; c<count; c++) {
-					if (c < keepCount) {
-						switch (currentOperator) {
-							case "+": rollResult.Total += rollSet[c]; rollResult.Base += rollSet[c]; break;
-							case "-": rollResult.Total -= rollSet[c]; rollResult.Base -= rollSet[c]; break;
-							case "*": rollResult.Total *= rollSet[c]; rollResult.Base *= rollSet[c]; break;
-							case "/": rollResult.Total /= rollSet[c]; rollResult.Base /= rollSet[c]; break;
-							case "%": rollResult.Total %= rollSet[c]; rollResult.base %= rollSet[c]; break;
-							case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
-						}
-						if (rollSet[c] == 1) { rollResult.Ones++; hadOne = true; }
-						if (rollSet[c] == sides) { rollResult.Aces++; hadAce = true; }
-						if (rollSet[c] % 2 == 0) { rollResult.Evens++; } else { rollResult.Odds++; }
-					}
-					rollResult.Text += rollSet[c];
-					if (c<count-1) { rollResult.Text += "," }
-				}
-				rollResult.Text += ") ";
-			}
-
-			// A die specifier in XdXro<X or XdXro>X format (reroll above/below number)
-			if (text.match(/^\d+d\d+ro[\<\>]\d+$/)) {
-				componentHandled = true;
-				var count = Number(text.split("d")[0]);
-				var sides = Number(text.split("d")[1].split("ro")[0]);
-				var rerolltype = text.split("ro")[1].substring(0,1);
-				var rerolltexttype = "L";
-				if (rerolltype == ">") {rerolltexttype = "G"}
-				var rerollThreshold = Number(text.split("ro")[1].substring(1));
-				var rollSet = [];
-				var rollTextSet = [];
-				if (rerollThreshold == sides && rerolltype == "<") { rerollThreshold = sides - 1 }
-				if (rerollThreshold == 1 && rerolltype == ">" ) { rerollThreshold = 2 }
-				rollResult.Text += `${count}d${sides}ro${rerolltexttype}${rerollThreshold} (`;
-
-				for (c=0; c<count; c++) {
-					var thisRoll = 0;
-					var thisRollText = "";
-
-					thisRoll = randomInteger(sides);
-					thisRollText = thisRoll.toString();
-					if (rerolltexttype == "G" && thisRoll >= rerollThreshold) {
-						thisRoll = randomInteger(sides);
-						thisRollText += "(" + thisRoll.toString() + ")";
-					}
-
-					if (rerolltexttype == "L" && thisRoll <= rerollThreshold) {
-						thisRoll = randomInteger(sides);
-						thisRollText += "(" + thisRoll.toString() + ")";
-					}
-					rollSet.push(thisRoll);
-					rollTextSet.push(thisRollText);
-				}
-
-				for (c=0; c<count; c++) {
-					switch (currentOperator) {
-						case "+": rollResult.Total += rollSet[c]; rollResult.Base += rollSet[c]; break;
-						case "-": rollResult.Total -= rollSet[c]; rollResult.Base -= rollSet[c]; break;
-						case "*": rollResult.Total *= rollSet[c]; rollResult.Base *= rollSet[c]; break;
-						case "/": rollResult.Total /= rollSet[c]; rollResult.Base /= rollSet[c]; break;
-						case "%": rollResult.Total %= rollSet[c]; rollResult.base %= rollSet[c]; break;
-						case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
-					}
-					if (rollSet[c] == 1) { rollResult.Ones++; hadOne = true; }
-					if (rollSet[c] == sides) { rollResult.Aces++; hadAce = true; }
-					if (rollSet[c] % 2 == 0) { rollResult.Evens++; } else { rollResult.Odds++; }
-					rollResult.Text += rollTextSet[c];
-					if (c<count-1) { rollResult.Text += "," }
-				}
-				rollResult.Text += ") ";
-			}
-
-			// A die specifier in XdXr<X or XdXr>X format (reroll above/below number)
-			if (text.match(/^\d+d\d+r[\<\>]\d+$/)) {
-				componentHandled = true;
-				var count = Number(text.split("d")[0]);
-				var sides = Number(text.split("d")[1].split("r")[0]);
-				var rerolltype = text.split("r")[1].substring(0,1);
-				var rerolltexttype = "L";
-				if (rerolltype == ">") {rerolltexttype = "G"}
-				var rerollThreshold = Number(text.split("r")[1].substring(1));
-				var rollSet = [];
-				if (rerollThreshold == sides && rerolltype == "<") { rerollThreshold = sides - 1 }
-				if (rerollThreshold == 1 && rerolltype == ">" ) { rerollThreshold = 2 }
-				rollResult.Text += `${count}d${sides}ro${rerolltexttype}${rerollThreshold} (`;
-
-				var thisRoll=-1;
-
-				for (c=0; c<count; c++) {
-					if (rerolltype == "<") {
-						do {
-							thisRoll = randomInteger(sides);
-						} while (thisRoll <= rerollThreshold);
+					if (thisRollHandled.rollSet[i] % 2 == 0) {
+						rollResult.Evens++;
 					} else {
-						do {
-							thisRoll = randomInteger(sides);
-						} while (thisRoll >= rerollThreshold);
+						rollResult.Odds++;
 					}
-					rollSet.push(thisRoll);
 				}
 
-				for (c=0; c<count; c++) {
-					switch (currentOperator) {
-						case "+": rollResult.Total += rollSet[c]; rollResult.Base += rollSet[c]; break;
-						case "-": rollResult.Total -= rollSet[c]; rollResult.Base -= rollSet[c]; break;
-						case "*": rollResult.Total *= rollSet[c]; rollResult.Base *= rollSet[c]; break;
-						case "/": rollResult.Total /= rollSet[c]; rollResult.Base /= rollSet[c]; break;
-						case "%": rollResult.Total %= rollSet[c]; rollResult.base %= rollSet[c]; break;
-						case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
-					}
-					if (rollSet[c] == 1) { rollResult.Ones++; hadOne = true; }
-					if (rollSet[c] == sides) { rollResult.Aces++; hadAce = true; }
-					if (rollSet[c] % 2 == 0) { rollResult.Evens++; } else { rollResult.Odds++; }
-					rollResult.Text += rollSet[c];
-					if (c<count-1) { rollResult.Text += "," }
+				switch (currentOperator) {
+					case "+": rollResult.Total += thisRollHandled.rollTotal; rollResult.Base += thisRollHandled.rollTotal; break;
+					case "-": rollResult.Total -= thisRollHandled.rollTotal; rollResult.Base -= thisRollHandled.rollTotal; break;
+					case "*": rollResult.Total *= thisRollHandled.rollTotal; rollResult.Base *= thisRollHandled.rollTotal; break;
+					case "/": rollResult.Total /= thisRollHandled.rollTotal; rollResult.Base /= thisRollHandled.rollTotal; break;
+					case "%": rollResult.Total %= thisRollHandled.rollTotal; rollResult.Base %= thisRollHandled.rollTotal; break;
+					case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRollHandled.rollTotal) : Math.ceil(rollResult.Total / thisRollHandled.rollTotal); break;
 				}
-				rollResult.Text += ") ";
+
+				rollResult.Text += "(" + thisRollHandled.rollText + ")";
 			}
 
-			// A die specifier in XdX! or XdX!>X format (exploding dice)
-			if (text.match(/^\d+d\d+!([\<\>]\d+)?$/)) {
-				componentHandled = true;
-				var count = Number(text.split("d")[0]);
-				var sides = Number(text.split("d")[1].split("!")[0]);
-				var rerollnumber = sides;
-				var comptype = "G";
-				if (text.split("d")[1].split("!")[1] !== "") {
-					comptype = text.split("d")[1].split("!")[1].substring(0,1);
-					if (comptype == "<") {
-						comptype = "L";
-					} else {
-						comptype = "G";
+			if (!componentHandled) {
+				// A mathmatical function
+				if (text.match(/^\{.*\}$/)) {
+					componentHandled = true;
+					var operation = text.substring(1, text.length - 1);
+					var precision = 0;
+					var value1 = 0;
+					var value2 = 0;
+					if (operation.toLowerCase().startsWith("round:")) {
+						precision = Math.min(6, parseInt(operation.substring(6)));
+						operation = "ROUND:";
 					}
-					rerollnumber = Number(text.split("d")[1].split("!")[1].substring(1));
-				}
-				if (comptype == "G" && rerollnumber == 1) { rerollnumber += 1 }
-				if (comptype == "L" && rerollnumber == sides) { rerollnumber -= 1 }
-				var rollSet = [];
-				var rollTextSet = [];
-				rollResult.Text += `${count}d${sides}!${comptype}${rerollnumber} (`;
-				for (c=0; c<count; c++) {
-					var thisRoll = 0;
-					var subroll = 0
-					var thisRollText = ""
-
-					subroll = randomInteger(sides);
-					if (comptype == "G") {
-						thisRoll = subroll;
-						thisRollText += subroll.toString();
-						while (subroll >= rerollnumber) {
-							subroll = randomInteger(sides);
-							thisRoll += subroll;
-							thisRollText += "!" + subroll.toString();
+					if (operation.toLowerCase().startsWith("min:")) {
+						value1 = parseFloat(operation.substring(4));
+						operation = "MIN";
+					}
+					if (operation.toLowerCase().startsWith("max:")) {
+						value1 = parseFloat(operation.substring(4));
+						operation = "MAX";
+					}
+					if (operation.toLowerCase().startsWith("clamp:")) {
+						var range = operation.substring(6);
+						if (range.indexOf(":") > 0) {
+							value1 = parseInt(range.split(":")[0]);
+							value2 = parseInt(range.split(":")[1]);
+							operation = "CLAMP";
 						}
 					}
+					switch (operation.toLowerCase()) {
+						case "abs":
+							rollResult.Total = Math.abs(rollResult.Total);
+							rollResult.Text += "{ABS}";
+							break;
 
-					if (comptype == "L") {
-						thisRoll = subroll;
-						thisRollText += subroll.toString();
-						while (subroll <= rerollnumber) {
-							subroll = randomInteger(sides);
-							thisRoll += subroll;
-							thisRollText += "!" + subroll.toString();
-						}
+						case "sqrt":
+						case "squareroot":
+							rollResult.Total = Math.sqrt(rollResult.Total);
+							rollResult.Text += "{SQRT}";
+							break;
+
+						case "ceil":
+							rollResult.Total = Math.ceil(rollResult.Total);
+							rollResult.Text += "{CEIL}";
+							break;
+
+						case "floor":
+							rollResult.Total = Math.floor(rollResult.Total);
+							rollResult.Text += "{FLOOR}";
+							break;
+
+						case "round":
+							rollResult.Total = Math.round(rollResult.Total);
+							rollResult.Text += "{ROUND}";
+							break;
+
+						case "neg":
+						case "negate":
+							rollResult.Total = rollResult.Total * -1;
+							rollResult.Text += "{NEGATE}";
+							break;
+
+						case "sin":
+							rollResult.Total = Math.sin(rollResult.Total);
+							rollResult.Text += "{SIN}";
+							break;
+
+						case "cos":
+							rollResult.Total = Math.cos(rollResult.Total);
+							rollResult.Text += "{COS}";
+							break;
+
+						case "tan":
+							rollResult.Total = Math.tan(rollResult.Total);
+							rollResult.Text += "{TAN}";
+							break;
+
+						case "asin":
+							rollResult.Total = Math.asin(rollResult.Total);
+							rollResult.Text += "{ASIN}";
+							break;
+
+						case "acos":
+							rollResult.Total = Math.acos(rollResult.Total);
+							rollResult.Text += "{ACOS}";
+							break;
+
+						case "atan":
+							rollResult.Total = Math.atan(rollResult.Total);
+							rollResult.Text += "{ATAN}";
+							break;
+
+						case "square":
+							rollResult.Total = rollResult.Total * rollResult.Total;
+							rollResult.Text += "{SQUARE}";
+							break;
+
+						case "cube":
+						case "cubed":
+							rollResult.Total = rollResult.Total * rollResult.Total * rollResult.Total;
+							rollResult.Text += "{CUBE}";
+							break;
+
+						case "cbrt":
+						case "cuberoot":
+							rollResult.Total = Math.cbrt(rollResult.Total);
+							rollResult.Text += "{CUBEROOT}";
+							break;
+
+						case "round:":
+							rollResult.Total = rollResult.Total.toFixed(precision);
+							break;
+
+						case "min":
+							if (rollResult.Total < value1) {
+								rollResult.Total = value1
+							}
+							rollResult.Text += `{MIN:${value1}}`;
+							break;
+
+						case "max":
+							if (rollResult.Total > value1) {
+								rollResult.Total = value1
+							}
+							rollResult.Text += `{MAX:${value1}}`;
+							break;
+
+						case "clamp":
+							if (rollResult.Total < value1) {
+								rollResult.Total = value1
+							}
+							if (rollResult.Total > value2) {
+								rollResult.Total = value2
+							}
+							rollResult.Text += `{CLAMP:${value1}:${value2}}`;
+							break;
 					}
-					rollSet.push(thisRoll);
-					rollTextSet.push(thisRollText);
-				}
-
-				for (c=0; c<count; c++) {
-					switch (currentOperator) {
-						case "+": rollResult.Total += rollSet[c]; rollResult.Base += rollSet[c]; break;
-						case "-": rollResult.Total -= rollSet[c]; rollResult.Base -= rollSet[c]; break;
-						case "*": rollResult.Total *= rollSet[c]; rollResult.Base *= rollSet[c]; break;
-						case "/": rollResult.Total /= rollSet[c]; rollResult.Base /= rollSet[c]; break;
-						case "%": rollResult.Total %= rollSet[c]; rollResult.base %= rollSet[c]; break;
-						case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
-					}
-					if (rollSet[c] == 1) { rollResult.Ones++; hadOne = true; }
-					if (rollSet[c] == sides) { rollResult.Aces++; hadAce = true; }
-					if (rollSet[c] % 2 == 0) { rollResult.Evens++; } else { rollResult.Odds++; }
-					rollResult.Text += rollTextSet[c];
-					if (c<count-1) { rollResult.Text += " ," }
-				}
-				rollResult.Text += ") ";
-			}
-
-			// A die specifier in XdX!h, XdX!l or XdX!>Xh or XdX!>Xl format (exploding dice, keep highest or lowest)
-			if (text.match(/^\d+d\d+!([hl])$/)) {
-				componentHandled = true;
-				var count = Number(text.split("d")[0]);
-				var sides = Number(text.split("d")[1].split("!")[0]);
-				var rerollnumber = sides;
-				var rollSet = [];
-				var rollTextSet = [];
-				var keepType = text.split("!")[1];
-				var comptype = "G";
-				rollResult.Text += `${count}d${sides}!${keepType} (`;
-				for (c=0; c<count; c++) {
-					var thisRoll = 0;
-					var subroll = 0
-					var thisRollText = ""
-
-					subroll = randomInteger(sides);
-					if (comptype == "G") {
-						thisRoll = subroll;
-						thisRollText += subroll.toString();
-						while (subroll >= rerollnumber) {
-							subroll = randomInteger(sides);
-							thisRoll += subroll;
-							thisRollText += "!" + subroll.toString();
-						}
-					}
-					rollSet.push(thisRoll);
-					rollTextSet.push(thisRollText);
-				}
-
-				if (keepType === "l") {
-					rollSet.sort(function(a, b){return a-b});
-				} else {
-					rollSet.sort(function(a, b){return b-a});
-				}
-
-				var keepCount = 1;
-
-				for (c=0; c<count; c++) {
-					if (c < keepCount) {
-						switch (currentOperator) {
-							case "+": rollResult.Total += rollSet[c]; rollResult.Base += rollSet[c]; break;
-							case "-": rollResult.Total -= rollSet[c]; rollResult.Base -= rollSet[c]; break;
-							case "*": rollResult.Total *= rollSet[c]; rollResult.Base *= rollSet[c]; break;
-							case "/": rollResult.Total /= rollSet[c]; rollResult.Base /= rollSet[c]; break;
-							case "%": rollResult.Total %= rollSet[c]; rollResult.base %= rollSet[c]; break;
-							case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
-						}
-					}
-					if (rollSet[c] == 1) { rollResult.Ones++; hadOne = true; }
-					if (rollSet[c] == sides) { rollResult.Aces++; hadAce = true; }
-					if (rollSet[c] % 2 == 0) { rollResult.Evens++; } else { rollResult.Odds++; }
-					rollResult.Text += rollTextSet[c];
-					if (c<count-1) { rollResult.Text += " ," }
-				}
-				rollResult.Text += ") ";
-			}			
-
-			// A die specifier in XdXW, or XdXWD (Wild Die - like an exploding die, but only the last die. If "D" is appended, drops highest die if wild die is a 1)
-			if (text.toLowerCase().match(/^\d+d\d+ws?x?$/)) {
-				componentHandled = true;
-				var count = Number(text.toLowerCase().split("d")[0]);
-				var sides = Number(text.toLowerCase().split("d")[1].split("w")[0]);
-				var rerollnumber = sides;
-				var rollSet = [];
-				var rollTextSet = [];
-				var comptype = "G";
-				var keepOne = true;
-				var keepHighest = true;
-				var highest = -1;
-				var highestRoll = 0;
-				if (text.toLowerCase().indexOf("s") >= 0) {
-					keepOne = false;
-				}
-				if (text.toLowerCase().indexOf("x") >=0) {
-					keepHighest = false;
-				}
-
-				rollResult.Text += `${count}d${sides}W${keepOne?"":"S"}${keepHighest?"":"X"} (`;
-
-				// Roll the regular dice
-				for (c=0; c<count - 1; c++) {
-					var thisRoll = 0;
-					var subroll = 0;
-					var thisRollText = ""
-
-					subroll = randomInteger(sides);
-					if (comptype == "G") {
-						thisRoll = subroll;
-						thisRollText += subroll.toString();
-					}
-					if (highestRoll < thisRoll) { highest = c; highestRoll = thisRoll }
-					rollSet.push(thisRoll);
-					rollTextSet.push(thisRollText);
-				}
-
-				var wildTotal = 0;
-
-				// Roll the wild die, rerolling if SIDES is rolled.
-				for (c=0; c<1; c++) {
-					var thisRoll = 0;
-					var subroll = 0
-					var thisRollText = "[W:"
-
-					subroll = randomInteger(sides);
-					if (comptype == "G") {
-						thisRoll = subroll;
-						thisRollText += subroll.toString();
-						while (subroll >= rerollnumber) {
-							subroll = randomInteger(sides);
-							thisRoll += subroll;
-							thisRollText += "!" + subroll.toString();
-						}
-					}
-					thisRollText += "]";
-					if (!keepOne && thisRoll == 1) {
-						thisRoll = 0;
-						thisRollText = "[W:1(X)]"
-					}
-					if (thisRoll > 1) {
-						keepHighest = true;
-					}
-					wildTotal = thisRoll;
-					if (wildTotal == 1) { hadOne = true;}
-					if (wildTotal >= sides) { hadAce = true;}
-					rollSet.push(thisRoll);
-					rollTextSet.push(thisRollText);
-				}
-
-				for (c=0; c<count; c++) {
-					var wasKept = true;
-					if (keepHighest || c != highest) {
-						switch (currentOperator) {
-							case "+": rollResult.Total += rollSet[c]; rollResult.Base += rollSet[c]; break;
-							case "-": rollResult.Total -= rollSet[c]; rollResult.Base -= rollSet[c]; break;
-							case "*": rollResult.Total *= rollSet[c]; rollResult.Base *= rollSet[c]; break;
-							case "/": rollResult.Total /= rollSet[c]; rollResult.Base /= rollSet[c]; break;
-							case "%": rollResult.Total %= rollSet[c]; rollResult.base %= rollSet[c]; break;
-							case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRoll) : Math.ceil(rollResult.Total / thisRoll); break;
-						}
-					} else {
-						wasKept = false;
-					}
-					if (rollSet[c] == 1) { rollResult.Ones++; }
-					if (rollSet[c] == sides) { rollResult.Aces++; }
-					if (rollSet[c] % 2 == 0) { rollResult.Evens++; } else { rollResult.Odds++; }
-					rollResult.Text += rollTextSet[c] + (wasKept ? "" : "(X)");
-					if (c<count-1) { rollResult.Text += ", " }
-				}
-				rollResult.Text += ") ";
-			}						
-
-			// A die specifier in XdX>X or XdX<X format
-			if (text.match(/^(\d+)d(\d+)([\>\<])(\d+)$/)) {
-				componentHandled = true;
-				var parts = text.match(/^(\d+)d(\d+)([\>\<])(\d+)$/);
-				var count=parts[1];
-				var sides=parts[2];
-				var op = parts[3];
-				var success = parts[4];
-				rollResult.Text += `${count}d${sides}${op==">"?"G":"L"}${success} (`;
-				for (c=0; c<count; c++) {
-					var thisRoll = randomInteger(sides);
-					var countIt = false;
-					if (op == ">" && thisRoll > success) { countIt = true }
-					if (op == "<" && thisRoll < success) { countIt = true }
-					if (countIt) {
-						switch (currentOperator) {
-							case "+": rollResult.Total += 1; rollResult.Base += 1; break;
-							case "-": rollResult.Total -= 1; rollResult.Base -= 1; break;
-						}
-					}
-					if (thisRoll == 1) { rollResult.Ones++; hadOne = true; }
-					if (thisRoll == sides) { rollResult.Aces++; hadAce = true; }
-					if (thisRoll % 2 == 0) { rollResult.Evens++; } else { rollResult.Odds++; }
-					rollResult.Text += thisRoll;
-					if (c<count-1) { rollResult.Text += "," }
-				}
-				rollResult.Text += ") ";
-			}
-
-			// A mathmatical function
-			if (text.match(/^\{.*\}$/)) {
-				var operation = text.substring(1, text.length-1);
-				var precision = 0;
-				var value1 = 0;
-				var value2 = 0;
-				if (operation.toLowerCase().startsWith("round:")) {
-					precision = Math.min(6,parseInt(operation.substring(6)));
-					operation = "ROUND:";
-				}
-				if (operation.toLowerCase().startsWith("min:")) {
-					log(operation);
-					value1 = parseFloat(operation.substring(4));
-					operation = "MIN";
-				}
-				if (operation.toLowerCase().startsWith("max:")) {
-					value1 = parseFloat(operation.substring(4));
-					operation = "MAX";
-				}
-				if (operation.toLowerCase().startsWith("clamp:")) {
-					var range = operation.substring(6);
-					if (range.indexOf(":") > 0) {
-						value1 = parseInt(range.split(":")[0]);
-						value2 = parseInt(range.split(":")[1]);
-						operation = "CLAMP";
-					}
-				}
-				switch (operation.toLowerCase()) {
-					case "abs":
-						rollResult.Total = Math.abs(rollResult.Total);
-						rollResult.Text += "{ABS}";
-						break;
-
-					case "sqrt":
-					case "squareroot":
-						rollResult.Total = Math.sqrt(rollResult.Total);
-						rollResult.Text += "{SQRT}";
-						break;
-
-					case "ceil":
-						rollResult.Total = Math.ceil(rollResult.Total);
-						rollResult.Text += "{CEIL}";
-						break;
-
-					case "floor":
-						rollResult.Total = Math.floor(rollResult.Total);
-						rollResult.Text += "{FLOOR}";
-						break;
-
-					case "round":
-						rollResult.Total = Math.round(rollResult.Total);
-						rollResult.Text += "{ROUND}";
-						break;
-
-					case "neg":
-					case "negate":
-						rollResult.Total = rollResult.Total * -1;
-						rollResult.Text += "{NEGATE}";
-						break;
-
-					case "sin":
-						rollResult.Total = Math.sin(rollResult.Total);
-						rollResult.Text += "{SIN}";
-						break;
-
-					case "cos":
-						rollResult.Total = Math.cos(rollResult.Total);
-						rollResult.Text += "{COS}";
-						break;
-
-					case "tan":
-						rollResult.Total = Math.tan(rollResult.Total);
-						rollResult.Text += "{TAN}";
-						break;					
-
-					case "asin":
-						rollResult.Total = Math.asin(rollResult.Total);
-						rollResult.Text += "{ASIN}";
-						break;
-
-					case "acos":
-						rollResult.Total = Math.acos(rollResult.Total);
-						rollResult.Text += "{ACOS}";
-						break;
-
-					case "atan":
-						rollResult.Total = Math.atan(rollResult.Total);
-						rollResult.Text += "{ATAN}";
-						break;											
-
-					case "square":
-						rollResult.Total = rollResult.Total * rollResult.Total;
-						rollResult.Text += "{SQUARE}";
-						break;					
-
-					case "cube":
-					case "cubed":
-						rollResult.Total = rollResult.Total * rollResult.Total * rollResult.Total;
-						rollResult.Text += "{CUBE}";
-						break;					
-
-					case "cbrt":
-					case "cuberoot":
-						rollResult.Total = Math.cbrt(rollResult.Total);
-						rollResult.Text += "{CUBEROOT}";
-						break;					
-
-					case "round:":
-						rollResult.Total = rollResult.Total.toFixed(precision);
-						break;
-
-					case "min":
-						log(`Opertaion: ${operation}, Total : ${rollResult.Total}, Min: ${value1}`)
-						if (rollResult.Total < value1) {
-							rollResult.Total = value1
-						}
-						rollResult.Text += `{MIN:${value1}}`;
-						break;
-
-					case "max":
-						log(`Opertaion: ${operation}, Total : ${rollResult.Total}, Max: ${value1}`)
-						if (rollResult.Total > value1) {
-							rollResult.Total = value1
-						}
-						rollResult.Text += `{MAX:${value1}}`;
-						break;
-
-					case "clamp":
-						log(`Opertaion: ${operation}, Total : ${rollResult.Total}, Min: ${value1}, Max: ${Value2}`)
-						if (rollResult.Total < value1) {
-							rollResult.Total = value1
-						}
-						if (rollResult.Total > value2) {
-							rollResult.Total = value2
-						}
-						rollResult.Text += `{CLAMP:${value1}:${value2}}`;
-						break;
-								
 				}
 			}
 
 			// An operator
-			if (text.match(/^[\+\-\*\/\\\%]$/)) {// && !text.match(/^-\d*$/)) {
-				componentHandled = true;
-				currentOperator = text;
-				//rollResult.Text += `${currentOperator} `;
-				rollResult.Text += currentOperator == "*" ? "x " : currentOperator + " ";
+			if (!componentHandled) {
+				if (text.match(/^[\+\-\*\/\\\%]$/)) {// && !text.match(/^-\d*$/)) {
+					componentHandled = true;
+					currentOperator = text;
+					componentHandled = true;
+					//rollResult.Text += `${currentOperator} `;
+					rollResult.Text += currentOperator == "*" ? "x " : currentOperator + " ";
+				}
 			}
 
 			// A bare number within parens (just strip them)
-			if (text.match(/^\([+-]?(\d*\.)?\d*\)$/)) {
-				text = text.substring(1, text.length - 1)
-			}
-			// Just a number
-			if (text.match(/^[+-]?(\d*\.)?\d*$/)) {
-				componentHandled = true;
-				rollResult.Text += `${text} `;
-				if (!isNaN(text)) {
-					switch (currentOperator) {
-						case "+": rollResult.Total += Number(text); break;
-						case "-": rollResult.Total -= Number(text); break;
-						case "*": rollResult.Total *= Number(text); break;
-						case "/": rollResult.Total /= Number(text); break;
-						case "%": rollResult.Total %= Number(text); break;
-						case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / Number(text)) : Math.ceil(rollResult.Total / Number(text)); break;
+			if (!componentHandled) {
+				if (text.match(/^\([+-]?(\d*\.)?\d*\)$/)) {
+					text = text.substring(1, text.length - 1)
+				}
+				// Just a number
+				if (text.match(/^[+-]?(\d*\.)?\d*$/)) {
+					componentHandled = true;
+					rollResult.Text += `${text} `;
+					if (!isNaN(text)) {
+						switch (currentOperator) {
+							case "+": rollResult.Total += Number(text); break;
+							case "-": rollResult.Total -= Number(text); break;
+							case "*": rollResult.Total *= Number(text); break;
+							case "/": rollResult.Total /= Number(text); break;
+							case "%": rollResult.Total %= Number(text); break;
+							case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / Number(text)) : Math.ceil(rollResult.Total / Number(text)); break;
+						}
 					}
 				}
 			}
 
 			// A card variable
-			if (text.match(/^\[\$.+\]$/)) {
-				componentHandled = true;
-				var thisKey = text.substring(2,text.length-1);
-				//var thisValue = Number(inlineReplaceRollVariables(thisKey, cardParameters), cardParameters);
-				var thisValue = Number(replaceVariableContent(thisKey, cardParameters, false));
+			if (!componentHandled) {
+				if (text.match(/^\[\$.+\]$/)) {
+					componentHandled = true;
+					var thisKey = text.substring(2, text.length - 1);
+					//var thisValue = Number(inlineReplaceRollVariables(thisKey, cardParameters), cardParameters);
+					var thisValue = Number(replaceVariableContent(thisKey, cardParameters, false));
 
-				if (rollVariables[thisKey]) {
-					rollResult.Text += `(${rollVariables[thisKey].Text}) `;
-				} else {
-					rollResult.Text += `${thisValue} `;
-				}
+					if (rollVariables[thisKey]) {
+						rollResult.Text += `(${rollVariables[thisKey].Text}) `;
+					} else {
+						rollResult.Text += `${thisValue} `;
+					}
 
-				switch (currentOperator) {
-					case "+": rollResult.Total += thisValue; break;
-					case "-": rollResult.Total -= thisValue; break;
-					case "*": rollResult.Total *= thisValue; break;
-					case "/": rollResult.Total /= thisValue; break;
-					case "%": rollResult.Total %= thisValue; break;
-					case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisValue) : Math.ceil(rollResult.Total / thisValue); break;
+					switch (currentOperator) {
+						case "+": rollResult.Total += thisValue; break;
+						case "-": rollResult.Total -= thisValue; break;
+						case "*": rollResult.Total *= thisValue; break;
+						case "/": rollResult.Total /= thisValue; break;
+						case "%": rollResult.Total %= thisValue; break;
+						case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisValue) : Math.ceil(rollResult.Total / thisValue); break;
+					}
 				}
 			}
 
 			// Flavor Text
-			if (text.match(/^\[.+\]$/)) {
-				componentHandled = true;
-				if ((text.charAt(1) !== "$") && (text.charAt(1) !== "=")) {
-					rollResult.Text += ` ${text} `;
+			if (!componentHandled) {
+				if (text.match(/^\[.+\]$/)) {
+					componentHandled = true;
+					if ((text.charAt(1) !== "$") && (text.charAt(1) !== "=")) {
+						rollResult.Text += ` ${text} `;
+					}
 				}
 			}
 
 			// Plain Text
-			if (text.match(/\b[A-Za-z]+\b$/) && cardParameters.allowplaintextinrolls !== 0) {
-				componentHandled = true;
-				rollResult.Text += ` ${text} `;
+			if (!componentHandled) {
+				if (text.match(/\b[A-Za-z]+\b$/) && cardParameters.allowplaintextinrolls !== 0) {
+					componentHandled = true;
+					rollResult.Text += ` ${text} `;
+				}
 			}
 
-
 			// A Rollable Table Result
-			if (text.match(/\[[Tt]\#.+?\]/g)) {
-				componentHandled = true;
-				var rollTableName = text.substring(3,text.length-1);
-				var tableResult = rollOnRollableTable(rollTableName);
-				if (tableResult) {
-					rollResult.tableEntryText = tableResult[0];
-					rollResult.tableEntryImgURL = tableResult[1];
-					rollResult.tableEntryValue = isNaN(rollResult.tableEntryText) ? 0 : parseInt(rollResult.tableEntryText);
+			if (!componentHandled) {
+				if (text.match(/\[[Tt]\#.+?\]/g)) {
+					componentHandled = true;
+					var rollTableName = text.substring(3, text.length - 1);
+					var tableResult = rollOnRollableTable(rollTableName);
+					if (tableResult) {
+						rollResult.tableEntryText = tableResult[0];
+						rollResult.tableEntryImgURL = tableResult[1];
+						rollResult.tableEntryValue = isNaN(rollResult.tableEntryText) ? 0 : parseInt(rollResult.tableEntryText);
+					}
 				}
 			}
 
@@ -3369,8 +2910,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (cardParameters.nominmaxhighlight !== "0") { rollResult.Style = cardParameters.stylenormal; }
 		if (cardParameters.norollhighlight !== "0") { rollResult.Style = cardParameters.stylenone; }
 
-		rollResult.Text = rollResult.Text.replace(/\+ \+/g," + ");
-		rollResult.Text = rollResult.Text.replace(/\- \-/g," - ");
+		rollResult.Text = rollResult.Text.replace(/\+ \+/g, " + ");
+		rollResult.Text = rollResult.Text.replace(/\- \-/g, " - ");
 
 		return rollResult;
 	}
@@ -3378,7 +2919,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	function cleanUpRollSpacing(input) {
 		input = input.replace(/\+/g, " + ");
 		//input = input.replace(/\-(?![^[]*?])/g, " - ");
-		input = input.replace(/(?<![:])\-(?![^[]*?])/g," - ");
+		input = input.replace(/(?<![:])\-(?![^[]*?])/g, " - ");
 		input = input.replace(/\*/g, " * ");
 		input = input.replace(/\//g, " / ");
 		input = input.replace(/\\/g, " \\ ")
@@ -3398,9 +2939,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return htmlRowTemplate.replace("=X=ROWDATA=X=", `<strong>${tag}</strong> ${content}`);
 	}
 
-	function buildTooltip(text,tip,style){
+	function buildTooltip(text, tip, style) {
 		var tooltipStyle = ` font-family: ${defaultParameters.titlefont}; font-size: ${defaultParameters.titlefontsize}; font-weight: normal; font-style: normal; ${style} `;
-		return `<span style='${tooltipStyle}' class='showtip tipsy' title='${tip.toString().replace(/\~/g,"")}'>${text}</span>`;
+		return `<span style='${tooltipStyle}' class='showtip tipsy' title='${tip.toString().replace(/\~/g, "")}'>${text}</span>`;
 	};
 
 	function processFullConditional(conditional, cardParameters) {
@@ -3417,7 +2958,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			parts.shift();
 			parts.shift();
 			parts.shift();
-			switch(currentJoiner) {
+			switch (currentJoiner) {
 				case "none": overallResult = thisResult; break;
 				case "-and": overallResult = overallResult && thisResult; break;
 				case "-or": overallResult = overallResult || thisResult; break;
@@ -3443,9 +2984,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			return false;
 		}
 		//var left = inlineReplaceRollVariables(components[0]).replace(/\"/g,"", cardParameters);
-		var left = replaceVariableContent(components[0]).replace(/\"/g,"", cardParameters, false);
+		var left = replaceVariableContent(components[0]).replace(/\"/g, "", cardParameters, false);
 		//var right = inlineReplaceRollVariables(components[2]).replace(/\"/g,"", cardParameters);;
-		var right = replaceVariableContent(components[2]).replace(/\"/g,"", cardParameters, false);
+		var right = replaceVariableContent(components[2]).replace(/\"/g, "", cardParameters, false);
 		if (!isNaN(left)) { left = parseFloat(left); }
 		if (!isNaN(right)) { right = parseFloat(right); }
 
@@ -3455,9 +2996,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			case "-lt": if (left < right) return true; break;
 			case "-le": if (left <= right) return true; break;
 			case "-eq": if (left == right) return true; break;
-			case "-eqi" : if (left.toString().toLowerCase() == right.toString().toLowerCase()) return true; break;
+			case "-eqi": if (left.toString().toLowerCase() == right.toString().toLowerCase()) return true; break;
 			case "-ne": if (left !== right) return true; break;
-			case "-nei" : if (left.toString().toLowerCase() !== right.toString().toLowerCase()) return true; break;
+			case "-nei": if (left.toString().toLowerCase() !== right.toString().toLowerCase()) return true; break;
 			case "-inc": if (left.toString().toLowerCase().indexOf(right.toString().toLowerCase()) >= 0) return true; break;
 			case "-ninc": if (left.toString().toLowerCase().indexOf(right.toString().toLowerCase()) < 0) return true; break;
 		}
@@ -3473,7 +3014,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			"rollhilightlineheight", "rollhilightcolornormal", "rollhilightcolorfumble", "rollhilightcolorcrit", "rollhilightcolorboth"
 		];
 
-		for (var x=0; x< styleList.length; x++) {
+		for (var x = 0; x < styleList.length; x++) {
 			outputLine = outputLine.replace(new RegExp("!{" + styleList[x] + "}", "g"), cardParmeters[styleList[x]].replace(/\"/g, "'"));
 		}
 		return outputLine;
@@ -3502,15 +3043,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		outputLine = outputLine.replace(/\[[Jj]\](.*?)\[\/[Jj]\]/g, "<div style='text-align: justify; display:block;'>$1</div>"); // [J]..[/J] for justify
 		outputLine = outputLine.replace(/\[\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})\](.*?)\[\/[\#]\]/g, "<span style='color: #$1;'>$2</span>"); // [#xxx] or [#xxxx]...[/#] for color codes. xxx is a 3-digit hex code
 		var images = outputLine.match(/(\[img(.*?)\](.*?)\[\/img\])/gi);
-		for(var image in images) {
-			var work = images[image].replace("[img", "<img").replace("[/img]","></img>").replace("]"," src=");
+		for (var image in images) {
+			var work = images[image].replace("[img", "<img").replace("[/img]", "></img>").replace("]", " src=");
 			outputLine = outputLine.replace(images[image], work);
 		}
 		var statusmarkers = outputLine.match(/\[sm(.*?)\](.*?)\[\/sm\]/gi);
 		for (var sm in statusmarkers) {
 			var markername = statusmarkers[sm].substring(statusmarkers[sm].indexOf("]") + 1);
-			markername = markername.substring(0,markername.indexOf("["));
-			var work = statusmarkers[sm].replace("[sm","<img ").replace("[/sm]","></img>").replace("]", " src=" + tokenMarkerURLs[markername]);
+			markername = markername.substring(0, markername.indexOf("["));
+			var work = statusmarkers[sm].replace("[sm", "<img ").replace("[/sm]", "></img>").replace("]", " src=" + tokenMarkerURLs[markername]);
 			outputLine = outputLine.replace(statusmarkers[sm], work);
 		}
 		//var buttons = outputLine.match(/\[button\](.*?)\:\:(.*?)\[\/button\]/gi);
@@ -3520,7 +3061,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var customBackgroundColor = undefined;
 			var basebutton = buttons[button].replace(/\[button(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?\](.*?)/gi, "[button]");
 			if (basebutton.toLowerCase() !== buttons[button].toLowerCase()) {
-				var tempbutton = buttons[button].replace("[button:", "").replace("[Button:","").replace("[BUTTON:", "").split("]")[0];
+				var tempbutton = buttons[button].replace("[button:", "").replace("[Button:", "").replace("[BUTTON:", "").split("]")[0];
 				var customs = tempbutton.split(":");
 				if (customs.length >= 1) {
 					customTextColor = customs[0];
@@ -3531,12 +3072,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			}
 			//var title = buttons[button].split("::")[0].replace("[button]","").replace("[Button]", "").replace("[BUTTON]","");
 			//var action = buttons[button].split("::")[1].replace("[/button]","").replace("[/Button]", "").replace("[/BUTTON]","");
-			var title = basebutton.split("::")[0].replace("[button]","").replace("[Button]", "").replace("[BUTTON]","");
-			var action = basebutton.split("::")[1].replace("[/button]","").replace("[/Button]", "").replace("[/BUTTON]","");
+			var title = basebutton.split("::")[0].replace("[button]", "").replace("[Button]", "").replace("[BUTTON]", "");
+			var action = basebutton.split("::")[1].replace("[/button]", "").replace("[/Button]", "").replace("[/BUTTON]", "");
 			if (cardParameters.dontcheckbuttonsforapi == "0") {
 				action = action.replace(/(^|\ +)_/g, " --");
 			}
-			outputLine = outputLine.replace(buttons[button], makeButton(title,action, cardParameters, customTextColor, customBackgroundColor));
+			outputLine = outputLine.replace(buttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor));
 		}
 
 		//var sheetbuttons = outputLine.match(/\[sheetbutton\](.*?)\:\:(.*?)\:\:(.*?)\[\/sheetbutton\]/gi);
@@ -3546,7 +3087,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var customBackgroundColor = undefined;
 			var basebutton = sheetbuttons[button].replace(/\[sheetbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?\](.*?)/gi, "[sheetbutton]");
 			if (basebutton.toLowerCase() !== sheetbuttons[button].toLowerCase()) {
-				var tempbutton = sheetbuttons[button].replace("[sheetbutton:", "").replace("[Sheetbutton:","").replace("[SHEETBUTTON:", "").split("]")[0];
+				var tempbutton = sheetbuttons[button].replace("[sheetbutton:", "").replace("[Sheetbutton:", "").replace("[SHEETBUTTON:", "").split("]")[0];
 				var customs = tempbutton.split(":");
 				if (customs.length >= 1) {
 					customTextColor = customs[0];
@@ -3555,7 +3096,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 				}
 			}
-			var title = basebutton.split("::")[0].replace("[sheetbutton]","").replace("[Sheetbutton]", "").replace("[SHEETBUTTON]","");
+			var title = basebutton.split("::")[0].replace("[sheetbutton]", "").replace("[Sheetbutton]", "").replace("[SHEETBUTTON]", "");
 			var actor = "";
 			var tryID = basebutton.split("::")[1];
 			if (getObj("character", tryID)) {
@@ -3568,17 +3109,17 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				}
 			}
 			if (actor == "") {
-				var possible = findObjs({type: "character"}).filter(function(value, index,arg) { return value.get("name").toLowerCase().trim() == tryID.toLowerCase().trim() });;
+				var possible = findObjs({ type: "character" }).filter(function (value, index, arg) { return value.get("name").toLowerCase().trim() == tryID.toLowerCase().trim() });;
 				if (possible.length > 0) {
 					actor = possible[0].get("_id");
 				}
 			}
 			if (actor !== "") {
-				var action = "~" + actor + "|" + basebutton.split("::")[2].replace("[/sheetbutton]","").replace("[/Sheetbutton]", "").replace("[/SHEETBUTTON]","");
+				var action = "~" + actor + "|" + basebutton.split("::")[2].replace("[/sheetbutton]", "").replace("[/Sheetbutton]", "").replace("[/SHEETBUTTON]", "");
 				if (cardParameters.dontcheckbuttonsforapi == "0") {
 					action = action.replace(/(^|\ +)_/g, " --");
 				}
-				outputLine = outputLine.replace(sheetbuttons[button], makeButton(title,action, cardParameters, customTextColor, customBackgroundColor));
+				outputLine = outputLine.replace(sheetbuttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor));
 			}
 		}
 
@@ -3588,7 +3129,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var customBackgroundColor = undefined;
 			var basebutton = reentrantbuttons[button].replace(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?\](.*?)/gi, "[rbutton]");
 			if (basebutton.toLowerCase() !== reentrantbuttons[button].toLowerCase()) {
-				var tempbutton = reentrantbuttons[button].replace("[rbutton:", "").replace("[Rbutton:","").replace("[RBUTTON:", "").split("]")[0];
+				var tempbutton = reentrantbuttons[button].replace("[rbutton:", "").replace("[Rbutton:", "").replace("[RBUTTON:", "").split("]")[0];
 				var customs = tempbutton.split(":");
 				if (customs.length >= 1) {
 					customTextColor = customs[0];
@@ -3597,10 +3138,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 				}
 			}
-			var title = basebutton.split("::")[0].replace("[rbutton]","").replace("[Rbutton]", "").replace("[RBUTTON]","");
-			var reentrylabel = basebutton.split("::")[1].replace("[/rbutton]","").replace("[/Rbutton]", "").replace("[/RBUTTON]","");
+			var title = basebutton.split("::")[0].replace("[rbutton]", "").replace("[Rbutton]", "").replace("[RBUTTON]", "");
+			var reentrylabel = basebutton.split("::")[1].replace("[/rbutton]", "").replace("[/Rbutton]", "").replace("[/RBUTTON]", "");
 			var action = "!sc-reentrant " + cardParameters["reentrant"] + "-|-" + reentrylabel
-			outputLine = outputLine.replace(reentrantbuttons[button], makeButton(title,action,cardParameters, customTextColor, customBackgroundColor));
+			outputLine = outputLine.replace(reentrantbuttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor));
 		}
 
 		// [apply]15[/apply]
@@ -3654,19 +3195,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		//DiceFont Stuff
 		var dicefontchars = diceLetters;
 		if (cardParameters.usehollowdice !== "0") { dicefontchars = dicefontchars.toLowerCase(); }
-		outputLine = outputLine.replace(/\[d4\](.*?)\[\/d4\]/g, function(x) { var side=parseInt(x.replace("[d4]","").replace("[/d4]","").trim()); return "<span style='color: !{dicefontcolor}; font-size:!{dicefontsize}; font-family: dicefontd4;'>" + dicefontchars.charAt(side) + "</span>" } );
-		outputLine = outputLine.replace(/\[d6\](.*?)\[\/d6\]/g, function(x) { var side=parseInt(x.replace("[d6]","").replace("[/d6]","").trim()); return "<span style='color: !{dicefontcolor}; font-size:!{dicefontsize}; font-family: dicefontd6;'>" + dicefontchars.charAt(side) + "</span>" } );
-		outputLine = outputLine.replace(/\[d8\](.*?)\[\/d8\]/g, function(x) { var side=parseInt(x.replace("[d8]","").replace("[/d8]","").trim()); return "<span style='color: !{dicefontcolor}; font-size:!{dicefontsize}; font-family: dicefontd8;'>" + dicefontchars.charAt(side) + "</span>" } );
-		outputLine = outputLine.replace(/\[d10\](.*?)\[\/d10\]/g, function(x) { var side=parseInt(x.replace("[d10]","").replace("[/d10]","").trim()); return "<span style='color: !{dicefontcolor}; font-size:!{dicefontsize}; font-family: dicefontd10;'>" + dicefontchars.charAt(side) + "</span>" } );
-		outputLine = outputLine.replace(/\[d12\](.*?)\[\/d12\]/g, function(x) { var side=parseInt(x.replace("[d12]","").replace("[/d12]","").trim()); return "<span style='color: !{dicefontcolor}; font-size:!{dicefontsize}; font-family: dicefontd12;'>" + dicefontchars.charAt(side) + "</span>" } );
-		outputLine = outputLine.replace(/\[d20\](.*?)\[\/d20\]/g, function(x) { var side=parseInt(x.replace("[d20]","").replace("[/d20]","").trim()); return "<span style='color: !{dicefontcolor}; font-size:!{dicefontsize}; font-family: dicefontd20;'>" + dicefontchars.charAt(side) + "</span>" } );
+		outputLine = outputLine.replace(/\[d4\](.*?)\[\/d4\]/g, function (x) { var side = parseInt(x.replace("[d4]", "").replace("[/d4]", "").trim()); return "<span style='color: !{dicefontcolor}; font-size:!{dicefontsize}; font-family: dicefontd4;'>" + dicefontchars.charAt(side) + "</span>" });
+		outputLine = outputLine.replace(/\[d6\](.*?)\[\/d6\]/g, function (x) { var side = parseInt(x.replace("[d6]", "").replace("[/d6]", "").trim()); return "<span style='color: !{dicefontcolor}; font-size:!{dicefontsize}; font-family: dicefontd6;'>" + dicefontchars.charAt(side) + "</span>" });
+		outputLine = outputLine.replace(/\[d8\](.*?)\[\/d8\]/g, function (x) { var side = parseInt(x.replace("[d8]", "").replace("[/d8]", "").trim()); return "<span style='color: !{dicefontcolor}; font-size:!{dicefontsize}; font-family: dicefontd8;'>" + dicefontchars.charAt(side) + "</span>" });
+		outputLine = outputLine.replace(/\[d10\](.*?)\[\/d10\]/g, function (x) { var side = parseInt(x.replace("[d10]", "").replace("[/d10]", "").trim()); return "<span style='color: !{dicefontcolor}; font-size:!{dicefontsize}; font-family: dicefontd10;'>" + dicefontchars.charAt(side) + "</span>" });
+		outputLine = outputLine.replace(/\[d12\](.*?)\[\/d12\]/g, function (x) { var side = parseInt(x.replace("[d12]", "").replace("[/d12]", "").trim()); return "<span style='color: !{dicefontcolor}; font-size:!{dicefontsize}; font-family: dicefontd12;'>" + dicefontchars.charAt(side) + "</span>" });
+		outputLine = outputLine.replace(/\[d20\](.*?)\[\/d20\]/g, function (x) { var side = parseInt(x.replace("[d20]", "").replace("[/d20]", "").trim()); return "<span style='color: !{dicefontcolor}; font-size:!{dicefontsize}; font-family: dicefontd20;'>" + dicefontchars.charAt(side) + "</span>" });
 
 		return outputLine;
 	}
 
 	function* retrieveAsyncValue(character, value) {
 		var thisAttribute = undefined;
-		character.get(value, function(val) {thisAttribute = val} )
+		character.get(value, function (val) { thisAttribute = val })
 		while (thisAttribute == undefined) { yield thisAttribute; }
 	}
 
@@ -3680,9 +3221,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function getRepeatingCount(characterID, prefix, postfix) {
 		var attrs = findObjs({
-				type : 'attribute',
-				characterid : characterID
-			});
+			type: 'attribute',
+			characterid: characterID
+		});
 		var attrCount = 0;
 		attrs.forEach(function (s) {
 			if (s.get("name").startsWith(prefix) && s.get("name").endsWith(postfix)) {
@@ -3696,7 +3237,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var thisButtonStyle = buttonStyle;
 		if (customTextColor) { thisButtonStyle = thisButtonStyle.replace("!{buttontextcolor}", customTextColor) }
 		if (customBackgroundColor) { thisButtonStyle = thisButtonStyle.replace("!{buttonbackground}", customBackgroundColor) }
-        return `<a style="${replaceStyleInformation(thisButtonStyle, parameters)}" href="${removeTags(removeBRs(url))}">${removeTags(removeBRs(title))}</a>`;
+		return `<a style="${replaceStyleInformation(thisButtonStyle, parameters)}" href="${removeTags(removeBRs(url))}">${removeTags(removeBRs(title))}</a>`;
 	}
 
 	function removeInlineRolls(text, cardParameters) {
@@ -3707,7 +3248,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	function fillCharAttrs(attrs) {
 		if (!attrs) { return; }
 		repeatingCharAttrs = {};
-		attrs.forEach(function(x) {
+		attrs.forEach(function (x) {
 			repeatingCharAttrs[x.get("name")] = x.get("current");
 		});
 	}
@@ -3734,12 +3275,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				log(repeatingSection[i]);
 				if (repeatingSection[i].match(/\@\{[^{}]+\}/g)) {
 					var matches = repeatingSection[i].match(/\@\{[^{}]+\}/g);
-					matches.forEach(function(thisMatch) {
+					matches.forEach(function (thisMatch) {
 						log(thisMatch);
 						var thisAttr = thisMatch.replace("@{", "").replace("}", "");
 						log(thisAttr);
 						var attribute = "";
-						attribute - repeatingCharAttrs[thisAttr]; 
+						attribute - repeatingCharAttrs[thisAttr];
 						if (attribute == "") { attribute = getAttrByName(repeatingCharID, thisAttr); }
 						log(attribute);
 						repeatingSection[i] = repeatingSection[i].replace(thisMatch, attribute);
@@ -3756,7 +3297,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				}
 				*/
 			}
-	
+
 		}
 	}
 
@@ -3766,8 +3307,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		let repOrder;
 		// Get attributes
 		findObjs({
-			_type : 'attribute',
-			_characterid : charid
+			_type: 'attribute',
+			_characterid: charid
 		}).forEach(o => {
 			const attrName = o.get('name');
 			if (attrName.search(regExp) === 0)
@@ -3779,9 +3320,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			repOrder = [];
 		// Get list of repeating row ids by prefix from repeatingAttrs
 		const unorderedIds = [...new Set(Object.keys(repeatingAttrs)
-				.map(n => n.match(regExp))
-				.filter(x => !!x)
-				.map(a => a[1]))];
+			.map(n => n.match(regExp))
+			.filter(x => !!x)
+			.map(a => a[1]))];
 		const repRowIds = [...new Set(repOrder.filter(x => unorderedIds.includes(x)).concat(unorderedIds))];
 		return [repRowIds, repeatingAttrs];
 	}
@@ -3792,8 +3333,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		let repOrder;
 		// Get attributes
 		findObjs({
-			_type : 'attribute',
-			_characterid : charid
+			_type: 'attribute',
+			_characterid: charid
 		}).forEach(o => {
 			const attrName = o.get('name');
 			if (attrName.search(regExp) === 0)
@@ -3805,29 +3346,29 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			repOrder = [];
 		// Get list of repeating row ids by prefix from repeatingAttrs
 		const unorderedIds = [...new Set(Object.keys(repeatingAttrs)
-				.map(n => n.match(regExp))
-				.filter(x => !!x)
-				.map(a => a[1]))];
+			.map(n => n.match(regExp))
+			.filter(x => !!x)
+			.map(a => a[1]))];
 		const repRowIds = [...new Set(repOrder.filter(x => unorderedIds.includes(x)).concat(unorderedIds))];
 		return repRowIds;
 	}
 
 	function getSectionAttrs(charid, entryname, sectionname, searchtext) {
 		var return_set = [];
-		var char_attrs = findObjs({type:"attribute", _characterid:charid});
+		var char_attrs = findObjs({ type: "attribute", _characterid: charid });
 		try {
 			var action_prefix = char_attrs
-			.filter(function(z) {
-				return (z.get("name").startsWith(sectionname) && z.get("name").endsWith(searchtext))
-			})
-			.filter(entry => entry.get("current") == entryname)[0]
-			.get("name").slice(0, -searchtext.length);
+				.filter(function (z) {
+					return (z.get("name").startsWith(sectionname) && z.get("name").endsWith(searchtext))
+				})
+				.filter(entry => entry.get("current") == entryname)[0]
+				.get("name").slice(0, -searchtext.length);
 		} catch {
 			return return_set;
 		}
 
 		try {
-			action_attrs = char_attrs.filter(function(z) {return (z.get("name").startsWith(action_prefix));})
+			action_attrs = char_attrs.filter(function (z) { return (z.get("name").startsWith(action_prefix)); })
 		} catch {
 			return return_set;
 		}
@@ -3839,8 +3380,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			}
 		})
 
-		var PrefixEntry = "xxxActionIDxxxx|" + action_prefix.replace(sectionname+"_","");
-		PrefixEntry = PrefixEntry.substring(0,PrefixEntry.length-1);
+		var PrefixEntry = "xxxActionIDxxxx|" + action_prefix.replace(sectionname + "_", "");
+		PrefixEntry = PrefixEntry.substring(0, PrefixEntry.length - 1);
 
 		return_set.unshift(PrefixEntry);
 
@@ -3852,8 +3393,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var action_prefix = sectionname + "_" + sectionID + "_";
 
 		try {
-			var action_attrs = findObjs({type:"attribute", _characterid:charid})
-			action_attrs = action_attrs.filter(function(z) {return (z.get("name").startsWith(action_prefix));})
+			var action_attrs = findObjs({ type: "attribute", _characterid: charid })
+			action_attrs = action_attrs.filter(function (z) { return (z.get("name").startsWith(action_prefix)); })
 		} catch {
 			return return_set;
 		}
@@ -3868,19 +3409,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function rollOnRollableTable(tableName, resultType) {
-		var theTable = findObjs({type: "rollabletable", name:tableName })[0];
+		var theTable = findObjs({ type: "rollabletable", name: tableName })[0];
 		if (theTable !== undefined) {
-			var tableItems = findObjs({type: "tableitem", _rollabletableid: theTable.id});
+			var tableItems = findObjs({ type: "tableitem", _rollabletableid: theTable.id });
 			if (tableItems !== undefined) {
 				var rollResults = {};
 				var rollIndex = 0;
 				var lastRollIndex = 0;
 				var itemCount = 0;
 				var maxRoll = 0;
-				tableItems.forEach(function(item) {
+				tableItems.forEach(function (item) {
 					var thisWeight = parseInt(item.get("weight"));
 					rollIndex += thisWeight;
-					for (var x = lastRollIndex+1; x <= rollIndex; x++) {
+					for (var x = lastRollIndex + 1; x <= rollIndex; x++) {
 						rollResults[x] = itemCount;
 					}
 					itemCount += 1;
@@ -3888,25 +3429,25 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					lastRollIndex += thisWeight;
 				});
 				var tableRollResult = randomInteger(maxRoll);
-				return [tableItems[rollResults[tableRollResult]].get("name"),tableItems[rollResults[tableRollResult]].get("avatar")];
+				return [tableItems[rollResults[tableRollResult]].get("name"), tableItems[rollResults[tableRollResult]].get("avatar")];
 			} else {
-				return ["",""];
+				return ["", ""];
 			}
 		}
 	}
 
 	function loadLibraryHandounts() {
 		ScriptCardsLibrary = {};
-		var handouts = filterObjs(function(obj){
-			if (obj.get("type") == "handout" && obj.get("name").startsWith("ScriptCards Library")) { return true;} else { return false; }
+		var handouts = filterObjs(function (obj) {
+			if (obj.get("type") == "handout" && obj.get("name").startsWith("ScriptCards Library")) { return true; } else { return false; }
 		});
 		if (handouts) {
 			handouts.forEach(function (handout) {
 				var libraryName = handout.get("name").replace("ScriptCards Library", "").trim();
 				var libraryContent = "";
-				handout.get("notes", function(notes) {
+				handout.get("notes", function (notes) {
 					if (notes) {
-					notes = notes.replace(/\<p\>/g, " ").replace(/\<\/p\>/g, " ").replace(/\<br\>/g, " ").replace(/&nbsp;/g," ").replace(/&gt;/g,">").replace(/&lt;/g,"<").replace(/&amp;/g,"&");
+						notes = notes.replace(/\<p\>/g, " ").replace(/\<\/p\>/g, " ").replace(/\<br\>/g, " ").replace(/&nbsp;/g, " ").replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&amp;/g, "&");
 					}
 					ScriptCardsLibrary[libraryName] = notes;
 				});
@@ -3919,7 +3460,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		cardContent = cardContent.substring(0, cardContent.length - 2);
 		var libs = libraryList.split(";");
 		cardContent += " --X| ";
-		for (var x=0; x<libs.length; x++) {
+		for (var x = 0; x < libs.length; x++) {
 			if (ScriptCardsLibrary[libs[x]]) {
 				cardContent += ScriptCardsLibrary[libs[x]];
 			}
@@ -3977,9 +3518,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function uuidv4() {
-		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
-		var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
-		return v.toString(16);
+		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+			var r = Math.random() * 16 | 0, v = c == 'x' ? r : (r & 0x3 | 0x8);
+			return v.toString(16);
 		});
 	}
 
@@ -3992,7 +3533,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function decodeGMNotes(notes) {
-		return(decodeURIComponent(notes));
+		return (decodeURIComponent(notes));
 	}
 
 	// Despite the name, this function takes a semicolon separated value string and returns an
@@ -4008,7 +3549,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 		var a = []; // Initialize array to receive values.
 		text.replace(re_value, // "Walk" the string using replace with callback.
-			function(m0, m1, m2, m3) {
+			function (m0, m1, m2, m3) {
 
 				// Remove backslash from \' in single quoted values.
 				if (m1 !== undefined) a.push(m1.replace(/\\'/g, "'"));
@@ -4029,25 +3570,25 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	// is run before processing script lines and replaces the inline roll markers with their
 	// final values as literal strings.
 	function processInlinerolls(msg) {
-		if(_.has(msg,'inlinerolls')){
+		if (_.has(msg, 'inlinerolls')) {
 			return _.chain(msg.inlinerolls)
-			.reduce(function(m,v,k){
-				var ti=_.reduce(v.results.rolls,function(m2,v2){
-					if(_.has(v2,'table')){
-						m2.push(_.reduce(v2.results,function(m3,v3){
-							m3.push(v3.tableItem.name);
-							return m3;
-						},[]).join(', '));
-					}
-					return m2;
-				},[]).join(', ');
-				m['$[['+k+']]']= (ti.length && ti) || v.results.total || 0;
-				return m;
-			},{})
-			.reduce(function(m,v,k){
-				return m.replace(k,v);
-			},msg.content)
-			.value();
+				.reduce(function (m, v, k) {
+					var ti = _.reduce(v.results.rolls, function (m2, v2) {
+						if (_.has(v2, 'table')) {
+							m2.push(_.reduce(v2.results, function (m3, v3) {
+								m3.push(v3.tableItem.name);
+								return m3;
+							}, []).join(', '));
+						}
+						return m2;
+					}, []).join(', ');
+					m['$[[' + k + ']]'] = (ti.length && ti) || v.results.total || 0;
+					return m;
+				}, {})
+				.reduce(function (m, v, k) {
+					return m.replace(k, v);
+				}, msg.content)
+				.value();
 		} else {
 			return msg.content;
 		}
@@ -4062,34 +3603,255 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function removeTags(str) {
-		if ((str===null) || (str===''))
+		if ((str === null) || (str === ''))
 			return false;
 		else
 			return str.toString().replace(/(<([^>]+)>)/ig, '');
 	}
 
 	function removeBRs(str) {
-		if ((str===null) || (str==='') || (str === undefined))
+		if ((str === null) || (str === '') || (str === undefined))
 			return false;
 		else
 			return str.toString().replace(/<br \/\>/ig, '').replace(/<br\/\>/ig, '');
 	}
 
-    var playJukeboxTrack = function(trackname) {
-        var track = findObjs({type: 'jukeboxtrack', title: trackname})[0];
-        if(track) {
-            track.set('softstop',false);
-			track.set('playing',true);
-        } else {
+	var playJukeboxTrack = function (trackname) {
+		var track = findObjs({ type: 'jukeboxtrack', title: trackname })[0];
+		if (track) {
+			track.set('softstop', false);
+			track.set('playing', true);
+		} else {
 			log(`ScriptCards warning: Jukebox track ${trackname} not found in game.`);
 		}
-    }	
+	}
+
+	function handleDiceFormats(text, rollResult, hadOne, hadAce, currentOperator) {
+		// Split the dice roll into components
+		var matches = text.toLowerCase().match(/^(\d+[dD][fF\d]+)([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(\#)?$/);
+
+		var resultSet = {
+			rollSet: [],
+			rollTextSet: [],
+			rollText: "",
+			rollTotal: 0,
+			hadOne: false,
+			hadAce: false,
+			dontHilight: false,
+			sides: 6
+		};
+
+		// Just some defaults
+		var count = 1;
+		var sides = 6;
+		var fudgeDice = false;
+		var fudgeText = ["-", "0", "+"];
+		var keeptype = "a";
+		var keepcount = count;
+		var rerollThreshold = undefined;
+		var rerollType = "x";
+		var rerollUnlimited = true;
+		var explodeValue = 0;
+		var isWildDie = false;
+		var wildDieDropSelf = false;
+		var wildDieDropHighest = false;
+		var successThreshold = 0;
+
+		if (matches) {
+			for (var x = 1; x < matches.length; x++) {
+				if (matches[x]) {
+
+					// Handle XdY
+					if (matches[x].match(/^\d+[dD][fF\d]+$/)) {
+						count = matches[x].split("d")[0]
+						keepcount = count;
+						sides = matches[x].split("d")[1]
+						if (sides == "f") { sides = 3; fudgeDice = true; }
+					}
+
+					// Handle keep highest/lowest
+					if (matches[x].match(/^[kK][lLhH]\d+$/)) {
+						keeptype = matches[x].charAt(1);
+						keepcount = Number(matches[x].substring(2));
+					}
+
+					// Handle reroll thresholds (r>Z, r<Z)
+					if (matches[x].match(/^[rR][\<\>]\d+$/)) {
+						rerollType = matches[x].charAt(1);
+						rerollThreshold = Number(matches[x].substring(2));
+						rerollUnlimited = true;
+					}
+
+					// Handle reroll once (ro>Z, ro<Z)
+					if (matches[x].match(/^[rR][oO][\<\>]\d+$/)) {
+						rerollType = matches[x].charAt(2);
+						rerollThreshold = Number(matches[x].substring(3));
+						rerollUnlimited = false;
+					}
+
+					// Handle exploding dice (!h or !l)
+					if (matches[x].match(/^![HhLl]$/)) {
+						if (matches[x].charAt(1) == "h") {
+							explodeValue = sides
+						} else {
+							explodeValue = 1
+						}
+					}
+
+					// Handle exploding dice without rerolls
+					if (matches[x].match(/^![\<\>]\d+$/)) {
+						explodeValue = Number(matches[x].substring(2));
+					}
+
+					// Handle exploding dice
+					if (matches[x].match(/^!$/)) {
+						explodingType = "h";
+						explodeValue = sides;
+					}
+
+					// Handle counting successes
+					if (matches[x].match(/^[\><]\d+/)) {
+						successThreshold = Number(matches[x].substring(1));
+					}
+
+					// Handle Wild Dice
+					if (matches[x].match(/^([Ww])?([Xx])?([Ss])?([Xx])?$/)) {
+						isWildDie = true;
+						count--;
+						if (matches[x].indexOf("s") > 0) {
+							wildDieDropSelf = true;
+						}
+						if (matches[x].indexOf("x") > 0) {
+							wildDieDropHighest = true;
+						}
+					}
+
+					// Handle counting successes
+					if (matches[x].match(/^\#$/)) {
+						resultSet.dontHilight = true;
+					}
+				}
+			}
+
+			resultSet.sides = sides;
+
+			// Roll the dice
+			for (var x = 0; x < count; x++) {
+				var thisRoll = Number(rollWithReroll(sides, rerollThreshold, rerollType, rerollUnlimited));
+				if (fudgeDice) { thisRoll -= 2; resultSet.dontHilight = true };
+				var thisTotal = thisRoll;
+				var thisText = thisTotal.toString();
+				if (fudgeDice) {
+					thisText = fudgeText[thisRoll + 1];
+				}
+				while ((explodeValue > 0) && (thisRoll >= explodeValue)) {
+					thisRoll = rollWithReroll(sides, rerollThreshold, rerollType, rerollUnlimited);
+					thisTotal += thisRoll;
+					thisText += "!" + thisRoll.toString();
+				}
+				resultSet.rollSet.push(thisTotal);
+				resultSet.rollTextSet.push(thisText);
+			}
+
+			// If we are keeping highest or lowest number of dice, eliminate the ones to remove
+			if (keepcount !== count) {
+				var removeCount = count - keepcount;
+				for (var x = 0; x < removeCount; x++) {
+					if (keeptype == "h") { removeLowestRoll(resultSet.rollSet, resultSet.rollTextSet) }
+					if (keeptype == "l") { removeHighestRoll(resultSet.rollSet, resultSet.rollTextSet) }
+				}
+			}
+
+			// Handle the Wild Die if present
+			if (isWildDie) {
+				var thisRoll = randomInteger(sides);
+				var thisTotal = thisRoll;
+				var thisText = thisTotal.toString();
+				while (thisRoll == sides) {
+					thisRoll = randomInteger(sides);
+					thisTotal += thisRoll;
+					thisText += "!" + thisRoll.toString();
+				}
+				if (thisTotal == 1) { resultSet.hadOne = true; }
+				if (thisTotal >= sides) { resultSet.hadAce = true; }
+				if (thisTotal == 1 && wildDieDropHighest) { removeHighestRoll(resultSet.rollSet, resultSet.rollTextSet) }
+				if (thisTotal > 1 || !wildDieDropSelf) {
+					thisText = "W:" + thisText;
+				} else {
+					thisText = "W:[x" + thisText + "x]";
+				}
+				resultSet.rollSet.push(thisTotal);
+				resultSet.rollTextSet.push(thisText);
+				resultSet.dontHilight = true;
+			}
+		}
+
+		// Compute the totals for the roll
+		var thisResult = 0;
+		var thisResultText = "";
+		if (successThreshold == 0) {
+			for (var x = 0; x < resultSet.rollSet.length; x++) {
+				thisResult += resultSet.rollSet[x];
+				thisResultText += resultSet.rollTextSet[x] + (x == resultSet.rollSet.length - 1 ? "" : ",");
+			}
+		} else {
+			for (var x = 0; x < resultSet.rollSet.length; x++) {
+				if (resultSet.rollSet[x] > successThreshold) {
+					thisResult += 1
+				};
+				thisResultText += resultSet.rollTextSet[x] + (x == resultSet.rollSet.length - 1 ? "" : ",");
+			}
+			resultSet.dontHilight = true;
+		}
+		resultSet.rollTotal = thisResult;
+		resultSet.rollText = thisResultText;
+
+		return resultSet;
+	}
+
+	function rollWithReroll(sides, rerollThreshold, rType, unlimited) {
+		var thisRoll = randomInteger(sides);
+		var once = false;
+		while (rType == ">" && (unlimited || !once) && thisRoll >= rerollThreshold) { thisRoll = randomInteger(sides); once = true; }
+		while (rType == "<" && (unlimited || !once) && thisRoll <= rerollThreshold) { thisRoll = randomInteger(sides); once = true; }
+		return thisRoll;
+	}
+
+	function removeHighestRoll(rollSet, rollSetText) {
+		var highest = -1;
+		var highestIndex = -1;
+		for (var x = 0; x < rollSet.length; x++) {
+			if (rollSet[x] > highest) {
+				highest = rollSet[x];
+				highestIndex = x;
+			}
+		}
+		if (highestIndex > -1) {
+			rollSet[highestIndex] = 0;
+			rollSetText[highestIndex] = "[x" + rollSetText[highestIndex] + "x]"
+		}
+	}
+
+	function removeLowestRoll(rollSet, rollSetText) {
+		var lowest = Number.MAX_SAFE_INTEGER;
+		var lowestIndex = -1;
+		for (var x = 0; x < rollSet.length; x++) {
+			if (rollSet[x] < lowest && rollSet[x] > 0) {
+				lowest = rollSet[x];
+				lowestIndex = x;
+			}
+		}
+		if (lowestIndex > -1) {
+			rollSet[lowestIndex] = 0;
+			rollSetText[lowestIndex] = "[x" + rollSetText[lowestIndex] + "x]"
+		}
+	}
 
 	return {}
 })();
 
 // Meta marker for the end of ScriptCards
-{try{throw new Error('');}catch(e){API_Meta.ScriptCards.lineCount=(parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/,'$1'),10)-API_Meta.ScriptCards.offset);}}
+{ try { throw new Error(''); } catch (e) { API_Meta.ScriptCards.lineCount = (parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/, '$1'), 10) - API_Meta.ScriptCards.offset); } }
 
 // Support for AirBag Crash Handler (if installed)
 if (typeof MarkStop === "function") MarkStop('ScriptCards');
