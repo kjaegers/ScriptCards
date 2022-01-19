@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.5.4 (EXPERIMENTAL)";
+	const APIVERSION = "1.5.6 (EXPERIMENTAL)";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2658,12 +2658,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				}
 
 				switch (currentOperator) {
-					case "+": rollResult.Total += thisRollHandled.rollTotal; rollResult.Base += thisRollHandled.rollTotal; break;
-					case "-": rollResult.Total -= thisRollHandled.rollTotal; rollResult.Base -= thisRollHandled.rollTotal; break;
-					case "*": rollResult.Total *= thisRollHandled.rollTotal; rollResult.Base *= thisRollHandled.rollTotal; break;
-					case "/": rollResult.Total /= thisRollHandled.rollTotal; rollResult.Base /= thisRollHandled.rollTotal; break;
-					case "%": rollResult.Total %= thisRollHandled.rollTotal; rollResult.Base %= thisRollHandled.rollTotal; break;
-					case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRollHandled.rollTotal) : Math.ceil(rollResult.Total / thisRollHandled.rollTotal); break;
+					case "+": rollResult.Total += thisRollHandled.rollTotal; if (!thisRollHandled.dontBase) { rollResult.Base += thisRollHandled.rollTotal; } break;
+					case "-": rollResult.Total -= thisRollHandled.rollTotal; if (!thisRollHandled.dontBase) { rollResult.Base -= thisRollHandled.rollTotal; } break;
+					case "*": rollResult.Total *= thisRollHandled.rollTotal; if (!thisRollHandled.dontBase) { rollResult.Base *= thisRollHandled.rollTotal; } break;
+					case "/": rollResult.Total /= thisRollHandled.rollTotal; if (!thisRollHandled.dontBase) { rollResult.Base /= thisRollHandled.rollTotal; } break;
+					case "%": rollResult.Total %= thisRollHandled.rollTotal; if (!thisRollHandled.dontBase) { rollResult.Base %= thisRollHandled.rollTotal; } break;
+					case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / thisRollHandled.rollTotal) : Math.ceil(rollResult.Total / thisRollHandled.rollTotal);
+						if (!thisRollHandled.dontBase) { rollResult.Base = cardParameters.roundup == "0" ? Math.floor(rollResult.Base / thisRollHandled.rollTotal) : Math.ceil(rollResult.Base / thisRollHandled.rollTotal); }
+						break;
 				}
 
 				rollResult.Text += "(" + thisRollHandled.rollText + ")";
@@ -3255,6 +3257,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	// Check the active repeating section for any attribute references that need to be replaced
 	function parseRepeatingSection() {
+		// Temporarially Disable this feature
+
+		return;
+
 		if (!repeatingSection) { return; }
 		/*
 		for (var i in repeatingSection) {
@@ -3270,23 +3276,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 		var repChar = getObj("character", repeatingCharID) || undefined;
 		if (repChar) {
+			/*
 			for (var i in repeatingSection) {
-				log(i);
-				log(repeatingSection[i]);
 				if (repeatingSection[i].match(/\@\{[^{}]+\}/g)) {
 					var matches = repeatingSection[i].match(/\@\{[^{}]+\}/g);
 					matches.forEach(function (thisMatch) {
-						log(thisMatch);
 						var thisAttr = thisMatch.replace("@{", "").replace("}", "");
-						log(thisAttr);
 						var attribute = "";
 						attribute - repeatingCharAttrs[thisAttr];
 						if (attribute == "") { attribute = getAttrByName(repeatingCharID, thisAttr); }
-						log(attribute);
 						repeatingSection[i] = repeatingSection[i].replace(thisMatch, attribute);
-						log(repeatingSection[i]);
 					});
 				}
+				*/
 				/*
 				while (repeatingSection[i].match(/\@\{[^{}]+\}/g)) {
 					var thisMatch = repeatingSection[i].match(/\@\{[^{}]+\}/g);
@@ -3295,8 +3297,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					repeatingSection[i] = repeatingSection[i].replace(thisMatch, attribute);
 					var crash = null; log(crash.ToString());
 				}
-				*/
 			}
+				*/
 
 		}
 	}
@@ -3638,6 +3640,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			hadOne: false,
 			hadAce: false,
 			dontHilight: false,
+			dontBase: false,
 			sides: 6
 		};
 
@@ -3729,6 +3732,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					// Handle counting successes
 					if (matches[x].match(/^\#$/)) {
 						resultSet.dontHilight = true;
+						resultSet.dontBase = true;
 					}
 				}
 			}
