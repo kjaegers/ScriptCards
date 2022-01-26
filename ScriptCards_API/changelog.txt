@@ -1,5 +1,16 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.5.6  - Update to disable recursive deferencing of nested attributes until that code can be rewritten, as it was causing a performance issue when
+           dealing with repeating row items.
+
+v 1.5.4  - EXPERIMENTAL - Complete rewrite of the roll parsing system, improving the flexibility of the roll parser and correcting a few bugs. Among 
+           the improvements are things like being able to add a # on the end of a dice specifier to prevent highlighting based on that die. For example, 
+           if you have a 5E to hit roll of "1d20 + 1d4 [Bless] + 5 [Str] + 2 [Prof]" the old system would highlight the roll as a crit if either the d20 
+           was a 20 or the d4 was a 4, and the same for a fumble. Now, appending # to any specifier prevents that roll from contributing to the highlight, 
+           so "1d20 + 1d4# [Bless] +5 [Str] + 2 [Prof]" will only highlight the roll based off of the d20 roll and not the d4. This update also removes 
+           case sensitivity from roll specifiers, doesn't sort the rolls when using kh or kl modifiers, and marks removed rolls with [x#x] (where # is 
+           the number that was on the die that got eliminated), and cuts nearly 240 lines out of the code.
+
 v 1.5.3  - Updated the Wild Die support to color-code based on the Wild Die. Red=1 rolled on first die, Green=Ace rolled on first die, yellow for any other 
            value on the wild die.
 
