@@ -1,5 +1,9 @@
 Chang Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-01-27 - 5E Character Action Menu (1.7.2) - Added Global Damage Modifier support. Added support for damage application (See settings area). Default
+             is to NOT attempt to apply damage. Note that resistances, etc. are not currently figured into damage calculations. Renamed file on the repo 
+             as a .roll20 file so I can use Andreas J.'s Roll20 syntax hilighter for Visual Studio Code (https://marketplace.visualstudio.com/items?itemName=anduh.rmacro)
+
 2022-01-10 - 5e Burning Hands (1.6) - Added support for direct object modification for damage application. Added definable sound effect to play.
              5e Lightning Bolt (1.4) - Added support for direct object modification for damage application. Added definable sound effect to play. Corrected offset VFX.
              5e Dragonborn Breath (1.5) - Added support for direct object modification for damage application. Added definable sound effect to play. Corrected offset VFX.

@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.5.7  - Minor tweak to the roll parser to allow raw numbers to have a # sign after them (it just gets ignored).
+
 v 1.5.6  - Update to disable recursive deferencing of nested attributes until that code can be rewritten, as it was causing a performance issue when
            dealing with repeating row items.
 

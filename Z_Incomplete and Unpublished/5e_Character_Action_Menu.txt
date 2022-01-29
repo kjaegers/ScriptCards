@@ -1,7 +1,7 @@
 !script {{
   --/|Script Name : 5E Action Menu
   --/|Version     : 1.7.2
-  --/|Requires SC : 1.3.9+
+  --/|Requires SC : 1.5.6+
   --/|Author      : Kurt Jaegers
 
   --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
@@ -137,8 +137,8 @@
 
   --/|NPC Spells
     --Rfirst|[*S:character_id];repeating_spell-cantrip
-  --&NPCCantrips|[br]
-  --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
+    --&NPCCantrips|[br]
+    --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
     --:NPCCantrips_Display|
       --~testName|string;replace; ;-;[*R:spellname]
       --~testMule|system;findability;[&spellmulename];[&testName]
@@ -326,6 +326,8 @@
       --?"[*R:atkname]" -ne "NoRepeatingAttributeLoaded"|PCAttacks_Display
       --+PC Attacks|[&PCAttacks]
   --]|
+
+  --/|The PC's cantrips
   --Rfirst|[*S:character_id];repeating_spell-cantrip
   --&PCCantrips|[br]
   --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
@@ -346,6 +348,8 @@
       --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|PCCantrips_Display
       --+Cantrips|[&PCCantrips]
   --]|
+
+  --/|The PC's level 1 thru 9 spells
   --%levelCounter|1;9
     --Rfirst|[*S:character_id];repeating_spell-[&levelCounter]
     --&PCSpells|[br]
@@ -401,6 +405,8 @@
   --%|
   --X|
 
+  --/|Reentrant points for PC actions
+
   --:EXEC_PC_ATTACK|
   --+|[hr #58180d]
   --#whisper|
@@ -410,6 +416,8 @@
   --#targettoken|[&attack_target]
   --#emotetext|[*S:t-name] uses [&attack_name] against [*T:t-name]
   -->Find_Active_Global_Attack_Modifiers|[*S:character_id];PC_GAM
+  -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM
+  -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM_CRIT;1
   --Rfind|[*S:character_id];[&attack_name];repeating_attack;atkname
   --#title|[*R:atkname]
   --#leftsub|[*S:character_name]
@@ -448,9 +456,10 @@
   --]|[
     --+[*R:atkname] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b][br][br]
   --]|
-  --?[$attackRoll.Base] -eq 20|=attack_crit;1
-  --?[$attackRoll.Base] -eq 20|&dmgroll;+ [*R:dmgbase] [Crit]
-  --?[$attackRoll.Base] -eq 20|&dmgroll2;+ [*R:dmg2base] [Crit]
+  --?[$attackRoll.Base] -ge [*R:atkcritrange]|=attack_crit;1|=attack_crit;0
+  --?[$attack_crit] -eq 1|&dmgroll;+ [*R:dmgbase] [Crit]
+  --?[$attack_crit] -eq 1|&dmgroll2;+ [*R:dmg2base] [Crit]
+  --?[$attack_crit] -eq 1|&dmgroll;+ [&PC_GDM_CRIT]|&dmgroll;+ [&PC_GDM]
   --?[$attackRoll.Total] -lt [$AC]|ATTACK_MISS
   --?[$attackRoll.Base] -eq 1|ATTACK_MISS
   --?[$attack_crit] -eq 1|&hittag;Critical Hit!|&hittag;Hit!
@@ -489,11 +498,13 @@
   --#targettoken|[&cantrip_target]
   --#emotetext|[*S:t-name] uses [&cantrip_name] against [*T:t-name]
   -->Find_Active_Global_Attack_Modifiers|[*S:character_id];PC_GAM
+  -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM
+  -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM_CRIT;1
   --Rfind|[*S:character_id];[&cantrip_name];repeating_spell-cantrip;spellname
   --?"[*R:spelloutput]" -eq ATTACK|PC_ATTACK_CANTRIP|PC_CARD_CANTRIP
+  --=cantrip_crit|0
   --:PC_ATTACK_CANTRIP|
   --?"X[*R:spellattack]" -eq "XRanged" -or "X[*R:spellattack]" -eq "XMelee"|CANTRIP_ATTACK_ROLL|CANTRIP_DONE_ATTACK_ROLL
-  --&cantrip_crit|0
   --:CANTRIP_ATTACK_ROLL|
   --&rollType|1d20
   --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
@@ -506,7 +517,7 @@
   --]|[
     --+[*R:spellattack] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b][br][br]
   --]|
-  --?[$attackRoll.Base] -eq 20|=cantrip_crit;1
+  --?[$attackRoll.Base] -ge 20|=cantrip_crit;1|=cantrip_crit;0
   --?[$attackRoll.Total] -lt [$AC]|CANTRIP_ATTACK_MISS
   --?[$attackRoll.Base] -eq 1|CANTRIP_ATTACK_MISS
   --:CANTRIP_DONE_ATTACK_ROLL|
@@ -515,6 +526,7 @@
   --?[*S:level] -ge 11|&damageRoll;+ + [*R:spelldamage]
   --?[*S:level] -ge 17|&damageRoll;+ + [*R:spelldamage]
   --?[$cantrip_crit] -eq 1|&damageRoll;+ + [&damageRoll]
+  --?[$cantrip_crit] -eq 1|&damageRoll;+ [&PC_GDM_CRIT]|&damageRoll;+ [&PC_GDM]
   --=cantripDamage|[&damageRoll]
   --?"X[*R:spellsave]" -ne "X"|CANTRIP_SAVE|CANTRIP_NO_SAVE
   --:CANTRIP_NO_SAVE|
@@ -552,13 +564,15 @@
   --#targettoken|[&action_target]
   --#emotetext|[*S:t-name] uses [&spellInfo2] against [*T:t-name]
   -->Find_Active_Global_Attack_Modifiers|[*S:character_id];PC_GAM
+  -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM
+  -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM_CRIT;1  
   --Rfind|[*S:character_id];[&spellInfo2];repeating_spell-[&spellInfo1];spellname
   --#targettoken|[&spellInfo3]
   --?"[*R:spelloutput]" -eq ATTACK|PC_ATTACK_SPELL|PC_CARD_SPELL
 
   --:PC_ATTACK_SPELL|
-  --?"X[*R:spellattack]" -eq "XRanged" -or "X[*R:spellattack]" -eq "XMelee"|SPELL_ATTACK_ROLL|SPELL_DONE_ATTACK_ROLL
   --&spell_crit|0
+  --?"X[*R:spellattack]" -eq "XRanged" -or "X[*R:spellattack]" -eq "XMelee"|SPELL_ATTACK_ROLL|SPELL_DONE_ATTACK_ROLL
 
   --:SPELL_ATTACK_ROLL|
   --&rollType|1d20
@@ -572,11 +586,12 @@
   --]|[
     --+[*R:spellattack] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b][br][br]
   --]|
-  --?[$attackRoll.Base] -eq 20|=spell_crit;1
+  --?[$attackRoll.Base] -ge 20|=spell_crit;1|=spell_crit;0
   --?[$attackRoll.Total] -lt [$AC]|SPELL_ATTACK_MISS
 
   --:SPELL_DONE_ATTACK_ROLL|
   --&damageRoll|[*R:spelldamage]
+  --?[$spell_crit] -eq 1|&damageRoll;+ [&PC_GDM_CRIT]|&damageRoll;+ [&PC_GDM]
   --&damageRoll2|[*R:spelldamage2]
 
   --&ability_bonus|
@@ -645,7 +660,22 @@
   --<|
   
   --:_AddGAM| 
-  --&_GAM_Temp|+ + [%2%] [ [%1%] ] 
+  --&_GAM_Temp|+ + [%2%]# [ [%1%] ] 
+  --<|
+
+    --:Find_Active_Global_Damage_Modifiers|character_id;StringVariableToSet;isCrit(1=true)
+  --&_GDM_Temp| 
+  --Rfirst|[%1%];repeating_damagemod
+  --:_GDM_Loop|
+  --?"[*R:global_damage_active_flag]" -eq "1"|>_AddGDM;[*R:global_damage_name];[*R:global_damage_damage];[%3%];[*R:global_damage_critical_damage]
+  --Rnext| 
+  --?"[*R:global_damage_name]" -ne "NoRepeatingAttributeLoaded"|_GDM_Loop
+  --&[%2%]|[&_GDM_Temp] 
+  --<|
+  
+  --:_AddGDM| 
+  --&_GDM_Temp|+ + [%2%]# [ [%1%] ] 
+  --?"X[%3%]" -eq "X1"|&_GDM_Temp;+ + [%4%]  [ CRIT [%1%] ]
   --<|
 
 }}

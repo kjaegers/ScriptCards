@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.5.6 (EXPERIMENTAL)";
+	const APIVERSION = "1.5.7";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2823,21 +2823,25 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 			// A bare number within parens (just strip them)
 			if (!componentHandled) {
-				if (text.match(/^\([+-]?(\d*\.)?\d*\)$/)) {
+				if (text.match(/^\([+-]?(\d*\.)?\d*#*\)$/)) {
 					text = text.substring(1, text.length - 1)
+				}
+				if (text.match(/^[+-]?(\d*\.)?\d*#$/)) {
+					text = text.substring(0, text.length - 1)
 				}
 				// Just a number
 				if (text.match(/^[+-]?(\d*\.)?\d*$/)) {
 					componentHandled = true;
 					rollResult.Text += `${text} `;
+
 					if (!isNaN(text)) {
 						switch (currentOperator) {
-							case "+": rollResult.Total += Number(text); break;
-							case "-": rollResult.Total -= Number(text); break;
-							case "*": rollResult.Total *= Number(text); break;
-							case "/": rollResult.Total /= Number(text); break;
-							case "%": rollResult.Total %= Number(text); break;
-							case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / Number(text)) : Math.ceil(rollResult.Total / Number(text)); break;
+							case "+": rollResult.Total += Number(text.replace("#","")); break;
+							case "-": rollResult.Total -= Number(text.replace("#","")); break;
+							case "*": rollResult.Total *= Number(text.replace("#","")); break;
+							case "/": rollResult.Total /= Number(text.replace("#","")); break;
+							case "%": rollResult.Total %= Number(text.replace("#","")); break;
+							case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / Number(text.replace("#",""))) : Math.ceil(rollResult.Total / Number(text.replace("#",""))); break;
 						}
 					}
 				}
