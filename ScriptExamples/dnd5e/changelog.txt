@@ -1,5 +1,8 @@
 Chang Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-01-31 - 5E Character Action Menu (1.7.5) - Fixed bugs related to critical hit detection and use of character attributes for attack/damage rolls.
+               REQUIRES ScriptCards 1.5.8+
+
 2022-01-27 - 5E Character Action Menu (1.7.2) - Added Global Damage Modifier support. Added support for damage application (See settings area). Default
              is to NOT attempt to apply damage. Note that resistances, etc. are not currently figured into damage calculations. Renamed file on the repo 
              as a .roll20 file so I can use Andreas J.'s Roll20 syntax hilighter for Visual Studio Code (https://marketplace.visualstudio.com/items?itemName=anduh.rmacro)

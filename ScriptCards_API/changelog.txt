@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.5.8  - Modification to the way repeating attributes are filled in to strip @{ and } from sub references so the actual name of the sub attribute
+           is returned, which can then be used within a script.
+
 v 1.5.7  - Minor tweak to the roll parser to allow raw numbers to have a # sign after them (it just gets ignored).
 
 v 1.5.6  - Update to disable recursive deferencing of nested attributes until that code can be rewritten, as it was causing a performance issue when
