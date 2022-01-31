@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.5.7";
+	const APIVERSION = "1.5.8";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -3261,22 +3261,28 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	// Check the active repeating section for any attribute references that need to be replaced
 	function parseRepeatingSection() {
-		// Temporarially Disable this feature
 
-		return;
+		return; // Currently disabled
 
 		if (!repeatingSection) { return; }
-		/*
+
 		for (var i in repeatingSection) {
-			var matches = repeatingSection[i].match(/\@\{(.+?)\}/g);
+			if (repeatingSection[i].startsWith("@{")) {
+				log(repeatingSection[i])
+				repeatingSection[i] = repeatingSection[i].replace("@","");
+				log(repeatingSection[i])
+			}
+			/*
+			var matches = repeatingSection[i].match(/^\@\{(.+?)\}$/g);
 			if (matches) {
 				matches.forEach(function(item) {
-					var attribute = repeatingCharAttrs[item.substring(2,item.length-1)] || "";
-					while (repeatingSection[i].indexOf(item) >= 0) { repeatingSection[i] = repeatingSection[i].replace(item, attribute); }
+					repeatingSection[i].replace(item, item.substring(2,item.length-1))
+					//var attribute = repeatingCharAttrs[item.substring(2,item.length-1)] || "";
+					//while (repeatingSection[i].indexOf(item) >= 0) { repeatingSection[i] = repeatingSection[i].replace(item, attribute); }
 				});
 			}
+			*/
 		}
-		*/
 
 		var repChar = getObj("character", repeatingCharID) || undefined;
 		if (repChar) {
@@ -3381,7 +3387,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 		action_attrs.forEach(function (z) {
 			if (z.get("name")) {
-				return_set.push(z.get("name").toString().replace(action_prefix, "") + "|" + z.get("current").toString().replace(/(?:\r\n|\r|\n)/g, "<br>"));
+				return_set.push(z.get("name").toString().replace(action_prefix, "") + "|" + z.get("current").toString().replace(/(?:\r\n|\r|\n)/g, "<br>").replace("@{","").replace("}",""));
 				return_set.push(z.get("name").toString().replace(action_prefix, "") + "_max|" + z.get("max").toString());
 			}
 		})

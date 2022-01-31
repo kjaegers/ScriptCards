@@ -1,7 +1,7 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.7.2
-  --/|Requires SC : 1.5.7+
+  --/|Version     : 1.7.5
+  --/|Requires SC : 1.5.8+
   --/|Author      : Kurt Jaegers
 
   --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
@@ -436,6 +436,7 @@
   -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM
   -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM_CRIT;1
   --Rfind|[*S:character_id];[&attack_name];repeating_attack;atkname
+  --/Rdump|
   --#title|[*R:atkname]
   --#leftsub|[*S:character_name]
   --&attack_crit|0
@@ -443,8 +444,37 @@
   --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
   --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
   --&arString|[&rollType]
-  --?[*R:atkattr_base] -gt 0|&arString;+ + [*R:atkattr_base] [Attr]
-  --?[*R:atkattr_base] -lt 0|&arString;+ [*R:atkattr_base] [Attr]
+  --=attrMod|0
+  --&attrName|Attr
+  --?"[*R:atkattr_base]" -eq "strength_mod"|=attrMod;[*S:strength_mod]
+  --?"[*R:atkattr_base]" -eq "strength_mod"|&attrName;[STR]
+  --?"[*R:atkattr_base]" -eq "intelligence_mod"|=attrMod;[*S:intelligence_mod]
+  --?"[*R:atkattr_base]" -eq "intelligence_mod"|&attrName;[INT]
+  --?"[*R:atkattr_base]" -eq "wisdom_mod"|=attrMod;[*S:wisdom_mod]
+  --?"[*R:atkattr_base]" -eq "wisdom_mod"|&attrName;[WIS]
+  --?"[*R:atkattr_base]" -eq "dexterity_mod"|=attrMod;[*S:dexterity_mod]
+  --?"[*R:atkattr_base]" -eq "dexterity_mod"|&attrName;[DEX]
+  --?"[*R:atkattr_base]" -eq "constitution_mod"|=attrMod;[*S:constitution_mod]
+  --?"[*R:atkattr_base]" -eq "constitution_mod"|&attrName;[CON]
+  --?"[*R:atkattr_base]" -eq "charisma_mod"|=attrMod;[*S:charisma_mod]
+  --?"[*R:atkattr_base]" -eq "charisma_mod"|&attrName;[CHA]
+  --/|Assume the damage attribute is the same unless it is set to something else
+  --=dmgMod|[$attrMod.Raw]
+  --&dmgAttrName|[&attrName]
+  --?"[*R:dmgattr_base]" -eq "strength_mod"|=dmgMod;[*S:strength_mod]
+  --?"[*R:dmgattr_base]" -eq "strength_mod"|&dmgAttrName;[STR]
+  --?"[*R:dmgattr_base]" -eq "intelligence_mod"|=dmgMod;[*S:intelligence_mod]
+  --?"[*R:dmgattr_base]" -eq "intelligence_mod"|&dmgAttrName;[INT]
+  --?"[*R:dmgattr_base]" -eq "wisdom_mod"|=dmgMod;[*S:wisdom_mod]
+  --?"[*R:dmgattr_base]" -eq "wisdom_mod"|&dmgAttrName;[WIS]
+  --?"[*R:dmgattr_base]" -eq "dexterity_mod"|=dmgMod;[*S:dexterity_mod]
+  --?"[*R:dmgattr_base]" -eq "dexterity_mod"|&dmgAttrName;[DEX]
+  --?"[*R:dmgattr_base]" -eq "constitution_mod"|=dmgMod;[*S:constitution_mod]
+  --?"[*R:dmgattr_base]" -eq "constitution_mod"|&dmgAttrName;[CON]
+  --?"[*R:dmgattr_base]" -eq "charisma_mod"|=dmgMod;[*S:charisma_mod]
+  --?"[*R:dmgattr_base]" -eq "charisma_mod"|&dmgAttrName;[CHA]
+  --?[$attrMod.Raw] -gt 0|&arString;+ + [$attrMod.Raw] [&attrName]
+  --?[$attrMod.Raw] -lt 0|&arString;+ [$attrMod.Raw] [&attrName]
   --?[*R:atkmod] -gt 0|&arString;+ + [*R:atkmod] [Special]
   --?[*R:atkmod] -lt 0|&arString;+ [*R:atkmod] [Special]
   --?[*R:atkprofflag] -ne 0|&arString;+ + [*S:pb] [Prof]
@@ -453,8 +483,8 @@
   --?[*R:atkmagic] -lt 0|&arString;+ [*R:atkmagic] [Magic]
   --=attackRoll|[&arString] [&PC_GAM]
   --&dmgroll|[*R:dmgbase]
-  --?[*R:dmgattr] -gt 0|&dmgroll;+ + [*R:dmgattr] [Attr]
-  --?[*R:dmgattr] -lt 0|&dmgroll;+ [*R:dmgattr] [Attr]
+  --?[$dmgMod.Raw] -gt 0|&dmgroll;+ + [$dmgMod.Raw] [&dmgAttrName]
+  --?[$dmgMod.Raw] -lt 0|&dmgroll;+ [$dmgMod.Raw] [&dmgAttrName]
   --?[*R:dmgmod] -gt 0|&dmgroll;+ + [*R:dmgmod] [Special]
   --?[*R:dmgmod] -lt 0|&dmgroll;+ [*R:dmgmod] [Special]
   --?[*R:atkmagic] -gt 0|&dmgroll;+ + [*R:atkmagic] [Magic]
@@ -473,7 +503,9 @@
   --]|[
     --+[*R:atkname] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b][br][br]
   --]|
-  --?[$attackRoll.Base] -ge [*R:atkcritrange]|=attack_crit;1|=attack_crit;0
+  --=CritNum|20
+  --?"X[*R:atkcritrange]" -ne "X"|=CritNum;[*R:atkcritrange]
+  --?[$attackRoll.Base] -ge [$CritNum.Raw]|=attack_crit;1|=attack_crit;0
   --?[$attack_crit] -eq 1|&dmgroll;+ [*R:dmgbase] [Crit]
   --?[$attack_crit] -eq 1|&dmgroll2;+ [*R:dmg2base] [Crit]
   --?[$attack_crit] -eq 1|&dmgroll;+ [&PC_GDM_CRIT]|&dmgroll;+ [&PC_GDM]
