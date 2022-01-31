@@ -1,5 +1,7 @@
 Chang Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-01-31 - 5E Character Action Menu (1.7.6) - Code efficiency improvements, now takes custom crit damage into account if used.
+
 2022-01-31 - 5E Character Action Menu (1.7.5) - Fixed bugs related to critical hit detection and use of character attributes for attack/damage rolls.
                REQUIRES ScriptCards 1.5.8+
 

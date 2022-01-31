@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.7.5
+  --/|Version     : 1.7.6
   --/|Requires SC : 1.5.8+
   --/|Author      : Kurt Jaegers
 
@@ -441,38 +441,20 @@
   --#leftsub|[*S:character_name]
   --&attack_crit|0
   --&rollType|1d20
-  --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
+  --?"[*S:advantagetoggle]" -inc advantage|&rollType;10d20kh1
   --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
   --&arString|[&rollType]
   --=attrMod|0
   --&attrName|Attr
-  --?"[*R:atkattr_base]" -eq "strength_mod"|=attrMod;[*S:strength_mod]
-  --?"[*R:atkattr_base]" -eq "strength_mod"|&attrName;[STR]
-  --?"[*R:atkattr_base]" -eq "intelligence_mod"|=attrMod;[*S:intelligence_mod]
-  --?"[*R:atkattr_base]" -eq "intelligence_mod"|&attrName;[INT]
-  --?"[*R:atkattr_base]" -eq "wisdom_mod"|=attrMod;[*S:wisdom_mod]
-  --?"[*R:atkattr_base]" -eq "wisdom_mod"|&attrName;[WIS]
-  --?"[*R:atkattr_base]" -eq "dexterity_mod"|=attrMod;[*S:dexterity_mod]
-  --?"[*R:atkattr_base]" -eq "dexterity_mod"|&attrName;[DEX]
-  --?"[*R:atkattr_base]" -eq "constitution_mod"|=attrMod;[*S:constitution_mod]
-  --?"[*R:atkattr_base]" -eq "constitution_mod"|&attrName;[CON]
-  --?"[*R:atkattr_base]" -eq "charisma_mod"|=attrMod;[*S:charisma_mod]
-  --?"[*R:atkattr_base]" -eq "charisma_mod"|&attrName;[CHA]
+  -->Get_Ability_Modifier|[*R:atkattr_base];attrMod;attrName
   --/|Assume the damage attribute is the same unless it is set to something else
   --=dmgMod|[$attrMod.Raw]
   --&dmgAttrName|[&attrName]
-  --?"[*R:dmgattr_base]" -eq "strength_mod"|=dmgMod;[*S:strength_mod]
-  --?"[*R:dmgattr_base]" -eq "strength_mod"|&dmgAttrName;[STR]
-  --?"[*R:dmgattr_base]" -eq "intelligence_mod"|=dmgMod;[*S:intelligence_mod]
-  --?"[*R:dmgattr_base]" -eq "intelligence_mod"|&dmgAttrName;[INT]
-  --?"[*R:dmgattr_base]" -eq "wisdom_mod"|=dmgMod;[*S:wisdom_mod]
-  --?"[*R:dmgattr_base]" -eq "wisdom_mod"|&dmgAttrName;[WIS]
-  --?"[*R:dmgattr_base]" -eq "dexterity_mod"|=dmgMod;[*S:dexterity_mod]
-  --?"[*R:dmgattr_base]" -eq "dexterity_mod"|&dmgAttrName;[DEX]
-  --?"[*R:dmgattr_base]" -eq "constitution_mod"|=dmgMod;[*S:constitution_mod]
-  --?"[*R:dmgattr_base]" -eq "constitution_mod"|&dmgAttrName;[CON]
-  --?"[*R:dmgattr_base]" -eq "charisma_mod"|=dmgMod;[*S:charisma_mod]
-  --?"[*R:dmgattr_base]" -eq "charisma_mod"|&dmgAttrName;[CHA]
+  -->Get_Ability_Modifier|[*R:dmgattr_base];dmgMod;dmgAttrName
+  --/|Assume the damage attribute is the same unless it is set to something else
+  --=dmg2Mod|[$attrMod.Raw]
+  --&dmg2AttrName|[&attrName]
+  -->Get_Ability_Modifier|[*R:dmg2attr_base];dmg2Mod;dmg2AttrName  
   --?[$attrMod.Raw] -gt 0|&arString;+ + [$attrMod.Raw] [&attrName]
   --?[$attrMod.Raw] -lt 0|&arString;+ [$attrMod.Raw] [&attrName]
   --?[*R:atkmod] -gt 0|&arString;+ + [*R:atkmod] [Special]
@@ -490,8 +472,8 @@
   --?[*R:atkmagic] -gt 0|&dmgroll;+ + [*R:atkmagic] [Magic]
   --?[*R:atkmagic] -lt 0|&dmgroll;+ [*R:atkmagic] [Magic]
   --&dmgroll2|[*R:dmg2base]
-  --?[*R:dmg2attr] -gt 0|&dmgroll2;+ + [*R:dmg2attr] [Attr]
-  --?[*R:dmg2attr] -lt 0|&dmgroll2;+ [*R:dmg2attr] [Attr]
+  --?[*R:dmg2attr] -gt 0|&dmgroll2;+ + [$dmg2Mod.Raw] [&dmg2AttrName]
+  --?[*R:dmg2attr] -lt 0|&dmgroll2;+ [$dmg2Mod.Raw] [&dmg2AttrName]
   --?[*R:dmg2mod] -gt 0|&dmgroll;+ + [*R:dmg2mod] [Special]
   --?[*R:dmg2mod] -lt 0|&dmgroll;+ [*R:dmg2mod] [Special]
   --?[*R:atkmagic] -gt 0|&dmgroll2;+ + [*R:atkmagic] [Magic]
@@ -505,9 +487,17 @@
   --]|
   --=CritNum|20
   --?"X[*R:atkcritrange]" -ne "X"|=CritNum;[*R:atkcritrange]
+  --&critRoll|[*R:dmgbase]
+  --&critRoll2|[*R:dmg2base]
+  --?"X[*R:dmgcustcrit]" -eq "X"|DONE_ATK_CRIT
+  --&critRoll|[*R:dmgcustcrit]
+  --:DONE_ATK_CRIT|
+  --?"X[*R:dmg2custcrit]" -eq "X"|DONE_ATK_CRIT2
+  --&critRoll2|[*R:dmg2custcrit]
+  --:DONE_ATK_CRIT2|
   --?[$attackRoll.Base] -ge [$CritNum.Raw]|=attack_crit;1|=attack_crit;0
-  --?[$attack_crit] -eq 1|&dmgroll;+ [*R:dmgbase] [Crit]
-  --?[$attack_crit] -eq 1|&dmgroll2;+ [*R:dmg2base] [Crit]
+  --?[$attack_crit] -eq 1|&dmgroll;+ [&critRoll] [Crit]
+  --?[$attack_crit] -eq 1|&dmgroll2;+ [&critRoll2] [Crit]
   --?[$attack_crit] -eq 1|&dmgroll;+ [&PC_GDM_CRIT]|&dmgroll;+ [&PC_GDM]
   --?[$attackRoll.Total] -lt [$AC]|ATTACK_MISS
   --?[$attackRoll.Base] -eq 1|ATTACK_MISS
@@ -752,6 +742,20 @@
   --?"[*R:global_save_name]" -ne "NoRepeatingAttributeLoaded"|_GSM_Loop
   --&[%2%]|[&_GSM_Temp] 
   --<|
+
+  --:Get_Ability_Modifier|attribute_string;returnnumericvalue;returnnamestring
+  --?"[%1%]" -eq "strength_mod"|=[%2%];[*S:strength_mod]
+  --?"[%1%]" -eq "strength_mod"|&[%3%];[STR]
+  --?"[%1%]" -eq "intelligence_mod"|=[%2%];[*S:intelligence_mod]
+  --?"[%1%]" -eq "intelligence_mod"|&[%3%];[INT]
+  --?"[%1%]" -eq "wisdom_mod"|=[%2%];[*S:wisdom_mod]
+  --?"[%1%]" -eq "wisdom_mod"|&[%3%];[WIS]
+  --?"[%1%]" -eq "dexterity_mod"|=[%2%];[*S:dexterity_mod]
+  --?"[%1%]" -eq "dexterity_mod"|&[%3%];[DEX]
+  --?"[%1%]" -eq "constitution_mod"|=[%2%];[*S:constitution_mod]
+  --?"[%1%]" -eq "constitution_mod"|&[%3%];[CON]
+  --?"[%1%]" -eq "charisma_mod"|=[%2%];[*S:charisma_mod]
+  --?"[%1%]" -eq "charisma_mod"|&[%3%];[CHA]
 
   --/|There are four different options for applying damage. The selected option is set in the settings area of the macro.
   --/|When applying damage, one of the four functions listed below will be executed to alter the target's HP. The ScriptCards
