@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.7.6
+  --/|Version     : 1.7.7
   --/|Requires SC : 1.5.8+
   --/|Author      : Kurt Jaegers
 
@@ -441,7 +441,7 @@
   --#leftsub|[*S:character_name]
   --&attack_crit|0
   --&rollType|1d20
-  --?"[*S:advantagetoggle]" -inc advantage|&rollType;10d20kh1
+  --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
   --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
   --&arString|[&rollType]
   --=attrMod|0
@@ -496,8 +496,8 @@
   --&critRoll2|[*R:dmg2custcrit]
   --:DONE_ATK_CRIT2|
   --?[$attackRoll.Base] -ge [$CritNum.Raw]|=attack_crit;1|=attack_crit;0
-  --?[$attack_crit] -eq 1|&dmgroll;+ [&critRoll] [Crit]
-  --?[$attack_crit] -eq 1|&dmgroll2;+ [&critRoll2] [Crit]
+  --?[$attack_crit] -eq 1|&dmgroll;+ + [&critRoll] [Crit]
+  --?[$attack_crit] -eq 1|&dmgroll2;+ + [&critRoll2] [Crit]
   --?[$attack_crit] -eq 1|&dmgroll;+ [&PC_GDM_CRIT]|&dmgroll;+ [&PC_GDM]
   --?[$attackRoll.Total] -lt [$AC]|ATTACK_MISS
   --?[$attackRoll.Base] -eq 1|ATTACK_MISS
