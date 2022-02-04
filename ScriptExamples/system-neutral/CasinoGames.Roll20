@@ -12,6 +12,9 @@
   --/|              game can be enabled or disabled in the config, and each game supports customization of payouts. Some
   --/|              games support additional customization (see the settings section below). You can customize how the
   --/|              money is referred to and what bet amounts are available.
+  --/|
+  --/|              Most of the games here are loosely based on the PowerCards scripts from Ziechael at this post:
+  --/|              https://app.roll20.net/forum/post/4580679/gambling-roller-of-macros/?pageforid=4580679#post-4580679
 
   --/|=========================================================================================================
   --/|Settings Area - Customize the behavior of the script here
