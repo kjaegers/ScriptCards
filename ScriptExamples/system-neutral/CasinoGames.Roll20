@@ -1,0 +1,410 @@
+!script {{
+  --/|Script Name : Casino Games
+  --/|Version     : 1.0
+  --/|Requires SC : 1.5.8+
+  --/|Author      : Kurt Jaegers
+
+  --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
+  --/|                to make settings changes, make them in an external editor (like NOTEPAD) and copy/paste the whole
+  --/|                macro into the Roll20 editor.
+
+  --/|Description : This script implements several different kinds of casino games in a non-system specific way. Each
+  --/|              game can be enabled or disabled in the config, and each game supports customization of payouts. Some
+  --/|              games support additional customization (see the settings section below). You can customize how the
+  --/|              money is referred to and what bet amounts are available.
+
+  --/|=========================================================================================================
+  --/|Settings Area - Customize the behavior of the script here
+
+  --/|=========================================================================================================
+  --/|General Customizations
+  
+  --/|Name of the casino
+  --&CasinoName|Wild Fun Times
+  
+  --/|Choose which games are avaiable. 1=enabled, anything else=disabled.
+  --&EnableRoulette|1
+  --&EnableHighLow|1
+  --&EnableInBetween|1
+  --&EnableSlotMachine|1
+  --&EnableFindTheLady|1
+  --&EnableWheelOfFortune|1
+  --&EnableWheelOfMisfortune|1
+
+  --/|Wager Amounts for the change wager buttons  
+  --=Amount1|10
+  --=Amount2|20
+  --=Amount3|30
+  --=Amount4|40
+  --=Amount5|50
+
+  --/|When launching the casino script fresh, what will the default wager be?
+  --=DefaultWager|10
+
+  --/|What should the money be referred to as (ie, gp, bucks, dollars, credits, etc.)
+  --&MoneyIndicator|credits
+
+  --/|=========================================================================================================
+  --/|Configurations for individual games
+  
+  --/|Config for In Between
+  --=PayoutInBetween|2.5                    --/|Winning at In Between pays wager * this amount
+
+  --/|Config for High-Low
+  --=PayoutHighLow|2                        --/|Winning at HighLow pays wager * this amount
+
+  --/|Config for Find the Lady
+  --&SpotBonusAttribute|wisdom_mod          --/|What attribute should be used as a bonus for the player
+  --&AllowSpotBonus|0                       --/|If set to 1, the attribute above will be added to the player's roll
+  --=Odds_FindTheLady|5                     --/|The higher the number, the harder to win. Player rolls 1d20+spot (see above) vs 1d20+odds
+  --=Payout_FindTheLady|2
+
+  --/|Config for the Wheel of Fortune - These are the results for each of the 20 spin positions
+  --&Fortune1|Spin the Wheel of Misfortune 5 Times!!!!!
+  --&Fortune2|Spin the Wheel of Misfortune 4 Times!!!!
+  --&Fortune3|Spin the Wheel of Misfortune 3 Time!!!
+  --&Fortune4|Spin the Wheel of Misfortune 2 Time!!
+  --&Fortune5|Spin the Wheel of Misfortune 1 Time!
+  --&Fortune6|Better luck next time
+  --&Fortune7|25 [&MoneyIndicator] win
+  --&Fortune8|50 [&MoneyIndicator] win
+  --&Fortune9|75 [&MoneyIndicator] win
+  --&Fortune10|Admission price returned
+  --&Fortune11|Empowerment! (+2 STR for 1 week)
+  --&Fortune12|Enlightenment! (+2 WIS for 1 week)
+  --&Fortune13|Congratulations 500 [&MoneyIndicator] win
+  --&Fortune14|Congratulations 1.000 [&MoneyIndicator] win
+  --&Fortune15|FREE SPIN
+  --&Fortune16|Enchantment! (+2 CHA for 1 week)
+  --&Fortune17|Enlargement! (+1 size category for 1 week)
+  --&Fortune18|Congratulations 2.000 [&MoneyIndicator] win
+  --&Fortune19|Congratulations 5.000 [&MoneyIndicator] win
+  --&Fortune20|JACKPOT ~25,000 [&MoneyIndicator]~ JACKPOT
+
+  --/|Config for the Wheel of Misfortune - These are the results for each of the 10 spin positions
+  --&MisfortuneResult1|Shrunken Head (-1 size category for 1 week)
+  --&MisfortuneResult2|Cursed Soul (-1 to attack and damage for 1 week)
+  --&MisfortuneResult3|Greased Palms (25% chance to drop held items each round for 1 week)
+  --&MisfortuneResult4|2,000 [&MoneyIndicator] penalty
+  --&MisfortuneResult5|Enfeeblement (-2 STR for 1 week)
+  --&MisfortuneResult6|Entrapment (-2 DEX for 1 week)
+  --&MisfortuneResult7|1,000 [&MoneyIndicator] penalty
+  --&MisfortuneResult8|Personal Anti-Magic Field (Magic and magic items will not work for you for 1 week nor can you be affected by magic)
+  --&MisfortuneResult9|Bad Breath (-2 to skills involving talking to others for 1 week)
+  --&MisfortuneResult10|Divine intervention, no effect this time.  
+
+  --/|Config for the Slot Machine
+  --/|SlotX is the emoji used for each slot symbol. Symbols range from 0 (empty/worthless) to 7 (Jackpot)
+  --&Slot0|&#128306;
+  --&Slot1|&#127826;
+  --&Slot2|&#127825;
+  --&Slot3|&#127822;
+  --&Slot4|&#127817;
+  --&Slot5|&#127815;
+  --&Slot6|&#128310;
+  --&Slot7|&#129412;
+  --&WinFirstSymbol1|2       --/|The first symbol, anywhere on the line once, pays wager * this amount
+  --&WinFirstSymbol2|4       --/|The first symbol, anywhere on the line twice, pays wager * this amount
+  --&PayOut1|10              --/|All other symbols require 3 of a kind, and pay wager * these amounts 
+  --&PayOut2|15
+  --&PayOut3|20
+  --&PayOut4|30
+  --&PayOut5|50
+  --&PayOut6|75
+  --&PayOut7|100
+
+  --/|Config for Roulette - The payout (wager * amount) for each type of roulette wager
+  --&PayRouletteODD|2
+  --&PayRouletteEVEN|2
+  --&PayRouletteRED|2
+  --&PayRouletteBLACK|2
+  --&PayRoulette1-12|3
+  --&PayRoulette13-24|3
+  --&PayRoulette25-36|3
+  --&PayRoulette0|50
+  --&PayRouletteSpecificNumber|35
+  
+  --/|End Settings Area
+  --/|=========================================================================================================
+
+  --/|Give the script a reentrant name based on the selected character id so we can have multiple instances at the same time
+  --#reentrant|CharacterAction @{selected|character_id}
+
+  --/|Store the selected character so we can use it later even if it gets de-selected
+  --#sourcetoken|@{selected|token_id}
+
+  --?[&UseNamedCharacterSettings] -eq 1|[
+    --lsettings|[*S:character_name]
+  --]|
+
+  --#emotestate|hidden
+  --#title|[&Slot1] [&CasinoName] [&Slot1]
+  --#leftsub|[&GameName]
+  --#rightsub|[*S:character_name]
+
+  --=Wager|[$DefaultWager.Raw]
+
+  --:DISPLAY_CASINO_MENU|
+
+  --/|The wager and game selection are whispered to the player to avoid spamming everyone else.
+  --#whisper|self
+  --/|Display Bet information
+  --+|[c][b]Current Wager: [$Wager.Raw][/b][/c]
+  --+|[c][b]Change Bet [/b] [rbutton][$Amount1.Raw]::CHANGE_WAGER;[$Amount1.Raw][&wagerQuery][/rbutton]
+     [rbutton][$Amount2.Raw]::CHANGE_WAGER;[$Amount2.Raw][&wagerQuery][/rbutton]
+     [rbutton][$Amount3.Raw]::CHANGE_WAGER;[$Amount3.Raw][&wagerQuery][/rbutton]
+     [rbutton][$Amount4.Raw]::CHANGE_WAGER;[$Amount4.Raw][&wagerQuery][/rbutton]
+     [rbutton][$Amount5.Raw]::CHANGE_WAGER;[$Amount5.Raw][&wagerQuery][/rbutton][/c][br][hr]
+  --/|Display Menu of Available Games
+  --+|[c][b]Select Your Game[/b][/c]
+  --?[&EnableRoulette] -eq 1|[
+      --+|[c][rbutton]Roulette::PLAY_ROULETTE[/rbutton][/c]
+  --]|
+  --?[&EnableInBetween] -eq 1|[
+    --+|[c][rbutton]In Between::PLAY_INBETWEEN[/rbutton][/c]
+  --]|
+  --?[&EnableHighLow] -eq 1|[
+    --+|[c][rbutton]High-Low::PLAY_HIGHLOW[/rbutton][/c]
+  --]|  
+  --?[&EnableSlotMachine] -eq 1|[
+    --+|[c][rbutton]Slot Machine::PLAY_SLOTMACHINE[/rbutton][/c]
+  --]|
+  --?[&EnableFindTheLady] -eq 1|[
+    --+|[c][rbutton]Find the Lady::PLAY_FINDTHELADY[/rbutton][/c]
+  --]|  
+  --?[&EnableWheelOfFortune] -eq 1|[
+    --+|[c][rbutton]Wheel of Fortune::PLAY_WHEELOFFORTUNE[/rbutton][/c]
+  --]|  
+  --?[&EnableWheelOfMisfortune] -eq 1|[
+    --+|[c][rbutton]Wheel of Misfortune::PLAY_WHEELOFMISFORTUNE[/rbutton][/c]
+  --]|          
+  --X|
+
+  --/|Change the Wager variable to the number passed to the reentry button
+  --:CHANGE_WAGER|
+  --=Wager|[&reentryval]
+  --^DISPLAY_CASINO_MENU|
+
+  --:PLAY_FINDTHELADY|
+  --#whisper|
+  --#emotestate|visible
+  --#emotetext|[*S:character_name] watches closely as the dealer swaps the cards time and time again...
+  --#title|Find the Lady
+  --#leftsub|Wager: [$Wager.Raw]
+  --=baseCard|127168 + 1d11
+  --+|The dealers hands flash through a well practiced routine, with a deep breath you point to the card you believe to be "The Lady"
+  --?AllowSpotBonus -eq 1|=Res;1d20 + [*S:[&SpotBonusAttribute]]|=Res;1d20
+  --=Tar|1d20+7
+  --/+|Res: [$Res.Raw], Tar: [$Tar.Raw]
+  --?[$Res.Raw] -ge [$Tar.Raw]|[
+    --=Payout|[$Wager.Raw] * [$Payout_FindTheLady] {FLOOR}
+    --+|[c][b]&#127180; Winner! &#127180;[/b][/c]
+    --+|[c]You find the lady and win [$Payout.Raw] [&MoneyIndicator]![/c]
+  --]|[
+    --+|[c][b]&#[$baseCard.Raw]; Sorry! &#[$baseCard.Raw];[/b][/c]
+    --+|[c]The lady eludes you. You lost [$Wager.Raw] [&MoneyIndicator].[/c]
+  --]|
+  --X|
+
+  --:PLAY_HIGHLOW|
+  --#whisper|
+  --#emotestate|visible
+  --#emotetext|[*S:character_name] finds an opponent to play High-Low against...
+  --#title|High-Low
+  --#leftsub|Wager: [$Wager.Raw]
+  --+Rules|Both players roll 3 dice. The highest total wins
+  --=p1|1d6 --=p2|1d6 --=p3|1d6 --=o1|1d6 --=o2|1d6 --=o3|1d6
+  --=ptotal|[$p1] + [$p2] + [$p3]
+  --=ototal|[$o1] + [$o2] + [$o3]
+  --+Your Roll:| [$p1] - [$p2] - [$p3] = [$ptotal]
+  --+Opps Roll:| [$o1] - [$o2] - [$o3] = [$ototal]
+  --?[$ptotal.Raw] -gt [$ototal.Raw]|&didWin;1|&didWin;0
+  --?[$ptotal.Raw] -eq [$ototal.Raw]|&didTie;1|&didTie;0
+  --?[&didWin] -eq 1|[
+    --+|[c][b]Winner![/b][/c]
+    --=Payout|[$Wager.Raw] * [$PayoutHighLow] {FLOOR}
+    --+|[c]&#127922; You won [$Payout.Raw] [&MoneyIndicator] &#127922;[/c]
+  --]|
+  --?[&didTie] -eq 1|[
+    --+|[c][b]Tie[/b][/c]
+    --+|[c]&#127922; It was a tie. You keep your wager. &#127922;[/c]
+  --]|
+  --?[&didWin] -eq 0 -and [&didTie] -eq 0|[
+    --+|[c][b]Sorry![/b][/c]
+    --+|[c]You lost [$Wager.Raw] [&MoneyIndicator].[/c]
+  --]|
+  --X|
+
+  --:PLAY_INBETWEEN|
+  --#whisper|
+  --#emotestate|visible
+  --#emotetext|[*S:character_name] tries their luck at the In Between table
+  --#title|In Between
+  --#leftsub|Wager: [$Wager.Raw]
+  --+Rules|Center die must be between the outer rolls. Ties lose. If the outer rolls match you lose.
+  --Rolls|[[ [$r1] 1d20cs>21cf>1]] • [[ [$r2] 1d20cs>1cf>1]] • [[ [$r3] 1d20cs>21cf>1]]
+  --=r1|1d20#
+  --=r2|1d20#
+  --=r3|1d20#
+  --+|[c] [$r1] - [$r2] - [$r3] [/c]
+  --?[$r2] -lt [$r3] -and [$r2] -gt [$r1] -and [$r1] -ne [$r3]|[
+    --+|[c][b]Winner![/b][/c]
+    --=Payout|[$Wager.Raw] * [$PayoutInBetween] {FLOOR}
+    --+|[c]&#127922; Your number wins! You won [$Payout.Raw] [&MoneyIndicator] &#127922;[/c]
+    --^DONE_INBETWEEN|
+  --]|
+  --?[$r2] -gt [$r3] -and [$r2] -lt [$r1] -and [$r1] -ne [$r3]|[
+    --+|[c][b]Winner![/b][/c]
+    --=Payout|[$Wager.Raw] * [$PayoutInBetween] {FLOOR}
+    --+|[c]&#127922; Your number wins! You won [$Payout.Raw] [&MoneyIndicator] &#127922;[/c]
+    --^DONE_INBETWEEN|
+  --]|[
+    --+|[c][b]Sorry![/b][/c]
+    --+|[c]You lost [$Wager.Raw] [&MoneyIndicator]. Better luck next time...[/c]
+  --]|
+  --:DONE_INBETWEEN|
+  --X|
+
+  --:PLAY_WHEELOFFORTUNE|
+  --#whisper|
+  --#emotestate|visible
+  --#emotetext|[*S:character_name] spins the Wheel of Fortune. Round and round she goes, where she stops, nobody knows!
+  --#title|Wheel of Fortune
+  --=Res|1d20
+  --+Result:|[&Fortune[$Res.Raw]]
+  --X|
+
+  --:PLAY_WHEELOFMISFORTUNE|
+  --#whisper|
+  --#emotestate|visible
+  --#emotetext|[*S:character_name] spins the Wheel of Misfortune. May the gods have mercy on your soul!
+  --#title|Wheel of Misfortune
+  --=Res|1d10
+  --+Result:|[&MisfortuneResult[$Res.Raw]]
+  --X|
+
+  --:PLAY_SLOTMACHINE|
+  --#whisper|
+  --#emotestate|visible
+  --#emotetext|[*S:character_name] tries their luck on the slot Machine
+  --#title|Slot Machine
+  --=R1|1d36# --=R2|1d36# --=R3|1d36#
+  -->FindSlotRange|[$R1.Raw];R1Slot
+  -->FindSlotRange|[$R2.Raw];R2Slot
+  -->FindSlotRange|[$R3.Raw];R3Slot
+  --+|[c][b]The wheels spin...[/b][/c]
+  --+|[c][&Slot[$R1Slot.Raw]] - [&Slot[$R2Slot.Raw]] - [&Slot[$R3Slot.Raw]][/c]
+  --=Slot1Count|0
+  --?[$R1Slot.Raw] -eq 1|=Slot1Count;[$Slot1Count.Raw] + 1
+  --?[$R2Slot.Raw] -eq 1|=Slot1Count;[$Slot1Count.Raw] + 1
+  --?[$R3Slot.Raw] -eq 1|=Slot1Count;[$Slot1Count.Raw] + 1
+  --&WinHandled|0
+  --?[$R1Slot.Raw] -eq [$R2Slot.Raw] -and [$R2Slot.Raw] -eq [$R3Slot.Raw] -and [$R1Slot.Raw] -ne 0|[
+    --+|[c][b]Winner![/b][/c]
+    --=Payout|[$Wager.Raw] * [&PayOut[$R1Slot.Raw]] {FLOOR}
+    --+|[c]	&#129689; You won [$Payout.Raw] [&MoneyIndicator] &#129689;[/c]
+    --&WinHandled|1
+  --]|
+  --?[&WinHandled] -eq 0 -and [$Slot1Count.Raw] -gt 0|[
+    --+|[c][b]Winner![/b][/c]
+    --=Payout|[$Wager.Raw] * [&WinFirstSymbol[$Slot1Count.Raw]] {FLOOR}
+    --+|[c]	&#129689; You won [$Payout.Raw] [&MoneyIndicator] &#129689;[/c]
+    --&WinHandled|1
+  --]|
+  --?[&WinHandled] -eq 0|[
+    --+|[c][b]Sorry![/b][/c]
+    --+|[c]You lost [$Wager.Raw] [&MoneyIndicator].[/c]
+  --]|
+  --X|
+
+  --:FindSlotRange|Value;setVar
+  --=[%2%]|0
+  --?[%1%] -ge 15|=[%2%];1
+  --?[%1%] -ge 21|=[%2%];2
+  --?[%1%] -ge 26|=[%2%];3
+  --?[%1%] -ge 30|=[%2%];4
+  --?[%1%] -ge 33|=[%2%];5
+  --?[%1%] -ge 35|=[%2%];6
+  --?[%1%] -ge 36|=[%2%];7
+  --<|
+
+  --:PLAY_ROULETTE|
+  --#whisper|self
+  --+|[c][b]Select Bet Type[/b][/c]
+  --+|[c][rbutton]Odd::PLAY_ROULETTE2;ODD[/rbutton] [rbutton]Even::PLAY_ROULETTE2;EVEN[/rbutton] [rbutton]Red::PLAY_ROULETTE2;RED[/rbutton] [rbutton]Black::PLAY_ROULETTE2;BLACK[/rbutton][/c]
+  --+|[c][rbutton]1-12::PLAY_ROULETTE2;1-12[/rbutton] [rbutton]13-24::PLAY_ROULETTE2;13-24[/rbutton] [rbutton]25-36::PLAY_ROULETTE2;25-36[/rbutton] [rbutton]0::PLAY_ROULETTE2;0[/rbutton][/c]
+  --+|[c][rbutton]1::PLAY_ROULETTE2;1[/rbutton][rbutton]2::PLAY_ROULETTE2;2[/rbutton][rbutton]3::PLAY_ROULETTE2;3[/rbutton]
+         [rbutton]4::PLAY_ROULETTE2;4[/rbutton][rbutton]5::PLAY_ROULETTE2;5[/rbutton][rbutton]6::PLAY_ROULETTE2;6[/rbutton]
+         [rbutton]7::PLAY_ROULETTE2;7[/rbutton][rbutton]8::PLAY_ROULETTE2;8[/rbutton][rbutton]9::PLAY_ROULETTE2;9[/rbutton]
+         [rbutton]10::PLAY_ROULETTE2;10[/rbutton][rbutton]11::PLAY_ROULETTE2;11[/rbutton][rbutton]12::PLAY_ROULETTE2;12[/rbutton]
+         [rbutton]13::PLAY_ROULETTE2;13[/rbutton][rbutton]14::PLAY_ROULETTE2;14[/rbutton][rbutton]15::PLAY_ROULETTE2;15[/rbutton]
+         [rbutton]16::PLAY_ROULETTE2;16[/rbutton][rbutton]17::PLAY_ROULETTE2;17[/rbutton][rbutton]18::PLAY_ROULETTE2;18[/rbutton]
+         [rbutton]19::PLAY_ROULETTE2;19[/rbutton][rbutton]20::PLAY_ROULETTE2;20[/rbutton][rbutton]21::PLAY_ROULETTE2;21[/rbutton]
+         [rbutton]22::PLAY_ROULETTE2;22[/rbutton][rbutton]23::PLAY_ROULETTE2;23[/rbutton][rbutton]24::PLAY_ROULETTE2;24[/rbutton]
+         [rbutton]25::PLAY_ROULETTE2;25[/rbutton][rbutton]26::PLAY_ROULETTE2;26[/rbutton][rbutton]27::PLAY_ROULETTE2;27[/rbutton]
+         [rbutton]28::PLAY_ROULETTE2;28[/rbutton][rbutton]29::PLAY_ROULETTE2;29[/rbutton][rbutton]30::PLAY_ROULETTE2;30[/rbutton]
+         [rbutton]31::PLAY_ROULETTE2;31[/rbutton][rbutton]32::PLAY_ROULETTE2;32[/rbutton][rbutton]33::PLAY_ROULETTE2;33[/rbutton]
+         [rbutton]34::PLAY_ROULETTE2;34[/rbutton][rbutton]35::PLAY_ROULETTE2;35[/rbutton][rbutton]36::PLAY_ROULETTE2;36[/rbutton][/c]
+  --X|
+
+  --:PLAY_ROULETTE2|bettype
+  --#whisper|
+  --=WheelSpin|1d37# - 1
+  --&REDemoji|&#128308;
+  --&BLACKemoji|&#9899;
+  -->Roulette_OddEven|[$WheelSpin.Raw];OddEven
+  -->Roulette_RedBlack|[$WheelSpin.Raw];RedBlack
+  -->Roulette_Ranges|[$WheelSpin.Raw];Ranges
+  --+|[c][*S:character_name] places [$Wager.Raw] [&MoneyIndicator] on[/c] 
+  --+|[c][b][&reentryval][/b][/c]
+  --&WinHandled|0
+  --+|[c][b]The Ball Stops on...[/b][/c]
+  --+|[c][&[&RedBlack]emoji] [$WheelSpin.Raw] [&RedBlack] [&[&RedBlack]emoji][/c]
+  --?[&reentryval] -eq [&OddEven] -or [&reentryval] -eq [&RedBlack] -or [&reentryval] -eq [&Ranges]|[
+    --+|[c][b]Winner![/b][/c]
+    --=Payout|[$Wager.Raw] * [&PayRoulette[&reentryval]] {FLOOR}
+    --+|[c]	&#129689; You won [$Payout.Raw] [&MoneyIndicator] &#129689;[/c]
+    --&WinHandled|1
+  --]|
+  --?[&reentryval] -eq [$WheelSpin.Raw] -and [$WheelSpin.Raw] -eq 0|[
+    --+|[c][b]Mega Winner![/b][/c]
+    --=Payout|[$Wager.Raw] * [&PayRoulette[&reentryval]] {FLOOR}
+    --+|[c]	&#129689; You won [$Payout.Raw] [&MoneyIndicator] &#129689;[/c]
+    --&WinHandled|1
+  --]|
+  --?[&reentryval] -eq [$WheelSpin.Raw] -and [$WheelSpin.Raw] -ne 0|[
+    --+|[c][b]Big Winner![/b][/c]
+    --=Payout|[$Wager.Raw] * [&PayRouletteSpecificNumber] {FLOOR}
+    --+|[c]	&#129689; You won [$Payout.Raw] [&MoneyIndicator] &#129689;[/c]
+    --&WinHandled|1
+  --]|
+  --?[&WinHandled] -eq 0|[
+    --+|[c][b]Sorry![/b][/c]
+    --+|[c]You lost [$Wager.Raw] [&MoneyIndicator].[/c]
+  --]|
+
+  --X|
+
+  --:Roulette_OddEven|number;return
+  --=mod|[%1%] % 2
+  --?[$mod.Raw] -eq 0|&[%2%];EVEN|&[%2%];ODD
+  --<|
+
+  --:Roulette_RedBlack|number;return
+  --&[%2%]|RED
+  --?[%1%] -eq 2 -or [%1%] -eq 4 -or [%1%] -eq 6 -or [%1%] -eq 8 -or [%1%] -eq 10|&[%2%];BLACK
+  --?[%1%] -eq 11 -or [%1%] -eq 13 -or [%1%] -eq 15 -or [%1%] -eq 17 -or [%1%] -eq 20|&[%2%];BLACK
+  --?[%1%] -eq 22 -or [%1%] -eq 24 -or [%1%] -eq 26 -or [%1%] -eq 28 -or [%1%] -eq 29|&[%2%];BLACK
+  --?[%1%] -eq 31 -or [%1%] -eq 33 -or [%1%] -eq 35|&[%2%];BLACK
+  --?[%1%] -eq 0|&[%2%];GREEN
+  --<|
+
+  --:Roulette_Ranges|number;return
+  --&[%2%]|NONE
+  --?[%1%] -ge 1 -and [%1%] -le 12|&[%2%];1-12
+  --?[%1%] -ge 13 -and [%1%] -le 24|&[%2%];13-24
+  --?[%1%] -ge 25 -and [%1%] -le 36|&[%2%];25-36
+  --<|
+
+}}
+  
