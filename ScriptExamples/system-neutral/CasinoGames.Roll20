@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : Casino Games
-  --/|Version     : 1.0
+  --/|Version     : 1.01
   --/|Requires SC : 1.5.8+
   --/|Author      : Kurt Jaegers
 
@@ -133,6 +133,8 @@
   --/|Give the script a reentrant name based on the selected character id so we can have multiple instances at the same time
   --#reentrant|CharacterAction @{selected|character_id}
 
+  --=Test|1d1#
+  --?[$Test.Raw] -eq 1|&Hash;#|&Hash;
   --/|Store the selected character so we can use it later even if it gets de-selected
   --#sourcetoken|@{selected|token_id}
 
@@ -246,9 +248,9 @@
   --#leftsub|Wager: [$Wager.Raw]
   --+Rules|Center die must be between the outer rolls. Ties lose. If the outer rolls match you lose.
   --Rolls|[[ [$r1] 1d20cs>21cf>1]] • [[ [$r2] 1d20cs>1cf>1]] • [[ [$r3] 1d20cs>21cf>1]]
-  --=r1|1d20#
-  --=r2|1d20#
-  --=r3|1d20#
+  --=r1|1d20[&Hash]
+  --=r2|1d20[&Hash]
+  --=r3|1d20[&Hash]
   --+|[c] [$r1] - [$r2] - [$r3] [/c]
   --?[$r2] -lt [$r3] -and [$r2] -gt [$r1] -and [$r1] -ne [$r3]|[
     --+|[c][b]Winner![/b][/c]
@@ -291,7 +293,7 @@
   --#emotestate|visible
   --#emotetext|[*S:character_name] tries their luck on the slot Machine
   --#title|Slot Machine
-  --=R1|1d36# --=R2|1d36# --=R3|1d36#
+  --=R1|1d36[&Hash] --=R2|1d36[&Hash] --=R3|1d36[&Hash]
   -->FindSlotRange|[$R1.Raw];R1Slot
   -->FindSlotRange|[$R2.Raw];R2Slot
   -->FindSlotRange|[$R3.Raw];R3Slot
@@ -352,7 +354,7 @@
 
   --:PLAY_ROULETTE2|bettype
   --#whisper|
-  --=WheelSpin|1d37# - 1
+  --=WheelSpin|1d37[&Hash] - 1
   --&REDemoji|&#128308;
   --&BLACKemoji|&#9899;
   -->Roulette_OddEven|[$WheelSpin.Raw];OddEven
