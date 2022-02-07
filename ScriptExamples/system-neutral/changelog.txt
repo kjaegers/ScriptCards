@@ -1,6 +1,8 @@
 Change Log for items in the ScriptExamples/system-neutral Folder:
 
-2022-02-04 - CasinoGames 1.01 update. Automatically detects if you have ScriptCards 1.54 or higher and uses new die parser features. Won't use
+2022-02-05 - CasinoGames v1.10 - Fixed the check for using the spot bonus in Find the Lady. Added the "Press Your Luck" game
+
+2022-02-04 - CasinoGames v1.01 update. Automatically detects if you have ScriptCards 1.54 or higher and uses new die parser features. Won't use
              those features if you have an older verison of ScriptCards.
 
 2022-02-03 - CasinoGames.Roll20 added

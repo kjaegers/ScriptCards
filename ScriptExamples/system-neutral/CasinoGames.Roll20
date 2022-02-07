@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : Casino Games
-  --/|Version     : 1.01
+  --/|Version     : 1.1
   --/|Requires SC : 1.5.8+
   --/|Author      : Kurt Jaegers
 
@@ -33,6 +33,7 @@
   --&EnableFindTheLady|1
   --&EnableWheelOfFortune|1
   --&EnableWheelOfMisfortune|1
+  --&EnablePressYourLuck|1
 
   --/|Wager Amounts for the change wager buttons  
   --=Amount1|10
@@ -65,8 +66,8 @@
   --/|Config for the Wheel of Fortune - These are the results for each of the 20 spin positions
   --&Fortune1|Spin the Wheel of Misfortune 5 Times!!!!!
   --&Fortune2|Spin the Wheel of Misfortune 4 Times!!!!
-  --&Fortune3|Spin the Wheel of Misfortune 3 Time!!!
-  --&Fortune4|Spin the Wheel of Misfortune 2 Time!!
+  --&Fortune3|Spin the Wheel of Misfortune 3 Times!!!
+  --&Fortune4|Spin the Wheel of Misfortune 2 Times!
   --&Fortune5|Spin the Wheel of Misfortune 1 Time!
   --&Fortune6|Better luck next time
   --&Fortune7|25 [&MoneyIndicator] win
@@ -127,6 +128,11 @@
   --&PayRoulette0|50
   --&PayRouletteSpecificNumber|35
   
+  --/|Config for Press Your Luck
+  --&PressDieType|8
+  --&MaxPress|5
+  --&PressIncrement|2
+
   --/|End Settings Area
   --/|=========================================================================================================
 
@@ -183,6 +189,9 @@
   --?[&EnableWheelOfMisfortune] -eq 1|[
     --+|[c][rbutton]Wheel of Misfortune::PLAY_WHEELOFMISFORTUNE[/rbutton][/c]
   --]|          
+  --?[&EnablePressYourLuck] -eq 1|[
+    --+|[c][rbutton]Press Your Luck::PLAY_PRESSYOURLUCK[/rbutton][/c]
+  --]|          
   --X|
 
   --/|Change the Wager variable to the number passed to the reentry button
@@ -198,7 +207,7 @@
   --#leftsub|Wager: [$Wager.Raw]
   --=baseCard|127168 + 1d11
   --+|The dealers hands flash through a well practiced routine, with a deep breath you point to the card you believe to be "The Lady"
-  --?AllowSpotBonus -eq 1|=Res;1d20 + [*S:[&SpotBonusAttribute]]|=Res;1d20
+  --?[&AllowSpotBonus] -eq 1|=Res;1d20 + [*S:[&SpotBonusAttribute]]|=Res;1d20
   --=Tar|1d20+7
   --/+|Res: [$Res.Raw], Tar: [$Tar.Raw]
   --?[$Res.Raw] -ge [$Tar.Raw]|[
@@ -410,6 +419,60 @@
   --?[%1%] -ge 13 -and [%1%] -le 24|&[%2%];13-24
   --?[%1%] -ge 25 -and [%1%] -le 36|&[%2%];25-36
   --<|
+
+  --:PLAY_PRESSYOURLUCK|
+  --#whisper|
+  --#emotestate|visible
+  --#emotetext|[*S:character_name] begins to press their luck!
+  --=CurrentPress|[&PressIncrement]
+  --=PressRoll|1d[&PressDieType][&Hash]
+  --=PressCount|0
+  --:PRESS_DISPLAY|
+  --+|[c]Your number is [b][$PressRoll.Raw][/b][/c]
+  --+|[c]You will be rolling a d[&PressDieType][/c]
+  --=NextPayout|[$Wager.Raw] * [$CurrentPress.Raw]
+  --+|[c][b]Guessing right will raise the pot to[/b][/c]
+  --+|[c][b][$NextPayout.Raw] [&MoneyIndicator][/b][/c]
+  --+|[c][rbutton]Lower::PRESSYOURLUCK2;LOWER[/rbutton] [rbutton]Collect::PRESSYOURLUCKCOLLECT[/rbutton] [rbutton]Higher::PRESSYOURLUCK2;HIGHER[/rbutton][/c]
+  --X|
+
+  --:PRESSYOURLUCK2|bettype
+  --=NewPressRoll|1d[&PressDieType][&Hash]
+  --&IsWin|0
+  --?[&reentryval] -eq "LOWER" -and [$NewPressRoll.Raw] -lt [$PressRoll.Raw]|&IsWin;1
+  --?[&reentryval] -eq "HIGHER" -and [$NewPressRoll.Raw] -gt [$PressRoll.Raw]|&IsWin;1
+  --?[&IsWin] -eq 0|PRESS_LOST
+  --=CurrentPress|[$CurrentPress.Raw] + [&PressIncrement]
+  --=PressCount|[$PressCount.Raw] + 1
+  --?[$PressCount.Raw] -eq [&MaxPress]|PRESSMAXEDOUT
+  --=PressRoll|[$NewPressRoll.Raw]
+  --^PRESS_DISPLAY|
+
+  --:PRESS_LOST|
+  --+|[c][b]Your Luck Ran Out![/b][/c]
+  --+|[c][b]Rolled: [$NewPressRoll.Raw] vs. [$PressRoll.Raw][/b][/c]
+  --+|[c][b]while betting [&reentryval][/b][/c]
+  --+|[c][b]You lost [$Wager.Raw] [&MoneyIndicator][/b][/c]
+  --+|[c][b]with [$NextPayout.Raw] [&MoneyIndicator] on the line.[/b][/c]
+  --=CurrentPress|0
+  --X|
+
+  --:PRESSYOURLUCKCOLLECT|
+  --=PayoutPress|[$CurrentPress.Raw] - [&PressIncrement]
+  --=Payout|[$Wager.Raw] * [$PayoutPress] {FLOOR}
+  --+|[c][b]You lost your nerve![/b][/c]
+  --+|[c][b]You collect [$Payout.Raw] [&MoneyIndicator][/b][/c]
+  --=CurrentPress|0
+  --X|
+
+  --:PRESSMAXEDOUT|
+  --=PayoutPress|[$CurrentPress.Raw] - [&PressIncrement]
+  --=Payout|[$Wager.Raw] * [$PayoutPress] {FLOOR}
+  --+|[c][b]Your Luck Holds![/b][/c]
+  --+|[c]You Reached the Maximum Rolls[/c]
+  --+|[c][b]You collect [$Payout.Raw] [&MoneyIndicator][/b][/c]
+  --=CurrentPress|0
+  --X|
 
 }}
   
