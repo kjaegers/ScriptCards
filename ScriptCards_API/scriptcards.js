@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.5.8";
+	const APIVERSION = "1.6.0";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -101,6 +101,17 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		buttonbordercolor: "#999999",
 		buttonfontsize: "x-small",
 		buttonfontface: "Tahoma",
+		// These settings can be used freely and are stored with the format storage commands
+		usersetting0: "",
+		usersetting1: "",
+		usersetting2: "",
+		usersetting3: "",
+		usersetting4: "",
+		usersetting5: "",
+		usersetting6: "",
+		usersetting7: "",
+		usersetting8: "",
+		usersetting9: "",
 		/*
 		damagebuttonbackgroundcolor: "#FF4444",
 		damagebuttonbackgroundimage: "",
@@ -1077,11 +1088,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											if (Campaign().get("turnorder") !== "") {
 												turnorder = JSON.parse(Campaign().get("turnorder"));
 											}
-											turnorder.push({
-												id: params[2],
-												pr: params[3],
-												custom: "",
-											});
+											var t=getObj('graphic', params[2]);
+											if (t) {
+												turnorder.push({
+													id: params[2],
+													pr: params[3],
+													_pageid: t.get('pageid'),
+													custom: "",
+												});
+											}
 											Campaign().set("turnorder", JSON.stringify(turnorder));
 										}
 										if (params[1].toLowerCase() == "replacetoken") {
@@ -1097,11 +1112,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												}
 											}
 											if (!wasfound) {
-												turnorder.push({
-													id: params[2],
-													pr: params[3],
-													custom: "",
-												});
+												var t=getObj('graphic', params[2]);
+												if (t) {
+													turnorder.push({
+														id: params[2],
+														pr: params[3],
+														custom: "",
+													});
+												}
 											}
 											Campaign().set("turnorder", JSON.stringify(turnorder));
 										}
@@ -1113,6 +1131,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											turnorder.push({
 												id: "-1",
 												pr: params[3],
+												_pageid:Campaign().get('playerpageid'),
 												custom: params[2],
 											});
 											Campaign().set("turnorder", JSON.stringify(turnorder));
@@ -2391,8 +2410,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var charId = "";
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
-		while (content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
-			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];
+		while (content.match(/\[(?:[\$|\&|\@|\%|\*\#])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
+			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\#])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];
 			var replacement = "";
 			matchCount++;
 			switch (thisMatch.charAt(1)) {
@@ -2429,6 +2448,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					break;
 
+				case "#":
+					// Replace a settings reference
+					var vName = thisMatch.substring(2, thisMatch.length - 1);
+					replacement = cardParameters[vName.toLowerCase()] || "";
+					break;
 				/* 				case "#":
 									var tableName = thisMatch.match(/(?<=\[\#).*?(?=[\.|\]])/g)[0];
 									var table = findObjs({_type: "rollabletable", name: tableName});					
@@ -2668,7 +2692,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						break;
 				}
 
-				rollResult.Text += "(" + thisRollHandled.rollText + ")";
+				rollResult.Text += "(" + thisRollHandled.rollText + ") ";
 			}
 
 			if (!componentHandled) {

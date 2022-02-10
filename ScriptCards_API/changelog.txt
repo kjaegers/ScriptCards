@@ -1,5 +1,13 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.6.0  - Added the [#settingname] replacable content reference. This can be used to read back any of the settings supported by ScriptCards. For
+           example, [#title] will be replaced with the current value of the "title" setting.
+           Added 10 new settings (usersetting0 thru usersetting9). These settings are not used by ScriptCards itself, but they are stored when using
+           the --Ssettings command and can be reloaded with --Lsettings and provide user configurable storage that can be stored along with named
+           setting sets.
+           Minor display tweaks to spacing from the output of the dice roll parser. Added code to accomodate the undocumented Roll20 change to the
+           turnorder system. The turnorder functions should once again behave as expected.
+
 v 1.5.8  - Modification to the way repeating attributes are filled in to strip @{ and } from sub references so the actual name of the sub attribute
            is returned, which can then be used within a script.
 

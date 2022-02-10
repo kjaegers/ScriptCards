@@ -1,4 +1,4 @@
-Chang Log for items in the ScriptExamples/dnd5e Folder:
+Change Log for items in the ScriptExamples/dnd5e Folder:
 
 2022-01-31 - 5E Character Action Menu (1.7.6) - Code efficiency improvements, now takes custom crit damage into account if used.
 
