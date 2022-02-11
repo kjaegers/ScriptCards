@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.6.1  - Removed the lookup in the available token attributes table. All current and future token attributes can now be accessed with the t- syntax.
+
 v 1.6.0  - Added the [#settingname] replacable content reference. This can be used to read back any of the settings supported by ScriptCards. For
            example, [#title] will be replaced with the current value of the "title" setting.
            Added 10 new settings (usersetting0 thru usersetting9). These settings are not used by ScriptCards itself, but they are stored when using
