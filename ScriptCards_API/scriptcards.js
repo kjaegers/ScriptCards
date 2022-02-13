@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.6.1";
+	const APIVERSION = "1.6.2";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2895,6 +2895,20 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 				}
 			}
+			
+			// A Rollable Table Result
+			if (!componentHandled) {
+				if (text.match(/\[[Tt]\#.+?\]/g)) {
+					componentHandled = true;
+					var rollTableName = text.substring(3, text.length - 1);
+					var tableResult = rollOnRollableTable(rollTableName);
+					if (tableResult) {
+						rollResult.tableEntryText = tableResult[0];
+						rollResult.tableEntryImgURL = tableResult[1];
+						rollResult.tableEntryValue = isNaN(rollResult.tableEntryText) ? 0 : parseInt(rollResult.tableEntryText);
+					}
+				}
+			}
 
 			// Flavor Text
 			if (!componentHandled) {
@@ -2911,20 +2925,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				if (text.match(/\b[A-Za-z]+\b$/) && cardParameters.allowplaintextinrolls !== 0) {
 					componentHandled = true;
 					rollResult.Text += ` ${text} `;
-				}
-			}
-
-			// A Rollable Table Result
-			if (!componentHandled) {
-				if (text.match(/\[[Tt]\#.+?\]/g)) {
-					componentHandled = true;
-					var rollTableName = text.substring(3, text.length - 1);
-					var tableResult = rollOnRollableTable(rollTableName);
-					if (tableResult) {
-						rollResult.tableEntryText = tableResult[0];
-						rollResult.tableEntryImgURL = tableResult[1];
-						rollResult.tableEntryValue = isNaN(rollResult.tableEntryText) ? 0 : parseInt(rollResult.tableEntryText);
-					}
 				}
 			}
 

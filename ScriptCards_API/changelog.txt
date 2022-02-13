@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.6.2  - Bug fix for rollable table calls ([T#table-name]) in --= statements not functioning. The modified regex for flavor text, (like [STR]) was
+           being checked before the roll table syntax and overriding them.
+
 v 1.6.1  - Removed the lookup in the available token attributes table. All current and future token attributes can now be accessed with the t- syntax.
 
 v 1.6.0  - Added the [#settingname] replacable content reference. This can be used to read back any of the settings supported by ScriptCards. For
