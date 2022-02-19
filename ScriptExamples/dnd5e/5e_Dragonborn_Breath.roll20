@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Dragonborn Breath
-  --/|Version     : 1.5
+  --/|Version     : 1.6
   --/|Requires SC : 1.4.2+ when used with token-mod or alterbars. 1.5.2+ standalone
   --/|Author      : Kurt Jaegers
 
@@ -24,6 +24,11 @@
   --/|Set this to a list of layers to a semicolon separated check for tokens on. By default, objects and gmlayer are checked.
   --/|possible values are objects, gmlayer, and map, so to check all three, use "objects;gmlayer;map"
   --&checkLayers|objects;gmlayer
+
+  --/|If set to 0, the script will use saves for chromatic dragons based on the PHB
+  --/|IF set to 1, the script will use saves for chromatic dragons based on Fizban's (everything Dexterity)
+  --/|If set to 2, the script will use consistent saving throw types (ie, lines=dex saves, cones=con saves)
+  --&UseSaneSaves|0
 
   --/|===================== There are no customization options below this line =====================
   
@@ -80,12 +85,27 @@
 
   --/|Use the determined dragon type to set the parameters used for the dragon breath, including damage type, damage shape, saving throw, and visual effect
   --C[&work]|black:&damageType;Acid|blue:&damageType;Lightning|brass:&damageType;Fire|bronze:&damageType;Lightning|copper:&damageType;Acid|gold:&damageType;Fire|green:&damageType;Poison|red:&damageType;Fire|silver:&damageType;Cold|white:&damageType;Cold
-  --C[&work]|black:&breathEffect;burn-acid|blue:&breathEffect;burn-holy|brass:&breathEffect;burn-Fire|bronze:&breathEffect;burn-holy|copper:&breathEffect;burn-acid|gold:&breathEffect;burn-fire|green:&breathEffect;burn-slime|red:&breathEffect;burn-fire|silver:&breathEffect;burn-frost|white:&breathEffect;burn-frost
+  --C[&work]|amethyst:&damageType;Force|crystal:&damageType;Radiant|emerald:&damageType;Psychic|sapphire:&damageType;Thunder|topaz:&damageType;Necrotic
+  --C[&work]|black:&breathEffect;burn-acid|blue:&breathEffect;burn-holy|brass:&breathEffect;burn-fire|bronze:&breathEffect;burn-holy|copper:&breathEffect;burn-acid|gold:&breathEffect;burn-fire|green:&breathEffect;burn-slime|red:&breathEffect;burn-fire|silver:&breathEffect;burn-frost|white:&breathEffect;burn-frost
+  --C[&work]|amethyst:&breathEffect;burn-charm|crystal:&breathEffect;burn-holy|emerald:&breathEffect;burn-slime|sapphire:&breathEffect;burn-water|topaz:&breathEffect;burn-death
   --&damageShape|Line
   --C[&work]|gold:&damageShape;Cone|green:&damageShape;Cone|red:&damageShape;Cone|silver:&damageShape;Cone|white:&damageShape;Cone
+  --?[&UseSaneSaves] -eq 1|FizbanSaves
+  --?[&UseSaneSaves] -eq 2|ConsistentSaves
   --&breathSaveType|Dexterity
   --C[&work]|green:&breathSaveType;Constitution|silver:&breathSaveType;Constitution|white:&breathSaveType;Constitution
+  --^DONEWITHSAVES|
 
+  --:FizbanSaves|
+  --&breathSaveType|Dexterity
+  --^DONEWITHSAVES|
+
+  --:ConsistentSaves|
+  --&breathSaveType|Dexterity
+  --?[&damageShape] -eq Code|&breathSaveType|Constitution
+  --^DONEWITHSAVES|
+
+  --:DONEWITHSAVES|
   --~saveAttributeName|string;tolowercase;[&breathSaveType]_save_bonus
 
   --/|Set the card headers based on the determine dragon type and save information
