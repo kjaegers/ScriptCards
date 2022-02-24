@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.6.3  - Bug fix for Deadlands-style rolling (post dice parser rewrite, it was adding all the dice together)
+
 v 1.6.2  - Bug fix for rollable table calls ([T#table-name]) in --= statements not functioning. The modified regex for flavor text, (like [STR]) was
            being checked before the roll table syntax and overriding them.
 

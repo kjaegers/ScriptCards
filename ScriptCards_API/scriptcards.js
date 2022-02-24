@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.6.2a";
+	const APIVERSION = "1.6.3";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -3735,10 +3735,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 					// Handle exploding dice (!h or !l)
 					if (matches[x].match(/^![HhLl]$/)) {
+						keepcount = 1;
 						if (matches[x].charAt(1) == "h") {
-							explodeValue = sides
+							explodeValue=sides;
+							keeptype="h";
 						} else {
-							explodeValue = 1
+							explodeValue=1;
+							keeptype="h";
 						}
 					}
 
