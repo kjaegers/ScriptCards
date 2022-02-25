@@ -41,8 +41,6 @@
   --?"[&ScriptCards_Version]X" -eq "X"|&method2;addtoken
   --?[&alwaysAddExtraToken] -eq 1|&method1;dontremovetoken
   --?[&alwaysAddExtraToken] -eq 1|&method2;addtoken
-  --+Method1|[&method1]
-  --+Method2|[&method2]
   --~|turnorder;[&method1];[&thisId]
   --~|turnorder;[&method2];[&thisId];[$initRoll.Raw]
   --%|
