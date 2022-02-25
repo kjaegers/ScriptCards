@@ -15,6 +15,9 @@
   --/|If left at the default (0) the token in the tracker will be replaced/updated if it already exists.
   --&alwaysAddExtraToken|0
 
+  --/|If set to 1, the turn tracker won't be modified
+  --&dontUpdateTurnTracker|0
+
   --/|The script title
   --#title|Initiative
       
@@ -41,6 +44,8 @@
   --?"[&ScriptCards_Version]X" -eq "X"|&method2;addtoken
   --?[&alwaysAddExtraToken] -eq 1|&method1;dontremovetoken
   --?[&alwaysAddExtraToken] -eq 1|&method2;addtoken
+  --?[&dontUpdateTurnTracker] -eq 1|&method1;dontremovetoken
+  --?[&dontUpdateTurnTracker] -eq 1|&method2;dontaddtoken
   --~|turnorder;[&method1];[&thisId]
   --~|turnorder;[&method2];[&thisId];[$initRoll.Raw]
   --%|
