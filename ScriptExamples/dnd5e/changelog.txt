@@ -1,5 +1,7 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-02-24 - 5E Initiative (1.0) - A script to roll initiative for one or more selected tokens and add them to the turn tracker.
+
 2022-02-19 - 5E Dragon Breath (1.5.6) - Updated to include dragon types from Fizban's Treasury of Dragons. Option settings for what type of saves to use.
 
 2022-01-31 - 5E Character Action Menu (1.7.6) - Code efficiency improvements, now takes custom crit damage into account if used.

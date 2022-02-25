@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.6.3";
+	const APIVERSION = "1.6.4";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -352,6 +352,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					lastBlockAction = "";
 					executionCounter = 0;
 
+					stringVariables["ScriptCards_Version"] = APIVERSION;
+
 					if (msg.playerid) {
 						var sendingPlayer = getObj("player", msg.playerid);
 						if (sendingPlayer) {
@@ -360,6 +362,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							stringVariables["SendingPlayerColor"] = sendingPlayer.get("color");
 							stringVariables["SendingPlayerSpeakingAs"] = sendingPlayer.get("speakingas");
 							stringVariables["SendingPlayerIsGM"] = playerIsGM(msg.playerid) ? "1" : "0";
+						}
+					}
+
+					if (msg.selected) {
+						arrayVariables["SC_SelectedTokens"] = [];
+						for(let x=0; x<msg.selected.length; x++) {
+							arrayVariables["SC_SelectedTokens"].push(msg.selected[x]._id);
+							arrayIndexes["SC_SelectedTokens"] = 0;
 						}
 					}
 
@@ -1117,6 +1127,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													turnorder.push({
 														id: params[2],
 														pr: params[3],
+														_pageid: t.get('pageid'),
 														custom: "",
 													});
 												}
