@@ -35,7 +35,7 @@
   --?"[*[&thisId]:initiative_style]" -eq "[&obrac][&at][&obrac]d20[&cbrac],[&at][&obrac]d20[&cbrac][&cbrac]kh1"|&initDie;2d20kh1
   --?"[*[&thisId]:initiative_style]" -eq "[&obrac][&at][&obrac]d20[&cbrac],[&at][&obrac]d20[&cbrac][&cbrac]kl1"|&initDie;2d20kl1
   --&initBonus|0
-  --?"[*[&thisID]:initiative_bonus]" -ne ""|&initBonus;[*[&thisID]:initiative_bonus]
+  --?"X[*[&thisID]:initiative_bonus]" -ne "X"|&initBonus;[*[&thisID]:initiative_bonus]
   --=initRoll|[&initDie] + [&initBonus]
   --+[*[&thisId]:t-name]|[$initRoll]
   --&method1|dontremovetoken
