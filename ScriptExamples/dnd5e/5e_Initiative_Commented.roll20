@@ -7,9 +7,8 @@
   --/|Description : Handles rolling initiative for selected token(s).
 
   --/|Note: Functionally, this script is identical to the 5e_Initiative.roll20 file. This version of the file
-  --/|has been updated to include extensive comments explaning how almost nearly every line of the script works
-  --/|and the intention behind the code. In-game, I suggest using the non-commented version as it is much smaller
-  --/|than this version.
+  --/|has been updated to include extensive comments explaning how nearly every line of the script works and the
+  --/|intention behind the code. In-game, I suggest using the non-commented version as it is much smaller than this version.
   
   --/|If set to 1, the script will always ADD a token entry in the turn tracker instead of replacing the existing token
   --/|If left at the default (0) the token in the tracker will be replaced/updated if it already exists.
