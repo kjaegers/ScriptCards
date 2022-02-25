@@ -23,7 +23,10 @@
   --&cbrac|}
   --&at|@
 
-  --/|Create a list of all of the selected token ids (see the next couple of comments for additional information)
+  --/|Create a list of all of the selected token ids (see the next couple of comments for additional information). In general, when
+  --/|calling a function, the variable that will be returned is placed in the "Tag" portion of the call (in this case, selectedTokens)
+  --/|and the content contains the name of the function, subfunction, and parameters. The "getselected" function has no subfunctions
+  --/|and takes no parameters.
   --~selectedTokens|getselected
 
   --/|selectedTokensCount now contains the number of IDs that were selected. Set up a for...next loop to run through each one
