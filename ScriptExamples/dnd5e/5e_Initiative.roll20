@@ -24,24 +24,24 @@
   --&at|@
 
   --~selectedTokens|getselected
-  --%loop|1;[&selectedTokensCount]
-  --&thisId|[&selectedTokens[&loop]]
-  --&initDie|1d20
-  --?"[*[&thisId]:initiative_style]" -eq "[&obrac][&at][&obrac]d20[&cbrac],[&at][&obrac]d20[&cbrac][&cbrac]kh1"|&initDie;2d20kh1
-  --?"[*[&thisId]:initiative_style]" -eq "[&obrac][&at][&obrac]d20[&cbrac],[&at][&obrac]d20[&cbrac][&cbrac]kl1"|&initDie;2d20kl1
-  --&initBonus|0
-  --?"X[*[&thisID]:initiative_bonus]" -ne "X"|&initBonus;[*[&thisID]:initiative_bonus]
-  --=initRoll|[&initDie] + [&initBonus]
-  --+[*[&thisId]:t-name]|[$initRoll]
-  --&method1|dontremovetoken
-  --&method2|replacetoken
-  --?"[&ScriptCards_Version]X" -eq "X"|&method1;removetoken
-  --?"[&ScriptCards_Version]X" -eq "X"|&method2;addtoken
-  --?[&alwaysAddExtraToken] -eq 1|&method1;dontremovetoken
-  --?[&alwaysAddExtraToken] -eq 1|&method2;addtoken
-  --?[&dontUpdateTurnTracker] -eq 1|&method1;dontremovetoken
-  --?[&dontUpdateTurnTracker] -eq 1|&method2;dontaddtoken
-  --~|turnorder;[&method1];[&thisId]
-  --~|turnorder;[&method2];[&thisId];[$initRoll.Raw]
+    --%loop|1;[&selectedTokensCount]
+    --&thisId|[&selectedTokens[&loop]]
+    --&initDie|1d20
+    --?"[*[&thisId]:initiative_style]" -eq "[&obrac][&at][&obrac]d20[&cbrac],[&at][&obrac]d20[&cbrac][&cbrac]kh1"|&initDie;2d20kh1
+    --?"[*[&thisId]:initiative_style]" -eq "[&obrac][&at][&obrac]d20[&cbrac],[&at][&obrac]d20[&cbrac][&cbrac]kl1"|&initDie;2d20kl1
+    --&initBonus|0
+    --?"X[*[&thisID]:initiative_bonus]" -ne "X"|&initBonus;[*[&thisID]:initiative_bonus]
+    --=initRoll|[&initDie] + [&initBonus]
+    --+[*[&thisId]:t-name]|[$initRoll]
+    --&method1|dontremovetoken
+    --&method2|replacetoken
+    --?"[&ScriptCards_Version]X" -eq "X"|&method1;removetoken
+    --?"[&ScriptCards_Version]X" -eq "X"|&method2;addtoken
+    --?[&alwaysAddExtraToken] -eq 1|&method1;dontremovetoken
+    --?[&alwaysAddExtraToken] -eq 1|&method2;addtoken
+    --?[&dontUpdateTurnTracker] -eq 1|&method1;dontremovetoken
+    --?[&dontUpdateTurnTracker] -eq 1|&method2;dontaddtoken
+    --~|turnorder;[&method1];[&thisId]
+    --~|turnorder;[&method2];[&thisId];[$initRoll.Raw]
   --%|
   }}
