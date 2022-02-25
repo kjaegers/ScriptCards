@@ -26,10 +26,10 @@
   --/|Create a list of all of the selected token ids (see the next couple of comments for additional information)
   --~selectedTokens|getselected
 
-  --/|selectedTokenCount now contains the number of IDs that were selected. Set up a for...next loop to run through each one
+  --/|selectedTokensCount now contains the number of IDs that were selected. Set up a for...next loop to run through each one
   --%loop|1;[&selectedTokensCount]
 
-    --/|The getselected function creates variables named selectedToken1, selectedToken2, etc. We can use nested variable
+    --/|The getselected function creates variables named selectedTokens1, selectedTokens2, etc. We can use nested variable
     --/|refrencing to use &loop to build the name of the variable we are looking for on each loop iteration. We store the
     --/|current token's value in thisId for convenience so we don't have to write out the whole nested thing every time.
     --&thisId|[&selectedTokens[&loop]]
