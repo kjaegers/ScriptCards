@@ -30,8 +30,10 @@
   --%loop|1;[&selectedTokensCount]
 
     --/|The getselected function creates variables named selectedTokens1, selectedTokens2, etc. We can use nested variable
-    --/|refrencing to use &loop to build the name of the variable we are looking for on each loop iteration. We store the
-    --/|current token's value in thisId for convenience so we don't have to write out the whole nested thing every time.
+    --/|refrencing to use &loop to build the name of the variable we are looking for on each loop iteration. This works because
+    --/|the innermost variable reference ([&loop]) will be evaluated first, and will be replaced with the value of &loop, so the
+    --/|outer reference becomes [&selectedTokens1] for example, which is one of our varible names. We then store the
+    --/|current token's ID in &thisId for convenience so we don't have to write out the whole nested thing every time.
     --&thisId|[&selectedTokens[&loop]]
 
     --/|Start by assuming we are just going to roll 1d20 for initiative
