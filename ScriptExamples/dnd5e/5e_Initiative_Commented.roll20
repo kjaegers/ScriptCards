@@ -40,12 +40,15 @@
     --/|current token's ID in &thisId for convenience so we don't have to write out the whole nested thing every time.
     --&thisId|[&selectedTokens[&loop]]
 
-    --/|Start by assuming we are just going to roll 1d20 for initiative
+    --/|Start by assuming we are just going to roll 1d20 for initiative. Note that this is creating a string variable (& command)
+    --/|and not actually rolling the dice. This is because we want to build a formula for a roll assignment (= command) to happen
+    --/|later. The &initDie string variable will literally contain the text "1d20"
     --&initDie|1d20
 
     --/|Now check the initiative_style entry for the character. It contains nested brackets and @ references, so we use oddrowbackground
     --/|&at, &obrac, and &cbrac to avoid trouble trying to type those directly into the macro. If we find either of the two possible
-    --/|values that indicate advantage or disadvantage, we set &initDie to either 2d10kh1 (advantage) or 2d20kl1 (disadvantage)
+    --/|values that indicate advantage or disadvantage, we set &initDie to either 2d10kh1 (advantage) or 2d20kl1 (disadvantage). We use
+    --/|the shorthand method of setting a string variable in a conditional here.
     --?"[*[&thisId]:initiative_style]" -eq "[&obrac][&at][&obrac]d20[&cbrac],[&at][&obrac]d20[&cbrac][&cbrac]kh1"|&initDie;2d20kh1
     --?"[*[&thisId]:initiative_style]" -eq "[&obrac][&at][&obrac]d20[&cbrac],[&at][&obrac]d20[&cbrac][&cbrac]kl1"|&initDie;2d20kl1
 
@@ -59,7 +62,9 @@
     --/|for initiative_bonus, just update &initBonus with that value.
     --?"X[*[&thisID]:initiative_bonus]" -ne "X"|&initBonus;[*[&thisID]:initiative_bonus]
 
-    --/|Using the &initDie and &initBonus we arranged above, roll the character's initiative.
+    --/|Using the &initDie and &initBonus we arranged above, roll the character's initiative. Both of these are string variables, so the
+    --/|line below will end up looking something like "1d20 + 4" when processed, which will be where we actually roll the dice and assignment
+    --/|the result to $initRoll
     --=initRoll|[&initDie] + [&initBonus]
 
     --/|Output the token's name and the initiative roll to the output card
