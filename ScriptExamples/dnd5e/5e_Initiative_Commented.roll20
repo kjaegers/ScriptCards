@@ -5,6 +5,11 @@
   --/|Author      : Kurt Jaegers
 
   --/|Description : Handles rolling initiative for selected token(s).
+
+  --/|Note: Functionally, this script is identical to the 5e_Initiative.roll20 file. This version of the file
+  --/|has been updated to include extensive comments explaning how almost nearly every line of the script works
+  --/|and the intention behind the code. In-game, I suggest using the non-commented version as it is much smaller
+  --/|than this version.
   
   --/|If set to 1, the script will always ADD a token entry in the turn tracker instead of replacing the existing token
   --/|If left at the default (0) the token in the tracker will be replaced/updated if it already exists.
@@ -69,6 +74,13 @@
 
     --/|Output the token's name and the initiative roll to the output card
     --+[*[&thisId]:t-name]|[$initRoll]
+
+    --/|OPTIMIZATION NOTE: Because the results of detemining the turn tracker methods to use are the same for every token processed, it would
+    --/|likely be better to move this whole section to the part of the script before getting the selected tokens and only have it execute once.
+    --/|But I didn't think of that until after I started writing the comments, so I left it here. It won't hurt anything, but the script would
+    --/|run slightly faster if you had a lot of tokens selected if that change was made. The actual performance difference is likely unnoticable
+    --/|though, and if a player is using the script to roll initiative for just their own token there is no practical difference between the
+    --/|two approaches.
 
     --/|Time to update the turn tracker. We start by assuming the version number for ScriptCards is 1.6.4 or higher, which will allow us to
     --/|use "turnorder;replacetoken" as the function to update the tracker. Because of the change to the way the turn tracker works, and the
