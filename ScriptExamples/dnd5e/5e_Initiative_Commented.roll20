@@ -29,7 +29,8 @@
   --/|and takes no parameters.
   --~selectedTokens|getselected
 
-  --/|selectedTokensCount now contains the number of IDs that were selected. Set up a for...next loop to run through each one
+  --/|As a result of running getselected, the variable &selectedTokensCount now contains the number of IDs that were selected. 
+  --/|We can use this count to set up a for...next loop to run through each of the tokens.
   --%loop|1;[&selectedTokensCount]
 
     --/|The getselected function creates variables named selectedTokens1, selectedTokens2, etc. We can use nested variable
