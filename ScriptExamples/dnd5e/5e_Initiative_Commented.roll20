@@ -10,14 +10,27 @@
   --/|has been updated to include extensive comments explaning how nearly every line of the script works and the
   --/|intention behind the code. In-game, I suggest using the non-commented version as it is much smaller than this version.
   
+  --/|Style Notes: I begin all of my script with a comments header as displayed above, listing basic information about the
+  --/|script and any requirements (like if it needs another API script to work, etc.) After that I have the description
+  --/|section with any particular usage details, and then a customizable settings area. I try to use spelled-out names
+  --/|for my customizable variables so it is easier to understand what they are suppose to do, and I comment the possible
+  --/|values and the impacts that changing them will have on the script. At the end of the customization section I include
+  --/|a highly visible separator. I alwyas put a blank space above a new comments section and the code that goes with that
+  --/|comment immediately follows it without any blank lines to keep them grouped together. Finally, while it is possible
+  --/|to simply string a single comment along for as many lines as you like (whitespace doesn't really matter until you
+  --/|reach a new statement identifier (double-dash)), I generally keep my comment lines to around 120 characters in length
+  --/|and start each new line with a comment statement identifier so it looks good/is readable in my editor (Visual Studio Code)
+
+  --/|================ Customize the behavior of the script by setting these values ================
+
   --/|If set to 1, the script will always ADD a token entry in the turn tracker instead of replacing the existing token
-  --/|If left at the default (0) the token in the tracker will be replaced/updated if it already exists.
+  --/|If left at the default (0) the token in the tracker will be replaced/updated if it already exists. 
   --&alwaysAddExtraToken|0
 
   --/|If set to 1, the turn tracker won't be modified
   --&dontUpdateTurnTracker|0
 
-  --/|The script title
+  --/|The title for the Script Card that will be output to the chat window
   --#title|Initiative
       
   --/|===================== There are no customization options below this line =====================

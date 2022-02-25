@@ -5,6 +5,8 @@
   --/|Author      : Kurt Jaegers
 
   --/|Description : Handles rolling initiative for selected token(s).
+
+  --/|================ Customize the behavior of the script by setting these values ================
   
   --/|If set to 1, the script will always ADD a token entry in the turn tracker instead of replacing the existing token
   --/|If left at the default (0) the token in the tracker will be replaced/updated if it already exists.
