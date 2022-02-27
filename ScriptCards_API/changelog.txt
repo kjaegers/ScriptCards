@@ -1,6 +1,6 @@
 ScriptCards Roll20 API Script Changelog
 
-v 1.6.4  - Added the system string variable 'ScriptCards Version' (ie, [&ScriptCards_Version]) which will match the current version number. Of course,
+v 1.6.4  - Added the system string variable 'ScriptCards_Version' (ie, [&ScriptCards_Version]) which will match the current version number. Of course,
            for versions prior to 1.6.4, this will return an empty string.
            Added the pre-defined array SC_SelectedTokens, which will be populated with the token IDs of any tokens selected when the script is run.
            Fixed the turnorder;replacetoken function to properly take the turn order update into account. I had previously only fixed turnorder;addtoken
