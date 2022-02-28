@@ -1,7 +1,7 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.7.7
-  --/|Requires SC : 1.5.8+
+  --/|Version     : 1.8.0
+  --/|Requires SC : 1.6.4a+
   --/|Author      : Kurt Jaegers
 
   --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
@@ -37,8 +37,14 @@
   --/|If this value is set to 1, NPC actions (except spellcasting) will be whispered to the sender only and not displayed to everyone
   --&AllNPCActionsToSender|0
 
-  --/|Set this to either "scriptcards", "token-mod", "alterbars", or anything else to not apply damage
-  --&damageApplyScript|dontapplydamage
+  --/|Set this to either "scriptcards", "token-mod", "alterbars", "damagebuttons" or anything else to not apply damage
+  --&damageApplyScript|scriptcards
+
+  --/|If using "damagebuttons" and this is set to 1, the damage buttons will be whispered to the DM instead of being added to the card
+  --&whisperDamageButtonsToDM|1
+
+  --/|If using "damagebuttons" for damage and this value is 1, the DM is whispered a message about damage application
+  --&whisperDamageButtonResultsToDM|1
 
   --/|What bar do you use for representing hit points for damage application?
   --&hitPointsBar|3
@@ -80,6 +86,7 @@
   --?[&damageApplyScript] -eq "scriptcards"|&damageRoutine;ApplyDamageScriptCards
   --?[&damageApplyScript] -eq "token-mod"|&damageRoutine;ApplyDamageTokenmod
   --?[&damageApplyScript] -eq "alterbars"|&damageRoutine;ApplyDamageAlterbars
+  --?[&damageApplyScript] -eq "damagebuttons"|&damageRoutine;SHOW_DAMAGE_BUTTONS
 
   --#emotestate|hidden
   --#title|[*S:character_name]
@@ -787,5 +794,36 @@
   --/|skipping applying damage in the main routine.
   --:DontApplyDamage|
   --<|
+
+  --:SHOW_DAMAGE_BUTTONS|DamageAmount
+  --=FullDamage|[%3%]
+  --=HalfDamage|[%3%] \ 2
+  --=QuarterDamage|[%3%] \ 4
+  --=HealDamage|[%3%] {NEGATE}
+  --?[&whisperDamageButtonsToDM] -eq 1|[
+    --*|[c][rbutton]Full::APPLY_DAMAGE;[$FullDamage.Raw][/rbutton] | [rbutton]1/2::APPLY_DAMAGE;[$HalfDamage.Raw][/rbutton] | [rbutton]1/4::APPLY_DAMAGE;[$QuarterDamage.Raw][/rbutton] &nbsp;&nbsp;|&nbsp;&nbsp; [rbutton]Heal::APPLY_DAMAGE;[$HealDamage.Raw][/rbutton][/c]
+  --]|[
+    --+|[c][rbutton]Full::APPLY_DAMAGE;[$FullDamage.Raw][/rbutton] | [rbutton]1/2::APPLY_DAMAGE;[$HalfDamage.Raw][/rbutton] | [rbutton]1/4::APPLY_DAMAGE;[$QuarterDamage.Raw][/rbutton] &nbsp;&nbsp;|&nbsp;&nbsp; [rbutton]Heal::APPLY_DAMAGE;[$HealDamage.Raw][/rbutton][/c]      
+  --]|
+  --<|
+
+  --/|Reentry point to apply damage/healing to selected tokens
+  --:APPLY_DAMAGE|Amount
+  --?[&whisperDamageButtonResultsToDM] -eq 1|[
+    --#whisper|gm
+    --#title|Damage Applied
+  --]|[
+    --#whisper|nobody
+    --#title|Should never show
+  --]
+  --~|system;dumpvariables;array
+  --~tokenCount|array;getlength;SC_SelectedTokens
+  --=tokenCount|[&tokenCount] - 1
+  --%loop|0;[$tokenCount.Raw]
+    --&thisToken|[@SC_SelectedTokens([&loop])]
+    --+Applying|[&reentryval] HP to [*[&thisToken]:t-name]
+    -->ApplyDamageScriptCards|[&thisToken];[&hitPointsBar];[&reentryval]
+  --%|
+  --X|
 
 }}
