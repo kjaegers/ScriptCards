@@ -1,6 +1,6 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
-2022-02-27 - 5E Character Action Menu 2.0.0 - Added the "damagebuttons" option and two related options to the settings area. If damage apply type is set to
+2022-02-27 - 5E Character Action Menu 1.8.0 - Added the "damagebuttons" option and two related options to the settings area. If damage apply type is set to
              "damagebuttons", instead of automatic damage application a row of four buttons will be added to the end of the card or whispered to the DM. Clicking
              these buttons will apply Full, Half, Quarter or Healing damage to the token(s) selected when the button is clicked. This feature requires ScriptCards
              version 1.6.4a or higher.
