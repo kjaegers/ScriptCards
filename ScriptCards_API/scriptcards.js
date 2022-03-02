@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.6.4b";
+	const APIVERSION = "1.6.4c";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2439,8 +2439,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var charId = "";
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
-		while (content.match(/\[(?:[\$|\&|\@|\%|\*\#])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
-			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\#])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];
+		while (content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
+			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];
 			var replacement = "";
 			matchCount++;
 			var doReplace=true;
@@ -2612,9 +2612,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			}
 
 			//replacement = replaceSubattributeReferences(replacement, charId);
-			if (doReplace) {
-				content = content.replace(thisMatch, replacement);
-			}
+			content = content.replace(thisMatch, replacement);
 
 			failCount++;
 			if (failCount > failLimit) return content;
