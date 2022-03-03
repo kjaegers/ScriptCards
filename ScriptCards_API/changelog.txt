@@ -1,5 +1,11 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.6.5  - Changed the referencing previx for settings from # to ~, so [~title] will now refence the card's title setting. # was clashing with formatting.
+           New setting: 
+
+v 1.6.4b - The turnorder;addcustom function will now (optionally) accept an additional parameter that will be placed in the "formula" value to create
+           custom entries that perform a calculation at the beginning of each round.
+
 v 1.6.4a - Reentrant/resumed cards will now update the SC_SelectedTokens array with the tokens that are selected with the script resumes/reenters.
 
 v 1.6.4  - Added the system string variable 'ScriptCards_Version' (ie, [&ScriptCards_Version]) which will match the current version number. Of course,
