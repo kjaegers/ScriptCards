@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 // Github:   https://gist.github.com/kjaegers/515dff0f04c006d7192e0fec534d96bf
 // By:       Kurt Jaegers
 // Contact:  https://app.roll20.net/users/2365448/kurt-j
