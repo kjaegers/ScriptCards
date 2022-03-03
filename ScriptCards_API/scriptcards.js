@@ -22,7 +22,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.6.4c";
+	const APIVERSION = "1.6.5";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -112,6 +112,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		usersetting7: "",
 		usersetting8: "",
 		usersetting9: "",
+		formatoutputforobjectmodification: "0",
 		/*
 		damagebuttonbackgroundcolor: "#FF4444",
 		damagebuttonbackgroundimage: "",
@@ -704,7 +705,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														settingValue = currentValue + delta;
 													}
 												}
-												theToken.set(settingName, settingValue);
+												if (cardParameters.formatoutputforobjectmodification == "1") {
+													settingValue = processInlineFormatting(settingValue, cardParameters);
+												}
+											theToken.set(settingName, settingValue);
 											}
 										} else {
 											log(`ScriptCards Error: Modify Token called without valid TokenID`)
@@ -2439,8 +2443,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var charId = "";
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
-		while (content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
-			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];
+		while (content.match(/\[(?:[\$|\&|\@|\%|\*\~])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
+			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\~])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];
 			var replacement = "";
 			matchCount++;
 			var doReplace=true;
@@ -2478,14 +2482,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					break;
 
-				case "#":
+				case "~":
 					// Replace a settings reference
 					var vName = thisMatch.substring(2, thisMatch.length - 1);
-					if (cardParameters.hasOwnProperty(vName)) {
-						replacement = cardParameters[vName.toLowerCase()] || "";
-					} else {
-						doReplace=false;
-					}
+					replacement = cardParameters[vName.toLowerCase()] || "";					
 					break;
 				/* 				case "#":
 									var tableName = thisMatch.match(/(?<=\[\#).*?(?=[\.|\]])/g)[0];
