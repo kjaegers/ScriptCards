@@ -48,9 +48,6 @@
   --/|End Settings Area
   --/|=========================================================================================================
 
-  --/|Give the script a reentrant name based on the selected character id so we can have multiple instances at the same time
-  --#reentrant|CharacterAction @{selected|character_id}
-
   --/|Set up some style information for the action menu and subsequent cards. These attempt to somewhat
   --/|simulate the 5E style
   --#bodyfontface|Helvetica
