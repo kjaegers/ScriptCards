@@ -1,3 +1,5 @@
+/* eslint-disable no-useless-escape */
+/* eslint-disable no-redeclare */
 /* eslint-disable no-undef */
 // Github:   https://gist.github.com/kjaegers/515dff0f04c006d7192e0fec534d96bf
 // By:       Kurt Jaegers
@@ -23,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.6.5";
+	const APIVERSION = "1.6.6";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -124,7 +126,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		dicefontsize: "3.0em",
 		usehollowdice: "0",
 		allowplaintextinrolls: "0",
-		whisper: "",
 		showfromfornonwhispers: "0",
 		allowinlinerollsinoutput: "0",
 		nominmaxhighlight: "0",
@@ -172,13 +173,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	// The rollComponents list determines what suffixes are available when reporting out the value
 	// of rollVariables (i.e., AttackRoll.Base)
-	var rollComponents = [
-		'Base', 'Total', 'Ones', 'Aces', 'Odds', 'Evens', 'Odds', 'RollText', 'Text', 'Style', 'tableEntryText', 'tableEntryImgURL', 'tableEntryValue', 'Raw'
-	];
+	//var rollComponents = [
+	//	'Base', 'Total', 'Ones', 'Aces', 'Odds', 'Evens', 'Odds', 'RollText', 'Text', 'Style', 'tableEntryText', 'tableEntryImgURL', 'tableEntryValue', 'Raw'
+	//];
 
 	// tokenAttributes lists all of the attribute names that are valid for looking up attributes
 	// on token objects (as compared to character objects)
-	var tokenAttributes = "token_name:name:token_id:statusmarkers:bar1_value:bar1_max:bar2_value:bar2_max:bar3_value:bar3_max:top:left:width:height:rotation:layer:aura1_radius:aura1_color:aura2_radius:aura2_color:aura1_square:aura2_square:tint_color:light_radius:light_dimradius:light_angle:light_losangle:light_multiplier:light_otherplayers:light_hassight:flipv:fliph:controlledby:_cardid:_pageid:imgsrc:bar1_link:bar2_link:bar3_link:represents:layer:isdrawing:name:gmnotes:showname:showplayers_name:showplayers_bar1:showplayers_bar2:showplayers_bar3:showplayers_aura1:showplayers_aura2:playersedit_name:playersedit_bar1:playersedit_bar2:playersedit_bar3:playersedit_aura1:playersedit_aura2:lastmove:adv_fow_view_distance:has_bright_light_vision:has_night_vision:night_vision_distance:emits_bright_light:bright_light_distance:emits_low_light:low_light_distance:has_limit_field_of_vision: limit_field_of_vision_center: limit_field_of_vision_total: has_limit_field_of_night_vision: limit_field_of_night_vision_center: limit_field_of_night_vision_total: has_directional_bright_light:directional_bright_light_center:directional_bright_light_total:has_directional_dim_light:directional_dim_light_center:directional_dim_light_total:bar_location:compact_bar:light_sensitivity_multiplier:night_vision_effect:lightColor:tooltip";
+	//var tokenAttributes = "token_name:name:token_id:statusmarkers:bar1_value:bar1_max:bar2_value:bar2_max:bar3_value:bar3_max:top:left:width:height:rotation:layer:aura1_radius:aura1_color:aura2_radius:aura2_color:aura1_square:aura2_square:tint_color:light_radius:light_dimradius:light_angle:light_losangle:light_multiplier:light_otherplayers:light_hassight:flipv:fliph:controlledby:_cardid:_pageid:imgsrc:bar1_link:bar2_link:bar3_link:represents:layer:isdrawing:name:gmnotes:showname:showplayers_name:showplayers_bar1:showplayers_bar2:showplayers_bar3:showplayers_aura1:showplayers_aura2:playersedit_name:playersedit_bar1:playersedit_bar2:playersedit_bar3:playersedit_aura1:playersedit_aura2:lastmove:adv_fow_view_distance:has_bright_light_vision:has_night_vision:night_vision_distance:emits_bright_light:bright_light_distance:emits_low_light:low_light_distance:has_limit_field_of_vision: limit_field_of_vision_center: limit_field_of_vision_total: has_limit_field_of_night_vision: limit_field_of_night_vision_center: limit_field_of_night_vision_total: has_directional_bright_light:directional_bright_light_center:directional_bright_light_total:has_directional_dim_light:directional_dim_light_center:directional_dim_light_total:bar_location:compact_bar:light_sensitivity_multiplier:night_vision_effect:lightColor:tooltip";
 
 	//We use several variables to track repeating section (--R) commands
 	var repeatingSection = undefined;
@@ -197,7 +198,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	const diceLetters = "JABCDEFGHIJKLMNOPQRSTUVWYZ";
 
 	// Planned JSON support. Not currently implemented/documented.
-	var jsonObject = undefined;
+	//var jsonObject = undefined;
 
 	// Used for storing parameters passed to a subroutine with --> or --?|> lines
 	var callParamList = {};
@@ -485,7 +486,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							lineCounter = lineLabels[entryLabel]
 						} else {
 							log(`ScriptCards Error: Label ${resumeArgs[1]} is not defined for reentrant script`)
-						};
+						}
 					}
 
 					// Process card lines starting with the first line (cardLines[0] will contain an empty string due to the split)
@@ -1399,6 +1400,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											}
 										}
 									}
+									break;
 
 								case "stringfuncs": // strlength, substring, replace, split, before, after
 								case "strings":
@@ -1853,7 +1855,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										repeatingSectionIDs[0] = "NoRepeatingAttributeLoaded";
 										repeatingIndex = 0;
 									}
-									if (repeatingSection) { parseRepeatingSection() };
+									if (repeatingSection) { parseRepeatingSection() }
 									break;
 								case "first":
 									repeatingSectionIDs = getRepeatingSectionIDs(param[0], param[1]);
@@ -2242,7 +2244,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						// Handle branch lines
 						if (thisTag.charAt(0) === "^") {
 							var jumpTo = thisTag.substring(1);
-							if (lineLabels[jumpTo]) { lineCounter = lineLabels[jumpTo] } else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`) };
+							if (lineLabels[jumpTo]) { lineCounter = lineLabels[jumpTo] } else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`) }
 						}
 
 						if (thisTag.charAt(0) === "]") {
@@ -2285,7 +2287,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (lineLabels[jumpTo]) {
 								returnStack.push(lineCounter);
 								lineCounter = lineLabels[jumpTo];
-							} else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`) };
+							} else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`) }
 						}
 
 						// Handle return from gosub
@@ -2437,18 +2439,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function replaceVariableContent(content, cardParameters, rollHilighting) {
-		var matchCount = 0;
+		//var matchCount = 0;
 		var failCount = 0;
 		const failLimit = 1000;
-		var contentIn = content;
-		var charId = "";
+		//var contentIn = content;
+		//var charId = "";
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
 		while (content.match(/\[(?:[\$|\&|\@|\%|\*\~])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
 			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\~])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];
 			var replacement = "";
-			matchCount++;
-			var doReplace=true;
+			//matchCount++;
+			//var doReplace=true;
 			switch (thisMatch.charAt(1)) {
 				case "&":
 					// Replace a string variable
@@ -2553,7 +2555,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 						if (character !== undefined) {
-							charId = character.get("_id");
+							//charId = character.get("_id");
 							var opType = "current";
 							if (attrName.endsWith("^")) {
 								attrName = attrName.substring(0, attrName.length - 1);
@@ -2561,7 +2563,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 						if (token !== undefined && attrName.toLowerCase().startsWith("t-")) { //&& tokenAttributes.indexOf(attrName.substring(2)) >= 0) {
-							attribute = token.get(attrName.substring(2)).toString() || "";
+							if (token.get(attrName.substring(2))) {
+								attribute = token.get(attrName.substring(2)).toString() || "";
+							}
 						}
 						if (character !== undefined && (!attrName.toLowerCase().startsWith("t-"))) {
 							attribute = getAttrByName(character.id, attrName, opType);
@@ -2598,15 +2602,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								for (var i in repeatingSection) {
 									if (repeatingSection[i].startsWith(searchText)) {
 										replacement = repeatingSection[i].split("|").slice(1, 999).join("|");
-										charId = repeatingCharID;
+										//charId = repeatingCharID;
 									}
 								}
 							}
 						} else {
 							replacement = repeatingSectionName + "_" + repeatingSectionIDs[repeatingIndex] + "_" + attrName + opType;
 						}
-						if (!repeatingSection) { replacement = "NoRepeatingAttributeLoaded" };
-						if (repeatingSection && repeatingSection.length <= 1) { replacement = "NoRepeatingAttributeLoaded" };
+						if (!repeatingSection) { replacement = "NoRepeatingAttributeLoaded" }
+						if (repeatingSection && repeatingSection.length <= 1) { replacement = "NoRepeatingAttributeLoaded" }
 					}
 
 					break;
@@ -2621,6 +2625,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return content;
 	}
 
+	/*
 	function replaceSubattributeReferences(content, characterid) {
 		var failCount = 100;
 		while (content.toString().match(/\@\{.*?\}/g) !== null) {
@@ -2640,6 +2645,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 		return content;
 	}
+	*/
 
 	function getLineTag(line, linenum, logerror) {
 		if (line.indexOf("|") >= 0) {
@@ -3007,7 +3013,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	function buildTooltip(text, tip, style) {
 		var tooltipStyle = ` font-family: ${defaultParameters.titlefont}; font-size: ${defaultParameters.titlefontsize}; font-weight: normal; font-style: normal; ${style} `;
 		return `<span style='${tooltipStyle}' class='showtip tipsy' title='${tip.toString().replace(/\~/g, "")}'>${text}</span>`;
-	};
+	}
 
 	function processFullConditional(conditional, cardParameters) {
 		// Remove multiple spaces
@@ -3041,7 +3047,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function evaluateConditional(conditional, cardParameters) {
-		var newComponents = conditional.split(/-\w+/);
+		//var newComponents = conditional.split(/-\w+/);
 		//log(newComponents);
 		var components = conditional.match(/(?:[^\s"]+|"[^"]*")+/g);
 		if (!components) { return false; }
@@ -3174,7 +3180,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				}
 			}
 			if (actor == "") {
-				var possible = findObjs({ type: "character" }).filter(function (value, index, arg) { return value.get("name").toLowerCase().trim() == tryID.toLowerCase().trim() });;
+				// eslint-disable-next-line no-unused-vars
+				var possible = findObjs({ type: "character" }).filter(function (value, index, arg) { return value.get("name").toLowerCase().trim() == tryID.toLowerCase().trim() });
 				if (possible.length > 0) {
 					actor = possible[0].get("_id");
 				}
@@ -3270,6 +3277,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return outputLine;
 	}
 
+	/*
 	function* retrieveAsyncValue(character, value) {
 		var thisAttribute = undefined;
 		character.get(value, function (val) { thisAttribute = val })
@@ -3297,7 +3305,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		});
 		return attrCount;
 	}
-
+	*/
 	function makeButton(title, url, parameters, customTextColor, customBackgroundColor) {
 		var thisButtonStyle = buttonStyle;
 		if (customTextColor) { thisButtonStyle = thisButtonStyle.replace("!{buttontextcolor}", customTextColor) }
@@ -3372,6 +3380,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
+	/*
 	function getRepeatingSectionAttrs(charid, prefix) {
 		const repeatingAttrs = {};
 		regExp = new RegExp(`^${prefix}_(-[-A-Za-z0-9]+?|\\d+)_`);
@@ -3397,6 +3406,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		const repRowIds = [...new Set(repOrder.filter(x => unorderedIds.includes(x)).concat(unorderedIds))];
 		return [repRowIds, repeatingAttrs];
 	}
+	*/
 
 	function getRepeatingSectionIDs(charid, prefix) {
 		const repeatingAttrs = {};
@@ -3515,7 +3525,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (handouts) {
 			handouts.forEach(function (handout) {
 				var libraryName = handout.get("name").replace("ScriptCards Library", "").trim();
-				var libraryContent = "";
+				//var libraryContent = "";
 				handout.get("notes", function (notes) {
 					if (notes) {
 						notes = notes.replace(/\<p\>/g, " ").replace(/\<\/p\>/g, " ").replace(/\<br\>/g, " ").replace(/&nbsp;/g, " ").replace(/&gt;/g, ">").replace(/&lt;/g, "<").replace(/&amp;/g, "&");
@@ -3565,6 +3575,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		scriptCardsStashedScripts[stashIndex].stashType = stashType;
 	}
 
+	/*
 	function unstashAScript(stashIndex) {
 		if (scriptCardsStashedScripts[stashIndex]) {
 			return [
@@ -3587,6 +3598,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			];
 		}
 	}
+	*/
 
 	function uuidv4() {
 		return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
@@ -3603,9 +3615,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return !isNaN(Number(n));
 	}
 
+	/*
 	function decodeGMNotes(notes) {
 		return (decodeURIComponent(notes));
 	}
+	*/
 
 	// Despite the name, this function takes a semicolon separated value string and returns an
 	// array of objects. Used to parse parameter lists to gosub branches.
@@ -3634,7 +3648,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		// Handle special case of empty last value.
 		if (/,\s*$/.test(text)) a.push('');
 		return a;
-	};
+	}
 
 	// ScriptCards doesn't directly support inline rolls, but there are cases where some sheets
 	// are so strange that an inline roll is required to retrieve simple values. This routine
@@ -3697,6 +3711,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
+	// eslint-disable-next-line no-unused-vars
 	function handleDiceFormats(text, rollResult, hadOne, hadAce, currentOperator) {
 		// Split the dice roll into components
 		var matches = text.toLowerCase().match(/^(\d+[dD][fF\d]+)([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(\#)?$/);
@@ -3814,7 +3829,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			// Roll the dice
 			for (var x = 0; x < count; x++) {
 				var thisRoll = Number(rollWithReroll(sides, rerollThreshold, rerollType, rerollUnlimited));
-				if (fudgeDice) { thisRoll -= 2; resultSet.dontHilight = true };
+				if (fudgeDice) { thisRoll -= 2; resultSet.dontHilight = true }
 				var thisTotal = thisRoll;
 				var thisText = thisTotal.toString();
 				if (fudgeDice) {
@@ -3874,7 +3889,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			for (var x = 0; x < resultSet.rollSet.length; x++) {
 				if (resultSet.rollSet[x] > successThreshold) {
 					thisResult += 1
-				};
+				}
 				thisResultText += resultSet.rollTextSet[x] + (x == resultSet.rollSet.length - 1 ? "" : ",");
 			}
 			resultSet.dontHilight = true;
