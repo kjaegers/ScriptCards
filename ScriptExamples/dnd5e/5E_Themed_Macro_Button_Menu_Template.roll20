@@ -22,6 +22,9 @@
   --/|              each macro name a semicolon (;) Set the Maximum value (Right column) to the name of the category
   --/|              that you want to appear above the buttons on the generated card. This can be blank if you wish to
   --/|              have no title displayed.
+  --/|
+  --/|              You can run have multiple copies of this macro in your macro bar with different mule character
+  --/|              information to produce different menus.
   
   --/|=========================================================================================================
   --/|Settings Area - Customize the behavior of the script here
@@ -34,7 +37,9 @@
   --/|Set to "1" to enable loading of settings information from a saved format named after the character (case sensitive)
   --&UseNamedCharacterSettings|0
 
-  --/|Maximum number of menus to look for
+  --/|Maximum number of menus to look for. Lower this number to the number you actually create if you want to avoid a little
+  --/|API Console spam. It won't hurt anything if it outputs the failed attribute lookups, but it is a Roll20 message that the
+  --/|API can't suppress.
   --&MaxMenuCount|10
 
   --/|End Settings Area

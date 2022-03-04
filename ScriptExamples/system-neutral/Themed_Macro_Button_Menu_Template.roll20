@@ -22,6 +22,9 @@
   --/|              each macro name a semicolon (;) Set the Maximum value (Right column) to the name of the category
   --/|              that you want to appear above the buttons on the generated card. This can be blank if you wish to
   --/|              have no title displayed.
+  --/|
+  --/|              You can run have multiple copies of this macro in your macro bar with different mule character
+  --/|              information to produce different menus.
   
   --/|=========================================================================================================
   --/|Settings Area - Customize the behavior of the script here
