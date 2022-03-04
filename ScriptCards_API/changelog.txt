@@ -1,6 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
-v 1.6.5  - Changed the referencing previx for settings from # to ~, so [~title] will now refence the card's title setting. # was clashing with formatting.
+v 1.6.6  - Bug fix for possible sandbox crash when attempting to retrieve token properties during a variable dereferencing call.
+
+v 1.6.5  - Changed the referencing prefix for settings from # to ~, so [~title] will now refence the card's title setting. # was clashing with formatting.
            New setting: 
 
 v 1.6.4b - The turnorder;addcustom function will now (optionally) accept an additional parameter that will be placed in the "formula" value to create

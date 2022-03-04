@@ -1,0 +1,85 @@
+!script {{
+  --/|Script Name : 5E Themed Macro Button Menu Template
+  --/|Version     : 1.0.0
+  --/|Author      : Kurt Jaegers
+
+  --/|Description : This script uses a Macro Mule with some specifically named attributes to build a menu of
+  --/|              macros that can be run using generated buttons. By default, the script supports up to 10
+  --/|              categories on the mule and will create an unlimited number of buttons in each category.
+  --/|
+  --/|              NOTE: THIS SCRIPT WILL FAIL UNLESS YOU CUSTOMIZE IT AS DESCRIBED IN "USAGE" BELOW.
+  --/|
+  --/|Usage       : Create a macro mule character (a character whose only purpose in your game is to house a 
+  --/|              collection of macros). Drag the character onto the VTT, select it, and enter @{selected|character_id}
+  --/|              in the chat window. The returned ID, along with the name of the macro mule should be placed
+  --/|              in the customization section below in the appropriate areas.
+  --/| 
+  --/|              On the macro mule, create any macros you want to be able to create buttons for. The names of the
+  --/|              macros will be displayed on the buttons.
+  --/|
+  --/|              Still on the macro mule, add an attribute called "TemplateCategory1" and enter a list of each
+  --/|              macro name (CASE SENSITIVE) you wish to generate a button for in the value (left) column. Separate 
+  --/|              each macro name a semicolon (;) Set the Maximum value (Right column) to the name of the category
+  --/|              that you want to appear above the buttons on the generated card. This can be blank if you wish to
+  --/|              have no title displayed.
+  
+  --/|=========================================================================================================
+  --/|Settings Area - Customize the behavior of the script here
+
+  --/|This template relies on a "Macro Mule" character to house the macros that will be run. Place the name
+  --/|of the macro mule here
+  --&macroMuleName|Macro_Mule
+  --&macroMuleCharID|-MxLFQZKKFDmCjuEy2CI
+
+  --/|Set to "1" to enable loading of settings information from a saved format named after the character (case sensitive)
+  --&UseNamedCharacterSettings|0
+
+  --/|Maximum number of menus to look for
+  --&MaxMenuCount|10
+
+  --/|End Settings Area
+  --/|=========================================================================================================
+
+  --/|Give the script a reentrant name based on the selected character id so we can have multiple instances at the same time
+  --#reentrant|CharacterAction @{selected|character_id}
+
+  --/|Set up some style information for the action menu and subsequent cards. These attempt to somewhat
+  --/|simulate the 5E style
+  --#bodyfontface|Helvetica
+  --#bodyfontcolor|#220000
+  --#buttonfontsize|9px
+  --#buttonbackground|#58180d
+  --#buttonfontface|Tahoma
+  --#titlecardbackground|#f6efd6
+  --#titlefontcolor|#58180d
+  --#titlefontsize|1.5em
+  --#titlefontshadow|0
+  --#oddrowbackground|#f6efd6
+  --#evenrowbackground|#f6efd6
+  --#subtitlefontcolor|#58180d
+  
+  --/|The menu is whispered to the player executing the macro. #whisper will be set again later for the
+  --/|actual output to be public.
+  --#whisper|self
+
+  --/|Loop through up to 10 "TemplateCategoryX" attributes on the character sheet
+  --=MenuNumber|1
+  --:ITERATE_MENUS|
+  --&ThisMenu|
+  --?"X[*[&macroMuleCharID]:TemplateCategory[$MenuNumber.Raw]]" -eq "X"|SKIP_THIS_MENU
+  --?"[*[&macroMuleCharID]:TemplateCategory[$MenuNumber.Raw]]" -eq "undefined"|SKIP_THIS_MENU
+  --~|array;define;abilities;[*[&macroMuleCharID]:TemplateCategory[$MenuNumber.Raw]]
+  --~|system;dumpvariables;array
+  --~abilCount|array;getlength;abilities
+  --=abilLoop|[&abilCount] - 1
+  --%loop|0;[$abilLoop.Raw]
+    --&ThisMenu|+ [sheetbutton][@abilities([&loop])]::[&macroMuleName]::[@abilities([&loop])][/sheetbutton]
+  --%|
+  --+[*[&macroMuleCharID]:TemplateCategory[$MenuNumber.Raw]^]|
+  --+|[&ThisMenu][BR][BR]
+  --:SKIP_THIS_MENU|
+  --=MenuNumber|[$MenuNumber.Raw] + 1
+  --?[$MenuNumber] -le [&MaxMenuCount]|ITERATE_MENUS
+
+  --X|
+}}
