@@ -9,6 +9,9 @@
   --/|
   --/|              NOTE: THIS SCRIPT WILL FAIL UNLESS YOU CUSTOMIZE IT AS DESCRIBED IN "USAGE" BELOW.
   --/|
+  --/|              NOTE 2: EDITING THIS SCRIPT WITH THE IN-GAME EDITOR *WILL* BREAK IT. PLEASE COPY THIS SCRIPT
+  --/|              TO A TEXT EDITOR LIKE NOTEPAD AND EDIT THERE AND PASTE INTO ROLL20.
+  --/|
   --/|Usage       : Create a macro mule character (a character whose only purpose in your game is to house a 
   --/|              collection of macros). Drag the character onto the VTT, select it, and enter @{selected|character_id}
   --/|              in the chat window. The returned ID, along with the name of the macro mule should be placed
