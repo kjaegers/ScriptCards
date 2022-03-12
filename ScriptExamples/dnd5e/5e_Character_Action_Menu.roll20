@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.8.1a
+  --/|Version     : 1.8.2
   --/|Requires SC : 1.6.4a+
   --/|Author      : Kurt Jaegers
 
@@ -49,6 +49,12 @@
   --/|What bar do you use for representing hit points for damage application?
   --&hitPointsBar|3
 
+  --/|If set to 1, the Action Menu will include advantage/normal/disadvantage toggles (and won't use the character sheet toggle)
+  --&selfHandleAdvantageMode|0
+  
+  --/|Used with SelfHandleAdvantageMode. 0=Normal, 1=Advantage, 2=Disadvantage
+  --&defaultAdvantageMode|0
+
   --/|End Settings Area
   --/|=========================================================================================================
 
@@ -92,6 +98,8 @@
   --#title|[*S:character_name]
   --#leftsub|Action Menu
 
+  --:AFTER_ADVMODE_CHANGE|
+
   --/|Determine if the selected character is a PC or NPC and process appropriately
   --?[*S:npc] -eq 1|proc_npc|proc_pc
 
@@ -100,6 +108,12 @@
 
   --:proc_npc|
   --+|[hr #58180d]
+
+  --?[&selfHandleAdvantageMode] -eq 1|[
+    --?"X[&currentAdvantageMode]" -eq "X"|&currentAdvantageMode;[&defaultAdvantageMode]
+    --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
+    --+|[r]Roll Mode: [&mode] | [rbutton]N::SET_ADV_MODE;0[/rbutton][rbutton]A::SET_ADV_MODE;1[/rbutton][rbutton]D::SET_ADV_MODE;2[/rbutton][/r]
+  --]|
 
   --/|NPC "Actions"
   --Rfirst|[*S:character_id];repeating_npcaction
@@ -233,6 +247,9 @@
     --&rollType|1d20
     --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
     --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
+    --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 0|&rollType;1d20
+    --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
+    --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1
     --=ToHit|[&rollType] + [*R:attack_tohit]
     --+Attack|[$ToHit] vs AC [*T:ac]
     --?[$ToHit.Base] -eq 20|NPCA_CRIT
@@ -336,6 +353,12 @@
   --:proc_pc|
   --+|[hr #58180d]
   --#whisper|self
+
+  --?[&selfHandleAdvantageMode] -eq 1|[
+    --?"X[&currentAdvantageMode]" -eq "X"|&currentAdvantageMode;[&defaultAdvantageMode]
+    --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
+    --+|[r]Roll Mode: [&mode] | [rbutton]N::SET_ADV_MODE;0[/rbutton][rbutton]A::SET_ADV_MODE;1[/rbutton][rbutton]D::SET_ADV_MODE;2[/rbutton][/r]
+  --]|
 
   --/|The PC Attack List (center of the main character sheet)
   --Rfirst|[*S:character_id];repeating_attack
@@ -450,6 +473,9 @@
   --&rollType|1d20
   --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
   --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 0|&rollType;1d20
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1  
   --&arString|[&rollType]
   --=attrMod|0
   --&attrName|Attr
@@ -559,6 +585,9 @@
   --&rollType|1d20
   --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
   --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 0|&rollType;1d20
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1  
   --=attackRoll|[&rollType] + [*S:spell_attack_bonus] [Spell Atk Bonus] [&PC_GAM]
   --=AC|[*T:ac]
   --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
@@ -631,6 +660,9 @@
   --&rollType|1d20
   --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
   --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 0|&rollType;1d20
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1  
   --=attackRoll|[&rollType] + [*S:spell_attack_bonus] [Spell Atk Bonus] [&PC_GAM]
   --=AC|[*T:ac]
   --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
@@ -717,6 +749,10 @@
   --/|that has an active flag set. This is set to a variable named after the second parameter and can be appended
   --/|directly to an attack/damage/save roll
 
+  --:SET_ADV_MODE|
+  --&currentAdvantageMode|[&reentryval]
+  --^AFTER_ADVMODE_CHANGE|
+
   --:Find_Active_Global_Attack_Modifiers|character_id;StringVariableToSet
   --&_GAM_Temp| 
   --Rfirst|[%1%];repeating_tohitmod
@@ -769,6 +805,7 @@
   --?"[%1%]" -eq "constitution_mod"|&[%3%];[CON]
   --?"[%1%]" -eq "charisma_mod"|=[%2%];[*S:charisma_mod]
   --?"[%1%]" -eq "charisma_mod"|&[%3%];[CHA]
+  --<|
 
   --/|There are four different options for applying damage. The selected option is set in the settings area of the macro.
   --/|When applying damage, one of the four functions listed below will be executed to alter the target's HP. The ScriptCards
