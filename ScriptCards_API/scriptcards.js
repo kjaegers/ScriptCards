@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.6.6";
+	const APIVERSION = "1.6.7";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -104,6 +104,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		buttonbordercolor: "#999999",
 		buttonfontsize: "x-small",
 		buttonfontface: "Tahoma",
+		parameterdelimiter: ";",
 		// These settings can be used freely and are stored with the format storage commands
 		usersetting0: "",
 		usersetting1: "",
@@ -537,7 +538,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							var loopCounter = thisTag.substring(1);
 							if (loopCounter && loopCounter !== "!") {
 								if (loopControl[loopCounter]) { log(`ScriptCards: Warning - loop counter ${loopCounter} reused inside itself on line ${lineCounter}.`); }
-								var params = thisContent.split(";");
+								var params = thisContent.split(cardParameters.parameterdelimiter);
 								if (params.length === 2) { params.push("1"); } // Add a "1" as the assumed step value if only two parameters
 								if (params.length === 3) {
 									if (isNumeric(params[0]) && isNumeric(params[1]) && isNumeric(params[2]) && parseInt(params[2]) != 0) {
@@ -884,8 +885,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												case "&":
 													jumpDest.charAt(0) == "=" ? resultType = "rollset" : resultType = "stringset";
 													jumpDest = jumpDest.substring(1);
-													varName = jumpDest.split(";")[0];
-													varValue = jumpDest.split(";")[1];
+													varName = jumpDest.split(cardParameters.parameterdelimiter)[0];
+													varValue = jumpDest.split(cardParameters.parameterdelimiter)[1];
 													break;
 											}
 
@@ -910,7 +911,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														});
 													}
 													returnStack.push(lineCounter);
-													jumpDest = jumpDest.split(";")[0];
+													jumpDest = jumpDest.split(cardParameters.parameterdelimiter)[0];
 													if (lineLabels[jumpDest]) {
 														lineCounter = lineLabels[jumpDest];
 													} else {
@@ -960,7 +961,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						// Handle setting RollVariables to function call results
 						if (thisTag.charAt(0) === "~") {
 							var variableName = thisTag.substring(1);
-							var params = thisContent.split(";");
+							var params = thisContent.split(cardParameters.parameterdelimiter);
 							switch (params[0].toLowerCase()) {
 								case "character":
 									if (params.length >= 4) {
@@ -1527,7 +1528,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 										if (params[1].toLowerCase() == "stringify") {
 											if (arrayVariables[params[2]]) {
-												stringVariables[variableName] = arrayVariables[params[2]].join(";");
+												stringVariables[variableName] = arrayVariables[params[2]].join(cardParameters.parameterdelimiter);
 											} else {
 												stringVariables[variableName] = "";
 											}
@@ -1838,7 +1839,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						// Handle repeating attribute statements
 						if (thisTag.charAt(0).toLowerCase() === "r") {
 							var command = thisTag.substring(1).toLowerCase();
-							var param = thisContent.split(";");
+							var param = thisContent.split(cardParameters.parameterdelimiter);
 							switch (command.toLowerCase()) {
 								// Find parameters are character id, value name (ie, Greatsword), section name (attack), and field to search (atkname)
 								case "find":
@@ -1965,8 +1966,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									case "&":
 										jumpDest.charAt(0) == "=" ? resultType = "rollset" : resultType = "stringset";
 										jumpDest = jumpDest.substring(1);
-										varName = jumpDest.split(";")[0];
-										varValue = jumpDest.split(";")[1];
+										varName = jumpDest.split(cardParameters.parameterdelimiter)[0];
+										varValue = jumpDest.split(cardParameters.parameterdelimiter)[1];
 										break;
 								}
 
@@ -1991,7 +1992,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											});
 										}
 										returnStack.push(lineCounter);
-										jumpDest = jumpDest.split(";")[0];
+										jumpDest = jumpDest.split(cardParameters.parameterdelimiter)[0];
 										if (lineLabels[jumpDest]) {
 											lineCounter = lineLabels[jumpDest];
 										} else {
