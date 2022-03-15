@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.8.2
+  --/|Version     : 1.8.3
   --/|Requires SC : 1.6.4a+
   --/|Author      : Kurt Jaegers
 
@@ -54,6 +54,10 @@
   
   --/|Used with SelfHandleAdvantageMode. 0=Normal, 1=Advantage, 2=Disadvantage
   --&defaultAdvantageMode|0
+
+  --/|If set to 1, ammo use/tracking will be used. Thanks to JustinG for the initial implementation. Note that Ammo Tracking for the character
+  --/|needs to be enabled, and a resource named to match the Ammo (case sensitive) needs to exist on the sheet to track ammo.
+  --&requireAmmo|0
 
   --/|End Settings Area
   --/|=========================================================================================================
@@ -466,6 +470,12 @@
   -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM
   -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM_CRIT;1
   --Rfind|[*S:character_id];[&attack_name];repeating_attack;atkname
+  --?[&requireAmmo] -eq 0|NoAmmoNeededPC_Attack
+  --?"X[*R:ammo]" -eq "X"|NoAmmoNeededPC_Attack
+  --~ResourceUsed|string;before;|;[*R:ammo]
+  -->FIND_REPEATING_RESOURCE|[*S:character_id];[&ResourceUsed];AmmoAttrName;AmmoAttributeID;AmmoCount
+  --?[&AmmoCount] -lt 1|_NO_AMMO_AVAILABLE
+  --:NoAmmoNeededPC_Attack|
   --/Rdump|
   --#title|[*R:atkname]
   --#leftsub|[*S:character_name]
@@ -557,6 +567,12 @@
   --+The [*R:atkname] attack missed!|[br][br]
 
   --:ATTACK_DONE|
+  --?[&requireAmmo] -eq 0|NO_AMMO_USED
+  --?"X[&AmmoAttrName]" -eq "X"|NO_AMMO_USED
+  --!a:[*S:character_id]|[&AmmoAttributeID]:-=1
+
+  --:NO_AMMO_USED|
+
   --X|
 
   --:EXEC_PC_CANTRIP|
@@ -872,4 +888,26 @@
   --%|
   --X|
 
+  --:FIND_REPEATING_RESOURCE|character_id;resourceName;resourceReturnNameStringVariable;ResourceReturnValueStringVariable;ResouceCurrentValue
+    --?"[%2%]" -eq "[*[%1%]:class_resource_name]"|_IsResourceClass
+    --?"[%2%]" -eq "[*[%1%]:other_resource_name]"|_IsResourceOther
+    --Rfirst|[%1%];repeating_resource
+    --:_ResourceLoop|
+    --?"[*R:resource_left_name]" -eq "[%2%]"|_IsResourceLeft
+    --?"[*R:resource_right_name]" -eq "[%2%]"|_IsResourceRight
+    --Rnext|
+    --?"[*R:resource_left_name]" -ne "NoRepeatingAttributeLoaded"|_ResourceLoop
+    --&[%3%]|NotFound --&[%4%]|NotFound --&[%5%]|0 
+  --<|
+  
+  --:_IsResourceClass| --&[%3%]|class_resource_name --&[%4%]|class_resource --&[%5%]|[*[%1%]:class_resource] --<|
+  --:_IsResourceOther| --&[%3%]|other_resource_name --&[%4%]|other_resource --&[%5%]|[*[%1%]:other_resource] --<|
+  --:_IsResourceLeft| --&[%3%]|[*R:resource_left_name]  --&[%4%]|[*R>resource_left] --&[%5%]|[*S:[*R>resource_left]]    --<|  
+  --:_IsResourceRight| --&[%3%]|[*R:resource_left_name] --&[%4%]|[*R>resource_right] --&[%5%]|[*S:[*R>resource_right]] --<|
+
+  --:_NO_AMMO_AVAILABLE|
+  --#whisper|
+  --+|[*S:character_name] has no [&ResourceUsed] left.
+  --#emoteText|[*S:character_name] is all out of [&ResourceUsed].
+  --X|
 }}
