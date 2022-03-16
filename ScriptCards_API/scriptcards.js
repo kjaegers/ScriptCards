@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.6.7";
+	const APIVERSION = "1.6.8 Experimental";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -425,7 +425,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 						if (!isReentrant) {
 							for (var x = 1; x < resumeArgs.length; x++) {
-								var thisInfo = resumeArgs[x].split(";");
+								var thisInfo = resumeArgs[x].split(cardParameters.parameterdelimiter);
 								stringVariables[thisInfo[0].trim()] = thisInfo[1].trim();
 							}
 						}
@@ -519,8 +519,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									varList += theseParams[1];
 								}
 								if (theseParams[0].toLowerCase() == "q") {
-									if (buildLine !== "") { buildLine += "-|-"; varList += ";"; }
-									buildLine += theseParams[1] + ";?{" + theseParams[2] + "}";
+									if (buildLine !== "") { buildLine += "-|-"; varList += cardParameters.parameterdelimiter; }
+									buildLine += theseParams[1] + cardParameters.parameterdelimiter + "?{" + theseParams[2] + "}";
 									varList += theseParams[1];
 								}
 							}
