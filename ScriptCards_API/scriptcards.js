@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.6.8 Experimental";
+	const APIVERSION = "1.6.9 Experimental";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -680,6 +680,22 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (thisTag.length > 1) {
 								var objectType = thisTag.substring(1, 2).toLowerCase();
 								switch (objectType) {
+									case "o":
+										var objtype = thisTag.substring(2,3).toLowerCase();
+										if (objtype == "c") {
+											var returnVarName = thisTag.substring(4);
+											var settings = thisContent.split(cardParameters.parameterdelimiter);
+											if (returnVarName && settings[0]) {
+												var newChar = createObj("character", { name:settings[0] });
+												if (newChar) {
+													stringVariables[returnVarName] = newChar.id
+												} else {
+													stringVariables[returnVarName] = "OBJECT_CREATION_ERROR";
+												}
+											}
+										}
+										break;
+
 									case "t":
 										var tokenID = thisTag.substring(3);
 										if (tokenID.toLowerCase() == "s") {
