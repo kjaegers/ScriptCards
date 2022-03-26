@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.6.9 Experimental";
+	const APIVERSION = "1.7.0";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -303,7 +303,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 				if (apiCmdText.startsWith("!sc-reentrant ")) {
 					var resumeString = msg.content.substring(14);
-					resumeArgs = resumeString.split("-|-");			
+					resumeArgs = resumeString.split("-|-");
 					if (scriptCardsStashedScripts[resumeArgs[0]]) {
 						isResume = true;
 						isReentrant = true;
@@ -371,7 +371,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 					if (msg.selected) {
 						arrayVariables["SC_SelectedTokens"] = [];
-						for(let x=0; x<msg.selected.length; x++) {
+						for (let x = 0; x < msg.selected.length; x++) {
 							arrayVariables["SC_SelectedTokens"].push(msg.selected[x]._id);
 							arrayIndexes["SC_SelectedTokens"] = 0;
 						}
@@ -417,11 +417,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 						if (msg.selected) {
 							arrayVariables["SC_SelectedTokens"] = [];
-							for(let x=0; x<msg.selected.length; x++) {
+							for (let x = 0; x < msg.selected.length; x++) {
 								arrayVariables["SC_SelectedTokens"].push(msg.selected[x]._id);
 								arrayIndexes["SC_SelectedTokens"] = 0;
 							}
-						}						
+						}
 
 						if (!isReentrant) {
 							for (var x = 1; x < resumeArgs.length; x++) {
@@ -681,12 +681,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								var objectType = thisTag.substring(1, 2).toLowerCase();
 								switch (objectType) {
 									case "o":
-										var objtype = thisTag.substring(2,3).toLowerCase();
+										var objtype = thisTag.substring(2, 3).toLowerCase();
 										if (objtype == "c") {
 											var returnVarName = thisTag.substring(4);
 											var settings = thisContent.split(cardParameters.parameterdelimiter);
 											if (returnVarName && settings[0]) {
-												var newChar = createObj("character", { name:settings[0] });
+												var newChar = createObj("character", { name: settings[0] });
 												if (newChar) {
 													stringVariables[returnVarName] = newChar.id
 												} else {
@@ -727,7 +727,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												if (cardParameters.formatoutputforobjectmodification == "1") {
 													settingValue = processInlineFormatting(settingValue, cardParameters);
 												}
-											theToken.set(settingName, settingValue);
+												theToken.set(settingName, settingValue);
 											}
 										} else {
 											log(`ScriptCards Error: Modify Token called without valid TokenID`)
@@ -1129,7 +1129,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											if (Campaign().get("turnorder") !== "") {
 												turnorder = JSON.parse(Campaign().get("turnorder"));
 											}
-											var t=getObj('graphic', params[2]);
+											var t = getObj('graphic', params[2]);
 											if (t) {
 												turnorder.push({
 													id: params[2],
@@ -1153,7 +1153,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												}
 											}
 											if (!wasfound) {
-												var t=getObj('graphic', params[2]);
+												var t = getObj('graphic', params[2]);
 												if (t) {
 													turnorder.push({
 														id: params[2],
@@ -1174,7 +1174,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												turnorder.push({
 													id: "-1",
 													pr: params[3],
-													_pageid:Campaign().get('playerpageid'),
+													_pageid: Campaign().get('playerpageid'),
 													custom: params[2],
 													formula: params[4],
 												});
@@ -1182,7 +1182,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												turnorder.push({
 													id: "-1",
 													pr: params[3],
-													_pageid:Campaign().get('playerpageid'),
+													_pageid: Campaign().get('playerpageid'),
 													custom: params[2],
 												});
 											}
@@ -2492,6 +2492,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					if (rollVariables[vName] !== undefined) {
 						replacement = vSuffix == "Raw" ? rollVariables[vName]["Total"] : rollVariables[vName][vSuffix]
+						if (vSuffix.startsWith("RolledDice") || vSuffix.startsWith("KeptDice") || vSuffix.startsWith("DroppedDice")) {
+							if (thisMatch.match(/(?<=\().*?(?=[)]])/g)) {
+								var vIndex = thisMatch.match(/(?<=\().*?(?=[)]])/g)[0];
+								if (vIndex) {
+									vIndex -= 1;
+									var suffixName = vSuffix.substring(0, vSuffix.indexOf("("));
+									replacement = rollVariables[vName][suffixName][vIndex];
+								} else {
+									replacement = "0";
+								}
+							}
+						}
 					}
 					debugOutput(`RollHilighting: ${rollHilighting}, Suffix: ${vSuffix}`);
 					if (rollHilighting == true && vSuffix == "Total" && rollVariables[vName] !== undefined) {
@@ -2505,7 +2517,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				case "~":
 					// Replace a settings reference
 					var vName = thisMatch.substring(2, thisMatch.length - 1);
-					replacement = cardParameters[vName.toLowerCase()] || "";					
+					replacement = cardParameters[vName.toLowerCase()] || "";
 					break;
 				/* 				case "#":
 									var tableName = thisMatch.match(/(?<=\[\#).*?(?=[\.|\]])/g)[0];
@@ -2704,7 +2716,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			Style: "",
 			tableEntryText: "",
 			tableEntryImgURL: "",
-			tableEntryValue: ""
+			tableEntryValue: "",
+			RolledDice: [],
+			KeptDice: [],
+			DroppedDice: [],
+			RollCount: 0,
+			KeptCount: 0,
+			DroppedCount: 0
 		}
 		var hadOne = false;
 		var hadAce = false;
@@ -2722,6 +2740,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				if (thisRollHandled.wasWild) { hadOne = thisRollHandled.hadOne; hadAce = thisRollHandled.hadAce; }
 
 				var dieCount = thisRollHandled.rollSet.length;
+				rollResult.RollCount += dieCount;
+				rollResult.RolledDice.push(...thisRollHandled.rawRollSet);
+				rollResult.KeptCount += thisRollHandled.keptRollSet.length;
+				rollResult.KeptDice.push(...thisRollHandled.keptRollSet);
+				rollResult.DroppedCount += thisRollHandled.droppedRollSet.length;
+				rollResult.DroppedDice.push(...thisRollHandled.droppedRollSet);
 
 				for (var i = 0; i < dieCount; i++) {
 					if (thisRollHandled.rollSet[i] == 1) {
@@ -2918,12 +2942,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 					if (!isNaN(text)) {
 						switch (currentOperator) {
-							case "+": rollResult.Total += Number(text.replace("#","")); break;
-							case "-": rollResult.Total -= Number(text.replace("#","")); break;
-							case "*": rollResult.Total *= Number(text.replace("#","")); break;
-							case "/": rollResult.Total /= Number(text.replace("#","")); break;
-							case "%": rollResult.Total %= Number(text.replace("#","")); break;
-							case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / Number(text.replace("#",""))) : Math.ceil(rollResult.Total / Number(text.replace("#",""))); break;
+							case "+": rollResult.Total += Number(text.replace("#", "")); break;
+							case "-": rollResult.Total -= Number(text.replace("#", "")); break;
+							case "*": rollResult.Total *= Number(text.replace("#", "")); break;
+							case "/": rollResult.Total /= Number(text.replace("#", "")); break;
+							case "%": rollResult.Total %= Number(text.replace("#", "")); break;
+							case "\\": rollResult.Total = cardParameters.roundup == "0" ? Math.floor(rollResult.Total / Number(text.replace("#", ""))) : Math.ceil(rollResult.Total / Number(text.replace("#", ""))); break;
 						}
 					}
 				}
@@ -2953,7 +2977,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 				}
 			}
-			
+
 			// A Rollable Table Result
 			if (!componentHandled) {
 				if (text.match(/\[[Tt]\#.+?\]/g)) {
@@ -3353,7 +3377,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		for (var i in repeatingSection) {
 			if (repeatingSection[i].startsWith("@{")) {
 				log(repeatingSection[i])
-				repeatingSection[i] = repeatingSection[i].replace("@","");
+				repeatingSection[i] = repeatingSection[i].replace("@", "");
 				log(repeatingSection[i])
 			}
 			/*
@@ -3383,16 +3407,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					});
 				}
 				*/
-				/*
-				while (repeatingSection[i].match(/\@\{[^{}]+\}/g)) {
-					var thisMatch = repeatingSection[i].match(/\@\{[^{}]+\}/g);
-					var thisAttr = thisMatch[0].replace("^\@\{", "").replace("}$", "");
-					var attribute = repChar.get(thisAttr) || "";
-					repeatingSection[i] = repeatingSection[i].replace(thisMatch, attribute);
-					var crash = null; log(crash.ToString());
-				}
+			/*
+			while (repeatingSection[i].match(/\@\{[^{}]+\}/g)) {
+				var thisMatch = repeatingSection[i].match(/\@\{[^{}]+\}/g);
+				var thisAttr = thisMatch[0].replace("^\@\{", "").replace("}$", "");
+				var attribute = repChar.get(thisAttr) || "";
+				repeatingSection[i] = repeatingSection[i].replace(thisMatch, attribute);
+				var crash = null; log(crash.ToString());
 			}
-				*/
+		}
+			*/
 
 		}
 	}
@@ -3473,7 +3497,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 		action_attrs.forEach(function (z) {
 			if (z.get("name")) {
-				return_set.push(z.get("name").toString().replace(action_prefix, "") + "|" + z.get("current").toString().replace(/(?:\r\n|\r|\n)/g, "<br>").replace("@{","").replace("}",""));
+				return_set.push(z.get("name").toString().replace(action_prefix, "") + "|" + z.get("current").toString().replace(/(?:\r\n|\r|\n)/g, "<br>").replace("@{", "").replace("}", ""));
 				return_set.push(z.get("name").toString().replace(action_prefix, "") + "_max|" + z.get("max").toString());
 			}
 		})
@@ -3742,7 +3766,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			hadAce: false,
 			dontHilight: false,
 			dontBase: false,
-			sides: 6
+			sides: 6,
+			rawRollSet: [],
+			droppedRollSet: [],
+			keptRollSet: []
 		};
 
 		// Just some defaults
@@ -3797,11 +3824,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (matches[x].match(/^![HhLl]$/)) {
 						keepcount = 1;
 						if (matches[x].charAt(1) == "h") {
-							explodeValue=sides;
-							keeptype="h";
+							explodeValue = sides;
+							keeptype = "h";
 						} else {
-							explodeValue=1;
-							keeptype="h";
+							explodeValue = 1;
+							keeptype = "h";
 						}
 					}
 
@@ -3858,6 +3885,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					thisText += "!" + thisRoll.toString();
 				}
 				resultSet.rollSet.push(thisTotal);
+				resultSet.rawRollSet.push(thisTotal);
 				resultSet.rollTextSet.push(thisText);
 			}
 
@@ -3865,8 +3893,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			if (keepcount !== count) {
 				var removeCount = count - keepcount;
 				for (var x = 0; x < removeCount; x++) {
-					if (keeptype == "h") { removeLowestRoll(resultSet.rollSet, resultSet.rollTextSet) }
-					if (keeptype == "l") { removeHighestRoll(resultSet.rollSet, resultSet.rollTextSet) }
+					if (keeptype == "h") { removeLowestRoll(resultSet.rollSet, resultSet.rollTextSet, resultSet.droppedRollSet) }
+					if (keeptype == "l") { removeHighestRoll(resultSet.rollSet, resultSet.rollTextSet, resultSet.droppedRollSet) }
+				}
+				for (var x = 0; x < count; x++) {
+					if (!resultSet.rollTextSet[x].startsWith("[x")) {
+						resultSet.keptRollSet.push(resultSet.rollSet[x]);
+					}
 				}
 			}
 
@@ -3925,7 +3958,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return thisRoll;
 	}
 
-	function removeHighestRoll(rollSet, rollSetText) {
+	function removeHighestRoll(rollSet, rollSetText, droppedRollSet) {
 		var highest = -1;
 		var highestIndex = -1;
 		for (var x = 0; x < rollSet.length; x++) {
@@ -3935,12 +3968,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			}
 		}
 		if (highestIndex > -1) {
+			droppedRollSet.push(rollSet[highestIndex]);
 			rollSet[highestIndex] = 0;
 			rollSetText[highestIndex] = "[x" + rollSetText[highestIndex] + "x]"
 		}
 	}
 
-	function removeLowestRoll(rollSet, rollSetText) {
+	function removeLowestRoll(rollSet, rollSetText, droppedRollSet) {
 		var lowest = Number.MAX_SAFE_INTEGER;
 		var lowestIndex = -1;
 		for (var x = 0; x < rollSet.length; x++) {
@@ -3950,6 +3984,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			}
 		}
 		if (lowestIndex > -1) {
+			droppedRollSet.push(rollSet[lowestIndex]);
 			rollSet[lowestIndex] = 0;
 			rollSetText[lowestIndex] = "[x" + rollSetText[lowestIndex] + "x]"
 		}
