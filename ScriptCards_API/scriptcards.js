@@ -3901,6 +3901,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						resultSet.keptRollSet.push(resultSet.rollSet[x]);
 					}
 				}
+			} else {
+				resultSet.keptRollSet.push(...resultSet.rollSet);
 			}
 
 			// Handle the Wild Die if present
