@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.7.0";
+	const APIVERSION = "1.7.1";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2463,8 +2463,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		//var charId = "";
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
-		while (content.match(/\[(?:[\$|\&|\@|\%|\*\~])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g) !== null) {
-			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\~])[\w|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-|\)]*?(?!\w+[\[])(\])/g)[0];
+		while (content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-\+|\)]*?(?!\w+[\[])(\])/g) !== null) {
+			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-\+|\)]*?(?!\w+[\[])(\])/g)[0];
 			var replacement = "";
 			//matchCount++;
 			//var doReplace=true;
@@ -2532,6 +2532,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									}
 									break;
 				 */
+
+				case "=":
+					var vName = "ScriptCardsInternalDummyRollVariable";
+					var rollFormula = thisMatch.substring(2, thisMatch.length - 1);
+					if (thisMatch.indexOf(":") > 0) {
+						vName = thisMatch.substring(2, thisMatch.indexOf(":"));
+						rollFormula = thisMatch.substring(thisMatch.indexOf(":") + 1, thisMatch.length - 1);
+					}
+					rollVariables[vName] = parseDiceRoll(rollFormula, cardParameters);
+					replacement = rollVariables[vName]["Total"]
+					break;
+
 				case "@":
 					// Replace Array References
 					var vName = thisMatch.match(/(?<=\[\$|\@).*?(?=[\(])/g)[0];
