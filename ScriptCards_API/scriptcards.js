@@ -3054,9 +3054,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		input = input.replace(/\//g, " / ");
 		input = input.replace(/\\/g, " \\ ")
 		input = input.replace(/\%/g, " % ");
-		input = input.replace(/\[/g, " [");
-		input = input.replace(/ \[T/g, " [&zwnj;T");
-		input = input.replace(/ \[t/g, " [&zwnj;t");
+		input = input.replace(/\[/g, " [&zwnj;");
 		input = input.replace(/\]/g, "] ");
 		input = input.replace(/\s+/g, " ");
 		input = input.replace(/\* \- /g, "* -");
