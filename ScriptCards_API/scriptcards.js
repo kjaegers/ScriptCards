@@ -3030,8 +3030,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				componentHandled = true;
 				rollResult.Text += `${text} `;
 			}
-
-			log(`Result: ${rollResult.Text}`)
 		}
 
 		if (hadOne && hadAce) { rollResult.Style = cardParameters.styleboth; }
