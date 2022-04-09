@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.7.2";
+	const APIVERSION = "1.7.3";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -105,24 +105,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		buttonfontsize: "x-small",
 		buttonfontface: "Tahoma",
 		parameterdelimiter: ";",
-		// These settings can be used freely and are stored with the format storage commands
-		usersetting0: "",
-		usersetting1: "",
-		usersetting2: "",
-		usersetting3: "",
-		usersetting4: "",
-		usersetting5: "",
-		usersetting6: "",
-		usersetting7: "",
-		usersetting8: "",
-		usersetting9: "",
 		formatoutputforobjectmodification: "0",
-		/*
-		damagebuttonbackgroundcolor: "#FF4444",
-		damagebuttonbackgroundimage: "",
-		healbuttonbackgroundcolor: "#22DD22",
-		healbuttonbackgroundimage: "",
-		*/
 		dicefontcolor: "#1C6EA4",
 		dicefontsize: "3.0em",
 		usehollowdice: "0",
@@ -148,12 +131,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		stylefumble: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolorfumble}; border-color: #660000; color: #660000;",
 		stylecrit: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolorcrit}; border-color: #004400; color: #004400;",
 		styleboth: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolorboth}; border-color: #061539; color: #061539;",
-		//stylenone: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; ",
-		//stylenormal:" text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #FFFEA2; border-color: #87850A; color: #000000;",
-		//stylefumble: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #FFAAAA; border-color: #660000; color: #660000;",
-		//stylecrit: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #88CC88; border-color: #004400; color: #004400;",
-		//styleboth: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: 1em; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: #8FA4D4; border-color: #061539; color: #061539;",
 
+		// These settings can be used freely and are stored with the format storage commands
+		usersetting0: "",
+		usersetting1: "",
+		usersetting2: "",
+		usersetting3: "",
+		usersetting4: "",
+		usersetting5: "",
+		usersetting6: "",
+		usersetting7: "",
+		usersetting8: "",
+		usersetting9: "",
 	};
 
 	// HTML Templates for the various pieces of the output card. Replaced sections are marked with
@@ -172,16 +161,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	var arrayIndexes = {};
 	var tokenMarkerURLs = [];
 
-	// The rollComponents list determines what suffixes are available when reporting out the value
-	// of rollVariables (i.e., AttackRoll.Base)
-	//var rollComponents = [
-	//	'Base', 'Total', 'Ones', 'Aces', 'Odds', 'Evens', 'Odds', 'RollText', 'Text', 'Style', 'tableEntryText', 'tableEntryImgURL', 'tableEntryValue', 'Raw'
-	//];
-
-	// tokenAttributes lists all of the attribute names that are valid for looking up attributes
-	// on token objects (as compared to character objects)
-	//var tokenAttributes = "token_name:name:token_id:statusmarkers:bar1_value:bar1_max:bar2_value:bar2_max:bar3_value:bar3_max:top:left:width:height:rotation:layer:aura1_radius:aura1_color:aura2_radius:aura2_color:aura1_square:aura2_square:tint_color:light_radius:light_dimradius:light_angle:light_losangle:light_multiplier:light_otherplayers:light_hassight:flipv:fliph:controlledby:_cardid:_pageid:imgsrc:bar1_link:bar2_link:bar3_link:represents:layer:isdrawing:name:gmnotes:showname:showplayers_name:showplayers_bar1:showplayers_bar2:showplayers_bar3:showplayers_aura1:showplayers_aura2:playersedit_name:playersedit_bar1:playersedit_bar2:playersedit_bar3:playersedit_aura1:playersedit_aura2:lastmove:adv_fow_view_distance:has_bright_light_vision:has_night_vision:night_vision_distance:emits_bright_light:bright_light_distance:emits_low_light:low_light_distance:has_limit_field_of_vision: limit_field_of_vision_center: limit_field_of_vision_total: has_limit_field_of_night_vision: limit_field_of_night_vision_center: limit_field_of_night_vision_total: has_directional_bright_light:directional_bright_light_center:directional_bright_light_total:has_directional_dim_light:directional_dim_light_center:directional_dim_light_total:bar_location:compact_bar:light_sensitivity_multiplier:night_vision_effect:lightColor:tooltip";
-
 	//We use several variables to track repeating section (--R) commands
 	var repeatingSection = undefined;
 	var repeatingSectionIDs = undefined;
@@ -197,9 +176,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	// the dice value (J=0, A=1, B=2, etc) To get the appropriate letter to display, we can
 	// just the substring numeric position in this string to find the matching letter.
 	const diceLetters = "JABCDEFGHIJKLMNOPQRSTUVWYZ";
-
-	// Planned JSON support. Not currently implemented/documented.
-	//var jsonObject = undefined;
 
 	// Used for storing parameters passed to a subroutine with --> or --?|> lines
 	var callParamList = {};
@@ -432,7 +408,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						if (!isReentrant && scriptCardsStashedScripts[resumeArgs[0]]) { delete scriptCardsStashedScripts[resumeArgs[0]]; }
 					} else {
 						// Strip out all newlines in the input text
-						cardContent = msg.content.replace(/(\r\n|\n|\r)/gm, "");
+						cardContent = msg.content.replace(/(\r\n|\n|\r)/gm, " ");
 						cardContent = cardContent.replace(/(<br ?\/?>)*/g, "");
 						cardContent = cardContent.replace(/\}\}/g, " }}");
 						cardContent = cardContent.trim();
@@ -658,20 +634,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										cardParameters.oddrowbackground = "#00000000";
 									}
 									break;
-
-								/*
-								case "damagebuttonbackgroundimage":
-									if (thisContent.trim() !== "") {
-										cardParameters.damagebuttonbackgroundcolor = "#00000000";
-									}
-								break;
-
-								case "healbuttonbackgroundimage":
-									if (thisContent.trim() !== "") {
-										cardParameters.healbuttonbackgroundcolor = "#00000000";
-									}
-								break;
-								*/
 							}
 						}
 
@@ -3387,7 +3349,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	function parseRepeatingSection() {
 
 		return; // Currently disabled
-
+/*
 		if (!repeatingSection) { return; }
 
 		for (var i in repeatingSection) {
@@ -3396,34 +3358,29 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				repeatingSection[i] = repeatingSection[i].replace("@", "");
 				log(repeatingSection[i])
 			}
-			/*
-			var matches = repeatingSection[i].match(/^\@\{(.+?)\}$/g);
-			if (matches) {
-				matches.forEach(function(item) {
-					repeatingSection[i].replace(item, item.substring(2,item.length-1))
-					//var attribute = repeatingCharAttrs[item.substring(2,item.length-1)] || "";
-					//while (repeatingSection[i].indexOf(item) >= 0) { repeatingSection[i] = repeatingSection[i].replace(item, attribute); }
-				});
-			}
-			*/
+			//var matches = repeatingSection[i].match(/^\@\{(.+?)\}$/g);
+			//if (matches) {
+			//	matches.forEach(function(item) {
+			//		repeatingSection[i].replace(item, item.substring(2,item.length-1))
+			//		//var attribute = repeatingCharAttrs[item.substring(2,item.length-1)] || "";
+			//		//while (repeatingSection[i].indexOf(item) >= 0) { repeatingSection[i] = repeatingSection[i].replace(item, attribute); }
+			//	});
+			//}
 		}
 
 		var repChar = getObj("character", repeatingCharID) || undefined;
 		if (repChar) {
-			/*
-			for (var i in repeatingSection) {
-				if (repeatingSection[i].match(/\@\{[^{}]+\}/g)) {
-					var matches = repeatingSection[i].match(/\@\{[^{}]+\}/g);
-					matches.forEach(function (thisMatch) {
-						var thisAttr = thisMatch.replace("@{", "").replace("}", "");
-						var attribute = "";
-						attribute - repeatingCharAttrs[thisAttr];
-						if (attribute == "") { attribute = getAttrByName(repeatingCharID, thisAttr); }
-						repeatingSection[i] = repeatingSection[i].replace(thisMatch, attribute);
-					});
-				}
-				*/
-			/*
+			//for (var i in repeatingSection) {
+			//	if (repeatingSection[i].match(/\@\{[^{}]+\}/g)) {
+			//		var matches = repeatingSection[i].match(/\@\{[^{}]+\}/g);
+			//		matches.forEach(function (thisMatch) {
+			//			var thisAttr = thisMatch.replace("@{", "").replace("}", "");
+			//			var attribute = "";
+			//			attribute - repeatingCharAttrs[thisAttr];
+			//			if (attribute == "") { attribute = getAttrByName(repeatingCharID, thisAttr); }
+			//			repeatingSection[i] = repeatingSection[i].replace(thisMatch, attribute);
+			//		});
+			//	}
 			while (repeatingSection[i].match(/\@\{[^{}]+\}/g)) {
 				var thisMatch = repeatingSection[i].match(/\@\{[^{}]+\}/g);
 				var thisAttr = thisMatch[0].replace("^\@\{", "").replace("}$", "");
@@ -3432,9 +3389,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				var crash = null; log(crash.ToString());
 			}
 		}
-			*/
-
-		}
+*/
 	}
 
 	/*
@@ -3541,12 +3496,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			try {
 				return_set.push(z.get("name").replace(action_prefix, "") + "|" + z.get("current").replace(/(?:\r\n|\r|\n)/g, "<br>"));//.replace(/[\[\]\@]/g, " "));
 				return_set.push(z.get("name").replace(action_prefix, "") + "_max|" + z.get("max"));
+			// eslint-disable-next-line no-empty
 			} catch { }
 		})
 		return (return_set);
 	}
 
-	function rollOnRollableTable(tableName, resultType) {
+	function rollOnRollableTable(tableName) {
 		var theTable = findObjs({ type: "rollabletable", name: tableName })[0];
 		if (theTable !== undefined) {
 			var tableItems = findObjs({ type: "tableitem", _rollabletableid: theTable.id });

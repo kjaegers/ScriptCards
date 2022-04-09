@@ -1,5 +1,10 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.7.3  - Mostly a code cleanup. Removed some commented out sections and cleaned things up a little.
+           Initial card parsing now replaces newlines with spaces to attempt to avoid situations where a line ending with a - is confused for the
+           start of a new line (previously newlines were simply removed, so a line ending with a dash could look like --- instead of properly ending
+           with a dash and then a new command beginning with two dashes)
+
 v 1.7.2  - Corrected a bug in the display of roll text/details if flavor text was added that began with [T or [t. This was due to the inline
            formatting code thinking the hover-over text was trying to create a table.
 
