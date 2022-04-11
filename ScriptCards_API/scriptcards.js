@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.7.3";
+	const APIVERSION = "1.7.4";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -675,8 +675,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (theToken) {
 											for (var i = 0; i < settings.length; i++) {
 												var thisSetting = settings[i].split(":");
-												var settingName = thisSetting[0];
-												var settingValue = thisSetting[1];
+												var settingName = thisSetting.shift();
+												var settingValue = thisSetting.join(':');
+												if (settingName.toLowerCase() == "imgsrc") {
+													settingValue = getCleanImgsrc(settingValue);
+												}
 												if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
 													var currentValue = theToken.get(settingName);
 													var delta = settingValue.substring(2);
@@ -713,8 +716,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (theCharacter) {
 											for (var i = 0; i < settings.length; i++) {
 												var thisSetting = settings[i].split(":");
-												var settingName = thisSetting[0];
-												var settingValue = thisSetting[1];
+												var settingName = thisSetting.shift();
+												var settingValue = thisSetting.join(':');
 												if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
 													var currentValue = theCharacter.get(settingName);
 													var delta = settingValue.substring(2);
@@ -754,7 +757,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											var settings = thisContent.split("|");
 											for (var i = 0; i < settings.length; i++) {
 												var thisSetting = settings[i].split(":");
-												var settingName = thisSetting[0];
+												var settingName = thisSetting.shift();
 												var createAttribute = false;
 												var setType = "current";
 												if (settingName.startsWith("!")) {
@@ -765,7 +768,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													setType = "max";
 													settingName = settingName.slice(0, -1);
 												}
-												var settingValue = thisSetting[1];
+												var settingValue = thisSetting.join(":");
 												var theAttribute = findObjs({
 													type: 'attribute',
 													characterid: characterObj.id,
@@ -3963,6 +3966,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			rollSetText[lowestIndex] = "[x" + rollSetText[lowestIndex] + "x]"
 		}
 	}
+
+	const getCleanImgsrc = (imgsrc) => {
+		let parts = imgsrc.match(/(.*\/images\/.*)(thumb|med|original|max)([^?]*)(\?[^?]+)?$/);
+		if(parts) {
+			return parts[1]+'thumb'+parts[3]+(parts[4]?parts[4]:`?${Math.round(Math.random()*9999999)}`);
+		}
+		return;
+	};
 
 	return {}
 })();

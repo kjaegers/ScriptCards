@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.7.4  - Reworked the parameters code for Object Modification (--!) to allow for a colon (:) in the content of a setting. Included a function from
+           The Aaron's TokenMod to clean up an image url to make it appropriate for setting a token's imgsrc value.
+
 v 1.7.3  - Mostly a code cleanup. Removed some commented out sections and cleaned things up a little.
            Initial card parsing now replaces newlines with spaces to attempt to avoid situations where a line ending with a - is confused for the
            start of a new line (previously newlines were simply removed, so a line ending with a dash could look like --- instead of properly ending
