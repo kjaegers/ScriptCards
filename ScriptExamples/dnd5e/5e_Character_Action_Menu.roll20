@@ -431,8 +431,10 @@
     --&slotString||&#
     --&slotString|+63;{Slot Level|
     --%slotcounter|[&levelCounter];[&HighestSlot]
+      --?[&trackPCSpellSlots] -eq 0|SKIP_THIS_SLOT_CHECK
       -->GET_AVAILABLE_SPELL_SLOTS|[&slotcounter];hasSlots
       --?[&hasSlots] -eq 0|SKIP_THIS_SLOT_STRING
+      --:SKIP_THIS_SLOT_CHECK|
       --&slotString|+[&slotcounter]
       --?[&slotcounter] -eq [&HighestSlot]|SKIP_THIS_SLOT_STRING
       --&slotString|+|
