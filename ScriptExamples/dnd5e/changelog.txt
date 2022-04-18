@@ -1,5 +1,16 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-04-18 - 5E Character Action Script - Added the ability to (optionally, of course) track and enforce spell slot limits for PCs. If trackPCSpellSlots is set
+             to 1 in the configuraiton section, available spell slots will be used to determine which buttons are displayed on the action menu for spells. It 
+             also determines which levels are available from the casting menu when the player clicks a spell button. If the player scrolls back up and tries to
+             re-cast from a previously generated action menu and chooses a slot level they no longer have a slot for, they will receive a whispered message
+             telling them that they are out of slots for that level. If spell slot tracking is turned on, by default a table of available spell slots is displayed
+             above the spellcasting buttons on the menu. This can be turned off by setting showPCSpellSlotList to 0.
+
+2022-03-04 - 5E Themed Macro Button Menu Template 1.0.0 - New script sample that uses a macro mule and a few attributes to generate 5E themed (in display only...
+             the script is actually not system-specific) menu of buttons to click the various macros. The macros can be anything that can be placed on a character's
+             ability page, including other ScriptCards scripts.
+
 2022-03-04 - 5E Character Action Menu 1.8.1 - Bug fix for healing spells applying damage instead of healing :)
 
 2022-02-27 - 5E Character Action Menu 1.8.0 - Added the "damagebuttons" option and two related options to the settings area. If damage apply type is set to

@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.8.3
+  --/|Version     : 1.8.5
   --/|Requires SC : 1.6.4a+
   --/|Author      : Kurt Jaegers
 
@@ -30,6 +30,12 @@
 
   --/|If this value is set to 1, prepared spell checks for NPCs will be skipped
   --&skipNPCPrepCheck|0
+
+  --/|If this value is set to 1, only spells that the player has slots available for will be displayed, and spell slots will be deducted on cast
+  --&trackPCSpellSlots|0
+
+  --/|If this value is set to 1, a list of available spell slots are displayed above the spells list in the action menu. (only if trackPCSpellSlots is 1)
+  --&showPCSpellSlotList|1
 
   --/|If this value is set to 1 PC attack rolls will have the target's AC masked from players.
   --&sendGmInfo|0
@@ -400,9 +406,44 @@
   --]|
 
   --/|The PC's level 1 thru 9 spells
+  --&HighestSlot|9
+  --?[&trackPCSpellSlots] -eq 1|[
+    -->GET_HIGHEST_LEVEL_SPELL_SLOT|HighestSlot
+    --&spellSlotInfo1|[t align=center width=100% border=1][tr][td][b]Level[/b][/td]
+    --&spellSlotInfo2|[/tr][tr][td][b]Slots[/b][/td]
+    --&anySpell|0
+    --%levelCounter|1;9
+      -->GET_AVAILABLE_SPELL_SLOTS|[&levelCounter];slotCount
+      --/?[*S:lvl[&levelCounter]_slots_total] -gt 0|&spellSlotInfo;+L[&levelCounter]([&slotCount]) 
+      --?[*S:lvl[&levelCounter]_slots_total] -gt 0|&spellSlotInfo1;+[td align=center][b][i][&levelCounter][/i][/b][/td] 
+      --?[*S:lvl[&levelCounter]_slots_total] -gt 0|&spellSlotInfo2;+[td align=center][&slotCount][/td] 
+      --?[*S:lvl[&levelCounter]_slots_total] -gt 0|&anySpell;1 
+    --%|
+    --?[&anySpell] -eq 0|SKIP_SLOT_DISPLAY
+    --?[&showPCSpellSlotList] -eq 0|SKIP_SLOT_DISPLAY
+    --+|[c][b]Available Spell Slots[/b][/c][&spellSlotInfo1][&spellSlotInfo2][/tr][/t]
+    --:SKIP_SLOT_DISPLAY|
+  --]|
   --%levelCounter|1;9
     --Rfirst|[*S:character_id];repeating_spell-[&levelCounter]
     --&PCSpells|[br]
+    --&slotString|
+    --&slotString||&#
+    --&slotString|+63;{Slot Level|
+    --%slotcounter|[&levelCounter];[&HighestSlot]
+      -->GET_AVAILABLE_SPELL_SLOTS|[&slotcounter];hasSlots
+      --?[&hasSlots] -eq 0|SKIP_THIS_SLOT_STRING
+      --&slotString|+[&slotcounter]
+      --?[&slotcounter] -eq [&HighestSlot]|SKIP_THIS_SLOT_STRING
+      --&slotString|+|
+      --:SKIP_THIS_SLOT_STRING|
+    --%|
+
+    --?[&levelCounter] -lt 9|DONE_SLOT_STRING
+    --&slotString||9
+    --:DONE_SLOT_STRING|
+    --&slotString|+}
+    
     --=PCSpellCount|0
     --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
       --:PCSpells_Display|
@@ -421,24 +462,15 @@
       --&spellsuffix|
       --?"X[*R:spellritual]" -eq "XYes"|&spellsuffix; [R]
       --:SKIP_PREP_CHECK|
+
+      --?[&trackPCSpellSlots] -eq 0|SKIP_FREE_SLOTS_CHECK
+      --?[&HighestSlot] -lt [&levelCounter]|DONE_SPELL_BUTTON
+
+      --:SKIP_FREE_SLOTS_CHECK|    
       --~testName|string;replace; ;-;[*R:spellname]
       --~testMule|system;findability;[&spellmulename];[&testName]
       --?[&testMule] -ne "AbilityNotFound"|MULE_SPELL
-      --&slotString|
-      --?[&levelCounter] -eq 9|SKIP_SLOT_LIST
-      --&slotString||&#
-      --&slotString|+63;{Slot Level|
-      --%slotcounter|[&levelCounter];9
-        --&slotString|+[&slotcounter]
-        --?[&slotcounter] -eq 9|SKIP_VERTICAL_BAR
-        --&slotString|+|
-        --:SKIP_VERTICAL_BAR|
-      --%|
-      --&slotString|+}
-      --^DONE_SLOT_LIST|
-      --:SKIP_SLOT_LIST|
-      --&slotString||9
-      --:DONE_SLOT_LIST|
+
       --&PCSpells|+ [rbutton][*R:spellname][&spellsuffix]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|&#64;{target|token_id}[&slotString][/rbutton]
       --=PCSpellCount|[$PCSpellCount.Raw] + 1 
       --^DONE_SPELL_BUTTON|
@@ -653,6 +685,16 @@
   --]|
   --~spellInfo|string;split;|;[&reentryval]
   --=UpCast|[&spellInfo4] - [&spellInfo1]
+  --?[&trackPCSpellSlots] -eq 0|SKIP_CASTING_SLOT_CHECK
+  -->GET_AVAILABLE_SPELL_SLOTS|[&spellInfo4];castSlotAvailable
+  --?[&castSlotAvailable] -eq 0|NO_SLOTS_AVAILABLE
+  -->DEDUCT_SPELL_SLOT|[&spellInfo4]
+  --^SKIP_CASTING_SLOT_CHECK|
+  --:NO_SLOTS_AVAILABLE|
+  --#whisper|self
+  --+|You do not have a level [$spellInfo4] spell slot available to cast [&spellInfo2]
+  --^PC_DONE_SPELL|
+  --:SKIP_CASTING_SLOT_CHECK|
   --&action_target|[&spellInfo3]
   --#title|[&spellInfo2]
   --#leftsub|[*S:character_name]
@@ -910,4 +952,31 @@
   --+|[*S:character_name] has no [&ResourceUsed] left.
   --#emoteText|[*S:character_name] is all out of [&ResourceUsed].
   --X|
+
+  --:FIND_CLASS_LEVEL|class;variableToSet
+  --&[%2%]|0
+  --?"[*S:class]" -eq "[%1%]"|&[%2%];[*S:base_level]
+  --?"[*S:multiclass1]" -eq "[%1%]"|&[%2%];[*S:multiclass1_lvl]
+  --?"[*S:multiclass2]" -eq "[%1%]"|&[%2%];[*S:multiclass2_lvl]
+  --?"[*S:multiclass3]" -eq "[%1%]"|&[%2%];[*S:multiclass3_lvl]
+  --?"[*S:multiclass4]" -eq "[%1%]"|&[%2%];[*S:multiclass4_lvl]
+  --<|
+
+  --:GET_AVAILABLE_SPELL_SLOTS|slotlevel;variableToSet
+  --&_maxSlots|[*S:lvl[%1%]_slots_total]
+  --&[%2%]|[*S:lvl[%1%]_slots_expended]
+  --<|
+
+  --:DEDUCT_SPELL_SLOT|slotlevel
+  --!a:[*S:character_id]|lvl[%1%]_slots_expended:-=1
+  --<|
+
+  --:GET_HIGHEST_LEVEL_SPELL_SLOT|variableToSet
+  --&[%1%]|0
+  --%levelCounter|1;9
+    -->GET_AVAILABLE_SPELL_SLOTS|[&levelCounter];slotTest
+    --?[&slotTest] -gt 0|&[%1%];[&levelCounter]
+  --%|
+  --<|
+
 }}
