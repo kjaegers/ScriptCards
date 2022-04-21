@@ -1,0 +1,86 @@
+!script {{
+  --/|Script Name : 5E Miniworlds NPC Importer
+  --/|Version     : 1.0.0
+  --/|Requires SC : 1.6.9+
+  --/|Author      : Kurt Jaegers
+
+  --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
+  --/|                to make settings changes, make them in an external editor (like NOTEPAD) and copy/paste the whole
+  --/|                macro into the Roll20 editor.
+
+  --/|Description : This script can be used with either a PC or NPC selected. It will generate an action menu with clickable
+  --/|              buttons to execute character actions and cast spells. The menu is whispered to the player executing the
+  --/|              script, while the results of clicking the action buttons are displayed in general chat.
+
+  --/|=========================================================================================================
+  --/|Settings Area - Customize the behavior of the script here
+  --/|
+  --/|=========================================================================================================
+
+  --#parameterdelimiter|$
+  --IScriptCards needs additional information to continue;Provide Markdown for NPC to Import|q;Markdown;Markdown?
+  --~|array$fromstring$Lines$>$[&Markdown]
+  --#parameterdelimiter|;
+  --~count|array;getlength;Lines
+  --~charName|string;after;## ;[@Lines(1)]
+  --~charRace|string;before;,;[@Lines(2)]
+  --~charRace|string;after;*;[&charRace]
+  --~charProf|string;after;, ;[@Lines(2)]
+  --~charProf|string;before;*;[&charProf]
+  --~charAge|string;after;Age** ;[@Lines(4)]
+  --~charAge|string;before; (;[&charAge]
+  --~charLevel|string;after;Level:* ;[@Lines(4)]
+  --~charLevel|string;before;);[&charLevel]
+  --~charAC|string;after;Class **;[@Lines(5)]
+  --~charHP|string;after;Points **;[@Lines(6)]
+  --~charHP|string;before; (;[&charHP]
+  --~charHPFormula|string;after;(;[@Lines(6)]
+  --~charHPFormula|string;before;);[&charHPFormula]
+  --~walkSpeed|string;after;Walk** ;[@Lines(7)]
+  --~walkSpeed|string;before;,;[&walkSpeed]
+  --~flySpeed|string;after;Fly** ;[@Lines(7)]
+  --~flySpeed|string;before;,;[&flySpeed]
+  --~swimSpeed|string;after;Swim** ;[@Lines(7)]
+  --~swimSpeed|string;before;,;[&swimSpeed]
+  --#parameterdelimiter|$
+  --~|array$fromstring$Attributes$|$[@Lines(11)]
+  --#parameterdelimiter|;
+  --~charStr|string;before;(;[@Attributes(1)]
+  --~charDex|string;before;(;[@Attributes(2)]
+  --~charCon|string;before;(;[@Attributes(3)]
+  --~charInt|string;before;(;[@Attributes(4)]
+  --~charWis|string;before;(;[@Attributes(5)]
+  --~charCha|string;before;(;[@Attributes(6)]
+  --~charAppearance|string;after;* :;[@Lines(14)]
+  --~charCharacteristics|string;after;* :;[@Lines(16)]
+  --~charTrait|string;after;* :;[@Lines(18)]
+  --~charIdeal|string;after;* :;[@Lines(20)]
+  --#debug|1
+  --~charPassivePerception|string;after;n ** ;[@Lines(23)]
+  --=GossipLine|[&count] - 1
+  --&charGossip|[@Lines([$GossipLine.Raw])]
+  --#debug|0
+
+  --+Name|[&charName]
+  --+Race|[&charRace]
+  --+Prof|[&charProf]
+  --+Age|[&charAge]
+  --+Level|[&charLevel]
+  --+HP|[&charHP]
+  --+HP Formula|[&charHPForumla]
+  --+Walk Speed|[&walkSpeed]
+  --+Fly Speed|[&flySpeed]
+  --+Swim Speed|[&swimSpeed]
+  --+Strength|[&charStr]
+  --+Dexterity|[&charDex]
+  --+Constitution|[&charCon]
+  --+Intelligence|[&charInt]
+  --+Wisdom|[&charWis]
+  --+Charisma|[&charCha]
+  --+Appearance|[&charAppearance]
+  --+Characteristics|[&charCharacteristics]
+  --+Trait|[&charTrait]
+  --+Ideal|[&charIdeal]
+  --+Passive Perception|[&charPassivePerception]
+  --+Gossip|[&charGossip]
+}}

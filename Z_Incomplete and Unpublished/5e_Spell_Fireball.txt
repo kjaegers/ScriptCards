@@ -1,0 +1,150 @@
+!script {{
+  --/|Script Name : 5E Fireball
+  --/|Version     : 1.1
+  --/|Requires SC : 1.3.1+
+  --/|Author      : Kurt Jaegers
+
+  --/|Description : Deals fireball damage to all tokens that represent creations in a 20' radius around target token
+
+  --/|Set this to either "scriptcards", "token-mod", "alterbars", or anything else to not apply damage
+  --&damageApplyScript|scriptcards
+
+  --/|Set this to the bar number you use to track hit points
+  --&hitPointsBar|3
+
+  --/|Set this variable to the (case sensitive) name of a Jukebox track to play when the spell is cast
+  --&SoundEffectTrack|Spell_FireBurst
+
+  --/|===================== There are no customization options below this line =====================
+
+  --&spellName|Burning Hands
+
+  --/|Set up the card appearance
+  --#title|@{selected|character_name} casts Fireball!
+  --#bodyFontSize|12px
+  --#titlecardbackground|#800000
+  --#leftsub|Save DC @{selected|spell_save_dc}
+
+  --/|Get a spell slot level from the caster.
+  --=SpellLevel|?{Spell Slot Level?|3|4|5|6|7|8|9}
+  --#rightsub|Slot Level: [$SpellLevel]
+
+  --/|Calculate damage based on spell slot. Fireball is 8d6 for 3rd level, so 5+SpellLevel d6 total.
+  --=DamageDice|[$SpellLevel.Total] + 5
+  --=Damage|[$DamageDice.Total]d6
+  --=HalfDamage|[$Damage.Total] \ 2
+
+  --/|Determine damage subroutine. Start by assuming we aren't going to apply damage
+  --&damageRoutine|DontApplyDamage
+  --?[&damageApplyScript] -eq "scriptcards"|&damageRoutine;ApplyDamageScriptCards
+  --?[&damageApplyScript] -eq "token-mod"|&damageRoutine;ApplyDamageTokenmod
+  --?[&damageApplyScript] -eq "alterbars"|&damageRoutine;ApplyDamageAlterbars
+
+  --/|Since we want to be able to hover over a roll and see the dice details, output the rolled damage at the
+  --/|top of the card. If all critters make their save, the half damage roll won't contain the details.
+  --+|[c][b]Damage Roll: [/b][$Damage][/c]
+  --+|&nbsp;
+
+  --a|[&SoundEffectTrack]
+
+  --/|Get all character tokens on the page into the "alltokens" array
+  --~|array;pagetokens;alltokens;@{target|token_id};char
+
+  --/|Create the "inRange" array. It will have a blank item in it to begin with, which we will remove later.
+  --~|array;define;inRange;
+
+  --/|Loop through all of the tokens in "alltokens" to check their distance
+  --~tokenid|array;getfirst;alltokens
+  --?[&tokenid] -eq ArrayError|endOutput
+  --:loopCheck|
+
+  --/|Skip targets that are not on the token layer or that don't represent creatures
+  --?[*[&tokenid]:t-layer] -ne objects|continue
+
+  --/|Check the distance between the target token and the current array token. 20 feet is 4 units
+  --~dist|distance;@{target|token_id};[&tokenid]
+  --?[$dist] -gt 4|continue
+
+  --/|If we didn't skip over this part, the token is within 20 feet, so add it to the inRange array
+  --~|array;add;inRange;[&tokenid]
+  --:continue|
+  --~tokenid|array;getnext;alltokens
+  --?[&tokenid] -ne ArrayError|loopCheck
+
+  --/|Remove the dummy first item in the inRange array
+  --~|array;removeat;inRange;0
+
+  --/|Loop through the inRange tokens and roll saves for each one and apply damage
+  --~tokenid|array;getfirst;inRange
+  --?[&tokenid] -eq ArrayError|endOutput
+  --:loopDisplay|
+  -->MakeSavingThrow|[&tokenid];dexterity;@{selected|spell_save_dc};[$Damage.Total];fire;thisTokenDamage;saveResult;dex
+  --+[*[&tokenid]:character_name]:|Save [$savingThrow] [r][$thisTokenDamage] fire damage[/r]
+
+  --/|Put a burn-fire visual effect on impacted tokens
+  --vtoken|[&tokenid] burn-fire
+
+  -->[&damageRoutine]|[&tokenid];[&hitPointsBar];-[$thisTokenDamage.Raw]
+
+  --/|Get the next token and continue the loop until we run out.
+  --~tokenid|array;getnext;inRange
+  --?[&tokenid] -ne ArrayError|loopDisplay
+
+  --/|Add some extra visual effects - a nova-fire at the target, and a beam-fire from source to target
+  --vtoken|@{target|token_id} nova-fire
+  --vbetweentokens|@{selected|token_id} @{target|token_id} beam-fire
+
+  --:endOutput|
+  --X|
+
+  --/|===================== Subroutines =====================
+  
+  --/|There are four "ApplyDamage" subroutines - one for scriptcards built-in functions, one for alterbars, one for token-mod, and one to not apply damage
+  
+  --/|Apply damage via ScriptCards' built-in object modification function (new in ScriptCards 1.5.0)
+  --:ApplyDamageScriptCards|Parameters are tokenid;bar#;amount
+  --!t:[%1%]|bar[%2%]_value:+=[%3%]
+  --<|
+
+  --/|Token-Mod doesn't have a "set to a relative number", so we get the current bar value, subtract thedamage amount
+  --/|make sure it doesn't fall below 0, and set the amount back into the bar.
+  --:ApplyDamageTokenmod|Parameters are tokenid;bar#;amount
+  --=applyValue|[%3%]
+  --?[$applyValue] -lt 0|=applyValue;[$applyValue] {NEG}
+  --=newValue|[*[%1%]:t-bar[%2%]_value] - [$applyValue]
+  --?[$newValue] -lt 0|=newValue;0
+  --@token-mod|_ignore-selected _ids [%1%] _set bar[%2%]_value|[$newValue.Raw]
+  --<| 
+  
+  --/|AlterBars supports relative values for the amount parameter, so we just pass it the value with a "-" in front of it.
+  --:ApplyDamageAlterbars|Parameters are tokenid;bar#;amount
+  --=applyValue|[%3%]
+  --?[$applyValue] -lt 0|=applyValue;[$applyValue] {NEG}
+  --@alter|_target|[%1%] _bar|[%2%] _amount|-[%3%] _show|none
+  --<|
+
+  --/|Just a dummy routine that doesn't do anything, but it is easier to do it this way than adding logic to see if we are
+  --/|skipping applying damage in the main routine.
+  --:DontApplyDamage|
+  --<|
+
+  --/|Subroutine to make saving throws and calculate damage amounts
+  --:MakeSavingThrow|tokenid;savetype;dc;damage;damagetype;damagevariable;saveresultvariable;shortabilityname
+  --?"X[*[%1%]:npc_[%8%]_save_base]" -eq "X"|>set_string;baseSaveBonus;|>set_string;baseSaveBonus; + + [*[%1%]:npc_[%8%]_save_base]
+  --=savingThrow|1d20 + [*[%1%]:[%2%]_save_bonus] [&baseSaveBonus]
+  --&dmgmult|
+  --?[$savingThrow] -ge [%3%]|>set_string;dmgmult; \ 2
+  --?[$savingThrow] -lt [%3%]|>set_string;[%7%];fail
+  --?[$savingThrow] -ge [%3%]|>set_string;[%7%];success
+  --?"[*[%1%]:npc_resistances]" -inc "[%5%]" -and [$savingThrow] -lt [%3%]|>set_string;dmgmult; \ 2
+  --?"[*[%1%]:npc_resistances]" -inc "[%5%]" -and [$savingThrow] -ge [%3%]|>set_string;dmgmult; * 0
+  --?"[*[%1%]:npc_vulnerabilities]" -inc "[%5%]" -and [$savingThrow] -ge [%3%]|>set_string;dmgmult;
+  --?"[*[%1%]:npc_vulnerabilities]" -inc "[%5%]" -and [$savingThrow] -lt [%3%]|>set_string;dmgmult; * 2
+  --?"[*[%1%]:npc_immunities]" -inc "[%5%]"|>set_string;dmgmult; * 0
+    --=[%6%]|[%4%] [&dmgmult] 
+  --<|
+  --:set_string|mod_variable;value
+  --&[%1%]|[%2%]
+  --<|
+  
+}}
