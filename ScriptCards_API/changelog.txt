@@ -1,5 +1,10 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.7.5  - Two new settings: outputtagprefix and outputcontentprefix. Anthing in these settings will be pre-pended to the tag or content portion of
+           all subsequent --+ or --* lines. By default, outputtagprefix is empty and outputcontentprefix contains a single space. You could use these
+           to indent lines by using --#outputtagprefix|&nbsp; or something similar. (&nbsp; is the HTML character for non-breaking space).
+           Added some additional information to error messages for conditionals when a value can't be identified.
+
 v 1.7.4  - Reworked the parameters code for Object Modification (--!) to allow for a colon (:) in the content of a setting. Included a function from
            The Aaron's TokenMod to clean up an image url to make it appropriate for setting a token's imgsrc value.
 

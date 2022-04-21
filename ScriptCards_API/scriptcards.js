@@ -1,6 +1,6 @@
+/* eslint-disable no-undef */
 /* eslint-disable no-useless-escape */
 /* eslint-disable no-redeclare */
-/* eslint-disable no-undef */
 // Github:   https://gist.github.com/kjaegers/515dff0f04c006d7192e0fec534d96bf
 // By:       Kurt Jaegers
 // Contact:  https://app.roll20.net/users/2365448/kurt-j
@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.7.4";
+	const APIVERSION = "1.7.5";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -125,6 +125,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		locale: "en-US", //apparently not supported by Roll20's Javascript implementation...
 		timezone: "America/New_York",
 		hpbar: "3",
+		outputtagprefix: "",
+		outputcontentprefix: " ",
 		styleTableTag: " border-collapse:separate; border: solid black 2px; border-radius: 6px; -moz-border-radius: 6px; ",
 		stylenone: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; ",
 		stylenormal: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolornormal}; border-color: #87850A; color: #000000;",
@@ -909,7 +911,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														}
 														stringVariables[varName] = replaceVariableContent(varValue, cardParameters, true);
 													} else {
-														log(`ScriptCards Error: Variable name or value not specified in conditional on line ${lineCounter}`);
+														log(`ScriptCards Error: Variable name or value not specified in conditional on line ${lineCounter} (${thisTag})`);
 													}
 													break;
 												case "next":
@@ -1885,7 +1887,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 						// Handle direct output lines
 						if (thisTag.charAt(0) === "+") {
-							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent, cardParameters, true));
+							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent, cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
 
 							tableLineCounter += 1;
 							if (tableLineCounter % 2 == 0) {
@@ -1903,7 +1905,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 
 						if (thisTag.charAt(0) === "*") {
-							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent, cardParameters, true));
+							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent, cardParameters, true),  cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
 
 							tableLineCounter += 1;
 							if (tableLineCounter % 2 == 0) {
@@ -1990,7 +1992,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											}
 											stringVariables[varName] = replaceVariableContent(varValue, cardParameters, false);
 										} else {
-											log(`ScriptCards Error: Variable name or value not specified in conditional on line ${lineCounter}`);
+											log(`ScriptCards Error: Variable name or value not specified in conditional on line ${lineCounter} (${thisTag}, ${thisContent})`);
 										}
 										break;
 									case "next":
@@ -3028,8 +3030,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return input;
 	}
 
-	function buildRowOutput(tag, content) {
-		return htmlRowTemplate.replace("=X=ROWDATA=X=", `<strong>${tag}</strong> ${content}`);
+	function buildRowOutput(tag, content, tagprefix, contentprefix) {
+		return htmlRowTemplate.replace("=X=ROWDATA=X=", `<strong>${tagprefix}${tag}</strong>${contentprefix}${content}`);
 	}
 
 	function buildTooltip(text, tip, style) {
