@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.7.5";
+	const APIVERSION = "1.7.6";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -902,7 +902,17 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													}
 													break;
 												case "rollset":
-													rollVariables[varName] = parseDiceRoll(replaceVariableContent(varValue, cardParameters), cardParameters, true);
+													//rollVariables[varName] = parseDiceRoll(replaceVariableContent(varValue, cardParameters), cardParameters, true);
+													if (varName.indexOf('.') == -1) {
+														rollVariables[varName] = parseDiceRoll(replaceVariableContent(thisContent, cardParameters), cardParameters, true);
+													} else {
+														var parts = varName.split(".");
+														if (parts[0] && rollVariables[parts[0]]) {
+															if (parts[1] && rollVariables[parts[0]][parts[1]]) {
+																rollVariables[parts[0]][parts[1]] = replaceVariableContent(thisContent, cardParameters);
+															}
+														}
+													}
 													break;
 												case "stringset":
 													if (varName && varValue) {
@@ -1882,7 +1892,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						// Handle setting roll ID variables
 						if (thisTag.charAt(0) === "=") {
 							var rollIDName = thisTag.substring(1).trim();
-							rollVariables[rollIDName] = parseDiceRoll(replaceVariableContent(thisContent, cardParameters), cardParameters, true);
+							if (rollIDName.indexOf('.') == -1) {
+								rollVariables[rollIDName] = parseDiceRoll(replaceVariableContent(thisContent, cardParameters), cardParameters, true);
+							} else {
+								var parts = rollIDName.split(".");
+								if (parts[0] && rollVariables[parts[0]]) {
+									if (parts[1] && rollVariables[parts[0]][parts[1]]) {
+										rollVariables[parts[0]][parts[1]] = replaceVariableContent(thisContent, cardParameters);
+									}
+								}
+							}
 						}
 
 						// Handle direct output lines
@@ -1983,7 +2002,17 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 										break;
 									case "rollset":
-										rollVariables[varName] = parseDiceRoll(replaceVariableContent(varValue, cardParameters, false), cardParameters);
+										//rollVariables[varName] = parseDiceRoll(replaceVariableContent(varValue, cardParameters, false), cardParameters);
+										if (varName.indexOf('.') == -1) {
+											rollVariables[varName] = parseDiceRoll(replaceVariableContent(thisContent, cardParameters), cardParameters, true);
+										} else {
+											var parts = varName.split(".");
+											if (parts[0] && rollVariables[parts[0]]) {
+												if (parts[1] && rollVariables[parts[0]][parts[1]]) {
+													rollVariables[parts[0]][parts[1]] = replaceVariableContent(thisContent, cardParameters);
+												}
+											}
+										}
 										break;
 									case "stringset":
 										if (varName && varValue) {

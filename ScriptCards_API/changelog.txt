@@ -1,5 +1,13 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.7.6  - Added the abilityto set roll components with --= (and case or conditional statements). This is accomplished by including the roll component
+           suffix, so --=Roll.Total will allow you to set the Total value on a roll without any relationship to the other components (.Aces, .Odds,
+           .Raw, etc.) The most obvious usage of this is to set the .Style component to override fumble/crit/both coloring. There are several script
+           settings that control this colorization, so if you want to make a 19 or 20 a crit, you could do the following after the roll:
+             --?[$Roll.Base] -ge 19|=Roll.Style;[~stylecrit]
+           The defined settings are "stylenone", "stylenormal", "stylefumble", "stylecrit", and "styleboth"
+           Note that you are not limited to setting just .Style, but any of the roll components. Use your new powers for good!
+
 v 1.7.5  - Two new settings: outputtagprefix and outputcontentprefix. Anthing in these settings will be pre-pended to the tag or content portion of
            all subsequent --+ or --* lines. By default, outputtagprefix is empty and outputcontentprefix contains a single space. You could use these
            to indent lines by using --#outputtagprefix|&nbsp; or something similar. (&nbsp; is the HTML character for non-breaking space).
