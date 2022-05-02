@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.7.7  - Rolled back the ability to set roll components in a conditional or case statement as there was a bug preventing it from setting roll
+           variables at all. Will be corrected in the next version, but is disabled for not.
+
 v 1.7.6  - Added the abilityto set roll components with --= (and case or conditional statements). This is accomplished by including the roll component
            suffix, so --=Roll.Total will allow you to set the Total value on a roll without any relationship to the other components (.Aces, .Odds,
            .Raw, etc.) The most obvious usage of this is to set the .Style component to override fumble/crit/both coloring. There are several script
