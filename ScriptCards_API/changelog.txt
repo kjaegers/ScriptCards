@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.7.7a - Bug fix for rollable tables broken in 1.7.2
+
 v 1.7.7  - Rolled back the ability to set roll components in a conditional or case statement as there was a bug preventing it from setting roll
            variables at all. Will be corrected in the next version, but is disabled for not.
 
