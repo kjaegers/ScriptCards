@@ -1,0 +1,18 @@
+!script {{
+  --/|This example watches for graphics objects (in this case tokens) to change. if the value that changed is the current hit points
+  --/|(as specified by the hitPointBar variable below), it will be checked to see if it has hit 0. If so, the token will be marked 
+  --/|with the "dead" status marker.
+  --#hidecard|1
+  --/|TRIGGER_REPLACEMENTS
+  --&hitPointBar|3
+  --?[&GraphicOldbar[&hitPointBar]_value] -eq [&GraphicNewbar[&hitPointBar]_value]|SKIP
+  --?[&GraphicNewbar[&hitPointBar]_value] -gt 0|SKIP
+  --?"[&GraphicOldstatusmarkers]" -inc "dead"|SKIP
+  --&newstatus|dead
+  --?"X[&GraphicOldstatusmarkers]" -eq "X"|SETSTATUS
+  --&newstatus|[&GraphicOldstatusmarkers],dead
+  --:SETSTATUS|
+  --!t:[&GraphicOld_id]|statusmarkers:[&newstatus]
+  --X|
+  --:SKIP|
+}}

@@ -1,0 +1,29 @@
+!script {{
+  --/|TRIGGER_REPLACEMENTS
+  --/|If there are no entries in the turn order, don't do anything
+  --?"X[*C:turnorder]X" -eq "X[]X"|SKIP
+  --/|Split the turn order up into its components
+  --~order|string;split;},{;[*C:turnorder]
+  --/|Extract the first item from the turn order and grab the ID
+  --~order1|string;replace;[{;;[&order1]
+  --~order1|string;replaceall;";;[&order1]
+  --~ThisTurn|string;split;,;[&order1]
+  --~ThisTurnID|string;after;id:;[&ThisTurn1]
+  --/|Set the card's title to the name of the token whose turn it is
+  --#title|[*[&ThisTurnID]:t-name]
+  --/|Display the token and an alert that it is that token's turn
+  --+[img width=70][*[&ThisTurnID]:t-imgsrc][/img]|[b][*[&ThisTurnID]:t-name]'s turn[/b]
+  --/|Display status effects active on the token (if any)
+  --?"X[*[&ThisTurnID]:t-statusmarkers]" -eq "X"|NOSTATUS
+  --+Current Effects|[*[&ThisTurnID]:t-statusmarkers]
+  --:NOSTATUS|
+  --/|If there was only one entry in the turn order, don't display the "on deck..." text
+  --?[$orderCount] -eq 1|SKIP
+  --~order2|string;replace;[{;;[&order2]
+  --~order2|string;replaceall;";;[&order2]
+  --~NextTurn|string;split;,;[&order2]
+  --~NextTurnID|string;after;id:;[&NextTurn1]
+  --+|[b][*[&NextTurnID]:t-name][/b] is on deck...
+  --:SKIP|
+  --X|
+}}

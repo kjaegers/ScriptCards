@@ -1,0 +1,7 @@
+!script {{
+  --/|Watches for the player page to change and simply announces the move to chat.
+  --/|TRIGGER_REPLACEMENTS
+  --#title|The action moves to...
+  --#activepage|[&NewPageID]
+  --+|[b][c][*P:name][/c][/b]
+}}
