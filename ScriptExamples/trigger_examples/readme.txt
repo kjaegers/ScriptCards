@@ -1,7 +1,7 @@
 The examples in this directory are intended for use with the experimental version of ScriptCards that includes support for event triggers.
 
 Please note that a colon (:) is not a valid filename character, so I have replaced them with underscores (_) in the filenames here. These
-trigger script should be placed on abilites on your ScriptCards_Triggers character with names matching these filenames, but with colons in
+trigger scripts should be placed on abilites on your ScriptCards_Triggers character with names matching these filenames, but with colons in
 the place of the underscores, so "change:campaign:playerpageid", etc.
 
 ScriptCards Triggers Documentation:
@@ -33,13 +33,17 @@ Events marked with :* at the end require you to define the particular property o
 can cascade into a huge number of event calls that can cause timing issues if you were to try to respond to them all. For example, you can 
 watch for a particular attribute on a character sheet to change, such as “hp”, by using the event name “change:attribute:hp”, but you cannot 
 watch ALL attributes (change:attribute is not supported).
+
 Setting up for ScriptCard Triggers
+
 In order to utilize ScriptCard Triggers, you will need to create a character in your game named exactly “ScriptCard_Triggers”. This name 
 is case sensitive, and the character must exist in the game at the time the API sandbox starts for Triggers to be enabled. If you have a 
 correctly named character, you will see a message in the API console similar to “ScriptCards Triggers Active. Trigger Character ID 
 is -N1W93TIw0ofPHUglMV1” when the sandbox starts. If you add the character after the sandbox is running, just restart the sandbox from the 
 API console to have the script re-detect the character.
+
 Setting up an Event Handler
+
 In order to respond to events, you will need to create Abilities on the ScriptCards_Triggers character that are named after the event you 
 wish to respond to. The content of the ability is the macro you wish to have execute when the event is triggered.
 
