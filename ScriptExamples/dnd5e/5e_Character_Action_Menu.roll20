@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.8.5
+  --/|Version     : 1.8.6
   --/|Requires SC : 1.6.4a+
   --/|Author      : Kurt Jaegers
 
@@ -179,7 +179,7 @@
     --&NPCCantrips|[br]
     --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
     --:NPCCantrips_Display|
-      --~testName|string;replace; ;-;[*R:spellname]
+      --~testName|string;replaceall; ;-;[*R:spellname]
       --~testMule|system;findability;[&spellmulename];[&testName]
       --?[&testMule] -ne "AbilityNotFound"|MULE_NPC_CANTRIP
       --?"[*R:spelloutput]" -eq ATTACK|NPC_CANTRIP_GENERATE_WITH_TARGET
@@ -203,7 +203,7 @@
       --?[&skipNPCPrepCheck] -eq 1|SKIP_NPC_PREP_CHECK
       --?"X[*R:spellprepared]" -ne "X1"|NPC_DONE_SPELL_BUTTON
       --:SKIP_NPC_PREP_CHECK|
-      --~testName|string;replace; ;-;[*R:spellname]
+      --~testName|string;replaceall; ;-;[*R:spellname]
       --~testMule|system;findability;[&spellmulename];[&testName]
       --?[&testMule] -ne "AbilityNotFound"|MULE_NPC_SPELL
       --&slotString|
@@ -388,7 +388,7 @@
   --&PCCantrips|[br]
   --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
     --:PCCantrips_Display|
-      --~testName|string;replace; ;-;[*R:spellname]
+      --~testName|string;replaceall; ;-;[*R:spellname]
       --~testMule|system;findability;[&spellmulename];[&testName]
       --?[&testMule] -ne "AbilityNotFound"|MULE_CANTRIP
       --?"[*R:spelloutput]" -eq ATTACK|CANTRIP_GENERATE_WITH_TARGET
@@ -469,7 +469,7 @@
       --?[&HighestSlot] -lt [&levelCounter]|DONE_SPELL_BUTTON
 
       --:SKIP_FREE_SLOTS_CHECK|    
-      --~testName|string;replace; ;-;[*R:spellname]
+      --~testName|string;replaceall; ;-;[*R:spellname]
       --~testMule|system;findability;[&spellmulename];[&testName]
       --?[&testMule] -ne "AbilityNotFound"|MULE_SPELL
 

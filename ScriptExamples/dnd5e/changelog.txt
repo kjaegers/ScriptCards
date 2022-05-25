@@ -1,5 +1,8 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-05-25 - 5E Character Action Menu. Thanks to JustinG for catching that spell names with more than one space in them wouldn't be found on a spell mule.
+             Updated the code to allow this to work.
+
 2022-04-18 - 5E Character Action Script - Added the ability to (optionally, of course) track and enforce spell slot limits for PCs. If trackPCSpellSlots is set
              to 1 in the configuraiton section, available spell slots will be used to determine which buttons are displayed on the action menu for spells. It 
              also determines which levels are available from the casting menu when the player clicks a spell button. If the player scrolls back up and tries to
