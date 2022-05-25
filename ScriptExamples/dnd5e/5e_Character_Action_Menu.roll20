@@ -922,7 +922,7 @@
   --]|[
     --#whisper|nobody
     --#title|Should never show
-  --]
+  --]|
   --~tokenCount|array;getlength;SC_SelectedTokens
   --=tokenCount|[&tokenCount] - 1
   --%loop|0;[$tokenCount.Raw]
