@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.8.6
+  --/|Version     : 1.9.0
   --/|Requires SC : 1.6.4a+
   --/|Author      : Kurt Jaegers
 
@@ -65,6 +65,12 @@
   --/|needs to be enabled, and a resource named to match the Ammo (case sensitive) needs to exist on the sheet to track ammo.
   --&requireAmmo|0
 
+  --/|If set to 1, global attack modifiers/damage will be listed a buttons that can be clicked to toggle them on and off. NOTE: due to
+  --/|roll20's strangeness in handling some attributes, if a global modifier has never been turned on from the character sheet, the
+  --/|buttons here may not be able to set the active state. Opening the character sheet and toggling the modifier on and  back off will
+  --/|fix it permanently for that modifier.
+  --&showGlobalModifierButtons|0
+
   --/|End Settings Area
   --/|=========================================================================================================
 
@@ -75,6 +81,7 @@
   --/|simulate the 5E style
   --#bodyfontface|Helvetica
   --#bodyfontcolor|#220000
+  --#bodyfontsize|12px
   --#buttonfontsize|9px
   --#buttonbackground|#58180d
   --#buttonfontface|Tahoma
@@ -85,6 +92,7 @@
   --#oddrowbackground|#f6efd6
   --#evenrowbackground|#f6efd6
   --#subtitlefontcolor|#58180d
+  --#lineheight|7pt
 
   --/|The menu is whispered to the player executing the macro. #whisper will be set again later for the
   --/|actual output to be public.
@@ -362,6 +370,7 @@
 
   --:proc_pc|
   --+|[hr #58180d]
+  --+| 
   --#whisper|self
 
   --?[&selfHandleAdvantageMode] -eq 1|[
@@ -369,6 +378,20 @@
     --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
     --+|[r]Roll Mode: [&mode] | [rbutton]N::SET_ADV_MODE;0[/rbutton][rbutton]A::SET_ADV_MODE;1[/rbutton][rbutton]D::SET_ADV_MODE;2[/rbutton][/r]
   --]|
+
+  --?[&showGlobalModifierButtons] -eq 1|[
+    -->Create_Global_Attack_Modifier_Buttons|[*S:character_id];gambuttons
+    -->Create_Global_Damage_Modifier_Buttons|[*S:character_id];gdmbuttons
+    --#buttonfontsize|8px
+    --?"X[&gambuttons]" -eq "X"|skip_gam_display
+    --+|[c][b]Global Attack Mods[/b][br][&gambuttons][/c]
+    --+|
+    --:skip_gam_display|
+    --?"X[&gdmbuttons]" -eq "X"|skip_gdm_display
+    --+|[c][b]Global Damage Mods[/b][br][&gdmbuttons][/c]
+    --#buttonfontsize|8px
+    --:skip_gdm_display|
+  --]| 
 
   --/|The PC Attack List (center of the main character sheet)
   --Rfirst|[*S:character_id];repeating_attack
@@ -852,6 +875,40 @@
   --&[%2%]|[&_GSM_Temp] 
   --<|
 
+  --:Create_Global_Attack_Modifier_Buttons|character_id;StringVariableToSet
+  --&_GAMB_Temp| 
+  --Rfirst|[%1%];repeating_tohitmod
+  --:_GAMB_Loop|
+  --?"[*R:global_attack_name]" -eq "NoRepeatingAttributeLoaded"|_GAMB_DONE
+  --?"[*R:global_attack_active_flag]" -eq "1"|>_AddGAMB;[*R:global_attack_name];00AA00
+  --?"[*R:global_attack_active_flag]" -ne "1"|>_AddGAMB;[*R:global_attack_name];AA0000
+  --Rnext| 
+  --?"[*R:global_attack_name]" -ne "NoRepeatingAttributeLoaded"|_GAMB_Loop
+  --:_GAMB_DONE|
+  --&[%2%]|[&_GAMB_Temp] 
+  --<|
+  
+  --:_AddGAMB| 
+  --&_GAMB_Temp|+ [rbutton:#ffffff:#[%2%]][%1%]::TOGGLE_GAM;[%1%][/rbutton] 
+  --<|
+
+    --:Create_Global_Damage_Modifier_Buttons|character_id;StringVariableToSet
+  --&_GDMB_Temp| 
+  --Rfirst|[%1%];repeating_damagemod
+  --:_GDMB_Loop|
+  --?"[*R:global_damage_name]" -eq "NoRepeatingAttributeLoaded"|_GDMB_DONE
+  --?"[*R:global_damage_active_flag]" -eq "1"|>_AddGDMB;[*R:global_damage_name];00AA00
+  --?"[*R:global_damage_active_flag]" -ne "1"|>_AddGDMB;[*R:global_damage_name];AA0000  
+  --Rnext| 
+  --?"[*R:global_damage_name]" -ne "NoRepeatingAttributeLoaded"|_GDMB_Loop
+  --:_GDMB_DONE|
+  --&[%2%]|[&_GDMB_Temp] 
+  --<|
+  
+  --:_AddGDMB| 
+  --&_GDMB_Temp|+ [rbutton:#ffffff:#[%2%]][%1%]::TOGGLE_GDM;[%1%][/rbutton] 
+  --<|
+
   --:Get_Ability_Modifier|attribute_string;returnnumericvalue;returnnamestring
   --?"[%1%]" -eq "strength_mod"|=[%2%];[*S:strength_mod]
   --?"[%1%]" -eq "strength_mod"|&[%3%];[STR]
@@ -980,5 +1037,26 @@
     --?[&slotTest] -gt 0|&[%1%];[&levelCounter]
   --%|
   --<|
+
+  --:TOGGLE_GAM|GAM Name
+   --Rfind|[*S:character_id];[&reentryval];repeating_tohitmod;global_attack_name
+  --?"[*R:global_attack_name]" -eq "NoRepeatingAttributeLoaded"|_TOGGLE_ERROR
+  --?"[*R:global_attack_active_flag]" -eq "1"|>_setGlobalMod;[*R>global_attack_active_flag];0|>_setGlobalMod;[*R>global_attack_active_flag];1
+  --^proc_pc|
+  --X|
+
+  --:TOGGLE_GDM|GDM Name
+   --Rfind|[*S:character_id];[&reentryval];repeating_damagemod;global_damage_name
+  --?"[*R:global_damage_name]" -eq "NoRepeatingAttributeLoaded"|_TOGGLE_ERROR
+  --?"[*R:global_damage_active_flag]" -eq "1"|>_setGlobalMod;[*R>global_damage_active_flag];0|>_setGlobalMod;[*R>global_damage_active_flag];1
+  --^proc_pc|
+  --X|
+
+  --:_setGlobalMod|name;value
+  --!a:@{selected|character_id}|[%1%]:[%2%]  
+  --<|
+
+  --:_TOGGLE_ERROR|Bad name
+  --X|
 
 }}

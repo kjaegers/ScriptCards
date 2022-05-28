@@ -1,5 +1,14 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-05-28 - 5E Character Action Menu 1.9.0 - In response to a forum request by user John D., the Action Menu now includes support for toggling Global
+             attack and damage modifiers on or off right from the action menu. If &showGlobalModifierButtons is set to 1 in the settings area (as with
+             most/all new features, it is off by default), the action menu will display a summary of the character's defined Global Attack and Global
+             Damage modifiers as buttons at the top of the menu. Active modifiers will have green buttons, while inactive modifiers will have red buttons.
+             Clicking one of the buttons will toggle that modifier and redisplay the menu. NOTE: There is a wierdness/bug in Roll20 that can prevent
+             setting attributes via the API that have never been initialized on the character sheet. This means that these buttons won't be able to toggle
+             on a modifier that has never been toggled on from the character sheet. Manually toggling a modifier on and off once should fix this permanently.
+             There were also a couple of small font/style changes to make things (especially for characters with lots of abilities) look a bit nicer.
+
 2022-05-25 - 5E Character Action Menu. Thanks to JustinG for catching that spell names with more than one space in them wouldn't be found on a spell mule.
              Updated the code to allow this to work.
 
