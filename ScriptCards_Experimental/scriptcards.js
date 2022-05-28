@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.9.5 experimental";
+	const APIVERSION = "1.9.6 experimental";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -237,7 +237,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 				})
 				on('change:graphic', function (obj, prev) {
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:graphic:${prev.name}` });
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:graphic` });
 					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
 						var replacement = "";
 						for (const property in prev) {
@@ -247,6 +247,20 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						sendChat("API", metacard);
 					}
 				})
+				/*
+				on('change:token', function (obj, prev) {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:token` });
+					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
+						var replacement = "";
+						for (const property in prev) {
+							replacement += ` --&TokenOld${property}|${prev[property]} --&TokenNew${property}|${obj.get(property)}`
+						}
+						log(replacement);
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})
+				*/				
 				on('change:page', function (obj, prev) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:page` });
 					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
@@ -2618,7 +2632,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					debugOutput(`RollHilighting: ${rollHilighting}, Suffix: ${vSuffix}`);
 					if (rollHilighting == true && vSuffix == "Total" && rollVariables[vName] !== undefined) {
-						replacement = buildTooltip(replacement, "Roll: " + rollVariables[vName].RollText + "<br /><br />Result: " + rollVariables[vName].Text, rollVariables[vName].Style);
+						replacement = buildTooltip(replacement, "Roll: " + rollVariables[vName].RollText.replace("<", "L").replace(">", "G") + "<br /><br />Result: " + rollVariables[vName].Text, rollVariables[vName].Style);
 					}
 					if (cardParameters.debug !== "0") {
 						log(`ContentIn: ${content} Match: ${thisMatch}, vName: ${vName}, vSuffix: ${vSuffix}, replacement ${replacement}`)
@@ -3126,7 +3140,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 						rollResult.Text += ` ${text} `;
-						log(rollResult.Text);
+						//log(rollResult.Text);
 					}
 				}
 			}
@@ -3996,10 +4010,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 			// Roll the dice
 			for (var x = 0; x < count; x++) {
-				var thisRoll = Number(rollWithReroll(sides, rerollThreshold, rerollType, rerollUnlimited));
+				var thisDiceRoll = rollWithReroll(sides, rerollThreshold, rerollType, rerollUnlimited);
+				var thisRoll = Number(thisDiceRoll[1]);
 				if (fudgeDice) { thisRoll -= 2; resultSet.dontHilight = true }
 				var thisTotal = thisRoll;
-				var thisText = thisTotal.toString();
+				//var thisText = thisTotal.toString();
+				var thisText = thisDiceRoll[0];
 				if (fudgeDice) {
 					thisText = fudgeText[thisRoll + 1];
 				}
@@ -4078,10 +4094,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function rollWithReroll(sides, rerollThreshold, rType, unlimited) {
 		var thisRoll = randomInteger(sides);
+		var rollText = "";
 		var once = false;
-		while (rType == ">" && (unlimited || !once) && thisRoll >= rerollThreshold) { thisRoll = randomInteger(sides); once = true; }
-		while (rType == "<" && (unlimited || !once) && thisRoll <= rerollThreshold) { thisRoll = randomInteger(sides); once = true; }
-		return thisRoll;
+		while (rType == ">" && (unlimited || !once) && thisRoll >= rerollThreshold) { rollText += `[x${thisRoll}x]`; thisRoll = randomInteger(sides); once = true; }
+		while (rType == "<" && (unlimited || !once) && thisRoll <= rerollThreshold) { rollText += `[x${thisRoll}x]`; thisRoll = randomInteger(sides); once = true; }
+		rollText += thisRoll;
+		return [rollText, thisRoll]
 	}
 
 	function removeHighestRoll(rollSet, rollSetText, droppedRollSet) {

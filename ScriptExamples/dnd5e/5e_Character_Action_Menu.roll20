@@ -92,7 +92,7 @@
   --#oddrowbackground|#f6efd6
   --#evenrowbackground|#f6efd6
   --#subtitlefontcolor|#58180d
-  --#lineheight|7pt
+  --#lineheight|9pt
 
   --/|The menu is whispered to the player executing the macro. #whisper will be set again later for the
   --/|actual output to be public.
