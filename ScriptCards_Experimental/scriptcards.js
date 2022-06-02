@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.9.6 experimental";
+	const APIVERSION = "1.9.7 experimental";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -260,7 +260,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						sendChat("API", metacard);
 					}
 				})
-				*/				
+				*/
 				on('change:page', function (obj, prev) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:page` });
 					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
@@ -270,7 +270,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 						sendChat("API", metacard);
-					}					
+					}
 				})
 				on('add:page', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:page" });
@@ -288,7 +288,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							replacement += ` --&PageRemoved${property}|${obj[property]} `
 						}
 						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);					}
+						sendChat("API", metacard);
+					}
 				})
 				on('add:graphic', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:graphic" });
@@ -306,7 +307,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							replacement += ` --&GraphicRemoved${property}|${obj[property]} `
 						}
 						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);					}
+						sendChat("API", metacard);
+					}
 				})
 			} else {
 				log(`ScriptCards Triggers could not find character named "ScriptCards_Triggers"`);
@@ -2232,16 +2234,24 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												var x = s.get("left");
 												var y = s.get("top");
 												var pid = s.get("_pageid");
-												var effectInfo = findObjs({
-													_type: "custfx",
-													name: params[1].trim()
-												});
-												if (!_.isEmpty(effectInfo)) {
-													spawnFxWithDefinition(x, y, effectInfo[0].get('definition'), pid);
+												if (params[1].toLowerCase() == "ping") {
+													var moveall = false;
+													if (params[2] && params[2].toLowerCase() == "moveall") {
+														moveall = true;
+													}
+													sendPing(x, y, pid, stringVariables["SendingPlayerID"], moveall);
 												} else {
-													var t = params[1].trim();
-													if (t !== "" && t !== "none") {
-														spawnFx(x, y, t, pid);
+													var effectInfo = findObjs({
+														_type: "custfx",
+														name: params[1].trim()
+													});
+													if (!_.isEmpty(effectInfo)) {
+														spawnFxWithDefinition(x, y, effectInfo[0].get('definition'), pid);
+													} else {
+														var t = params[1].trim();
+														if (t !== "" && t !== "none") {
+															spawnFx(x, y, t, pid);
+														}
 													}
 												}
 											}
@@ -2258,6 +2268,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												var x2 = p.get("left");
 												var y2 = p.get("top");
 												var pid = s.get("_pageid");
+
 												var effectInfo = findObjs({
 													_type: "custfx",
 													name: params[2].trim()
@@ -2276,6 +2287,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														spawnFxBetweenPoints({ x: x1, y: y1 }, { x: x2, y: y2 }, t, pid);
 													}
 												}
+
 											}
 										}
 										break;
@@ -2288,17 +2300,25 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (cardParameters.activepage !== "") {
 											pid = cardParameters.activepage;
 										}
-										var effectInfo = findObjs({
-											_type: "custfx",
-											name: params[2].trim()
-										});
-										if (!_.isEmpty(effectInfo)) {
-											spawnFxWithDefinition(x, y, effectInfo[0].get('definition'), pid);
+										if (params[2].toLowerCase() == "ping") {
+											var moveall = false;
+											if (params[3] && params[3].toLowerCase() == "moveall") {
+												moveall = true;
+											}
+											sendPing(x, y, pid, stringVariables["SendingPlayerID"], moveall);
 										} else {
-											var t = params[2].trim();
-											if (x && y) {
-												if (t !== "" && t !== "none") {
-													spawnFx(x, y, t, pid);
+											var effectInfo = findObjs({
+												_type: "custfx",
+												name: params[2].trim()
+											});
+											if (!_.isEmpty(effectInfo)) {
+												spawnFxWithDefinition(x, y, effectInfo[0].get('definition'), pid);
+											} else {
+												var t = params[2].trim();
+												if (x && y) {
+													if (t !== "" && t !== "none") {
+														spawnFx(x, y, t, pid);
+													}
 												}
 											}
 										}
