@@ -196,7 +196,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (state[APINAME].triggersenabled) {
 			var findTriggerChar = findObjs({ _type: "character", name: "ScriptCards_Triggers" })[0];
 			if (findTriggerChar) {
-				triggerCharID = findTriggerChar[0].id;
+				triggerCharID = findTriggerChar.id;
 				log(`ScriptCards Triggers Active. Trigger Character ID is ${triggerCharID}`);
 				on('change:campaign:playerpageid', function (obj, prev) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "change:campaign:playerpageid" });
