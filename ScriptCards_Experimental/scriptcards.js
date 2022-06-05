@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.9.7 experimental";
+	const APIVERSION = "1.9.8 experimental";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -194,7 +194,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (state[APINAME].triggersenabled == undefined) { state[APINAME].triggersenabled = true; }
 
 		if (state[APINAME].triggersenabled) {
-			var findTriggerChar = findObjs({ _type: "character", name: "ScriptCards_Triggers" });
+			var findTriggerChar = findObjs({ _type: "character", name: "ScriptCards_Triggers" })[0];
 			if (findTriggerChar) {
 				triggerCharID = findTriggerChar[0].id;
 				log(`ScriptCards Triggers Active. Trigger Character ID is ${triggerCharID}`);
