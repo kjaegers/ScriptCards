@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.9.8 experimental";
+	const APIVERSION = "1.9.9a experimental";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -282,7 +282,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 				on('destroy:page', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:page" });
-					if (ability !== undefined && ability !== []) {
+					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
 						var replacement = "";
 						for (const property in obj) {
 							replacement += ` --&PageRemoved${property}|${obj[property]} `
@@ -299,9 +299,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						sendChat("API", metacard);
 					}
 				})
-				on('destroy:graphic', function (obj) {
+				on('destroy:graphic', function (obj) { 
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:graphic" });
-					if (ability !== undefined && ability !== []) {
+					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
+						log("running this for some reason")
 						var replacement = "";
 						for (const property in obj) {
 							replacement += ` --&GraphicRemoved${property}|${obj[property]} `
