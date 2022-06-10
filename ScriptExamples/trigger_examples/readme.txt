@@ -19,15 +19,51 @@ Each of the event types is further classified by what time of object is impacted
 “change:attribute” event will be executed. The following events can be used with ScriptCards Triggers:
 
 change:campaign:playerpageid
+  -- Object Properties: &PreviousPageID and &NewPageID
 change:campaign:turnorder
+  -- Object Properties: Currently there are no object parameters for the turnorder change event
 change:character
+  -- Object Properties: &CharacterOld and &CharacterNew followed by the property name (ex. CharacterOldavatar) - _id, _type, avatar, name,
+     archived, inplayerjournals, controlledby, _defaulttoken.
 change:attribute:*
+  -- Object Properties: &AttributeOld and &AttributeNew followed by the property name (ex. AttributeOldname) - _id, _type, _characterid,
+     name, current, max
 add:graphic
+  -- Object Properties: &GraphicAdded followed by the property name (ex. GraphicAddedtop) - _id, _type, _subtype, _cardid, _pageid,
+     imgsrc, represents, left, top, width, height, rotation, layer, isdrawing, flipv, fliph, name, gmnotes, tooltip, show_tooltip, controlledby,
+     bar1_link, bar2_link, bar3_link, bar1_value, bar2_value, bar3_value, bar1_max, bar2_max, bar3_max, bar_location, compact_bar, aura11_radius,
+     aura2_radius, aura1_color, aura2_color, aura1_square, aura2_square, tint_color, statusmarkers, showname, showplayers_name, showplayers_bar1,
+     showplayers_bar2, showplayers_bar3, showplayers_aura1, showplayers_aura2, showplayers_aura3, playersedit_name, playersedit_bar1, playersedit_bar2,
+     playersedit_bar3, playersedit_aura1, playersedit_aura2, lastmove, sides, currentSide, lockMovement
 destroy:graphic
-change:graphic:*
+  -- Object Properties: &GraphicRemoved followed by the property name (ex. GraphicRemovedtop) - _id, _type, _subtype, _cardid, _pageid,
+     imgsrc, represents, left, top, width, height, rotation, layer, isdrawing, flipv, fliph, name, gmnotes, tooltip, show_tooltip, controlledby,
+     bar1_link, bar2_link, bar3_link, bar1_value, bar2_value, bar3_value, bar1_max, bar2_max, bar3_max, bar_location, compact_bar, aura11_radius,
+     aura2_radius, aura1_color, aura2_color, aura1_square, aura2_square, tint_color, statusmarkers, showname, showplayers_name, showplayers_bar1,
+     showplayers_bar2, showplayers_bar3, showplayers_aura1, showplayers_aura2, showplayers_aura3, playersedit_name, playersedit_bar1, playersedit_bar2,
+     playersedit_bar3, playersedit_aura1, playersedit_aura2, lastmove, sides, currentSide, lockMovement
+change:graphic:
+  -- Object Properties: &GraphicOld and &GraphicNew followed by the property name (ex. GraphicOldtop) - _id, _type, _subtype, _cardid, _pageid,
+     imgsrc, represents, left, top, width, height, rotation, layer, isdrawing, flipv, fliph, name, gmnotes, tooltip, show_tooltip, controlledby,
+     bar1_link, bar2_link, bar3_link, bar1_value, bar2_value, bar3_value, bar1_max, bar2_max, bar3_max, bar_location, compact_bar, aura11_radius,
+     aura2_radius, aura1_color, aura2_color, aura1_square, aura2_square, tint_color, statusmarkers, showname, showplayers_name, showplayers_bar1,
+     showplayers_bar2, showplayers_bar3, showplayers_aura1, showplayers_aura2, showplayers_aura3, playersedit_name, playersedit_bar1, playersedit_bar2,
+     playersedit_bar3, playersedit_aura1, playersedit_aura2, lastmove, sides, currentSide, lockMovement
 add:page
+  -- Object Properties: &PageAdded followed by the property name (ex. PageAddedwidth) - _id, _type, _zorder, name, width, height, background_color,
+     archived, jukeboxtrigger, showdarkness, fog_opacity, showgrid, grid_opacity, gridcolor, grid_type, gridlabels, snapping_increment, scale_number,
+     scale_units, diagonaltype, dynamic_lighting_enabled, daylight_mode_enabled, daylightModeOpacity, explorer_mode, force_lighting_refresh,
+     fog_opacity, lightupdatedrop, showlighting, lightenforcelos, lightrestrictmovement, lightglobalillum
 destroy:page
+  -- Object Properties: &PageRemoved followed by the property name (ex. PageRemovedwidth) - _id, _type, _zorder, name, width, height, background_color,
+     archived, jukeboxtrigger, showdarkness, fog_opacity, showgrid, grid_opacity, gridcolor, grid_type, gridlabels, snapping_increment, scale_number,
+     scale_units, diagonaltype, dynamic_lighting_enabled, daylight_mode_enabled, daylightModeOpacity, explorer_mode, force_lighting_refresh,
+     fog_opacity, lightupdatedrop, showlighting, lightenforcelos, lightrestrictmovement, lightglobalillum
 change:page
+  -- Object Properties: &PageOld and &PageNew followed by the property name (ex. PageOldwidth) - _id, _type, _zorder, name, width, height, background_color,
+     archived, jukeboxtrigger, showdarkness, fog_opacity, showgrid, grid_opacity, gridcolor, grid_type, gridlabels, snapping_increment, scale_number,
+     scale_units, diagonaltype, dynamic_lighting_enabled, daylight_mode_enabled, daylightModeOpacity, explorer_mode, force_lighting_refresh,
+     fog_opacity, lightupdatedrop, showlighting, lightenforcelos, lightrestrictmovement, lightglobalillum
 
 Events marked with :* at the end require you to define the particular property of an object that you wish to be alerted to, as some changes 
 can cascade into a huge number of event calls that can cause timing issues if you were to try to respond to them all. For example, you can 
@@ -41,6 +77,8 @@ is case sensitive, and the character must exist in the game at the time the API 
 correctly named character, you will see a message in the API console similar to “ScriptCards Triggers Active. Trigger Character ID 
 is -N1W93TIw0ofPHUglMV1” when the sandbox starts. If you add the character after the sandbox is running, just restart the sandbox from the 
 API console to have the script re-detect the character.
+
+Object Parameters are generated dynamically, so as Roll20 adds new object properties they will be automatically available to your triggers.
 
 Setting up an Event Handler
 
