@@ -1,5 +1,23 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.9.9e - EXPERIMENTAL - Bug fix for sandbox crash when deleting a graphic if there is no trigger defined for destroy:graphic.
+
+v 1.9.8e - EXPERIMENTAL - Minor bug fixes
+
+v 1.9.7e - EXPERIMENTAL - Added the ability to use the VFX system (--v) to send pings to the VTT. Pings are supported for VFX types of "token" and "point".
+           To send a ping, simply replace the effect descriptor with "ping". Optionally, and additional "moveall" parameter can be added to the --v command
+           to zoom all players viewes to the pinged location: --vtoken|@{selected|token_id} ping moveall
+           
+v 1.9.6e - EXPERIMENTAL - Small fix for reroll dice formulas not properly displaying the dice results that were dropped/rerolled in the hoverover.
+
+v 1.9.5e - EXPERIMENTAL - This version of ScriptCards supports triggers, or watching for things to happen in your game and responding to them. 
+           In addition to the updated experimental version of the script, I have also included a directory on the github with samples and documentation 
+           for the Triggers feature. https://github.com/kjaegers/ScriptCards/tree/main/ScriptExamples/trigger_examples
+
+           This documentation will, in some form, eventually make it to the Wiki if/when Triggers leaves the experimental branch. PLEASE let me know if 
+           you run into any issues with Triggers or have questions about how they work. Bonus points if someone catches the old school gaming reference 
+           in one of the examples (NOT the "on deck..." reference to critical roll) 
+
 v 1.7.7a - Bug fix for rollable tables broken in 1.7.2
 
 v 1.7.7  - Rolled back the ability to set roll components in a conditional or case statement as there was a bug preventing it from setting roll
