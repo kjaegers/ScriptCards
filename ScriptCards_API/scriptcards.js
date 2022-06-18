@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.7.7a";
+	const APIVERSION = "2.0.0";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -54,6 +54,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		titlefontface: "Contrail One",
 		titlefontsize: "1.2em",
 		titlefontlineheight: "1.2em",
+		titlefontweight: "strong",
+		titlefontstyle: "normal",
 		titlefontshadow: "-1px 1px 0 #000, 1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000;",
 		lineheight: "normal",
 		rollhilightlineheight: "1.0em",
@@ -65,7 +67,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		subtitlefontsize: "13px",
 		subtitlefontface: "Tahoma",
 		subtitlefontcolor: "#FFFFFF",
-		subtitleseperator: " &" + "#x2666; ",
+		subtitleseparator: " &" + "#x2666; ",
 		tooltip: "Sent by ScriptCards",
 		bodyfontsize: "14px;",
 		bodyfontface: "Helvetica",
@@ -149,7 +151,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	// HTML Templates for the various pieces of the output card. Replaced sections are marked with
 	// !{...} syntax, and will have values substituted in them when the output line is built.
-	var htmlTemplate = `<div style="display: table; border: !{tableborder}; background-color: !{tablebgcolor}; width: 100%; text-align: left; border-radius: !{tableborderradius}; border-collapse: separate; box-shadow: !{tableshadow};"><div style="display: table-header-group; background-color: !{titlecardbackground}; background-image: !{titlecardbackgroundimage}; border-bottom: !{titlecardbottomborder}"><div style="display: table-row;"><div style="display: table-cell; padding: 2px 2px; text-align: center;"><span style="font-family: !{titlefontface}; font-style:normal; font-size: !{titlefontsize}; line-height: !{titlefontlineheight}; font-weight: bold; color: !{titlefontcolor}; text-shadow: !{titlefontshadow}">=X=TITLE=X=</span><br /><span style="font-family: !{subtitlefontface}; font-variant: normal; font-size: !{subtitlefontsize}; font-style:normal; font-weight: bold; color: !{subtitlefontcolor}; ">=X=SUBTITLE=X=</span></div></div></div><div style="display: table-row-group; background-image:!{bodybackgroundimage};">`;
+	var htmlTemplate = `<div style="display: table; border: !{tableborder}; background-color: !{tablebgcolor}; width: 100%; text-align: left; border-radius: !{tableborderradius}; border-collapse: separate; box-shadow: !{tableshadow};"><div style="display: table-header-group; background-color: !{titlecardbackground}; background-image: !{titlecardbackgroundimage}; border-bottom: !{titlecardbottomborder}"><div style="display: table-row;"><div style="display: table-cell; padding: 2px 2px; text-align: center;"><span style="font-family: !{titlefontface}; font-style:!{titlefontstyle}; font-size: !{titlefontsize}; line-height: !{titlefontlineheight}; font-weight: !{titlefontweight}; color: !{titlefontcolor}; text-shadow: !{titlefontshadow}">=X=TITLE=X=</span><br /><span style="font-family: !{subtitlefontface}; font-variant: normal; font-size: !{subtitlefontsize}; font-style:normal; font-weight: bold; color: !{subtitlefontcolor}; ">=X=SUBTITLE=X=</span></div></div></div><div style="display: table-row-group; background-image:!{bodybackgroundimage};">`;
 	var htmlTemplateHiddenTitle = `<div style="display: table; border: !{tableborder}; background-color: !{tablebgcolor}; width: 100%; text-align: left; border-radius: !{tableborderradius}; border-collapse: separate; box-shadow: !{tableshadow};"><div style="display: table-row-group; background-image:!{bodybackgroundimage};">`;
 	var htmlRowTemplate = `<div style="display: table-row; =X=ROWBG=X=;"><div style="display: table-cell; padding: 0px 0px; font-family: !{bodyfontface}; font-style: normal; font-weight:normal; font-size: !{bodyfontsize}; "><span style="line-height: !{lineheight}; color: =X=FONTCOLOR=X=;">=X=ROWDATA=X=</span></div></div>`;
 	var htmlTemplateEnd = `</div></div><br />`;
@@ -170,6 +172,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	var repeatingCharID = undefined;
 	var repeatingCharAttrs = undefined;
 	var repeatingSectionName = undefined;
+	var triggerCharID = undefined;
 
 	// Storage for any Library handouts found in the game
 	var ScriptCardsLibrary = {};
@@ -190,6 +193,130 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (state[APINAME].storedSettings == undefined) { state[APINAME].storedSettings = {}; }
 		if (state[APINAME].storedStrings == undefined) { state[APINAME].storedStrings = {}; }
 		if (state[APINAME].storedSnippets == undefined) { state[APINAME].storedSnippets = {}; }
+		if (state[APINAME].triggersenabled == undefined) { state[APINAME].triggersenabled = true; }
+
+		if (state[APINAME].triggersenabled) {
+			var findTriggerChar = findObjs({ _type: "character", name: "ScriptCards_Triggers" })[0];
+			if (findTriggerChar) {
+				triggerCharID = findTriggerChar.id;
+				log(`ScriptCards Triggers Active. Trigger Character ID is ${triggerCharID}`);
+				on('change:campaign:playerpageid', function (obj, prev) {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "change:campaign:playerpageid" });
+					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
+						var replacement = ` --&PreviousPageID|${prev.playerpageid} --&NewPageID|${obj.get("playerpageid")} `;
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})
+				on('change:campaign:turnorder', function () {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "change:campaign:turnorder" });
+					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
+						var replacement = ` `;
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})
+				on('change:character', function (obj, prev) {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:character` });
+					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
+						var replacement = "";
+						for (const property in prev) {
+							replacement += ` --&CharacterOld${property}|${prev[property]} --&CharacterNew${property}|${obj.get(property)}`
+						}
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})
+				on('change:attribute', function (obj, prev) {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:attribute:${prev.name}` });
+					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
+						var replacement = "";
+						for (const property in prev) {
+							replacement += ` --&AttributeOld${property}|${prev[property]} --&AttributeNew${property}|${obj.get(property)}`
+						}
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})
+				on('change:graphic', function (obj, prev) {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:graphic` });
+					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
+						var replacement = "";
+						for (const property in prev) {
+							replacement += ` --&GraphicOld${property}|${prev[property]} --&GraphicNew${property}|${obj.get(property)}`
+						}
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})
+				/*
+				on('change:token', function (obj, prev) {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:token` });
+					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
+						var replacement = "";
+						for (const property in prev) {
+							replacement += ` --&TokenOld${property}|${prev[property]} --&TokenNew${property}|${obj.get(property)}`
+						}
+						log(replacement);
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})
+				*/
+				on('change:page', function (obj, prev) {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:page` });
+					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
+						var replacement = "";
+						for (const property in prev) {
+							replacement += ` --&PageOld${property}|${prev[property]} --&PageNew${property}|${obj.get(property)}`
+						}
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})
+				on('add:page', function (obj) {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:page" });
+					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
+						var replacement = ` --&PageAdded|${obj.id}} `;
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})
+				on('destroy:page', function (obj) {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:page" });
+					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
+						var replacement = "";
+						for (const property in obj) {
+							replacement += ` --&PageRemoved${property}|${obj[property]} `
+						}
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})
+				on('add:graphic', function (obj) {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:graphic" });
+					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
+						var replacement = ` --&GraphicAdded|${obj.id}} `;
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})
+				on('destroy:graphic', function (obj) { 
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:graphic" });
+					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
+						log("running this for some reason")
+						var replacement = "";
+						for (const property in obj) {
+							replacement += ` --&GraphicRemoved${property}|${obj[property]} `
+						}
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})
+			} else {
+				log(`ScriptCards Triggers could not find character named "ScriptCards_Triggers"`);
+			}
+		}
 
 		// Retrieve the list of token/status markers from the Campaign and create an associative
 		// array that links the marker name to the URL of the marker image for use in the
@@ -209,6 +336,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		// to track sandbox crash errors by subtracting the offset from the line number that the
 		// sandbox reports to contain the error.
 		log(`-=> ${APINAME} - ${APIVERSION} by ${APIAUTHOR} Ready <=- Meta Offset : ${API_Meta.ScriptCards.offset}`);
+		if (APIVERSION.endsWith("experimental")) {
+			log(`-=> NOTE: This is an experimental version of ScriptCards and is not recommended for widespread use at this time. <=-`);
+		}
 
 		// When a handout changes, recache the library handouts
 		on("change:handout", function () {
@@ -623,6 +753,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										cardParameters.oddrowbackground = "#00000000";
 										cardParameters.evenrowbackground = "#00000000";
 									}
+									break;
+
+								case "subtitleseperator":
+									cardParameters.subtitleseparator = thisContent;
 									break;
 
 								case "evenrowbackgroundimage":
@@ -1926,7 +2060,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 
 						if (thisTag.charAt(0) === "*") {
-							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent, cardParameters, true),  cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
+							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent, cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
 
 							tableLineCounter += 1;
 							if (tableLineCounter % 2 == 0) {
@@ -2107,16 +2241,24 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												var x = s.get("left");
 												var y = s.get("top");
 												var pid = s.get("_pageid");
-												var effectInfo = findObjs({
-													_type: "custfx",
-													name: params[1].trim()
-												});
-												if (!_.isEmpty(effectInfo)) {
-													spawnFxWithDefinition(x, y, effectInfo[0].get('definition'), pid);
+												if (params[1].toLowerCase() == "ping") {
+													var moveall = false;
+													if (params[2] && params[2].toLowerCase() == "moveall") {
+														moveall = true;
+													}
+													sendPing(x, y, pid, stringVariables["SendingPlayerID"], moveall);
 												} else {
-													var t = params[1].trim();
-													if (t !== "" && t !== "none") {
-														spawnFx(x, y, t, pid);
+													var effectInfo = findObjs({
+														_type: "custfx",
+														name: params[1].trim()
+													});
+													if (!_.isEmpty(effectInfo)) {
+														spawnFxWithDefinition(x, y, effectInfo[0].get('definition'), pid);
+													} else {
+														var t = params[1].trim();
+														if (t !== "" && t !== "none") {
+															spawnFx(x, y, t, pid);
+														}
 													}
 												}
 											}
@@ -2133,6 +2275,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												var x2 = p.get("left");
 												var y2 = p.get("top");
 												var pid = s.get("_pageid");
+
 												var effectInfo = findObjs({
 													_type: "custfx",
 													name: params[2].trim()
@@ -2151,6 +2294,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														spawnFxBetweenPoints({ x: x1, y: y1 }, { x: x2, y: y2 }, t, pid);
 													}
 												}
+
 											}
 										}
 										break;
@@ -2163,17 +2307,25 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (cardParameters.activepage !== "") {
 											pid = cardParameters.activepage;
 										}
-										var effectInfo = findObjs({
-											_type: "custfx",
-											name: params[2].trim()
-										});
-										if (!_.isEmpty(effectInfo)) {
-											spawnFxWithDefinition(x, y, effectInfo[0].get('definition'), pid);
+										if (params[2].toLowerCase() == "ping") {
+											var moveall = false;
+											if (params[3] && params[3].toLowerCase() == "moveall") {
+												moveall = true;
+											}
+											sendPing(x, y, pid, stringVariables["SendingPlayerID"], moveall);
 										} else {
-											var t = params[2].trim();
-											if (x && y) {
-												if (t !== "" && t !== "none") {
-													spawnFx(x, y, t, pid);
+											var effectInfo = findObjs({
+												_type: "custfx",
+												name: params[2].trim()
+											});
+											if (!_.isEmpty(effectInfo)) {
+												spawnFxWithDefinition(x, y, effectInfo[0].get('definition'), pid);
+											} else {
+												var t = params[2].trim();
+												if (x && y) {
+													if (t !== "" && t !== "none") {
+														spawnFx(x, y, t, pid);
+													}
 												}
 											}
 										}
@@ -2325,7 +2477,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 					var subtitle = "";
 					if ((cardParameters.leftsub !== "") && (cardParameters.rightsub !== "")) {
-						subtitle = cardParameters.leftsub + cardParameters.subtitleseperator + cardParameters.rightsub;
+						subtitle = cardParameters.leftsub + cardParameters.subtitleseparator + cardParameters.rightsub;
 					}
 					if ((cardParameters.leftsub !== "") && (cardParameters.rightsub == "")) {
 						subtitle = cardParameters.leftsub;
@@ -2507,7 +2659,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					debugOutput(`RollHilighting: ${rollHilighting}, Suffix: ${vSuffix}`);
 					if (rollHilighting == true && vSuffix == "Total" && rollVariables[vName] !== undefined) {
-						replacement = buildTooltip(replacement, "Roll: " + rollVariables[vName].RollText + "<br /><br />Result: " + rollVariables[vName].Text, rollVariables[vName].Style);
+						replacement = buildTooltip(replacement, "Roll: " + rollVariables[vName].RollText.replace("<", "L").replace(">", "G") + "<br /><br />Result: " + rollVariables[vName].Text, rollVariables[vName].Style);
 					}
 					if (cardParameters.debug !== "0") {
 						log(`ContentIn: ${content} Match: ${thisMatch}, vName: ${vName}, vSuffix: ${vSuffix}, replacement ${replacement}`)
@@ -3009,13 +3161,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				if (text.match(/^\[.+\]$/)) {
 					componentHandled = true;
 					if ((text.charAt(1) !== "$") && (text.charAt(1) !== "=")) {
-						if(text.charAt(1) == "t" || text.charAt(1) =="T") {
+						if (text.charAt(1) == "t" || text.charAt(1) == "T") {
 							if (text.charAt(2) !== "#") {
 								rollResult.Text += ` [&zwnj;${text.substring(1)} `;
 							}
 						}
 						rollResult.Text += ` ${text} `;
-						log(rollResult.Text);
+						//log(rollResult.Text);
 					}
 				}
 			}
@@ -3142,7 +3294,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			"titlefontsize", "titlefontlineheight", "titlefontcolor", "bodyfontsize", "subtitlefontsize", "subtitlefontcolor", "titlefontshadow",
 			"titlefontface", "bodyfontface", "subtitlefontface", "buttonbackground", "buttonbackgroundimage", "buttontextcolor", "buttonbordercolor",
 			"dicefontcolor", "dicefontsize", "lineheight", "buttonfontsize", "buttonfontface", "titlecardbackgroundimage", "bodybackgroundimage",
-			"rollhilightlineheight", "rollhilightcolornormal", "rollhilightcolorfumble", "rollhilightcolorcrit", "rollhilightcolorboth"
+			"rollhilightlineheight", "rollhilightcolornormal", "rollhilightcolorfumble", "rollhilightcolorcrit", "rollhilightcolorboth",
+			"titlefontweight", "titlefontstyle"
 		];
 
 		for (var x = 0; x < styleList.length; x++) {
@@ -3186,20 +3339,33 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			outputLine = outputLine.replace(statusmarkers[sm], work);
 		}
 		//var buttons = outputLine.match(/\[button\](.*?)\:\:(.*?)\[\/button\]/gi);
-		var buttons = outputLine.match(/\[button(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?\](.*?)\:\:(.*?)\[\/button\]/gi);
+		var buttons = outputLine.match(/\[button(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)\:\:(.*?)\[\/button\]/gi);
 		for (var button in buttons) {
 			var customTextColor = undefined;
 			var customBackgroundColor = undefined;
-			var basebutton = buttons[button].replace(/\[button(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?\](.*?)/gi, "[button]");
+			var customfontsize = undefined;
+			var basebutton = buttons[button].replace(/\[button(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)/gi, "[button]");
 			if (basebutton.toLowerCase() !== buttons[button].toLowerCase()) {
 				var tempbutton = buttons[button].replace("[button:", "").replace("[Button:", "").replace("[BUTTON:", "").split("]")[0];
 				var customs = tempbutton.split(":");
+				var firstColorUsed=false;
+				for (var c in customs) {
+					if (customs[c].startsWith("#")) {
+						if (firstColorUsed) { customBackgroundColor = customs[c]; } else {customTextColor = customs[c]; firstColorUsed = true;}
+					} else {
+						if (customs[c].toLowerCase().endsWith("px")) {
+							customfontsize = customs[c];
+						}
+					}
+				}
+				/*
 				if (customs.length >= 1) {
 					customTextColor = customs[0];
 					if (customs.length == 2) {
 						customBackgroundColor = customs[1];
 					}
 				}
+				*/
 			}
 			//var title = buttons[button].split("::")[0].replace("[button]","").replace("[Button]", "").replace("[BUTTON]","");
 			//var action = buttons[button].split("::")[1].replace("[/button]","").replace("[/Button]", "").replace("[/BUTTON]","");
@@ -3208,22 +3374,27 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			if (cardParameters.dontcheckbuttonsforapi == "0") {
 				action = action.replace(/(^|\ +)_/g, " --");
 			}
-			outputLine = outputLine.replace(buttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor));
+			outputLine = outputLine.replace(buttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor, customfontsize));
 		}
 
 		//var sheetbuttons = outputLine.match(/\[sheetbutton\](.*?)\:\:(.*?)\:\:(.*?)\[\/sheetbutton\]/gi);
-		var sheetbuttons = outputLine.match(/\[sheetbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?\](.*?)\:\:(.*?)\:\:(.*?)\[\/sheetbutton\]/gi);
+		var sheetbuttons = outputLine.match(/\[sheetbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)\:\:(.*?)\:\:(.*?)\[\/sheetbutton\]/gi);
 		for (var button in sheetbuttons) {
 			var customTextColor = undefined;
 			var customBackgroundColor = undefined;
-			var basebutton = sheetbuttons[button].replace(/\[sheetbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?\](.*?)/gi, "[sheetbutton]");
+			var customfontsize = undefined;
+			var basebutton = sheetbuttons[button].replace(/\[sheetbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)/gi, "[sheetbutton]");
 			if (basebutton.toLowerCase() !== sheetbuttons[button].toLowerCase()) {
 				var tempbutton = sheetbuttons[button].replace("[sheetbutton:", "").replace("[Sheetbutton:", "").replace("[SHEETBUTTON:", "").split("]")[0];
 				var customs = tempbutton.split(":");
-				if (customs.length >= 1) {
-					customTextColor = customs[0];
-					if (customs.length == 2) {
-						customBackgroundColor = customs[1];
+				var firstColorUsed=false;
+				for (var c in customs) {
+					if (customs[c].startsWith("#")) {
+						if (firstColorUsed) { customBackgroundColor = customs[c]; } else {customTextColor = customs[c]; firstColorUsed = true;}
+					} else {
+						if (customs[c].toLowerCase().endsWith("px")) {
+							customfontsize = customs[c];
+						}
 					}
 				}
 			}
@@ -3251,29 +3422,34 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				if (cardParameters.dontcheckbuttonsforapi == "0") {
 					action = action.replace(/(^|\ +)_/g, " --");
 				}
-				outputLine = outputLine.replace(sheetbuttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor));
+				outputLine = outputLine.replace(sheetbuttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor, customfontsize));
 			}
 		}
 
-		var reentrantbuttons = outputLine.match(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?\](.*?)\:\:(.*?)\[\/rbutton\]/gi);
+		var reentrantbuttons = outputLine.match(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)\:\:(.*?)\[\/rbutton\]/gi);
 		for (var button in reentrantbuttons) {
 			var customTextColor = undefined;
 			var customBackgroundColor = undefined;
-			var basebutton = reentrantbuttons[button].replace(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?\](.*?)/gi, "[rbutton]");
+			var customfontsize = undefined;
+			var basebutton = reentrantbuttons[button].replace(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)/gi, "[rbutton]");
 			if (basebutton.toLowerCase() !== reentrantbuttons[button].toLowerCase()) {
 				var tempbutton = reentrantbuttons[button].replace("[rbutton:", "").replace("[Rbutton:", "").replace("[RBUTTON:", "").split("]")[0];
 				var customs = tempbutton.split(":");
-				if (customs.length >= 1) {
-					customTextColor = customs[0];
-					if (customs.length == 2) {
-						customBackgroundColor = customs[1];
+				var firstColorUsed=false;
+				for (var c in customs) {
+					if (customs[c].startsWith("#")) {
+						if (firstColorUsed) { customBackgroundColor = customs[c]; } else {customTextColor = customs[c]; firstColorUsed = true;}
+					} else {
+						if (customs[c].toLowerCase().endsWith("px")) {
+							customfontsize = customs[c];
+						}
 					}
 				}
 			}
 			var title = basebutton.split("::")[0].replace("[rbutton]", "").replace("[Rbutton]", "").replace("[RBUTTON]", "");
 			var reentrylabel = basebutton.split("::")[1].replace("[/rbutton]", "").replace("[/Rbutton]", "").replace("[/RBUTTON]", "");
 			var action = "!sc-reentrant " + cardParameters["reentrant"] + "-|-" + reentrylabel
-			outputLine = outputLine.replace(reentrantbuttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor));
+			outputLine = outputLine.replace(reentrantbuttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor, customfontsize));
 		}
 
 		// [apply]15[/apply]
@@ -3366,10 +3542,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return attrCount;
 	}
 	*/
-	function makeButton(title, url, parameters, customTextColor, customBackgroundColor) {
+	function makeButton(title, url, parameters, customTextColor, customBackgroundColor, customfontsize) {
 		var thisButtonStyle = buttonStyle;
 		if (customTextColor) { thisButtonStyle = thisButtonStyle.replace("!{buttontextcolor}", customTextColor) }
 		if (customBackgroundColor) { thisButtonStyle = thisButtonStyle.replace("!{buttonbackground}", customBackgroundColor) }
+		if (customfontsize) { thisButtonStyle = thisButtonStyle.replace("!{buttonfontsize}", customfontsize) }
 		return `<a style="${replaceStyleInformation(thisButtonStyle, parameters)}" href="${removeTags(removeBRs(url))}">${removeTags(removeBRs(title))}</a>`;
 	}
 
@@ -3390,47 +3567,47 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	function parseRepeatingSection() {
 
 		return; // Currently disabled
-/*
-		if (!repeatingSection) { return; }
-
-		for (var i in repeatingSection) {
-			if (repeatingSection[i].startsWith("@{")) {
-				log(repeatingSection[i])
-				repeatingSection[i] = repeatingSection[i].replace("@", "");
-				log(repeatingSection[i])
-			}
-			//var matches = repeatingSection[i].match(/^\@\{(.+?)\}$/g);
-			//if (matches) {
-			//	matches.forEach(function(item) {
-			//		repeatingSection[i].replace(item, item.substring(2,item.length-1))
-			//		//var attribute = repeatingCharAttrs[item.substring(2,item.length-1)] || "";
-			//		//while (repeatingSection[i].indexOf(item) >= 0) { repeatingSection[i] = repeatingSection[i].replace(item, attribute); }
-			//	});
-			//}
-		}
-
-		var repChar = getObj("character", repeatingCharID) || undefined;
-		if (repChar) {
-			//for (var i in repeatingSection) {
-			//	if (repeatingSection[i].match(/\@\{[^{}]+\}/g)) {
-			//		var matches = repeatingSection[i].match(/\@\{[^{}]+\}/g);
-			//		matches.forEach(function (thisMatch) {
-			//			var thisAttr = thisMatch.replace("@{", "").replace("}", "");
-			//			var attribute = "";
-			//			attribute - repeatingCharAttrs[thisAttr];
-			//			if (attribute == "") { attribute = getAttrByName(repeatingCharID, thisAttr); }
-			//			repeatingSection[i] = repeatingSection[i].replace(thisMatch, attribute);
-			//		});
-			//	}
-			while (repeatingSection[i].match(/\@\{[^{}]+\}/g)) {
-				var thisMatch = repeatingSection[i].match(/\@\{[^{}]+\}/g);
-				var thisAttr = thisMatch[0].replace("^\@\{", "").replace("}$", "");
-				var attribute = repChar.get(thisAttr) || "";
-				repeatingSection[i] = repeatingSection[i].replace(thisMatch, attribute);
-				var crash = null; log(crash.ToString());
-			}
-		}
-*/
+		/*
+				if (!repeatingSection) { return; }
+		
+				for (var i in repeatingSection) {
+					if (repeatingSection[i].startsWith("@{")) {
+						log(repeatingSection[i])
+						repeatingSection[i] = repeatingSection[i].replace("@", "");
+						log(repeatingSection[i])
+					}
+					//var matches = repeatingSection[i].match(/^\@\{(.+?)\}$/g);
+					//if (matches) {
+					//	matches.forEach(function(item) {
+					//		repeatingSection[i].replace(item, item.substring(2,item.length-1))
+					//		//var attribute = repeatingCharAttrs[item.substring(2,item.length-1)] || "";
+					//		//while (repeatingSection[i].indexOf(item) >= 0) { repeatingSection[i] = repeatingSection[i].replace(item, attribute); }
+					//	});
+					//}
+				}
+		
+				var repChar = getObj("character", repeatingCharID) || undefined;
+				if (repChar) {
+					//for (var i in repeatingSection) {
+					//	if (repeatingSection[i].match(/\@\{[^{}]+\}/g)) {
+					//		var matches = repeatingSection[i].match(/\@\{[^{}]+\}/g);
+					//		matches.forEach(function (thisMatch) {
+					//			var thisAttr = thisMatch.replace("@{", "").replace("}", "");
+					//			var attribute = "";
+					//			attribute - repeatingCharAttrs[thisAttr];
+					//			if (attribute == "") { attribute = getAttrByName(repeatingCharID, thisAttr); }
+					//			repeatingSection[i] = repeatingSection[i].replace(thisMatch, attribute);
+					//		});
+					//	}
+					while (repeatingSection[i].match(/\@\{[^{}]+\}/g)) {
+						var thisMatch = repeatingSection[i].match(/\@\{[^{}]+\}/g);
+						var thisAttr = thisMatch[0].replace("^\@\{", "").replace("}$", "");
+						var attribute = repChar.get(thisAttr) || "";
+						repeatingSection[i] = repeatingSection[i].replace(thisMatch, attribute);
+						var crash = null; log(crash.ToString());
+					}
+				}
+		*/
 	}
 
 	/*
@@ -3537,7 +3714,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			try {
 				return_set.push(z.get("name").replace(action_prefix, "") + "|" + z.get("current").replace(/(?:\r\n|\r|\n)/g, "<br>"));//.replace(/[\[\]\@]/g, " "));
 				return_set.push(z.get("name").replace(action_prefix, "") + "_max|" + z.get("max"));
-			// eslint-disable-next-line no-empty
+				// eslint-disable-next-line no-empty
 			} catch { }
 		})
 		return (return_set);
@@ -3885,10 +4062,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 			// Roll the dice
 			for (var x = 0; x < count; x++) {
-				var thisRoll = Number(rollWithReroll(sides, rerollThreshold, rerollType, rerollUnlimited));
+				var thisDiceRoll = rollWithReroll(sides, rerollThreshold, rerollType, rerollUnlimited);
+				var thisRoll = Number(thisDiceRoll[1]);
 				if (fudgeDice) { thisRoll -= 2; resultSet.dontHilight = true }
 				var thisTotal = thisRoll;
-				var thisText = thisTotal.toString();
+				//var thisText = thisTotal.toString();
+				var thisText = thisDiceRoll[0];
 				if (fudgeDice) {
 					thisText = fudgeText[thisRoll + 1];
 				}
@@ -3967,10 +4146,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function rollWithReroll(sides, rerollThreshold, rType, unlimited) {
 		var thisRoll = randomInteger(sides);
+		var rollText = "";
 		var once = false;
-		while (rType == ">" && (unlimited || !once) && thisRoll >= rerollThreshold) { thisRoll = randomInteger(sides); once = true; }
-		while (rType == "<" && (unlimited || !once) && thisRoll <= rerollThreshold) { thisRoll = randomInteger(sides); once = true; }
-		return thisRoll;
+		while (rType == ">" && (unlimited || !once) && thisRoll >= rerollThreshold) { rollText += `[x${thisRoll}x]`; thisRoll = randomInteger(sides); once = true; }
+		while (rType == "<" && (unlimited || !once) && thisRoll <= rerollThreshold) { rollText += `[x${thisRoll}x]`; thisRoll = randomInteger(sides); once = true; }
+		rollText += thisRoll;
+		return [rollText, thisRoll]
 	}
 
 	function removeHighestRoll(rollSet, rollSetText, droppedRollSet) {
@@ -4007,8 +4188,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	const getCleanImgsrc = (imgsrc) => {
 		let parts = imgsrc.match(/(.*\/images\/.*)(thumb|med|original|max)([^?]*)(\?[^?]+)?$/);
-		if(parts) {
-			return parts[1]+'thumb'+parts[3]+(parts[4]?parts[4]:`?${Math.round(Math.random()*9999999)}`);
+		if (parts) {
+			return parts[1] + 'thumb' + parts[3] + (parts[4] ? parts[4] : `?${Math.round(Math.random() * 9999999)}`);
 		}
 		return;
 	};
