@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "1.9.9a experimental";
+	const APIVERSION = "1.9.9b experimental";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -54,6 +54,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		titlefontface: "Contrail One",
 		titlefontsize: "1.2em",
 		titlefontlineheight: "1.2em",
+		titlefontweight: "strong",
+		titlefontstyle: "normal",
 		titlefontshadow: "-1px 1px 0 #000, 1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000;",
 		lineheight: "normal",
 		rollhilightlineheight: "1.0em",
@@ -65,7 +67,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		subtitlefontsize: "13px",
 		subtitlefontface: "Tahoma",
 		subtitlefontcolor: "#FFFFFF",
-		subtitleseperator: " &" + "#x2666; ",
+		subtitleseparator: " &" + "#x2666; ",
 		tooltip: "Sent by ScriptCards",
 		bodyfontsize: "14px;",
 		bodyfontface: "Helvetica",
@@ -149,7 +151,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	// HTML Templates for the various pieces of the output card. Replaced sections are marked with
 	// !{...} syntax, and will have values substituted in them when the output line is built.
-	var htmlTemplate = `<div style="display: table; border: !{tableborder}; background-color: !{tablebgcolor}; width: 100%; text-align: left; border-radius: !{tableborderradius}; border-collapse: separate; box-shadow: !{tableshadow};"><div style="display: table-header-group; background-color: !{titlecardbackground}; background-image: !{titlecardbackgroundimage}; border-bottom: !{titlecardbottomborder}"><div style="display: table-row;"><div style="display: table-cell; padding: 2px 2px; text-align: center;"><span style="font-family: !{titlefontface}; font-style:normal; font-size: !{titlefontsize}; line-height: !{titlefontlineheight}; font-weight: bold; color: !{titlefontcolor}; text-shadow: !{titlefontshadow}">=X=TITLE=X=</span><br /><span style="font-family: !{subtitlefontface}; font-variant: normal; font-size: !{subtitlefontsize}; font-style:normal; font-weight: bold; color: !{subtitlefontcolor}; ">=X=SUBTITLE=X=</span></div></div></div><div style="display: table-row-group; background-image:!{bodybackgroundimage};">`;
+	var htmlTemplate = `<div style="display: table; border: !{tableborder}; background-color: !{tablebgcolor}; width: 100%; text-align: left; border-radius: !{tableborderradius}; border-collapse: separate; box-shadow: !{tableshadow};"><div style="display: table-header-group; background-color: !{titlecardbackground}; background-image: !{titlecardbackgroundimage}; border-bottom: !{titlecardbottomborder}"><div style="display: table-row;"><div style="display: table-cell; padding: 2px 2px; text-align: center;"><span style="font-family: !{titlefontface}; font-style:!{titlefontstyle}; font-size: !{titlefontsize}; line-height: !{titlefontlineheight}; font-weight: !{titlefontweight}; color: !{titlefontcolor}; text-shadow: !{titlefontshadow}">=X=TITLE=X=</span><br /><span style="font-family: !{subtitlefontface}; font-variant: normal; font-size: !{subtitlefontsize}; font-style:normal; font-weight: bold; color: !{subtitlefontcolor}; ">=X=SUBTITLE=X=</span></div></div></div><div style="display: table-row-group; background-image:!{bodybackgroundimage};">`;
 	var htmlTemplateHiddenTitle = `<div style="display: table; border: !{tableborder}; background-color: !{tablebgcolor}; width: 100%; text-align: left; border-radius: !{tableborderradius}; border-collapse: separate; box-shadow: !{tableshadow};"><div style="display: table-row-group; background-image:!{bodybackgroundimage};">`;
 	var htmlRowTemplate = `<div style="display: table-row; =X=ROWBG=X=;"><div style="display: table-cell; padding: 0px 0px; font-family: !{bodyfontface}; font-style: normal; font-weight:normal; font-size: !{bodyfontsize}; "><span style="line-height: !{lineheight}; color: =X=FONTCOLOR=X=;">=X=ROWDATA=X=</span></div></div>`;
 	var htmlTemplateEnd = `</div></div><br />`;
@@ -751,6 +753,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										cardParameters.oddrowbackground = "#00000000";
 										cardParameters.evenrowbackground = "#00000000";
 									}
+									break;
+
+								case "subtitleseperator":
+									cardParameters.subtitleseparator = thisContent;
 									break;
 
 								case "evenrowbackgroundimage":
@@ -2471,7 +2477,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 					var subtitle = "";
 					if ((cardParameters.leftsub !== "") && (cardParameters.rightsub !== "")) {
-						subtitle = cardParameters.leftsub + cardParameters.subtitleseperator + cardParameters.rightsub;
+						subtitle = cardParameters.leftsub + cardParameters.subtitleseparator + cardParameters.rightsub;
 					}
 					if ((cardParameters.leftsub !== "") && (cardParameters.rightsub == "")) {
 						subtitle = cardParameters.leftsub;
@@ -3288,7 +3294,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			"titlefontsize", "titlefontlineheight", "titlefontcolor", "bodyfontsize", "subtitlefontsize", "subtitlefontcolor", "titlefontshadow",
 			"titlefontface", "bodyfontface", "subtitlefontface", "buttonbackground", "buttonbackgroundimage", "buttontextcolor", "buttonbordercolor",
 			"dicefontcolor", "dicefontsize", "lineheight", "buttonfontsize", "buttonfontface", "titlecardbackgroundimage", "bodybackgroundimage",
-			"rollhilightlineheight", "rollhilightcolornormal", "rollhilightcolorfumble", "rollhilightcolorcrit", "rollhilightcolorboth"
+			"rollhilightlineheight", "rollhilightcolornormal", "rollhilightcolorfumble", "rollhilightcolorcrit", "rollhilightcolorboth",
+			"titlefontweight", "titlefontstyle"
 		];
 
 		for (var x = 0; x < styleList.length; x++) {
