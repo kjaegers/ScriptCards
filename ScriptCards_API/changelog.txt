@@ -1,5 +1,13 @@
 ScriptCards Roll20 API Script Changelog
 
+v 1.9.9ce- EXPERIMENTAL - Adds the ability to set button font sizes inline with the button declaration. Appending :??px (ie, :24px) to a button Opening
+           tag will set the font size for that button : [button:24px] for example. IF you use in-line button colors, they must be specified before
+           the font size (so [button:#f00:24px] is fine, but [button:24px:#f00] will not generate a button)
+
+v 1.9.9be- EXPERIMENTAL - New settings: titlefontstyle (default "normal") and titlefontweight (default "strong")
+
+v 1.9.9ae- EXPERIMENTAL - Bug fix for Triggers where no destroy:graphic event was assigned
+
 v 1.9.9e - EXPERIMENTAL - Bug fix for sandbox crash when deleting a graphic if there is no trigger defined for destroy:graphic.
 
 v 1.9.8e - EXPERIMENTAL - Minor bug fixes
