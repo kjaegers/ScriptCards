@@ -828,6 +828,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												if (cardParameters.formatoutputforobjectmodification == "1") {
 													settingValue = processInlineFormatting(settingValue, cardParameters);
 												}
+												switch (settingValue.toLowerCase()) {
+													case "true": settingValue = true; break;
+													case "false": settingValue = false; break;
+												}
+
 												theToken.set(settingName, settingValue);
 											}
 										} else {
@@ -2768,11 +2773,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 						if (token == undefined && character == undefined) {
 							// Try finding a Player object
-							log("Trying to find player")
 							var player = getObj("player", activeCharacter);
 							if (player) {
-								log("Its a player...")
-								log(player.color);
 								attribute = player.get(attrName) || "";
 							}
 						}
