@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.0.0";
+	const APIVERSION = "2.0.1";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2764,6 +2764,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							attribute = getAttrByName(character.id, attrName, opType);
 							if (attribute === undefined) {
 								attribute = character.get(attrName);
+							}
+						}
+						if (token == undefined && character == undefined) {
+							// Try finding a Player object
+							log("Trying to find player")
+							var player = getObj("player", activeCharacter);
+							if (player) {
+								log("Its a player...")
+								log(player.color);
+								attribute = player.get(attrName) || "";
 							}
 						}
 						replacement = attribute;
