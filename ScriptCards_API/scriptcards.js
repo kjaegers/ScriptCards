@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.0.1";
+	const APIVERSION = "2.0.1a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -828,9 +828,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												if (cardParameters.formatoutputforobjectmodification == "1") {
 													settingValue = processInlineFormatting(settingValue, cardParameters);
 												}
-												switch (settingValue.toLowerCase()) {
-													case "true": settingValue = true; break;
-													case "false": settingValue = false; break;
+
+												if (typeof (theToken.get(settingName)) == "boolean") {
+													switch (settingValue.toLowerCase()) {
+														case "true": settingValue = true; break;
+														case "false": settingValue = false; break;
+													}
 												}
 
 												theToken.set(settingName, settingValue);
