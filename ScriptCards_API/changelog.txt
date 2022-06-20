@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.0.1  - When using [*id:attribute] referencing it is now possible to use a player ID to retrieve player attribute information.
+
 v 2.0.0  - This version is identical to 1.9.9ce, moving the Triggers and subsequent changes out of the experimental branch and into the primary code base.
            Version 2.0.0 will be headed for OneClick.
 
