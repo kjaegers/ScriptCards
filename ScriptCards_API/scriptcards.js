@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.0.1a";
+	const APIVERSION = "2.0.1b";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2347,6 +2347,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										var y2 = params[3];
 										var t = params[4];
 										var pid = Campaign().get("playerpageid");
+										if (cardParameters.activepage !== "") {
+											pid = cardParameters.activepage;
+										}
 										//log(`${x1} ${y1} ${x2} ${y2} ${t} ${pid}`)
 										if (x1 && y1 && x2 && y2 && t && pid) {
 											spawnFxBetweenPoints({ x: x1, y: y1 }, { x: x2, y: y2 }, t, pid);
@@ -4087,9 +4090,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					thisText = fudgeText[thisRoll + 1];
 				}
 				while ((explodeValue > 0) && (thisRoll >= explodeValue)) {
-					thisRoll = rollWithReroll(sides, rerollThreshold, rerollType, rerollUnlimited);
-					thisTotal += thisRoll;
-					thisText += "!" + thisRoll.toString();
+					thisReroll = rollWithReroll(sides, rerollThreshold, rerollType, rerollUnlimited);
+					thisRoll =Number(thisReroll[1]);
+					thisTotal += Number(thisReroll[1]);
+					thisText += "!" + thisReroll[0].toString();
 				}
 				resultSet.rollSet.push(thisTotal);
 				resultSet.rawRollSet.push(thisTotal);

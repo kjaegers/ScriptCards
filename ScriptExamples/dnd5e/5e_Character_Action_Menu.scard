@@ -1,0 +1,1063 @@
+!script {{
+  --/|Script Name : 5E Action Menu
+  --/|Version     : 1.9.0
+  --/|Requires SC : 1.6.4a+
+  --/|Author      : Kurt Jaegers
+
+  --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
+  --/|                to make settings changes, make them in an external editor (like NOTEPAD) and copy/paste the whole
+  --/|                macro into the Roll20 editor.
+
+  --/|Description : This script can be used with either a PC or NPC selected. It will generate an action menu with clickable
+  --/|              buttons to execute character actions and cast spells. The menu is whispered to the player executing the
+  --/|              script, while the results of clicking the action buttons are displayed in general chat.
+
+  --/|=========================================================================================================
+  --/|Settings Area - Customize the behavior of the script here
+
+  --/|If you create a "spell mule" character and put its name here, it's ability list will be checked for
+  --/|abilities that match the name of each spell found on PCs. If a match is found, the button that is
+  --/|created for that spell will be a sheet-button for that ability instead of a reentrant button back to
+  --/|this script for generic processing. This lets you define "special case" macros for non-standard spells.
+  --/|The name of the ability on the spell mule needs to exactly match the spell name (case sensitive)
+  --&spellmulename|Spell_Mule
+
+  --/|Set to "1" to enable loading of settings information from a saved format named after the character (case sensitive)
+  --&UseNamedCharacterSettings|0
+
+  --/|If this value is set to 1, prepared spells checks will be skipped
+  --&skipPreppedSpellsCheck|0
+
+  --/|If this value is set to 1, prepared spell checks for NPCs will be skipped
+  --&skipNPCPrepCheck|0
+
+  --/|If this value is set to 1, only spells that the player has slots available for will be displayed, and spell slots will be deducted on cast
+  --&trackPCSpellSlots|0
+
+  --/|If this value is set to 1, a list of available spell slots are displayed above the spells list in the action menu. (only if trackPCSpellSlots is 1)
+  --&showPCSpellSlotList|1
+
+  --/|If this value is set to 1 PC attack rolls will have the target's AC masked from players.
+  --&sendGmInfo|0
+
+  --/|If this value is set to 1, NPC actions (except spellcasting) will be whispered to the sender only and not displayed to everyone
+  --&AllNPCActionsToSender|0
+
+  --/|Set this to either "scriptcards", "token-mod", "alterbars", "damagebuttons" or anything else to not apply damage
+  --&damageApplyScript|dontapplydamage
+
+  --/|If using "damagebuttons" and this is set to 1, the damage buttons will be whispered to the DM instead of being added to the card
+  --&whisperDamageButtonsToDM|1
+
+  --/|If using "damagebuttons" for damage and this value is 1, the DM is whispered a message about damage application
+  --&whisperDamageButtonResultsToDM|1
+
+  --/|What bar do you use for representing hit points for damage application?
+  --&hitPointsBar|3
+
+  --/|If set to 1, the Action Menu will include advantage/normal/disadvantage toggles (and won't use the character sheet toggle)
+  --&selfHandleAdvantageMode|0
+  
+  --/|Used with SelfHandleAdvantageMode. 0=Normal, 1=Advantage, 2=Disadvantage
+  --&defaultAdvantageMode|0
+
+  --/|If set to 1, ammo use/tracking will be used. Thanks to JustinG for the initial implementation. Note that Ammo Tracking for the character
+  --/|needs to be enabled, and a resource named to match the Ammo (case sensitive) needs to exist on the sheet to track ammo.
+  --&requireAmmo|0
+
+  --/|If set to 1, global attack modifiers/damage will be listed a buttons that can be clicked to toggle them on and off. NOTE: due to
+  --/|roll20's strangeness in handling some attributes, if a global modifier has never been turned on from the character sheet, the
+  --/|buttons here may not be able to set the active state. Opening the character sheet and toggling the modifier on and  back off will
+  --/|fix it permanently for that modifier.
+  --&showGlobalModifierButtons|1
+
+  --/|End Settings Area
+  --/|=========================================================================================================
+
+  --/|Give the script a reentrant name based on the selected character id so we can have multiple instances at the same time
+  --#reentrant|CharacterAction @{selected|character_id}
+
+  --/|Set up some style information for the action menu and subsequent cards. These attempt to somewhat
+  --/|simulate the 5E style
+  --#bodyfontface|Helvetica
+  --#bodyfontcolor|#290000
+  --#bodyfontsize|12px
+  --#buttonfontsize|9px
+  --#buttonbackground|#930c10
+  --#buttonfontface|Tahoma
+  --#titlecardbackgroundcolor|#930c10
+  --#titlefontcolor|#fffebd
+  --#titlefontsize|1.5em
+  --#titlefontshadow|0
+  --#oddrowbackground|#f7ce65
+  --#evenrowbackground|#f7ce65
+  --#subtitlefontcolor|#fffebd
+  --#tablebgcolor|#fffebd
+  --#lineheight|9pt
+
+  --/|The menu is whispered to the player executing the macro. #whisper will be set again later for the
+  --/|actual output to be public.
+  --#whisper|self
+
+  --/|Store the selected character so we can use it later even if it gets de-selected
+  --#sourcetoken|@{selected|token_id}
+
+  --?[&UseNamedCharacterSettings] -eq 1|[
+    --lsettings|[*S:character_name]
+  --]|
+
+  --/|Determine damage subroutine. Start by assuming we aren't going to apply damage
+  --&damageRoutine|DontApplyDamage
+  --?[&damageApplyScript] -eq "scriptcards"|&damageRoutine;ApplyDamageScriptCards
+  --?[&damageApplyScript] -eq "token-mod"|&damageRoutine;ApplyDamageTokenmod
+  --?[&damageApplyScript] -eq "alterbars"|&damageRoutine;ApplyDamageAlterbars
+  --?[&damageApplyScript] -eq "damagebuttons"|&damageRoutine;SHOW_DAMAGE_BUTTONS
+
+  --#emotestate|hidden
+  --#title|[*S:character_name]
+  --#leftsub|Action Menu
+
+  --:AFTER_ADVMODE_CHANGE|
+
+  --/|Determine if the selected character is a PC or NPC and process appropriately
+  --?[*S:npc] -eq 1|proc_npc|proc_pc
+
+  --/|=========================================================================================================
+  --/|Handle Action Menu creation for NPCs
+
+  --:proc_npc|
+  --/+|[hr #58180d]
+
+  --?[&selfHandleAdvantageMode] -eq 1|[
+    --?"X[&currentAdvantageMode]" -eq "X"|&currentAdvantageMode;[&defaultAdvantageMode]
+    --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
+    --+|[r]Roll Mode: [&mode] | [rbutton]N::SET_ADV_MODE;0[/rbutton][rbutton]A::SET_ADV_MODE;1[/rbutton][rbutton]D::SET_ADV_MODE;2[/rbutton][/r]
+  --]|
+
+  --/|NPC "Actions"
+  --Rfirst|[*S:character_id];repeating_npcaction
+  --&NPCActions|[br]
+  --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
+    --:NPC_Action_Display|
+      --?"[*R:name]" -ne Multiattack|skip_multiattack
+      --+[*R:name]|[*R:description]
+      --^skip_ma_button|
+      --:skip_multiattack|
+      --&NPCActions|+ [rbutton][*R:name]::EXEC_NPC_ACTION;[*R:name]|&#64;{target|token_id}[/rbutton] 
+      --:skip_ma_button|
+      --Rnext|
+      --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Action_Display
+      --+NPC Actions|[&NPCActions]
+  --]|
+
+  --/|NPC "Bonus Actions"
+  --Rfirst|[*S:character_id];repeating_npcbonusaction
+  --&NPCBonusActions|[br]
+  --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
+    --:NPC_Bonus_Action_Display|
+      --&NPCBonusActions|+ [rbutton][*R:name]::EXEC_NPC_BONUS_ACTION;[*R:name]|&#64;{target|token_id}[/rbutton] 
+      --Rnext|
+      --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Bonus_Action_Display
+    --+Bonus Actions|[&NPCBonusActions]
+  --]|  
+
+  --/|NPC "Bonus Reactions"
+  --Rfirst|[*S:character_id];repeating_npcreaction
+  --&NPCReactions|[br]
+  --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
+    --:NPC_Reaction_Display|
+      --&NPCReactions|+ [rbutton][*R:name]::EXEC_NPC_REACTION;[*R:name]|&#64;{target|token_id}[/rbutton] 
+      --Rnext|
+      --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Reaction_Display
+    --+Reactions|[&NPCReactions]
+  --]|
+
+  --/|NPC "Legendary Actions"
+  --Rfirst|[*S:character_id];repeating_npcaction-l
+  --&NPCLegendaryActions|[br]
+  --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
+    --:NPC_Legendary_Action_Display|
+      --&NPCLegendaryActions|+ [rbutton][*R:name]::EXEC_NPC_LEGENDARY_ACTION;[*R:name]|&#64;{target|token_id}[/rbutton] 
+      --Rnext|
+      --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Legendary_Action_Display
+      --+Legendary Actions|[&NPCLegendaryActions]
+  --]|
+
+  --/|NPC Spells
+    --Rfirst|[*S:character_id];repeating_spell-cantrip
+    --&NPCCantrips|[br]
+    --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
+    --:NPCCantrips_Display|
+      --~testName|string;replaceall; ;-;[*R:spellname]
+      --~testMule|system;findability;[&spellmulename];[&testName]
+      --?[&testMule] -ne "AbilityNotFound"|MULE_NPC_CANTRIP
+      --?"[*R:spelloutput]" -eq ATTACK|NPC_CANTRIP_GENERATE_WITH_TARGET
+      --&PCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|NONE[/rbutton]
+      --^NPC_CANTRIP_END_GENERATE|
+      --:NPC_CANTRIP_GENERATE_WITH_TARGET|
+      --&NPCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|&#64;{target|token_id}[/rbutton] 
+      --^NPC_CANTRIP_END_GENERATE|
+      --:MULE_NPC_CANTRIP|
+      --&PCCantrips|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
+      --:NPC_CANTRIP_END_GENERATE|
+      --Rnext|
+      --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|NPCCantrips_Display
+      --+Cantrips|[&NPCCantrips]
+  --]|
+  --%levelCounter|1;9
+    --Rfirst|[*S:character_id];repeating_spell-[&levelCounter]
+    --&NPCSpells|[br]
+    --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
+      --:NPCSpells_Display|
+      --?[&skipNPCPrepCheck] -eq 1|SKIP_NPC_PREP_CHECK
+      --?"X[*R:spellprepared]" -ne "X1"|NPC_DONE_SPELL_BUTTON
+      --:SKIP_NPC_PREP_CHECK|
+      --~testName|string;replaceall; ;-;[*R:spellname]
+      --~testMule|system;findability;[&spellmulename];[&testName]
+      --?[&testMule] -ne "AbilityNotFound"|MULE_NPC_SPELL
+      --&slotString|
+      --?[&levelCounter] -eq 9|NPC_SKIP_SLOT_LIST
+      --&slotString||&#
+      --&slotString|+63;{Slot Level|
+      --%slotcounter|[&levelCounter];9
+        --&slotString|+[&slotcounter]
+        --?[&slotcounter] -eq 9|NPC_SKIP_VERTICAL_BAR
+        --&slotString|+|
+        --:NPC_SKIP_VERTICAL_BAR|
+      --%|
+      --&slotString|+}
+      --^NPC_DONE_SLOT_LIST|
+      --:NPC_SKIP_SLOT_LIST|
+      --&slotString||9
+      --:NPC_DONE_SLOT_LIST|
+      --&NPCSpells|+ [rbutton][*R:spellname]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|&#64;{target|token_id}[&slotString][/rbutton] 
+      --^NPC_DONE_SPELL_BUTTON|
+      --:MULE_NPC_SPELL|
+      --&NPCSpells|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
+      --:NPC_DONE_SPELL_BUTTON|
+      --Rnext|
+      --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|NPCSpells_Display
+      --+Level [&levelCounter] Spells|[&NPCSpells]
+     --]|
+  --%|
+  --X|
+
+  --/|=========================================================================================================
+  --/|Reentrant points for NPCs. Most of the reentry points set up variables and jump back into the "NPCA_NOT_ATTACK" portion
+  --/|of the EXEC_NPC_ACTION code
+
+  --:EXEC_NPC_ACTION|action_name
+  --?[&AllNPCActionsToSender] -eq 1|[
+  --#whisper|self
+  --]|[
+  --#whisper|
+  --]|
+  --#emotestate|visible
+  --~action_name|string;before;|;[&reentryval]
+  --~action_target|string;after;|;[&reentryval]
+  --#targettoken|[&action_target]
+  --#leftsub|[*S:character_name]
+  --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]
+  --Rfind|[*S:character_id];[&action_name];repeating_npcaction;name
+  --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
+    --#leftsub|[*R:name]
+    --?"[*R:attack_flag]" -ne on|NPCA_NOT_ATTACK
+    --:NPCA_MAKE_AN_ATTACK|
+    --&rollType|1d20
+    --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
+    --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
+    --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 0|&rollType;1d20
+    --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
+    --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1
+    --=ToHit|[&rollType] + [*R:attack_tohit]
+    --+Attack|[$ToHit] vs AC [*T:ac]
+    --?[$ToHit.Base] -eq 20|NPCA_CRIT
+    --?[$ToHit.Base] -eq 1|NPCA_MISS
+    --?[$ToHit.Total] -lt [*T:ac]|NPCA_MISS
+    --?"X[*R:attack_damage2]" -ne X|NPCA_HIT_TWODAMAGE
+    --=Damage|[*R:attack_damage]    
+    --+Hit|[$Damage] [*R:attack_damagetype]
+    --+|[*R:description]
+    -->[&damageRoutine]|[&action_target];[&hitPointsBar];-[$Damage.Raw]
+    --^NPCA_DONE|
+    --:NPCA_HIT_TWODAMAGE|
+    --=Damage|[*R:attack_damage]
+    --=Damage2|[*R:attack_damage2]
+    --=TotalDamage|[$Damage.Raw] + [$Damage2.Raw]
+    --+Hit|[$Damage] [*R:attack_damagetype] and [$Damage2] [*R:attack_damagetype2]
+    --+|[*R:description]
+    -->[&damageRoutine]|[&action_target];[&hitPointsBar];-[$TotalDamage.Raw]
+    --^NPCA_DONE|
+
+    --:NPCA_CRIT|
+    --?"X[*R:attack_damage2]" -ne X|NPCA_CRIT_TWODAMAGE
+    --=Damage|[*R:attack_damage] + [*R:attack_crit]
+    -->[&damageRoutine]|[&action_target];[&hitPointsBar];-[$Damage.Raw]
+    --+Critical|[$Damage] [*R:attack_damagetype]
+    --+|[*R:description]
+    --^NPCA_DONE|
+    --:NPCA_CRIT_TWODAMAGE|
+    --=Damage|[*R:attack_damage] + [*R:attack_crit]
+    --=Damage2|[*R:attack_damage2] + [*R:attack_crit2]
+    --=TotalDamage|[$Damage.Raw] + [$Damage2.Raw]    
+    --+Critical|[$Damage] [*R:attack_damagetype] and [$Damage2] [*R:attack_damagetype2]
+    --+|[*R:description]
+    -->[&damageRoutine]|[&action_target];[&hitPointsBar];-[$TotalDamage.Raw]
+
+    --:NPCA_MISS|
+    --+Miss|The attack missed.
+    --^NPCA_DONE|
+
+    --:NPCA_NOT_ATTACK|
+    --+|[*R:description]
+    --:NPCA_DONE|
+  --]|
+  --X|
+
+  --:EXEC_NPC_BONUS_ACTION|action_name
+  --~action_name|string;before;|;[&reentryval]
+  --~action_target|string;after;|;[&reentryval]
+  --?[&AllNPCActionsToSender] -eq 1|[
+  --#whisper|self
+  --]|[
+  --#whisper|
+  --]|
+  --#emotestate|visible
+  --#targettoken|[&action_target]
+  --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]
+  --Rfind|[*S:character_id];[&action_name];repeating_npcbonusaction;name
+  --#leftsub|[*R:name]
+  --?"[*R:attack_flag]" -eq on|NPCA_MAKE_AN_ATTACK
+  --^NPCA_NOT_ATTACK|
+  --X|
+
+  --:EXEC_NPC_REACTION|action_name
+  --~action_name|string;before;|;[&reentryval]
+  --~action_target|string;after;|;[&reentryval]
+  --?[&AllNPCActionsToSender] -eq 1|[
+  --#whisper|self
+  --]|[
+  --#whisper|
+  --]|
+  --#emotestate|visible
+  --#targettoken|[&action_target]
+  --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]
+  --Rfind|[*S:character_id];[&action_name];repeating_npcreaction;name
+  --#leftsub|[*R:name]
+  --?"[*R:attack_flag]" -eq on|NPCA_MAKE_AN_ATTACK
+  --^NPCA_NOT_ATTACK|
+  --X|
+
+  --:EXEC_NPC_LEGENDARY_ACTION|action_name
+  --?[&AllNPCActionsToSender] -eq 1|[
+  --#whisper|self
+  --]|[
+  --#whisper|
+  --]|
+  --#emotestate|visible
+  --~action_name|string;before;|;[&reentryval]
+  --~action_target|string;after;|;[&reentryval]
+  --#targettoken|[&action_target]
+  --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]  
+  --Rfind|[*S:character_id];[&action_name];repeating_npcaction-l;name
+  --#leftsub|[*R:name]
+  --?"[*R:attack_flag]" -eq on|NPCA_MAKE_AN_ATTACK
+  --^NPCA_NOT_ATTACK|
+  --X|  
+
+
+  --/|=========================================================================================================
+  --/|Handle action menu creation for PCs
+
+  --:proc_pc|
+  --/+|[hr #58180d]
+  --+| 
+  --#whisper|self
+
+  --?[&selfHandleAdvantageMode] -eq 1|[
+    --?"X[&currentAdvantageMode]" -eq "X"|&currentAdvantageMode;[&defaultAdvantageMode]
+    --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
+    --+|[r]Roll Mode: [&mode] | [rbutton]N::SET_ADV_MODE;0[/rbutton][rbutton]A::SET_ADV_MODE;1[/rbutton][rbutton]D::SET_ADV_MODE;2[/rbutton][/r]
+  --]|
+
+  --?[&showGlobalModifierButtons] -eq 1|[
+    -->Create_Global_Attack_Modifier_Buttons|[*S:character_id];gambuttons
+    -->Create_Global_Damage_Modifier_Buttons|[*S:character_id];gdmbuttons
+    --#buttonfontsize|8px
+    --?"X[&gambuttons]" -eq "X"|skip_gam_display
+    --+|[c][b]Global Attack Mods[/b][br][&gambuttons][/c]
+    --+|
+    --:skip_gam_display|
+    --?"X[&gdmbuttons]" -eq "X"|skip_gdm_display
+    --+|[c][b]Global Damage Mods[/b][br][&gdmbuttons][/c]
+    --#buttonfontsize|8px
+    --:skip_gdm_display|
+  --]| 
+
+  --/|The PC Attack List (center of the main character sheet)
+  --Rfirst|[*S:character_id];repeating_attack
+  --&PCAttacks|[br]
+  --?"[*R:atkname]" -ne "NoRepeatingAttributeLoaded"|[
+    --:PCAttacks_Display|
+      --?"X[*R:spelldesc_link]" -ne "X"|SKIP_SPELL_ATTACK
+      --&PCAttacks|+ [rbutton][*R:atkname]::EXEC_PC_ATTACK;[*R:atkname]|&#64;{target|token_id}[/rbutton] 
+      --:SKIP_SPELL_ATTACK|
+      --Rnext|
+      --?"[*R:atkname]" -ne "NoRepeatingAttributeLoaded"|PCAttacks_Display
+      --+PC Attacks|[&PCAttacks]
+  --]|
+
+  --/|The PC's cantrips
+  --Rfirst|[*S:character_id];repeating_spell-cantrip
+  --&PCCantrips|[br]
+  --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
+    --:PCCantrips_Display|
+      --~testName|string;replaceall; ;-;[*R:spellname]
+      --~testMule|system;findability;[&spellmulename];[&testName]
+      --?[&testMule] -ne "AbilityNotFound"|MULE_CANTRIP
+      --?"[*R:spelloutput]" -eq ATTACK|CANTRIP_GENERATE_WITH_TARGET
+      --&PCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|NONE[/rbutton]
+      --^CANTRIP_END_GENERATE|
+      --:CANTRIP_GENERATE_WITH_TARGET|
+      --&PCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|&#64;{target|token_id}[/rbutton] 
+      --^CANTRIP_END_GENERATE|
+      --:MULE_CANTRIP|
+      --&PCCantrips|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
+      --:CANTRIP_END_GENERATE|
+      --Rnext|
+      --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|PCCantrips_Display
+      --+Cantrips|[&PCCantrips]
+  --]|
+
+  --/|The PC's level 1 thru 9 spells
+  --&HighestSlot|9
+  --?[&trackPCSpellSlots] -eq 1|[
+    -->GET_HIGHEST_LEVEL_SPELL_SLOT|HighestSlot
+    --&spellSlotInfo1|[t align=center width=100% border=1][tr][td][b]Level[/b][/td]
+    --&spellSlotInfo2|[/tr][tr][td][b]Slots[/b][/td]
+    --&anySpell|0
+    --%levelCounter|1;9
+      -->GET_AVAILABLE_SPELL_SLOTS|[&levelCounter];slotCount
+      --/?[*S:lvl[&levelCounter]_slots_total] -gt 0|&spellSlotInfo;+L[&levelCounter]([&slotCount]) 
+      --?[*S:lvl[&levelCounter]_slots_total] -gt 0|&spellSlotInfo1;+[td align=center][b][i][&levelCounter][/i][/b][/td] 
+      --?[*S:lvl[&levelCounter]_slots_total] -gt 0|&spellSlotInfo2;+[td align=center][&slotCount][/td] 
+      --?[*S:lvl[&levelCounter]_slots_total] -gt 0|&anySpell;1 
+    --%|
+    --?[&anySpell] -eq 0|SKIP_SLOT_DISPLAY
+    --?[&showPCSpellSlotList] -eq 0|SKIP_SLOT_DISPLAY
+    --+|[c][b]Available Spell Slots[/b][/c][&spellSlotInfo1][&spellSlotInfo2][/tr][/t]
+    --:SKIP_SLOT_DISPLAY|
+  --]|
+  --%levelCounter|1;9
+    --Rfirst|[*S:character_id];repeating_spell-[&levelCounter]
+    --&PCSpells|[br]
+    --&slotString|
+    --&slotString||&#
+    --&slotString|+63;{Slot Level|
+    --%slotcounter|[&levelCounter];[&HighestSlot]
+      --?[&trackPCSpellSlots] -eq 0|SKIP_THIS_SLOT_CHECK
+      -->GET_AVAILABLE_SPELL_SLOTS|[&slotcounter];hasSlots
+      --?[&hasSlots] -eq 0|SKIP_THIS_SLOT_STRING
+      --:SKIP_THIS_SLOT_CHECK|
+      --&slotString|+[&slotcounter]
+      --?[&slotcounter] -eq [&HighestSlot]|SKIP_THIS_SLOT_STRING
+      --&slotString|+|
+      --:SKIP_THIS_SLOT_STRING|
+    --%|
+
+    --?[&levelCounter] -lt 9|DONE_SLOT_STRING
+    --&slotString||9
+    --:DONE_SLOT_STRING|
+    --&slotString|+}
+    
+    --=PCSpellCount|0
+    --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
+      --:PCSpells_Display|
+      --?[&skipPreppedSpellsCheck] -eq 1|SKIP_PREP_CHECK
+      --?[*S:class] -eq "Sorcerer"|SKIP_PREP_CHECK
+      --?"X[*S:multiclass1_flag]" -eq "X1" -and [*S:multiclass1] -eq "Sorcerer"|SKIP_PREP_CHECK
+      --?"X[*S:multiclass2_flag]" -eq "X1" -and [*S:multiclass2] -eq "Sorcerer"|SKIP_PREP_CHECK
+      --?"X[*S:multiclass3_flag]" -eq "X1" -and [*S:multiclass3] -eq "Sorcerer"|SKIP_PREP_CHECK
+      --&isWizard|0
+      --?[*S:class] -eq "Wizard"|&isWizard;1
+      --?"X[*S:multiclass1_flag]" -eq "X1" -and [*S:multiclass1] -eq "Wizard"|&isWizard;1
+      --?"X[*S:multiclass2_flag]" -eq "X1" -and [*S:multiclass2] -eq "Wizard"|&isWizard;1
+      --?"X[*S:multiclass3_flag]" -eq "X1" -and [*S:multiclass3] -eq "Wizard"|&isWizard;1
+      --?[&isWizard] -eq 0 -and "X[*R:spellprepared]" -ne "X1"|DONE_SPELL_BUTTON
+      --?"X[*R:spellprepared]" -ne "X1" -and "X[*R:spellritual]" -ne "XYes"|DONE_SPELL_BUTTON
+      --&spellsuffix|
+      --?"X[*R:spellritual]" -eq "XYes"|&spellsuffix; [R]
+      --:SKIP_PREP_CHECK|
+
+      --?[&trackPCSpellSlots] -eq 0|SKIP_FREE_SLOTS_CHECK
+      --?[&HighestSlot] -lt [&levelCounter]|DONE_SPELL_BUTTON
+
+      --:SKIP_FREE_SLOTS_CHECK|    
+      --~testName|string;replaceall; ;-;[*R:spellname]
+      --~testMule|system;findability;[&spellmulename];[&testName]
+      --?[&testMule] -ne "AbilityNotFound"|MULE_SPELL
+
+      --&PCSpells|+ [rbutton][*R:spellname][&spellsuffix]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|&#64;{target|token_id}[&slotString][/rbutton]
+      --=PCSpellCount|[$PCSpellCount.Raw] + 1 
+      --^DONE_SPELL_BUTTON|
+      --:MULE_SPELL|
+      --&PCSpells|+ [sheetbutton][*R:spellname][&spellsuffix]::[&spellmulename]::[&testName][/sheetbutton] 
+      --=PCSpellCount|[$PCSpellCount.Raw] + 1 
+      --:DONE_SPELL_BUTTON|
+      --Rnext|
+      --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|PCSpells_Display
+      --?[$PCSpellCount] -eq 0|PC_SKIP_LEVEL_DISPLAY
+      --+Level [&levelCounter] Spells|[&PCSpells]
+      --:PC_SKIP_LEVEL_DISPLAY|
+     --]|
+  --%|
+  --X|
+
+  --/|=========================================================================================================
+  --/|Reentrant points for PC actions
+
+  --:EXEC_PC_ATTACK|
+  --/+|[hr #58180d]
+  --#whisper|
+  --#emotestate|visible
+  --~attack_name|string;before;|;[&reentryval]
+  --~attack_target|string;after;|;[&reentryval]
+  --#targettoken|[&attack_target]
+  --#emotetext|[*S:t-name] uses [&attack_name] against [*T:t-name]
+  -->Find_Active_Global_Attack_Modifiers|[*S:character_id];PC_GAM
+  -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM
+  -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM_CRIT;1
+  --Rfind|[*S:character_id];[&attack_name];repeating_attack;atkname
+  --?[&requireAmmo] -eq 0|NoAmmoNeededPC_Attack
+  --?"X[*R:ammo]" -eq "X"|NoAmmoNeededPC_Attack
+  --~ResourceUsed|string;before;|;[*R:ammo]
+  -->FIND_REPEATING_RESOURCE|[*S:character_id];[&ResourceUsed];AmmoAttrName;AmmoAttributeID;AmmoCount
+  --?[&AmmoCount] -lt 1|_NO_AMMO_AVAILABLE
+  --:NoAmmoNeededPC_Attack|
+  --/Rdump|
+  --#title|[*R:atkname]
+  --#leftsub|[*S:character_name]
+  --&attack_crit|0
+  --&rollType|1d20
+  --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
+  --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 0|&rollType;1d20
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1  
+  --&arString|[&rollType]
+  --=attrMod|0
+  --&attrName|Attr
+  -->Get_Ability_Modifier|[*R:atkattr_base];attrMod;attrName
+  --/|Assume the damage attribute is the same unless it is set to something else
+  --=dmgMod|[$attrMod.Raw]
+  --&dmgAttrName|[&attrName]
+  -->Get_Ability_Modifier|[*R:dmgattr_base];dmgMod;dmgAttrName
+  --/|Assume the damage attribute is the same unless it is set to something else
+  --=dmg2Mod|[$attrMod.Raw]
+  --&dmg2AttrName|[&attrName]
+  -->Get_Ability_Modifier|[*R:dmg2attr_base];dmg2Mod;dmg2AttrName  
+  --?[$attrMod.Raw] -gt 0|&arString;+ + [$attrMod.Raw] [&attrName]
+  --?[$attrMod.Raw] -lt 0|&arString;+ [$attrMod.Raw] [&attrName]
+  --?[*R:atkmod] -gt 0|&arString;+ + [*R:atkmod] [Special]
+  --?[*R:atkmod] -lt 0|&arString;+ [*R:atkmod] [Special]
+  --?[*R:atkprofflag] -ne 0|&arString;+ + [*S:pb] [Prof]
+  --?"X[*R:atkprofflag]" -eq "X"|&arString;+ + [*S:pb] [Prof]
+  --?[*R:atkmagic] -gt 0|&arString;+ + [*R:atkmagic] [Magic]
+  --?[*R:atkmagic] -lt 0|&arString;+ [*R:atkmagic] [Magic]
+  --=attackRoll|[&arString] [&PC_GAM]
+  --&dmgroll|[*R:dmgbase]
+  --?[$dmgMod.Raw] -gt 0|&dmgroll;+ + [$dmgMod.Raw] [&dmgAttrName]
+  --?[$dmgMod.Raw] -lt 0|&dmgroll;+ [$dmgMod.Raw] [&dmgAttrName]
+  --?[*R:dmgmod] -gt 0|&dmgroll;+ + [*R:dmgmod] [Special]
+  --?[*R:dmgmod] -lt 0|&dmgroll;+ [*R:dmgmod] [Special]
+  --?[*R:atkmagic] -gt 0|&dmgroll;+ + [*R:atkmagic] [Magic]
+  --?[*R:atkmagic] -lt 0|&dmgroll;+ [*R:atkmagic] [Magic]
+  --&dmgroll2|[*R:dmg2base]
+  --?[*R:dmg2attr] -gt 0|&dmgroll2;+ + [$dmg2Mod.Raw] [&dmg2AttrName]
+  --?[*R:dmg2attr] -lt 0|&dmgroll2;+ [$dmg2Mod.Raw] [&dmg2AttrName]
+  --?[*R:dmg2mod] -gt 0|&dmgroll;+ + [*R:dmg2mod] [Special]
+  --?[*R:dmg2mod] -lt 0|&dmgroll;+ [*R:dmg2mod] [Special]
+  --?[*R:atkmagic] -gt 0|&dmgroll2;+ + [*R:atkmagic] [Magic]
+  --?[*R:atkmagic] -lt 0|&dmgroll2;+ [*R:atkmagic] [Magic]
+  --=AC|[*T:ac]
+  --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
+  --?[&sendGmInfo] -eq 1|[
+    --+[*R:atkname] Attack|rolled [$attackRoll] vs the target's AC[br][br]
+  --]|[
+    --+[*R:atkname] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b][br][br]
+  --]|
+  --=CritNum|20
+  --?"X[*R:atkcritrange]" -ne "X"|=CritNum;[*R:atkcritrange]
+  --&critRoll|[*R:dmgbase]
+  --&critRoll2|[*R:dmg2base]
+  --?"X[*R:dmgcustcrit]" -eq "X"|DONE_ATK_CRIT
+  --&critRoll|[*R:dmgcustcrit]
+  --:DONE_ATK_CRIT|
+  --?"X[*R:dmg2custcrit]" -eq "X"|DONE_ATK_CRIT2
+  --&critRoll2|[*R:dmg2custcrit]
+  --:DONE_ATK_CRIT2|
+  --?[$attackRoll.Base] -ge [$CritNum.Raw]|=attack_crit;1|=attack_crit;0
+  --?[$attack_crit] -eq 1|&dmgroll;+ + [&critRoll] [Crit]
+  --?[$attack_crit] -eq 1|&dmgroll2;+ + [&critRoll2] [Crit]
+  --?[$attack_crit] -eq 1|&dmgroll;+ [&PC_GDM_CRIT]|&dmgroll;+ [&PC_GDM]
+  --?[$attackRoll.Total] -lt [$AC]|ATTACK_MISS
+  --?[$attackRoll.Base] -eq 1|ATTACK_MISS
+  --?[$attack_crit] -eq 1|&hittag;Critical Hit!|&hittag;Hit!
+  --?[$attack_crit] -eq 1|&hitdesc;critically hits|&hitdesc;hits
+  --=attackDamage|[&dmgroll]
+  --=attackDamage2|[&dmgroll2]
+  --?"X[*R:dmg2flag]" -eq "X0"|ATTACK_ONE_DAMAGE
+  --?"X[*R:dmg2flag]" -eq "X"|ATTACK_ONE_DAMAGE
+  --^ATTACK_TWO_DAMAGE|
+
+  --:ATTACK_ONE_DAMAGE|
+  --+[&hittag]|The [*R:atkname] [&hitdesc] and deals [$attackDamage] [*R:dmgtype] damage.[br][br]
+  -->[&damageRoutine]|[&attack_target];[&hitPointsBar];-[$attackDamage.Raw]
+  --^ATTACK_DONE|
+
+  --:ATTACK_TWO_DAMAGE|
+  --+[&hittag]|The [*R:atkname] [&hitdesc] and deals [$attackDamage] [*R:dmgtype] and [$attackDamage2] [*R:dmg2type] damage.[br][br]
+  --=TotalDamage|[$attackDamage.Raw] + [$attackDamage2.Raw]
+  -->[&damageRoutine]|[&attack_target];[&hitPointsBar];-[$TotalDamage.Raw]
+  --^ATTACK_DONE|
+
+  --:ATTACK_MISS|
+  --+The [*R:atkname] attack missed!|[br][br]
+
+  --:ATTACK_DONE|
+  --?[&requireAmmo] -eq 0|NO_AMMO_USED
+  --?"X[&AmmoAttrName]" -eq "X"|NO_AMMO_USED
+  --!a:[*S:character_id]|[&AmmoAttributeID]:-=1
+
+  --:NO_AMMO_USED|
+
+  --X|
+
+  --:EXEC_PC_CANTRIP|
+  --/+|[hr #58180d]
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender]||[
+  --#whisper|self
+  --]|[
+  --#whisper|
+  --]|
+  --~cantrip_name|string;before;|;[&reentryval]
+  --~cantrip_target|string;after;|;[&reentryval]
+  --#whisper|
+  --#emotestate|visible
+  --#targettoken|[&cantrip_target]
+  --#emotetext|[*S:t-name] uses [&cantrip_name] against [*T:t-name]
+  -->Find_Active_Global_Attack_Modifiers|[*S:character_id];PC_GAM
+  -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM
+  -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM_CRIT;1
+  -->Find_Active_Global_Save_Modifiers|[$cantrip_target];TARGET_GSM
+  --Rfind|[*S:character_id];[&cantrip_name];repeating_spell-cantrip;spellname
+  --?"[*R:spelloutput]" -eq ATTACK|PC_ATTACK_CANTRIP|PC_CARD_CANTRIP
+  --=cantrip_crit|0
+  --:PC_ATTACK_CANTRIP|
+  --?"X[*R:spellattack]" -eq "XRanged" -or "X[*R:spellattack]" -eq "XMelee"|CANTRIP_ATTACK_ROLL|CANTRIP_DONE_ATTACK_ROLL
+  --:CANTRIP_ATTACK_ROLL|
+  --&rollType|1d20
+  --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
+  --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 0|&rollType;1d20
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1  
+  --=attackRoll|[&rollType] + [*S:spell_attack_bonus] [Spell Atk Bonus] [&PC_GAM]
+  --=AC|[*T:ac]
+  --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
+  --?[&sendGmInfo] -eq 1|[
+    --+[*R:spellattack] Attack|rolled [$attackRoll] vs the target's AC[br][br]
+  --]|[
+    --+[*R:spellattack] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b][br][br]
+  --]|
+  --?[$attackRoll.Base] -ge 20|=cantrip_crit;1|=cantrip_crit;0
+  --?[$attackRoll.Total] -lt [$AC]|CANTRIP_ATTACK_MISS
+  --?[$attackRoll.Base] -eq 1|CANTRIP_ATTACK_MISS
+  --:CANTRIP_DONE_ATTACK_ROLL|
+  --&damageRoll|[*R:spelldamage]
+  --?[*S:level] -ge 5|&damageRoll;+ + [*R:spelldamage]
+  --?[*S:level] -ge 11|&damageRoll;+ + [*R:spelldamage]
+  --?[*S:level] -ge 17|&damageRoll;+ + [*R:spelldamage]
+  --?[$cantrip_crit] -eq 1|&damageRoll;+ + [&damageRoll]
+  --?[$cantrip_crit] -eq 1|&damageRoll;+ [&PC_GDM_CRIT]|&damageRoll;+ [&PC_GDM]
+  --=cantripDamage|[&damageRoll]
+  --?"X[*R:spellsave]" -ne "X"|CANTRIP_SAVE|CANTRIP_NO_SAVE
+  --:CANTRIP_NO_SAVE|
+  --?[$cantrip_crit] -eq 1|&hittag;Critical Hit!|&hittag;Hit!
+  --?[$cantrip_crit] -eq 1|&hitdesc;critically hits|&hitdesc;hits
+  --+[&hittag]|The [*R:spellname] [&hitdesc] and deals [$cantripDamage] [*R:spelldamagetype] damage.[br][br]
+  -->[&damageRoutine]|[&cantrip_target];[&hitPointsBar];-[$cantripDamage.Raw]
+  --^PC_CARD_CANTRIP|
+  --:CANTRIP_SAVE|
+  --+|The target needs to make a DC [*S:spell_save_dc] [*R:spellsave] saving throw or take [$cantripDamage] [*R:spelldamagetype] damage.[br][br]
+  --/&output|The [b][i][*R:spellname][/i][/b] deals [$cantripDamage] [*R:spelldamagetype] damage. 
+  --/?"X[*R:spellsave]" -ne "X"|&output;+ The target can make a [*R:spellsave] save vs DC [*S:spell_save_dc] to negate the damage.
+  --^PC_CARD_CANTRIP|
+  --:CANTRIP_ATTACK_MISS|
+  --+The [*R:spellname] attack missed!|[br][br]
+  --:PC_CARD_CANTRIP|
+  --#title|[&cantrip_name]
+  --#leftsub|[*S:character_name]
+  --+|[*R:spelldescription]
+  --:PC_DONE_CANTRIP|
+  --X|
+
+  --:EXEC_PC_SPELL|spellInfo1=Spell Level, 2=SpellName, 3=Target ID, 4=Slot Level
+  --/+|[hr #58180d]
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender]||[
+  --#whisper|self
+  --]|[
+  --#whisper|
+  --]|
+  --~spellInfo|string;split;|;[&reentryval]
+  --=UpCast|[&spellInfo4] - [&spellInfo1]
+  --?[&trackPCSpellSlots] -eq 0|SKIP_CASTING_SLOT_CHECK
+  -->GET_AVAILABLE_SPELL_SLOTS|[&spellInfo4];castSlotAvailable
+  --?[&castSlotAvailable] -eq 0|NO_SLOTS_AVAILABLE
+  -->DEDUCT_SPELL_SLOT|[&spellInfo4]
+  --^SKIP_CASTING_SLOT_CHECK|
+  --:NO_SLOTS_AVAILABLE|
+  --#whisper|self
+  --+|You do not have a level [$spellInfo4] spell slot available to cast [&spellInfo2]
+  --^PC_DONE_SPELL|
+  --:SKIP_CASTING_SLOT_CHECK|
+  --&action_target|[&spellInfo3]
+  --#title|[&spellInfo2]
+  --#leftsub|[*S:character_name]
+  --#whisper|
+  --#emotestate|visible
+  --#targettoken|[&action_target]
+  --#emotetext|[*S:t-name] uses [&spellInfo2] against [*T:t-name]
+  -->Find_Active_Global_Attack_Modifiers|[*S:character_id];PC_GAM
+  -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM
+  -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM_CRIT;1
+  -->Find_Active_Global_Save_Modifiers|[$cantrip_target];TARGET_GSM
+  --Rfind|[*S:character_id];[&spellInfo2];repeating_spell-[&spellInfo1];spellname
+  --#targettoken|[&spellInfo3]
+  --?"[*R:spelloutput]" -eq ATTACK|PC_ATTACK_SPELL|PC_CARD_SPELL
+
+  --:PC_ATTACK_SPELL|
+  --&spell_crit|0
+  --?"X[*R:spellattack]" -eq "XRanged" -or "X[*R:spellattack]" -eq "XMelee"|SPELL_ATTACK_ROLL|SPELL_DONE_ATTACK_ROLL
+
+  --:SPELL_ATTACK_ROLL|
+  --&rollType|1d20
+  --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
+  --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 0|&rollType;1d20
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
+  --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1  
+  --=attackRoll|[&rollType] + [*S:spell_attack_bonus] [Spell Atk Bonus] [&PC_GAM]
+  --=AC|[*T:ac]
+  --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
+    --?[&sendGmInfo] -eq 1|[
+    --+[*R:spellattack] Attack|rolled [$attackRoll] vs the target's AC[br][br]
+  --]|[
+    --+[*R:spellattack] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b][br][br]
+  --]|
+  --?[$attackRoll.Base] -ge 20|=spell_crit;1|=spell_crit;0
+  --?[$attackRoll.Total] -lt [$AC]|SPELL_ATTACK_MISS
+
+  --:SPELL_DONE_ATTACK_ROLL|
+  --&damageRoll|[*R:spelldamage]
+  --?[$spell_crit] -eq 1|&damageRoll;+ [&PC_GDM_CRIT]|&damageRoll;+ [&PC_GDM]
+  --&damageRoll2|[*R:spelldamage2]
+
+  --&ability_bonus|
+    --?"X[*R:spell_ability]" -eq "Xspell"|[
+      --~ability|string;before;};[*S:spellcasting_ability]
+      --~ability|string;after;{;[&ability]
+      --?[&ability] -eq strength_mod|&ability_bonus; + [*S:strength_mod] [Spellcasting Ability]
+      --?[&ability] -eq dexterity_mod|&ability_bonus; + [*S:dexterity_mod] [Spellcasting Ability]
+      --?[&ability] -eq constitution_mod|&ability_bonus; + [*S:constitution_mod] [Spellcasting Ability]
+      --?[&ability] -eq intelligence_mod|&ability_bonus; + [*S:intelligence_mod] [Spellcasting Ability]
+      --?[&ability] -eq wisdom_mod|&ability_bonus; + [*S:wisdom_mod] [Spellcasting Ability]
+      --?[&ability] -eq charisma_mod|&ability_bonus; + [*S:charisma_mod] [Spellcasting Ability]
+  --]|
+  --&spell_heal|0
+  --?"X[*R:spellhealing]" -ne "X"|&spell_heal;1
+  --?"X[*R:spellhealing]" -ne "X"|&damageRoll;[*R:spellhealing]
+  --&damageToApply|-
+  --?[$UpCast] -eq 0|NO_UPCAST
+  --=upcastDice|[$UpCast.Raw] * [*R:spellhldie]
+  --&damageRoll|+ + [$upcastDice.Raw][*R:spellhldietype] [Upcasting]
+
+  --:NO_UPCAST|
+  --?[$spell_crit] -eq 1|&damageRoll;+ + [&damageRoll]
+  --?[$spell_crit] -eq 1|&damageRoll2;+ + [&damageRoll2]
+  --?[$spell_crit] -eq 1|&hittag;Critical Hit!|&hittag;Hit!
+  --?[$spell_crit] -eq 1|&hitdesc;critically hits|&hitdesc;hits and deals
+  --?[&spell_heal] -eq 1|&hittag;[b][/b]  
+  --?[&spell_heal] -eq 1|&hitdesc;heals for
+  --?[&spell_heal] -eq 1|[
+    --&damageToApply|
+  --]|
+ 
+  --/&damageRoll|+ [&ability_bonus]
+  --/&damageRoll2|+ [&ability_bonus]
+
+  --=spellDamage|[&damageRoll]
+  --=spellDamage2|[&damageRoll2]
+  --=TotalDamage|[$spellDamage.Raw] + [$spellDamage2.Raw]
+
+  --?"X[*R:spelldamage2]" -ne "X"|TWO_DAMAGE
+  --+[&hittag]|The [*R:spellname] [&hitdesc] [$spellDamage] [*R:spelldamagetype] damage.[br][br]
+  --&damageToApply|+[$spellDamage.Raw]
+  -->[&damageRoutine]|[&action_target];[&hitPointsBar];[&damageToApply]
+  --^DONE_SPELL_DAMAGE|
+
+  --:TWO_DAMAGE|
+  --+[&hittag]|The [*R:spellname] [&hitdesc] [$spellDamage] [*R:spelldamagetype] damage and [$spellDamage2] [*R:spelldamagetype2] damage.[br][br]
+  --&damageToApply|+[$TotalDamage.Raw]
+  -->[&damageRoutine]|[&action_target];[&hitPointsBar];[&damageToApply]
+
+  --:DONE_SPELL_DAMAGE|
+  --?"X[*R:spellsave]" -eq "X"|PC_CARD_SPELL
+  --+|The target can make a [*R:spellsave] save vs DC [*S:spell_save_dc] to modify the damage as described below.[br][br]
+  --^PC_CARD_SPELL|
+
+  --:SPELL_ATTACK_MISS|
+  --+The [*R:spellname] attack missed!|[br][br]
+
+  --:PC_CARD_SPELL|
+  --+|[*R:spelldescription]
+
+  --:PC_DONE_SPELL|
+  --X|
+
+  --/|=========================================================================================================
+  --/| FUNCTIONS
+
+  --/|The three Find_Active_Global_X_Modifiers functions will loop through the various global modifiers repeating
+  --/|sections and construct a line containing the dice roll and description (in square brackets) for each entry
+  --/|that has an active flag set. This is set to a variable named after the second parameter and can be appended
+  --/|directly to an attack/damage/save roll
+
+  --:SET_ADV_MODE|
+  --&currentAdvantageMode|[&reentryval]
+  --^AFTER_ADVMODE_CHANGE|
+
+  --:Find_Active_Global_Attack_Modifiers|character_id;StringVariableToSet
+  --&_GAM_Temp| 
+  --Rfirst|[%1%];repeating_tohitmod
+  --:_GAM_Loop|
+  --?"[*R:global_attack_active_flag]" -eq "1"|>_AddGAM;[*R:global_attack_name];[*R:global_attack_roll]
+  --Rnext| 
+  --?"[*R:global_attack_name]" -ne "NoRepeatingAttributeLoaded"|_GAM_Loop
+  --&[%2%]|[&_GAM_Temp] 
+  --<|
+  
+  --:_AddGAM| 
+  --&_GAM_Temp|+ + [%2%]# [ [%1%] ] 
+  --<|
+
+    --:Find_Active_Global_Damage_Modifiers|character_id;StringVariableToSet;isCrit(1=true)
+  --&_GDM_Temp| 
+  --Rfirst|[%1%];repeating_damagemod
+  --:_GDM_Loop|
+  --?"[*R:global_damage_active_flag]" -eq "1"|>_AddGDM;[*R:global_damage_name];[*R:global_damage_damage];[%3%];[*R:global_damage_critical_damage]
+  --Rnext| 
+  --?"[*R:global_damage_name]" -ne "NoRepeatingAttributeLoaded"|_GDM_Loop
+  --&[%2%]|[&_GDM_Temp] 
+  --<|
+  
+  --:_AddGDM| 
+  --&_GDM_Temp|+ + [%2%]# [ [%1%] ] 
+  --?"X[%3%]" -eq "X1"|&_GDM_Temp;+ + [%4%]  [ CRIT [%1%] ]
+  --<|
+
+  --:Find_Active_Global_Save_Modifiers|character_id;StringVariableToSet
+  --&_GSM_Temp| 
+  --Rfirst|[%1%];repeating_savemod
+  --:_GSM_Loop|
+  --?"[*R:global_save_active_flag]" -eq "1"|>_AddGSM;[*R:global_save_name];[*R:global_save_roll]
+  --Rnext| 
+  --?"[*R:global_save_name]" -ne "NoRepeatingAttributeLoaded"|_GSM_Loop
+  --&[%2%]|[&_GSM_Temp] 
+  --<|
+
+  --:Create_Global_Attack_Modifier_Buttons|character_id;StringVariableToSet
+  --&_GAMB_Temp| 
+  --Rfirst|[%1%];repeating_tohitmod
+  --:_GAMB_Loop|
+  --?"[*R:global_attack_name]" -eq "NoRepeatingAttributeLoaded"|_GAMB_DONE
+  --?"[*R:global_attack_active_flag]" -eq "1"|>_AddGAMB;[*R:global_attack_name];00AA00
+  --?"[*R:global_attack_active_flag]" -ne "1"|>_AddGAMB;[*R:global_attack_name];AA0000
+  --Rnext| 
+  --?"[*R:global_attack_name]" -ne "NoRepeatingAttributeLoaded"|_GAMB_Loop
+  --:_GAMB_DONE|
+  --&[%2%]|[&_GAMB_Temp] 
+  --<|
+  
+  --:_AddGAMB| 
+  --&_GAMB_Temp|+ [rbutton:#ffffff:#[%2%]][%1%]::TOGGLE_GAM;[%1%][/rbutton] 
+  --<|
+
+    --:Create_Global_Damage_Modifier_Buttons|character_id;StringVariableToSet
+  --&_GDMB_Temp| 
+  --Rfirst|[%1%];repeating_damagemod
+  --:_GDMB_Loop|
+  --?"[*R:global_damage_name]" -eq "NoRepeatingAttributeLoaded"|_GDMB_DONE
+  --?"[*R:global_damage_active_flag]" -eq "1"|>_AddGDMB;[*R:global_damage_name];00AA00
+  --?"[*R:global_damage_active_flag]" -ne "1"|>_AddGDMB;[*R:global_damage_name];AA0000  
+  --Rnext| 
+  --?"[*R:global_damage_name]" -ne "NoRepeatingAttributeLoaded"|_GDMB_Loop
+  --:_GDMB_DONE|
+  --&[%2%]|[&_GDMB_Temp] 
+  --<|
+  
+  --:_AddGDMB| 
+  --&_GDMB_Temp|+ [rbutton:#ffffff:#[%2%]][%1%]::TOGGLE_GDM;[%1%][/rbutton] 
+  --<|
+
+  --:Get_Ability_Modifier|attribute_string;returnnumericvalue;returnnamestring
+  --?"[%1%]" -eq "strength_mod"|=[%2%];[*S:strength_mod]
+  --?"[%1%]" -eq "strength_mod"|&[%3%];[STR]
+  --?"[%1%]" -eq "intelligence_mod"|=[%2%];[*S:intelligence_mod]
+  --?"[%1%]" -eq "intelligence_mod"|&[%3%];[INT]
+  --?"[%1%]" -eq "wisdom_mod"|=[%2%];[*S:wisdom_mod]
+  --?"[%1%]" -eq "wisdom_mod"|&[%3%];[WIS]
+  --?"[%1%]" -eq "dexterity_mod"|=[%2%];[*S:dexterity_mod]
+  --?"[%1%]" -eq "dexterity_mod"|&[%3%];[DEX]
+  --?"[%1%]" -eq "constitution_mod"|=[%2%];[*S:constitution_mod]
+  --?"[%1%]" -eq "constitution_mod"|&[%3%];[CON]
+  --?"[%1%]" -eq "charisma_mod"|=[%2%];[*S:charisma_mod]
+  --?"[%1%]" -eq "charisma_mod"|&[%3%];[CHA]
+  --<|
+
+  --/|There are four different options for applying damage. The selected option is set in the settings area of the macro.
+  --/|When applying damage, one of the four functions listed below will be executed to alter the target's HP. The ScriptCards
+  --/|method is recommended, as there won't be an issue with impacting the same target more than once.
+
+  --/|Apply damage via ScriptCards' built-in object modification function (new in ScriptCards 1.5.0)
+  --:ApplyDamageScriptCards|Parameters are tokenid;bar#;amount
+  --=applyValue|[%3%]
+  --=newValue|[*[%1%]:t-bar[%2%]_value] + [$applyValue]
+  --?[$newValue] -lt 0|=newValue;0
+  --?[$newValue] -gt [*[%1%]:t-bar[%2%]_max]|=newValue;[*[%1%]:t-bar[%2%]_max]
+  --!t:[%1%]|bar[%2%]_value:[$newValue.Raw]
+  --<|
+
+  --/|Token-Mod doesn't have a "set to a relative number", so we get the current bar value, subtract thedamage amount
+  --/|make sure it doesn't fall below 0, and set the amount back into the bar.
+  --:ApplyDamageTokenmod|Parameters are tokenid;bar#;amount
+  --=applyValue|[%3%]
+  --=newValue|[*[%1%]:t-bar[%2%]_value] + [$applyValue]
+  --?[$newValue] -lt 0|=newValue;0
+  --?[$newValue] -gt [*[%1%]:t-bar[%2%]_max]|=newValue;[*[%1%]:t-bar[%2%]_max]
+  --@token-mod|_ignore-selected _ids [%1%] _set bar[%2%]_value|[$newValue.Raw]
+  --<| 
+  
+  --/|AlterBars supports relative values for the amount parameter, so we just pass it the value with a "-" in front of it.
+  --:ApplyDamageAlterbars|Parameters are tokenid;bar#;amount
+  --=applyValue|[%3%]
+  --?[$applyValue] -lt 0|=applyValue;[$applyValue] {NEG}
+  --@alter|_target|[%1%] _bar|[%2%] _amount|[%3%] _show|none
+  --<|
+
+  --/|Just a dummy routine that doesn't do anything, but it is easier to do it this way than adding logic to see if we are
+  --/|skipping applying damage in the main routine.
+  --:DontApplyDamage|
+  --<|
+
+  --:SHOW_DAMAGE_BUTTONS|DamageAmount
+  --=FullDamage|[%3%]
+  --=HalfDamage|[%3%] \ 2
+  --=QuarterDamage|[%3%] \ 4
+  --=HealDamage|[%3%] {NEGATE}
+  --?[&whisperDamageButtonsToDM] -eq 1|[
+    --*|[c][rbutton]Full::APPLY_DAMAGE;[$FullDamage.Raw][/rbutton] | [rbutton]1/2::APPLY_DAMAGE;[$HalfDamage.Raw][/rbutton] | [rbutton]1/4::APPLY_DAMAGE;[$QuarterDamage.Raw][/rbutton] &nbsp;&nbsp;|&nbsp;&nbsp; [rbutton]Heal::APPLY_DAMAGE;[$HealDamage.Raw][/rbutton][/c]
+  --]|[
+    --+|[c][rbutton]Full::APPLY_DAMAGE;[$FullDamage.Raw][/rbutton] | [rbutton]1/2::APPLY_DAMAGE;[$HalfDamage.Raw][/rbutton] | [rbutton]1/4::APPLY_DAMAGE;[$QuarterDamage.Raw][/rbutton] &nbsp;&nbsp;|&nbsp;&nbsp; [rbutton]Heal::APPLY_DAMAGE;[$HealDamage.Raw][/rbutton][/c]      
+  --]|
+  --<|
+
+  --/|Reentry point to apply damage/healing to selected tokens
+  --:APPLY_DAMAGE|Amount
+  --?[&whisperDamageButtonResultsToDM] -eq 1|[
+    --#whisper|gm
+    --#title|Damage Applied
+  --]|[
+    --#whisper|nobody
+    --#title|Should never show
+  --]|
+  --~tokenCount|array;getlength;SC_SelectedTokens
+  --=tokenCount|[&tokenCount] - 1
+  --%loop|0;[$tokenCount.Raw]
+    --&thisToken|[@SC_SelectedTokens([&loop])]
+    --+Applying|[&reentryval] HP to [*[&thisToken]:t-name]
+    -->ApplyDamageScriptCards|[&thisToken];[&hitPointsBar];[&reentryval]
+  --%|
+  --X|
+
+  --:FIND_REPEATING_RESOURCE|character_id;resourceName;resourceReturnNameStringVariable;ResourceReturnValueStringVariable;ResouceCurrentValue
+    --?"[%2%]" -eq "[*[%1%]:class_resource_name]"|_IsResourceClass
+    --?"[%2%]" -eq "[*[%1%]:other_resource_name]"|_IsResourceOther
+    --Rfirst|[%1%];repeating_resource
+    --:_ResourceLoop|
+    --?"[*R:resource_left_name]" -eq "[%2%]"|_IsResourceLeft
+    --?"[*R:resource_right_name]" -eq "[%2%]"|_IsResourceRight
+    --Rnext|
+    --?"[*R:resource_left_name]" -ne "NoRepeatingAttributeLoaded"|_ResourceLoop
+    --&[%3%]|NotFound --&[%4%]|NotFound --&[%5%]|0 
+  --<|
+  
+  --:_IsResourceClass| --&[%3%]|class_resource_name --&[%4%]|class_resource --&[%5%]|[*[%1%]:class_resource] --<|
+  --:_IsResourceOther| --&[%3%]|other_resource_name --&[%4%]|other_resource --&[%5%]|[*[%1%]:other_resource] --<|
+  --:_IsResourceLeft| --&[%3%]|[*R:resource_left_name]  --&[%4%]|[*R>resource_left] --&[%5%]|[*S:[*R>resource_left]]    --<|  
+  --:_IsResourceRight| --&[%3%]|[*R:resource_left_name] --&[%4%]|[*R>resource_right] --&[%5%]|[*S:[*R>resource_right]] --<|
+
+  --:_NO_AMMO_AVAILABLE|
+  --#whisper|
+  --+|[*S:character_name] has no [&ResourceUsed] left.
+  --#emoteText|[*S:character_name] is all out of [&ResourceUsed].
+  --X|
+
+  --:FIND_CLASS_LEVEL|class;variableToSet
+  --&[%2%]|0
+  --?"[*S:class]" -eq "[%1%]"|&[%2%];[*S:base_level]
+  --?"[*S:multiclass1]" -eq "[%1%]"|&[%2%];[*S:multiclass1_lvl]
+  --?"[*S:multiclass2]" -eq "[%1%]"|&[%2%];[*S:multiclass2_lvl]
+  --?"[*S:multiclass3]" -eq "[%1%]"|&[%2%];[*S:multiclass3_lvl]
+  --?"[*S:multiclass4]" -eq "[%1%]"|&[%2%];[*S:multiclass4_lvl]
+  --<|
+
+  --:GET_AVAILABLE_SPELL_SLOTS|slotlevel;variableToSet
+  --&_maxSlots|[*S:lvl[%1%]_slots_total]
+  --&[%2%]|[*S:lvl[%1%]_slots_expended]
+  --<|
+
+  --:DEDUCT_SPELL_SLOT|slotlevel
+  --!a:[*S:character_id]|lvl[%1%]_slots_expended:-=1
+  --<|
+
+  --:GET_HIGHEST_LEVEL_SPELL_SLOT|variableToSet
+  --&[%1%]|0
+  --%levelCounter|1;9
+    -->GET_AVAILABLE_SPELL_SLOTS|[&levelCounter];slotTest
+    --?[&slotTest] -gt 0|&[%1%];[&levelCounter]
+  --%|
+  --<|
+
+  --:TOGGLE_GAM|GAM Name
+   --Rfind|[*S:character_id];[&reentryval];repeating_tohitmod;global_attack_name
+  --?"[*R:global_attack_name]" -eq "NoRepeatingAttributeLoaded"|_TOGGLE_ERROR
+  --?"[*R:global_attack_active_flag]" -eq "1"|>_setGlobalMod;[*R>global_attack_active_flag];0|>_setGlobalMod;[*R>global_attack_active_flag];1
+  --^proc_pc|
+  --X|
+
+  --:TOGGLE_GDM|GDM Name
+   --Rfind|[*S:character_id];[&reentryval];repeating_damagemod;global_damage_name
+  --?"[*R:global_damage_name]" -eq "NoRepeatingAttributeLoaded"|_TOGGLE_ERROR
+  --?"[*R:global_damage_active_flag]" -eq "1"|>_setGlobalMod;[*R>global_damage_active_flag];0|>_setGlobalMod;[*R>global_damage_active_flag];1
+  --^proc_pc|
+  --X|
+
+  --:_setGlobalMod|name;value
+  --!a:@{selected|character_id}|[%1%]:[%2%]  
+  --<|
+
+  --:_TOGGLE_ERROR|Bad name
+  --X|
+
+}}
