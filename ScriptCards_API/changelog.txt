@@ -1,5 +1,11 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.0.2a - Adds the --Rbyindex subcommand for retrieving a repeating row from a section by index number as an alternative to --Rfirst/--Rnext and --Rfind.
+           The syntax is --Rbyindex|<character_id>;<section_prefix>;<indexNumber> so, for example: --Rbyindex|@{selected|character_id};repeating_attack;3
+           to retrieve the third item in the repeating_attack list.
+
+v 2.0.2  - Queued for push to OneClick
+
 v 2.0.1b - Fixes a bug in exploding dice (and anything with a reroll) that could cause REALLY weird results
 
 v 2.0.1  - When using [*id:attribute] referencing it is now possible to use a player ID to retrieve player attribute information.
