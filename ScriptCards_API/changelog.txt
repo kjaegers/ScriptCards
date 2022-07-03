@@ -1,5 +1,10 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.0.2b - Code added to resolve nested attribute references. For example, if the "skillbonus" attribute on the character contains "@{pb}", the
+           intent is to reference the "pb" attribute on the character. Prior to 2.0.2b, ScriptCards was not parsing these nested references to try to get
+           the final value as was simply returning the @{pb} text. This behavior only modifies the *S, *T, *- and *R reference structures since these
+           attribute references don't apply to anything that isn't a character.
+
 v 2.0.2a - Adds the --Rbyindex subcommand for retrieving a repeating row from a section by index number as an alternative to --Rfirst/--Rnext and --Rfind.
            The syntax is --Rbyindex|<character_id>;<section_prefix>;<indexNumber> so, for example: --Rbyindex|@{selected|character_id};repeating_attack;3
            to retrieve the third item in the repeating_attack list.
