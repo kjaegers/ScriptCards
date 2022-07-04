@@ -1,5 +1,15 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-07-04 - 5E Character Action Menu 2.0.0 
+             - Changed the defaults for some of the optional features to enable them. Please check these settings before upgrading and customize as needed
+             - Tweaked the colors and theme slightly to improve the default appearance of the menus. 
+             - Added Global Save Modifiers toggle buttons. 
+             - Added "Skill Check" and "Saving Throw" buttons to the main action menu. Can be enabled/disabled for PCs and NPCs separately in settings.
+             - Used the new 2.0.2d buttonpadding setting to alter the size of the buttons on the menu, making the global modifier buttons considerably smaller.
+               Both the standard buttons and the small button sizes are customizable in the settings area.
+             - Modified the self-handle advantage mode to show the current advantage mode by colorizing the appropriate button instead of printing the text.
+             - Added option (on by default) to use a more compact display mode for the "Global X Saves" sections.
+
 2022-05-28 - 5E Character Action Menu 1.9.0 - In response to a forum request by user John D., the Action Menu now includes support for toggling Global
              attack and damage modifiers on or off right from the action menu. If &showGlobalModifierButtons is set to 1 in the settings area (as with
              most/all new features, it is off by default), the action menu will display a summary of the character's defined Global Attack and Global

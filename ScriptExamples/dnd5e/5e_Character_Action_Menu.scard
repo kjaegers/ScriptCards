@@ -1,7 +1,7 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 1.9.0
-  --/|Requires SC : 1.6.4a+
+  --/|Version     : 2.0.0
+  --/|Requires SC : 2.0.2d+
   --/|Author      : Kurt Jaegers
 
   --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
@@ -29,10 +29,10 @@
   --&skipPreppedSpellsCheck|0
 
   --/|If this value is set to 1, prepared spell checks for NPCs will be skipped
-  --&skipNPCPrepCheck|0
+  --&skipNPCPrepCheck|1
 
   --/|If this value is set to 1, only spells that the player has slots available for will be displayed, and spell slots will be deducted on cast
-  --&trackPCSpellSlots|0
+  --&trackPCSpellSlots|1
 
   --/|If this value is set to 1, a list of available spell slots are displayed above the spells list in the action menu. (only if trackPCSpellSlots is 1)
   --&showPCSpellSlotList|1
@@ -53,36 +53,51 @@
   --&whisperDamageButtonResultsToDM|1
 
   --/|What bar do you use for representing hit points for damage application?
-  --&hitPointsBar|3
+  --&hitPointsBar|1
 
   --/|If set to 1, the Action Menu will include advantage/normal/disadvantage toggles (and won't use the character sheet toggle)
-  --&selfHandleAdvantageMode|0
+  --&selfHandleAdvantageMode|1
   
   --/|Used with SelfHandleAdvantageMode. 0=Normal, 1=Advantage, 2=Disadvantage
   --&defaultAdvantageMode|0
 
   --/|If set to 1, ammo use/tracking will be used. Thanks to JustinG for the initial implementation. Note that Ammo Tracking for the character
   --/|needs to be enabled, and a resource named to match the Ammo (case sensitive) needs to exist on the sheet to track ammo.
-  --&requireAmmo|0
+  --&requireAmmo|1
 
   --/|If set to 1, global attack modifiers/damage will be listed a buttons that can be clicked to toggle them on and off. NOTE: due to
   --/|roll20's strangeness in handling some attributes, if a global modifier has never been turned on from the character sheet, the
   --/|buttons here may not be able to set the active state. Opening the character sheet and toggling the modifier on and  back off will
   --/|fix it permanently for that modifier.
   --&showGlobalModifierButtons|1
+  
+  --/|If set to 1, skill check and saving throw buttons will be displayed for PCs and/or NPCs
+  --&showPCSkillsAndSaves|1
+  --&showNPCSkillsAndSaves|1
+  
+  --/|If set to 1, Global X Mods will use more compact display layouts
+  --&compactGlobalModDisplay|1
+
+  --/|Adjusting these values will allow you to customize the padding around the action buttons. The default for Roll20 is 5px. The Action
+  --/|menu uses slightly smaller buttons (4px) for actions and very small (2px) padding for global modifier and advantage mode toggle buttons.
+  --&defaultButtonPadding|4px
+  --&smallButtonPadding|2px
 
   --/|End Settings Area
   --/|=========================================================================================================
 
   --/|Give the script a reentrant name based on the selected character id so we can have multiple instances at the same time
   --#reentrant|CharacterAction @{selected|character_id}
+  --&QB|? --&QB|+{ --&QE|}
+  --&AB|@ --&AB|+{
 
   --/|Set up some style information for the action menu and subsequent cards. These attempt to somewhat
   --/|simulate the 5E style
   --#bodyfontface|Helvetica
-  --#bodyfontcolor|#290000
+  --#oddrowfontcolor|#290000
+  --#evenrowfontcolor|#290000
   --#bodyfontsize|12px
-  --#buttonfontsize|9px
+  --#buttonfontsize|10px
   --#buttonbackground|#930c10
   --#buttonfontface|Tahoma
   --#titlecardbackgroundcolor|#930c10
@@ -94,6 +109,7 @@
   --#subtitlefontcolor|#fffebd
   --#tablebgcolor|#fffebd
   --#lineheight|9pt
+  --#buttonpadding|[&defaultButtonPadding]
 
   --/|The menu is whispered to the player executing the macro. #whisper will be set again later for the
   --/|actual output to be public.
@@ -131,8 +147,21 @@
   --?[&selfHandleAdvantageMode] -eq 1|[
     --?"X[&currentAdvantageMode]" -eq "X"|&currentAdvantageMode;[&defaultAdvantageMode]
     --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
-    --+|[r]Roll Mode: [&mode] | [rbutton]N::SET_ADV_MODE;0[/rbutton][rbutton]A::SET_ADV_MODE;1[/rbutton][rbutton]D::SET_ADV_MODE;2[/rbutton][/r]
+    --&nbuttoncolor|#AA0000
+    --&abuttoncolor|#AA0000
+    --&dbuttoncolor|#AA0000
+    --C[&currentAdvantageMode]|0:&nbuttoncolor;#00AA00|1:&abuttoncolor;#00AA00|2:&dbuttoncolor;#00AA00
+    --+|[r]Attack Roll Mode | [rbutton:#FFFFFF:[&nbuttoncolor]]N::SET_ADV_MODE;0[/rbutton][rbutton:#FFFFFF:[&abuttoncolor]]A::SET_ADV_MODE;1[/rbutton][rbutton:#FFFFFF:[&dbuttoncolor]]D::SET_ADV_MODE;2[/rbutton][/r]
   --]|
+
+  --/|Skill Checks and Saving Throws
+  --?[&showNPCSkillsAndSaves] -ne 1|SKIP_NPC_SAVES
+  --&advantageMenu|[&QB]Roll Type?|Normal|Advantage|Disadvantage[&QE]
+  --&skillMenu|[&QB]Skill to roll?|Acrobatics|Animal Handling,animal_handling|Arcana|Athletics|Deception|History|Insight|Intimidation|Investigation|Medicine|Nature|Perception|Persuasion|Religion|Sleight of Hand,sleight_of_hand|Stealth|Survival[&QE]
+  --&saveMenu|[&QB]Saving Throw Type?|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma[&QE]
+  --+|[c]- - - - -[/c]
+  --+|[c][rbutton:8px]Skill Check::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton]     [rbutton:8px]Saving Throw::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton][/c]
+  --SKIP_NPC_SAVES|
 
   --/|NPC "Actions"
   --Rfirst|[*S:character_id];repeating_npcaction
@@ -377,22 +406,48 @@
   --?[&selfHandleAdvantageMode] -eq 1|[
     --?"X[&currentAdvantageMode]" -eq "X"|&currentAdvantageMode;[&defaultAdvantageMode]
     --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
-    --+|[r]Roll Mode: [&mode] | [rbutton]N::SET_ADV_MODE;0[/rbutton][rbutton]A::SET_ADV_MODE;1[/rbutton][rbutton]D::SET_ADV_MODE;2[/rbutton][/r]
+    --&nbuttoncolor|#AA0000
+    --&abuttoncolor|#AA0000
+    --&dbuttoncolor|#AA0000
+    --C[&currentAdvantageMode]|0:&nbuttoncolor;#00AA00|1:&abuttoncolor;#00AA00|2:&dbuttoncolor;#00AA00
+    --#buttonpadding|[&smallButtonPadding]
+    --+|[r]Attack Roll Mode | [rbutton:#FFFFFF:[&nbuttoncolor]]N::SET_ADV_MODE;0[/rbutton][rbutton:#FFFFFF:[&abuttoncolor]]A::SET_ADV_MODE;1[/rbutton][rbutton:#FFFFFF:[&dbuttoncolor]]D::SET_ADV_MODE;2[/rbutton][/r]
+    --#buttonpadding|[&defaultButtonPadding]
   --]|
 
   --?[&showGlobalModifierButtons] -eq 1|[
     -->Create_Global_Attack_Modifier_Buttons|[*S:character_id];gambuttons
     -->Create_Global_Damage_Modifier_Buttons|[*S:character_id];gdmbuttons
-    --#buttonfontsize|8px
+    -->Create_Global_Save_Modifier_Buttons|[*S:character_id];gsmbuttons
+    --#buttonpadding|[&smallButtonPadding]
+    --&GDEnd|
+    --?[&compactGlobalModDisplay] -eq 0|&GDEnd;[/c]
     --?"X[&gambuttons]" -eq "X"|skip_gam_display
-    --+|[c][b]Global Attack Mods[/b][br][&gambuttons][/c]
-    --+|
+    --&GAMDisplay|[c][b]Global Attack Mods[/b][br]
+    --?[&compactGlobalModDisplay] -eq 1|&GAMDisplay;[b]Atk Mods[/b] 
+    --+|[&GAMDisplay] [&gambuttons] [&GDEnd]
     --:skip_gam_display|
     --?"X[&gdmbuttons]" -eq "X"|skip_gdm_display
-    --+|[c][b]Global Damage Mods[/b][br][&gdmbuttons][/c]
-    --#buttonfontsize|8px
+    --&GDMDisplay|[c][b]Global Damage Mods[/b][br]
+    --?[&compactGlobalModDisplay] -eq 1|&GDMDisplay;[b]Dmg Mods[/b] 
+    --+|[&GDMDisplay] [&gdmbuttons] [&GDEnd]
     --:skip_gdm_display|
+    --?"X[&gsmbuttons]" -eq "X"|skip_gsm_display
+    --&GSMDisplay|[c][b]Global Save Mods[/b][br]
+    --?[&compactGlobalModDisplay] -eq 1|&GSMDisplay;[b]Save Mods[/b] 
+    --+|[&GSMDisplay] [&gsmbuttons] [&GDEnd]
+    --:skip_gsm_display|
+    --#buttonpadding|[&defaultButtonPadding]
   --]| 
+
+  --/|Skill Checks and Saving Throws
+  --?[&showPCSkillsAndSaves] -ne 1|SKIP_PC_SAVES
+  --&advantageMenu|[&QB]Roll Type?|Normal|Advantage|Disadvantage[&QE]
+  --&skillMenu|[&QB]Skill to roll?|Acrobatics|Animal Handling,animal_handling|Arcana|Athletics|Deception|History|Insight|Intimidation|Investigation|Medicine|Nature|Perception|Persuasion|Religion|Sleight of Hand,sleight_of_hand|Stealth|Survival[&QE]
+  --&saveMenu|[&QB]Saving Throw Type?|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma[&QE]
+  --+|[c]- - - - - - - - - - - - - - - - -[/c]
+  --+|[c][rbutton:8px]Skill Check::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton]     [rbutton:8px]Saving Throw::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton][/c]
+  --SKIP_PC_SAVES|
 
   --/|The PC Attack List (center of the main character sheet)
   --Rfirst|[*S:character_id];repeating_attack
@@ -825,6 +880,46 @@
   --:PC_DONE_SPELL|
   --X|
 
+  --:SAVING_THROW|
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender]||[
+  --#whisper|self
+  --]|[
+  --#whisper|
+  --]|
+  -->Find_Active_Global_Save_Modifiers|[*S:character_id];GSM_VALUES
+  --~saveInfo|string;split;|;[&reentryval]
+  --~saveType|string;tolowercase;[&saveInfo1]_save_bonus
+  --&rollType|[&saveInfo2]
+  --&rollEquation|1d20
+  --?[&rollType] -eq "Advantage"|&rollEquation;2d20kh1
+  --?[&rollType] -eq "Disadvantage"|&rollEquation;2d20kl1
+  --=SavingThrow|[&rollEquation] + [*S:[&saveType]] [ [&saveInfo1]] [&GSM_VALUES]
+  --#title|[&saveInfo1] Save
+  --#leftsub|[*S:character_name]
+  --+Result|[$SavingThrow]
+  --X|
+
+  --:SKILL_CHECK|
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender]||[
+  --#whisper|self
+  --]|[
+  --#whisper|
+  --]|
+  --~skillInfo|string;split;|;[&reentryval]
+  --~skillType|string;tolowercase;[&skillInfo1]_bonus
+  --&rollType|[&skillInfo2]
+  --&skillDisplayName|[&skillInfo1]
+  --?[&skillDisplayName] -eq "animal_handling"|&skillDisplayName;Animal Handling
+  --?[&skillDisplayName] -eq "sleight_of_hand"|&skillDisplayName;Sleight of Hand
+  --&rollEquation|1d20
+  --?[&rollType] -eq "Advantage"|&rollEquation;2d20kh1
+  --?[&rollType] -eq "Disadvantage"|&rollEquation;2d20kl1
+  --=SkillCheck|[&rollEquation] + [*S:[&skillType]] [ [&skillInfo1]]
+  --#title|[&skillDisplayName] Check
+  --#leftsub|[*S:character_name]
+  --+Result|[$SkillCheck]
+  --X|
+
   --/|=========================================================================================================
   --/| FUNCTIONS
 
@@ -876,6 +971,10 @@
   --&[%2%]|[&_GSM_Temp] 
   --<|
 
+    --:_AddGSM| 
+  --&_GSM_Temp|+ + [%2%]# [ [%1%] ] 
+  --<|
+
   --:Create_Global_Attack_Modifier_Buttons|character_id;StringVariableToSet
   --&_GAMB_Temp| 
   --Rfirst|[%1%];repeating_tohitmod
@@ -890,10 +989,10 @@
   --<|
   
   --:_AddGAMB| 
-  --&_GAMB_Temp|+ [rbutton:#ffffff:#[%2%]][%1%]::TOGGLE_GAM;[%1%][/rbutton] 
+  --&_GAMB_Temp|+ [rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GAM;[%1%][/rbutton] 
   --<|
 
-    --:Create_Global_Damage_Modifier_Buttons|character_id;StringVariableToSet
+  --:Create_Global_Damage_Modifier_Buttons|character_id;StringVariableToSet
   --&_GDMB_Temp| 
   --Rfirst|[%1%];repeating_damagemod
   --:_GDMB_Loop|
@@ -907,8 +1006,25 @@
   --<|
   
   --:_AddGDMB| 
-  --&_GDMB_Temp|+ [rbutton:#ffffff:#[%2%]][%1%]::TOGGLE_GDM;[%1%][/rbutton] 
+  --&_GDMB_Temp|+ [rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GDM;[%1%][/rbutton] 
   --<|
+
+  --:Create_Global_Save_Modifier_Buttons|character_id;StringVariableToSet
+  --&_GSMB_Temp| 
+  --Rfirst|[%1%];repeating_savemod
+  --:_GSMB_Loop|
+  --?"[*R:global_save_name]" -eq "NoRepeatingAttributeLoaded"|_GSMB_DONE
+  --?"[*R:global_save_active_flag]" -eq "1"|>_AddGSMB;[*R:global_save_name];00AA00
+  --?"[*R:global_save_active_flag]" -ne "1"|>_AddGSMB;[*R:global_save_name];AA0000  
+  --Rnext| 
+  --?"[*R:global_save_name]" -ne "NoRepeatingAttributeLoaded"|_GSMB_Loop
+  --:_GSMB_DONE|
+  --&[%2%]|[&_GSMB_Temp] 
+  --<|
+  
+  --:_AddGSMB| 
+  --&_GSMB_Temp|+ [rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GSM;[%1%][/rbutton] 
+  --<|  
 
   --:Get_Ability_Modifier|attribute_string;returnnumericvalue;returnnamestring
   --?"[%1%]" -eq "strength_mod"|=[%2%];[*S:strength_mod]
@@ -1040,16 +1156,23 @@
   --<|
 
   --:TOGGLE_GAM|GAM Name
-   --Rfind|[*S:character_id];[&reentryval];repeating_tohitmod;global_attack_name
+  --Rfind|[*S:character_id];[&reentryval];repeating_tohitmod;global_attack_name
   --?"[*R:global_attack_name]" -eq "NoRepeatingAttributeLoaded"|_TOGGLE_ERROR
   --?"[*R:global_attack_active_flag]" -eq "1"|>_setGlobalMod;[*R>global_attack_active_flag];0|>_setGlobalMod;[*R>global_attack_active_flag];1
   --^proc_pc|
   --X|
 
   --:TOGGLE_GDM|GDM Name
-   --Rfind|[*S:character_id];[&reentryval];repeating_damagemod;global_damage_name
+  --Rfind|[*S:character_id];[&reentryval];repeating_damagemod;global_damage_name
   --?"[*R:global_damage_name]" -eq "NoRepeatingAttributeLoaded"|_TOGGLE_ERROR
   --?"[*R:global_damage_active_flag]" -eq "1"|>_setGlobalMod;[*R>global_damage_active_flag];0|>_setGlobalMod;[*R>global_damage_active_flag];1
+  --^proc_pc|
+  --X|
+
+  --:TOGGLE_GSM|GSM Name
+  --Rfind|[*S:character_id];[&reentryval];repeating_savemod;global_save_name
+  --?"[*R:global_savee_name]" -eq "NoRepeatingAttributeLoaded"|_TOGGLE_ERROR
+  --?"[*R:global_save_active_flag]" -eq "1"|>_setGlobalMod;[*R>global_save_active_flag];0|>_setGlobalMod;[*R>global_save_active_flag];1
   --^proc_pc|
   --X|
 
@@ -1060,4 +1183,11 @@
   --:_TOGGLE_ERROR|Bad name
   --X|
 
+  --:SUBSTITUTE_GLOBAL_MOD_IMAGE|mod name;ReturnVariableName
+  --&[%2%]|[%1%]
+  --~SGMI_TEMP|string;tolowercase;[%1%]
+  --#parameterseparator|$
+  --?"[&SGMI_TEMP]" -eq "bless"|&[%2%]$&#128519;
+  --#parameterseparator|;
+  --<|
 }}
