@@ -1,4 +1,4 @@
---/|ScriptCards Library: dnd5elib version 0.0.6b
+--/|ScriptCards Library: dnd5elib version 0.0.6c
 --/|Provides various utility procedures for D&D 5E games
 --/|NOTES: Some procedures require ChatSetAttr to be installed, see the ScriptCards WIKI for procedure documentation
 
@@ -49,7 +49,7 @@
 --&[%3%]|[$_Lib5E_DS_DiceCount.Total]d8
 --<|
 --:_Lib5E_DS_IsBoosted| --=_Lib5E_DS_IsFiendOrUndead|1 
---<
+--<|
 
 
 --:Lib5E_Active_Global_Attack_Modifiers|character_id;StringVariableToSet
