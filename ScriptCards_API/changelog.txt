@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.0.2e - Added the ability to set currentside of a multisided token and have the image update.
+
 v 2.0.2d - New setting (buttonpadding) allows you to control the size of the space around the text on buttons. The default padding is "5px"
 
 v 2.0.2c - Created a setting (enableattributesubstitution) to control the attribute lookup code added in 2.0.2b. This behavior is off by default.
