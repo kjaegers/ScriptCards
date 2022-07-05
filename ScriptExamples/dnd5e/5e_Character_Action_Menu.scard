@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.0.0
+  --/|Version     : 2.0.2
   --/|Requires SC : 2.0.2d+
   --/|Author      : Kurt Jaegers
 
@@ -530,9 +530,13 @@
       --:PCSpells_Display|
       --?[&skipPreppedSpellsCheck] -eq 1|SKIP_PREP_CHECK
       --?[*S:class] -eq "Sorcerer"|SKIP_PREP_CHECK
+      --?[*S:class] -eq "Warlock"|SKIP_PREP_CHECK
       --?"X[*S:multiclass1_flag]" -eq "X1" -and [*S:multiclass1] -eq "Sorcerer"|SKIP_PREP_CHECK
       --?"X[*S:multiclass2_flag]" -eq "X1" -and [*S:multiclass2] -eq "Sorcerer"|SKIP_PREP_CHECK
       --?"X[*S:multiclass3_flag]" -eq "X1" -and [*S:multiclass3] -eq "Sorcerer"|SKIP_PREP_CHECK
+      --?"X[*S:multiclass1_flag]" -eq "X1" -and [*S:multiclass1] -eq "Warlock"|SKIP_PREP_CHECK
+      --?"X[*S:multiclass2_flag]" -eq "X1" -and [*S:multiclass2] -eq "Warlock"|SKIP_PREP_CHECK
+      --?"X[*S:multiclass3_flag]" -eq "X1" -and [*S:multiclass3] -eq "Warlock"|SKIP_PREP_CHECK      
       --&isWizard|0
       --?[*S:class] -eq "Wizard"|&isWizard;1
       --?"X[*S:multiclass1_flag]" -eq "X1" -and [*S:multiclass1] -eq "Wizard"|&isWizard;1
