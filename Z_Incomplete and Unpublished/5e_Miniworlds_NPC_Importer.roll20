@@ -51,15 +51,29 @@
   --~charInt|string;before;(;[@Attributes(4)]
   --~charWis|string;before;(;[@Attributes(5)]
   --~charCha|string;before;(;[@Attributes(6)]
-  --~charAppearance|string;after;* :;[@Lines(14)]
-  --~charCharacteristics|string;after;* :;[@Lines(16)]
-  --~charTrait|string;after;* :;[@Lines(18)]
-  --~charIdeal|string;after;* :;[@Lines(20)]
-  --#debug|1
-  --~charPassivePerception|string;after;n ** ;[@Lines(23)]
+  --#parameterdelimiter|$
+  --~charAppearance|string$after$: $[@Lines(14)]
+  --~charCharacteristics|string$after$: $[@Lines(16)]
+  --~charPersonality|string$after$: $[@Lines(18)]
+  --~charTrait|string$after$: $[@Lines(20)]
+  --~charIdeal|string$after$: $[@Lines(22)]
+  --#parameterdelimiter|;
+  --~charPassivePerception|string;after;n** ;[@Lines(25)]
   --=GossipLine|[&count] - 1
   --&charGossip|[@Lines([$GossipLine.Raw])]
-  --#debug|0
+  --=TrinketStart|[&count] - 13
+  --=TraitEnd|[$TrinketStart.Raw] - 2
+  --=TraitBegin|26
+  --=TraitCount|[$TraitEnd.Raw] - [$TraitBegin.Raw]
+ 
+  --%trait|1;[$TraitCount.Raw]
+    --=thisLine|[$TraitBegin] + [&trait] - 1    
+    --#parameterdelimiter|$
+    --~charTraitName[&trait]|string$before$** $[@Lines([$thisLine])]
+    --~charTraitName[&trait]|string$after$**$[&charTraitName[&trait]]
+    --~charTrait[&trait]|string$after$** $[@Lines([$thisLine])]
+    --#parameterdelimiter|;
+  --%|
 
   --+Name|[&charName]
   --+Race|[&charRace]
@@ -79,8 +93,16 @@
   --+Charisma|[&charCha]
   --+Appearance|[&charAppearance]
   --+Characteristics|[&charCharacteristics]
+  --+Personality|[&charPersonality]
   --+Trait|[&charTrait]
   --+Ideal|[&charIdeal]
   --+Passive Perception|[&charPassivePerception]
   --+Gossip|[&charGossip]
+  --+TraitBegin|[$TraitBegin]
+  --+TraitEnd|[$TraitEnd]
+  --+Trait Count|[$TraitCount]
+  --%trait|1;[$TraitCount.Raw]
+    --=thisLine|[$TraitBegin] + [&trait] - 1    
+    --+[&charTraitName[&trait]]|[&charTrait[&trait]]
+  --%|
 }}
