@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.0.2f - The subtitle for the card is now run thorugh processInlineFormatting in order to allow buttons and other formatting in that space.
+
 v 2.0.2e - Added the ability to set currentside of a multisided token and have the image update.
            New inline formatting markup: [F#]...[/F] allows you to set an inline font size equal to # px. Ex: [F10]Size 10p/F]
 
