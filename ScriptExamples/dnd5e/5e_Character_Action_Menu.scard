@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.0.5
+  --/|Version     : 2.0.6
   --/|Requires SC : 2.0.2g+
   --/|Author      : Kurt Jaegers
 
@@ -44,7 +44,7 @@
   --&AllNPCActionsToSender|0
 
   --/|Set this to either "scriptcards", "token-mod", "alterbars", "damagebuttons" or anything else to not apply damage
-  --&damageApplyScript|dontapplydamage
+  --&damageApplyScript|damagebuttons
 
   --/|If using "damagebuttons" and this is set to 1, the damage buttons will be whispered to the DM instead of being added to the card
   --&whisperDamageButtonsToDM|1
@@ -1144,11 +1144,11 @@
 
   --:SHOW_DAMAGE_BUTTONS|DamageAmount
   --=FullDamage|[%3%]
-  --=HalfDamage|[%3%] \ 2
-  --=QuarterDamage|[%3%] \ 4
+  --=HalfDamage|[%3%] {NEGATE} \ 2 {NEGATE}
+  --=QuarterDamage|[%3%] {NEGATE} \ 4 {NEGATE}
   --=HealDamage|[%3%] {NEGATE}
   --?[&whisperDamageButtonsToDM] -eq 1|[
-    --*|[c][rbutton]Full::APPLY_DAMAGE;[$FullDamage.Raw][/rbutton] | [rbutton]1/2::APPLY_DAMAGE;[$HalfDamage.Raw][/rbutton] | [rbutton]1/4::APPLY_DAMAGE;[$QuarterDamage.Raw][/rbutton] &nbsp;&nbsp;|&nbsp;&nbsp; [rbutton]Heal::APPLY_DAMAGE;[$HealDamage.Raw][/rbutton][/c]
+    --*|[c][rbutton]Full ([$FullDamage.Raw])::APPLY_DAMAGE;[$FullDamage.Raw][/rbutton] | [rbutton]1/2 ([$HalfDamage.Raw])::APPLY_DAMAGE;[$HalfDamage.Raw][/rbutton] | [rbutton]1/4 ([$QuarterDamage.Raw])::APPLY_DAMAGE;[$QuarterDamage.Raw][/rbutton] &nbsp;&nbsp;|&nbsp;&nbsp; [rbutton]Heal::APPLY_DAMAGE;[$HealDamage.Raw][/rbutton][/c]
   --]|[
     --+|[c][rbutton]Full::APPLY_DAMAGE;[$FullDamage.Raw][/rbutton] | [rbutton]1/2::APPLY_DAMAGE;[$HalfDamage.Raw][/rbutton] | [rbutton]1/4::APPLY_DAMAGE;[$QuarterDamage.Raw][/rbutton] &nbsp;&nbsp;|&nbsp;&nbsp; [rbutton]Heal::APPLY_DAMAGE;[$HealDamage.Raw][/rbutton][/c]      
   --]|
