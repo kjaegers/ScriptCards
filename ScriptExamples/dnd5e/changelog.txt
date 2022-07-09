@@ -1,5 +1,16 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-07-09 - 5E Character Action Menu 2.0.5
+             NOTE: This is a major update to the 5E Character Action Menu, and requires the absolute latest version of ScriptCards (2.0.2g at the 
+             time of this writing) for all of its features to be supported.
+           - Adds checks for damage immunity, vulnerability, and resistances when making attacks or casting spells against NPCs. Currently, I don't 
+             see a method for adding this information to the character sheet for PCs - If I'm missing where it is, please let me know :) Attacks that do 
+             multiple damage types are handled appropriately based on the type of each damage roll.
+           - Implements a per-character options system. Right now, the configuration options are limited to toggling on or off the display of the global 
+             modifier buttons and the saves/skills buttons. This is more of a groundwork thing for future modifications. A button will appear in the title 
+             bar of the main Action Menu that looks like a small gear. Clicking this will display the customization menu for that character. Options are 
+             stored on the character in a new attribute called 5ECAM_SETTINGS.
+             
 2022-07-05 - 5E Character Action Menu 2.0.1 - Spell Prep checks are now skipped for Warlocks in addition to Sorcerers.
 
 2022-07-04 - 5E Character Action Menu 2.0.0 

@@ -1,7 +1,7 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.0.2
-  --/|Requires SC : 2.0.2d+
+  --/|Version     : 2.0.5
+  --/|Requires SC : 2.0.2g+
   --/|Author      : Kurt Jaegers
 
   --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
@@ -60,6 +60,8 @@
   
   --/|Used with SelfHandleAdvantageMode. 0=Normal, 1=Advantage, 2=Disadvantage
   --&defaultAdvantageMode|0
+  --/|Used with SelfHandleAdvantageMode. 0=Button color coding only. 1=Show "Normal", "Advantage", "Disadvantage" text
+  --&showAdvantageModeText|0
 
   --/|If set to 1, ammo use/tracking will be used. Thanks to JustinG for the initial implementation. Note that Ammo Tracking for the character
   --/|needs to be enabled, and a resource named to match the Ammo (case sensitive) needs to exist on the sheet to track ammo.
@@ -75,6 +77,10 @@
   --&showPCSkillsAndSaves|1
   --&showNPCSkillsAndSaves|1
   
+  --/|If set to 1, a "Standard Actions" button will be displayed, but only if skills and saves are displayed as well.
+  --&showPCStandardActions|1
+  --&showNPCStandardActions|1
+  
   --/|If set to 1, Global X Mods will use more compact display layouts
   --&compactGlobalModDisplay|1
 
@@ -82,6 +88,18 @@
   --/|menu uses slightly smaller buttons (4px) for actions and very small (2px) padding for global modifier and advantage mode toggle buttons.
   --&defaultButtonPadding|4px
   --&smallButtonPadding|2px
+  --&bodyFontSize|12
+  --&smallFontSize|10
+
+  --/|If set to 1, a line of summary information will be displayed at the top of the Action Menu
+  --&showCharacterSummary|1
+  
+  --/|If set to 1, the Action Menu will create attributes on the character sheet the first time it is executed for a character. It will then
+  --/|use these attributes to generate a configuration menu to allow players to enable/disable some features
+  --&EnablePerCharacterConfiguration|1
+
+  --/|If set to 1, damage immunity, vulnerability, and resistance will be included in damage rolls
+  --&UseResistances|1
 
   --/|End Settings Area
   --/|=========================================================================================================
@@ -90,13 +108,13 @@
   --#reentrant|CharacterAction @{selected|character_id}
   --&QB|? --&QB|+{ --&QE|}
   --&AB|@ --&AB|+{
-
+  
   --/|Set up some style information for the action menu and subsequent cards. These attempt to somewhat
   --/|simulate the 5E style
   --#bodyfontface|Helvetica
   --#oddrowfontcolor|#290000
   --#evenrowfontcolor|#290000
-  --#bodyfontsize|12px
+  --#bodyfontsize|[&bodyFontSize]px
   --#buttonfontsize|10px
   --#buttonbackground|#930c10
   --#buttonfontface|Tahoma
@@ -131,9 +149,15 @@
 
   --#emotestate|hidden
   --#title|[*S:character_name]
-  --#leftsub|Action Menu
 
   --:AFTER_ADVMODE_CHANGE|
+
+  --#leftsub|Action Menu
+
+  --?[&EnablePerCharacterConfiguration] -eq 0|SKIP_PER_CHAR_SETTINGS
+  --#leftsub|Action Menu [rbutton]&#x2699;::DISPLAY_CHARACTER_CONFIG_MENU[/rbutton]
+  -->LOAD_PER_CHARACTER_CONFIG_OPTIONS|[*S:character_id]
+  --:SKIP_PER_CHAR_SETTINGS|
 
   --/|Determine if the selected character is a PC or NPC and process appropriately
   --?[*S:npc] -eq 1|proc_npc|proc_pc
@@ -144,24 +168,35 @@
   --:proc_npc|
   --/+|[hr #58180d]
 
+  -->BuildCharacterSummary|[*S:character_id];CharSummaryText;npc_ac
+  
+  --?[&showCharacterSummary] -ne 1 -or "[&perCharacterOptions]" -inc "$SCS0$" |SKIP_NPC_SUMMARY
+  --+|[c][F[&smallFontSize]][&CharSummaryText][/F][/c]
+  --:SKIP_NPC_SUMMARY|
+  
   --?[&selfHandleAdvantageMode] -eq 1|[
     --?"X[&currentAdvantageMode]" -eq "X"|&currentAdvantageMode;[&defaultAdvantageMode]
-    --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
+    --&mode|
+    --?[&showAdvantageModeText] -eq 0|SKIP_NPC_SET_MODE
+    --C[&currentAdvantageMode]|0:&mode; Normal|1:&mode; Advantage|2:&mode; Disadvantage
+    --:SKIP_NPC_SET_MODE|
     --&nbuttoncolor|#AA0000
     --&abuttoncolor|#AA0000
     --&dbuttoncolor|#AA0000
     --C[&currentAdvantageMode]|0:&nbuttoncolor;#00AA00|1:&abuttoncolor;#00AA00|2:&dbuttoncolor;#00AA00
-    --+|[r]Attack Roll Mode | [rbutton:#FFFFFF:[&nbuttoncolor]]N::SET_ADV_MODE;0[/rbutton][rbutton:#FFFFFF:[&abuttoncolor]]A::SET_ADV_MODE;1[/rbutton][rbutton:#FFFFFF:[&dbuttoncolor]]D::SET_ADV_MODE;2[/rbutton][/r]
+    --#buttonpadding|[&smallButtonPadding]
+    --+|[r]Attack Roll Mode [&mode]| [rbutton:#FFFFFF:[&nbuttoncolor]]N::SET_ADV_MODE;0[/rbutton][rbutton:#FFFFFF:[&abuttoncolor]]A::SET_ADV_MODE;1[/rbutton][rbutton:#FFFFFF:[&dbuttoncolor]]D::SET_ADV_MODE;2[/rbutton][/r]    --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
+    --#buttonpadding|[&defaultButtonPadding]
   --]|
 
   --/|Skill Checks and Saving Throws
-  --?[&showNPCSkillsAndSaves] -ne 1|SKIP_NPC_SAVES
+  --?[&showNPCSkillsAndSaves] -ne 1 -or "[&perCharacterOptions]" -inc "$SSAS0$"|SKIP_NPC_SAVES
   --&advantageMenu|[&QB]Roll Type?|Normal|Advantage|Disadvantage[&QE]
   --&skillMenu|[&QB]Skill to roll?|Acrobatics|Animal Handling,animal_handling|Arcana|Athletics|Deception|History|Insight|Intimidation|Investigation|Medicine|Nature|Perception|Persuasion|Religion|Sleight of Hand,sleight_of_hand|Stealth|Survival[&QE]
   --&saveMenu|[&QB]Saving Throw Type?|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma[&QE]
   --+|[c]- - - - -[/c]
   --+|[c][rbutton:8px]Skill Check::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton]     [rbutton:8px]Saving Throw::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton][/c]
-  --SKIP_NPC_SAVES|
+  --:SKIP_NPC_SAVES|
 
   --/|NPC "Actions"
   --Rfirst|[*S:character_id];repeating_npcaction
@@ -269,6 +304,7 @@
       --+Level [&levelCounter] Spells|[&NPCSpells]
      --]|
   --%|
+  --#buttonpadding|[&smallButtonPadding]
   --X|
 
   --/|=========================================================================================================
@@ -394,7 +430,6 @@
   --^NPCA_NOT_ATTACK|
   --X|  
 
-
   --/|=========================================================================================================
   --/|Handle action menu creation for PCs
 
@@ -403,36 +438,45 @@
   --+| 
   --#whisper|self
 
+  -->BuildCharacterSummary|[*S:character_id];CharSummaryText;ac
+
+  --?[&showCharacterSummary] -ne 1 -or "[&perCharacterOptions]" -inc "$SCS0$" |SKIP_PC_SUMMARY
+  --+|[c][F[&smallFontSize]][&CharSummaryText][/F][/c]
+  --:SKIP_PC_SUMMARY|
+
   --?[&selfHandleAdvantageMode] -eq 1|[
     --?"X[&currentAdvantageMode]" -eq "X"|&currentAdvantageMode;[&defaultAdvantageMode]
-    --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
+    --&mode|
+    --?[&showAdvantageModeText] -eq 0|SKIP_PC_SET_MODE
+    --C[&currentAdvantageMode]|0:&mode; Normal|1:&mode; Advantage|2:&mode; Disadvantage
+    --:SKIP_PC_SET_MODE|
     --&nbuttoncolor|#AA0000
     --&abuttoncolor|#AA0000
     --&dbuttoncolor|#AA0000
     --C[&currentAdvantageMode]|0:&nbuttoncolor;#00AA00|1:&abuttoncolor;#00AA00|2:&dbuttoncolor;#00AA00
     --#buttonpadding|[&smallButtonPadding]
-    --+|[r]Attack Roll Mode | [rbutton:#FFFFFF:[&nbuttoncolor]]N::SET_ADV_MODE;0[/rbutton][rbutton:#FFFFFF:[&abuttoncolor]]A::SET_ADV_MODE;1[/rbutton][rbutton:#FFFFFF:[&dbuttoncolor]]D::SET_ADV_MODE;2[/rbutton][/r]
+    --+|[r]Attack Roll Mode [&mode]| [rbutton:#FFFFFF:[&nbuttoncolor]]N::SET_ADV_MODE;0[/rbutton][rbutton:#FFFFFF:[&abuttoncolor]]A::SET_ADV_MODE;1[/rbutton][rbutton:#FFFFFF:[&dbuttoncolor]]D::SET_ADV_MODE;2[/rbutton][/r]    --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
     --#buttonpadding|[&defaultButtonPadding]
   --]|
 
-  --?[&showGlobalModifierButtons] -eq 1|[
+  --?[&showGlobalModifierButtons] -eq 1 -and "[&perCharacterOptions]" -ninc "$SGMB0$" |[
     -->Create_Global_Attack_Modifier_Buttons|[*S:character_id];gambuttons
     -->Create_Global_Damage_Modifier_Buttons|[*S:character_id];gdmbuttons
     -->Create_Global_Save_Modifier_Buttons|[*S:character_id];gsmbuttons
     --#buttonpadding|[&smallButtonPadding]
     --&GDEnd|
     --?[&compactGlobalModDisplay] -eq 0|&GDEnd;[/c]
-    --?"X[&gambuttons]" -eq "X"|skip_gam_display
+    --?"X[&gambuttons]" -eq "X" -or "[&perCharacterOptions]" -inc "$SGAM0$"|skip_gam_display
     --&GAMDisplay|[c][b]Global Attack Mods[/b][br]
     --?[&compactGlobalModDisplay] -eq 1|&GAMDisplay;[b]Atk Mods[/b] 
     --+|[&GAMDisplay] [&gambuttons] [&GDEnd]
     --:skip_gam_display|
-    --?"X[&gdmbuttons]" -eq "X"|skip_gdm_display
+    --?"X[&gdmbuttons]" -eq "X" -or "[&perCharacterOptions]" -inc "$SGDM0$"|skip_gdm_display
     --&GDMDisplay|[c][b]Global Damage Mods[/b][br]
     --?[&compactGlobalModDisplay] -eq 1|&GDMDisplay;[b]Dmg Mods[/b] 
     --+|[&GDMDisplay] [&gdmbuttons] [&GDEnd]
     --:skip_gdm_display|
-    --?"X[&gsmbuttons]" -eq "X"|skip_gsm_display
+    --?"X[&gsmbuttons]" -eq "X" -or "[&perCharacterOptions]" -inc "$SGSM0$"|skip_gsm_display
     --&GSMDisplay|[c][b]Global Save Mods[/b][br]
     --?[&compactGlobalModDisplay] -eq 1|&GSMDisplay;[b]Save Mods[/b] 
     --+|[&GSMDisplay] [&gsmbuttons] [&GDEnd]
@@ -441,13 +485,13 @@
   --]| 
 
   --/|Skill Checks and Saving Throws
-  --?[&showPCSkillsAndSaves] -ne 1|SKIP_PC_SAVES
+  --?[&showPCSkillsAndSaves] -ne 1 -or "[&perCharacterOptions]" -inc "$SSAS0$"|SKIP_PC_SAVES
   --&advantageMenu|[&QB]Roll Type?|Normal|Advantage|Disadvantage[&QE]
   --&skillMenu|[&QB]Skill to roll?|Acrobatics|Animal Handling,animal_handling|Arcana|Athletics|Deception|History|Insight|Intimidation|Investigation|Medicine|Nature|Perception|Persuasion|Religion|Sleight of Hand,sleight_of_hand|Stealth|Survival[&QE]
   --&saveMenu|[&QB]Saving Throw Type?|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma[&QE]
   --+|[c]- - - - - - - - - - - - - - - - -[/c]
   --+|[c][rbutton:8px]Skill Check::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton]     [rbutton:8px]Saving Throw::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton][/c]
-  --SKIP_PC_SAVES|
+  --:SKIP_PC_SAVES|
 
   --/|The PC Attack List (center of the main character sheet)
   --Rfirst|[*S:character_id];repeating_attack
@@ -570,6 +614,7 @@
       --:PC_SKIP_LEVEL_DISPLAY|
      --]|
   --%|
+  --#buttonpadding|[&smallButtonPadding]
   --X|
 
   --/|=========================================================================================================
@@ -663,8 +708,14 @@
   --?[$attackRoll.Base] -eq 1|ATTACK_MISS
   --?[$attack_crit] -eq 1|&hittag;Critical Hit!|&hittag;Hit!
   --?[$attack_crit] -eq 1|&hitdesc;critically hits|&hitdesc;hits
-  --=attackDamage|[&dmgroll]
-  --=attackDamage2|[&dmgroll2]
+  --&dmgModType1|
+  --&dmgModType2|
+  --?"X[*T:npc]" -ne "X1" -or [&UseResistances] -eq 0|SKIP_CALC_DMG_MODS
+  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:dmgtype]
+  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:dmg2type]
+  --:SKIP_CALC_DMG_MODS|
+  --=attackDamage|[&dmgroll] [&dmgModType1]
+  --=attackDamage2|[&dmgroll2] [&dmgModType2]
   --?"X[*R:dmg2flag]" -eq "X0"|ATTACK_ONE_DAMAGE
   --?"X[*R:dmg2flag]" -eq "X"|ATTACK_ONE_DAMAGE
   --^ATTACK_TWO_DAMAGE|
@@ -739,7 +790,11 @@
   --?[*S:level] -ge 17|&damageRoll;+ + [*R:spelldamage]
   --?[$cantrip_crit] -eq 1|&damageRoll;+ + [&damageRoll]
   --?[$cantrip_crit] -eq 1|&damageRoll;+ [&PC_GDM_CRIT]|&damageRoll;+ [&PC_GDM]
-  --=cantripDamage|[&damageRoll]
+  --&dmgModType1|
+  --?"X[*T:npc]" -ne "X1" -or [&UseResistances] -eq 0|SKIP_PC_CANTRIP_RESIST
+  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:spelldamagetype]
+  --:SKIP_PC_CANTRIP_RESIST|
+  --=cantripDamage|[&damageRoll] [&dmgModType1]
   --?"X[*R:spellsave]" -ne "X"|CANTRIP_SAVE|CANTRIP_NO_SAVE
   --:CANTRIP_NO_SAVE|
   --?[$cantrip_crit] -eq 1|&hittag;Critical Hit!|&hittag;Hit!
@@ -818,6 +873,13 @@
   --?[$attackRoll.Total] -lt [$AC]|SPELL_ATTACK_MISS
 
   --:SPELL_DONE_ATTACK_ROLL|
+  --?"X[*T:npc]" -ne "X1" -or [&UseResistances] -eq 0|SKIP_PC_SPELL_RESIST
+  --&dmgModType1|
+  --&dmgModType2|
+  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:spelldamagetype]
+  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:spelldamagetype2]
+  --:SKIP_PC_SPELL_RESIST|
+  
   --&damageRoll|[*R:spelldamage]
   --?[$spell_crit] -eq 1|&damageRoll;+ [&PC_GDM_CRIT]|&damageRoll;+ [&PC_GDM]
   --&damageRoll2|[*R:spelldamage2]
@@ -842,8 +904,8 @@
   --&damageRoll|+ + [$upcastDice.Raw][*R:spellhldietype] [Upcasting]
 
   --:NO_UPCAST|
-  --?[$spell_crit] -eq 1|&damageRoll;+ + [&damageRoll]
-  --?[$spell_crit] -eq 1|&damageRoll2;+ + [&damageRoll2]
+  --?[$spell_crit] -eq 1|&damageRoll;+ + [&damageRoll] 
+  --?[$spell_crit] -eq 1|&damageRoll2;+ + [&damageRoll2] 
   --?[$spell_crit] -eq 1|&hittag;Critical Hit!|&hittag;Hit!
   --?[$spell_crit] -eq 1|&hitdesc;critically hits|&hitdesc;hits and deals
   --?[&spell_heal] -eq 1|&hittag;[b][/b]  
@@ -855,8 +917,8 @@
   --/&damageRoll|+ [&ability_bonus]
   --/&damageRoll2|+ [&ability_bonus]
 
-  --=spellDamage|[&damageRoll]
-  --=spellDamage2|[&damageRoll2]
+  --=spellDamage|[&damageRoll] [&dmgModType1]
+  --=spellDamage2|[&damageRoll2] [&dmgModType2]
   --=TotalDamage|[$spellDamage.Raw] + [$spellDamage2.Raw]
 
   --?"X[*R:spelldamage2]" -ne "X"|TWO_DAMAGE
@@ -1194,4 +1256,84 @@
   --?"[&SGMI_TEMP]" -eq "bless"|&[%2%]$&#128519;
   --#parameterseparator|;
   --<|
+
+  --:BuildCharacterSummary|charid;Return variable;ac attribute (either ac or npc_ac)
+  --?[%3%] -eq "npc_ac"|BuildNPCSummary
+  --&[%2%]|[*[%1%]:class_display], AC [*[%1%]:[%3%]], HP [*[%1%]:hp]/[*[%1%]:hp^]
+  --<||
+  --:BuildNPCSummary|
+  --&[%2%]|CR[*[%1%]:npc_challenge] [*[%1%]:npc_type], AC [*[%1%]:[%3%]], HP [*[%1%]:t-bar[&hitPointsBar]_value]/[*[%1%]:hp^]
+  --<||
+ 
+  --:CheckDamageModifiersNPC|characterid;damageVariableName;damageType
+  --&[%2%]|
+  --~Check_Type|string;tolowercase;[%3%]
+  --~Check_Vuln|string;tolowercase;[*[%1%]:npc_vulnerabilities]
+  --~Check_Resist|string;tolowercase;[*[%1%]:npc_resistances]
+  --~Check_Immune|string;tolowercase;[*[%1%]:npc_immunities]
+  --?"[&Check_Vuln]" -inc "[&Check_Type]"|>IsVulnerable;[%2%]
+  --?"[&Check_Resist]" -inc "[&Check_Type]"|>IsResistant;[%2%]
+  --?"[&Check_Immune]" -inc "[&Check_Type]"|>IsImmune;[%2%]
+  --<|
+  --:IsVulnerable| --&[%1%]| * 2 [Vulnerable] --<|
+  --:IsResistant| --&[%1%]| \ 2 [Resistant] --<|
+  --:IsImmune| --&[%1%]| * 0 [Immune] --<|
+
+  --:DISPLAY_CHARACTER_CONFIG_MENU|
+  --#whisper|self
+  --#rightsub|
+  --#leftsub|Action Menu Configuration [rbutton]&#x21b6;::AFTER_ADVMODE_CHANGE[/rbutton]
+
+  --+|[b][c]Display Global Mods[/c][/b]
+  -->CREATE_SETTINGS_TOGGLE_BUTTON|[*S:character_id];Attack;SGAM;BTN_SGAM
+  -->CREATE_SETTINGS_TOGGLE_BUTTON|[*S:character_id];Damage;SGDM;BTN_SGDM
+  -->CREATE_SETTINGS_TOGGLE_BUTTON|[*S:character_id];Save;SGSM;BTN_SGSM
+  --+|[c][&BTN_SGAM] [&BTN_SGDM] [&BTN_SGSM][/c]
+  --+|[b][c]Display Skill and Saves Buttons[/c][/b]
+  -->CREATE_SETTINGS_TOGGLE_BUTTON|[*S:character_id];Skills & Saves;SSAS;BTN_SSAS
+  --+|[c][&BTN_SSAS][/c]
+  --X|
+
+  --:CREATE_SETTINGS_TOGGLE_BUTTON|character_id;SettingName;SettingCode;ReturnStringVar
+  -->GET_PER_CHARACTER_SETTING|[%1%];[%3%];_THIS_SETTING
+  --&_BUTTON_COLOR|AA0000
+  --?[&_THIS_SETTING] -eq 1|&_BUTTON_COLOR;00AA00
+  --&[%4%]|[rbutton:#ffffff:#[&_BUTTON_COLOR]:8px][%2%]::TOGGLE_PER_CHARACTER_SETTING;[%1%]|[%3%][/rbutton]
+  --<|
+
+  --:GET_PER_CHARACTER_SETTING|CharID;SettingCode;Return String Var Name
+  --&[%3%]|0
+  --?"X[*[%1%]:5ECAM_SETTINGS]" -inc "[%2%]1"|&[%3%];1
+  --<|
+
+  --:LOAD_PER_CHARACTER_CONFIG_OPTIONS|characterID
+  --?"X[*[%1%]:5ECAM_SETTINGS]" -eq "X"|>SET_DEFAULT_PER_CHARACTER_SETTINGS;[%1%]
+  --?"X[*[%1%]:5ECAM_SETTINGS]" -eq "Xundefined"|>SET_DEFAULT_PER_CHARACTER_SETTINGS;[%1%]
+  --&perCharacterOptions|[*[%1%]:5ECAM_SETTINGS]
+  --<|
+
+  --:SET_DEFAULT_PER_CHARACTER_SETTINGS|CharacterID
+  --&SettingsString|$SGAM1$$SGDM1$$SGSM1$$SGMB1$$SSAS1$
+  --!a:[%1%]|!5ECAM_SETTINGS:[&SettingsString]
+  --<|
+
+  --:TOGGLE_PER_CHARACTER_SETTING|CharacterID;Setting
+  --~TOG_CHAR_ID|string;before;|;[&reentryval]
+  --~TOG_SETTING|string;after;|;[&reentryval]
+  --~beforeText|string;before;[&TOG_SETTING];[*[&TOG_CHAR_ID]:5ECAM_SETTINGS]
+  --~beforeLength|string;length;[&beforeText]
+  --~wholeLength|string;length;[*[&TOG_CHAR_ID]:5ECAM_SETTINGS]
+  --?[$beforeLength] -eq [$wholeLength]|SETTING_NOT_FOUND
+  --~oldSetting|string;substring;[$beforeLength];7;[*[&TOG_CHAR_ID]:5ECAM_SETTINGS]
+  --~oldValue|string;substring;6;1;[&oldSetting]
+  --~newSetting|string;left;5;[&oldSetting]
+  --?"X[&oldValue]" -eq "X1"|&newSetting;+0$
+  --?"X[&oldValue]" -ne "X1"|&newSetting;+1$
+  --~replacement|string;replace;[&oldSetting];[&newSetting];[*[&TOG_CHAR_ID]:5ECAM_SETTINGS]
+  --!a:[&TOG_CHAR_ID]|5ECAM_SETTINGS:[&replacement]
+  --^DISPLAY_CHARACTER_CONFIG_MENU|
+  --:SETTING_NOT_FOUND|
+  --!a:[&TOG_CHAR_ID]|5ECAM_SETTINGS:[*[&TOG_CHAR_ID]:5ECAM_SETTINGS]$[&TOG_SETTING]1$
+  --^DISPLAY_CHARACTER_CONFIG_MENU|
+
 }}
