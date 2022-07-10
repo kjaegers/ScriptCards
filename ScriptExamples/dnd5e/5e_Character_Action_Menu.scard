@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.0.9
+  --/|Version     : 2.0.10
   --/|Requires SC : 2.0.2g+
   --/|Author      : Kurt Jaegers
 
@@ -341,10 +341,11 @@
     -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:attack_damagetype];0;0;0
     -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:attack_damagetype2];0;0;0
     --:SKIP_NPC_DMG_MODS|
-    --+Attack|[$ToHit] vs AC [*T:ac]
+    --?[*T:NPC] -eq 1|=AC;[*T:npc_ac]|=AC;[*T:AC]
+    --+Attack|[$ToHit] vs AC [$AC.Raw]
     --?[$ToHit.Base] -eq 20|NPCA_CRIT
     --?[$ToHit.Base] -eq 1|NPCA_MISS
-    --?[$ToHit.Total] -lt [*T:ac]|NPCA_MISS
+    --?[$ToHit.Total] -lt [$AC]|NPCA_MISS
     --?"X[*R:attack_damage2]" -ne X|NPCA_HIT_TWODAMAGE
     --=Damage|[*R:attack_damage] [&dmgModType1]
     --+Hit|[$Damage] [*R:attack_damagetype]
@@ -1293,6 +1294,7 @@
     --?"X[&Vulns[&VulnLoop]]" -inc "[%3%]" -and "X[&Vulns[&VulnLoop]]" -inc "magical" -and [%4%] -eq 1|>IsVulnerable;[%2%]
     --?"X[&Vulns[&VulnLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|>IsVulnerable;[%2%]
   --%|
+  --:SKIP_VULN_CHECK|
   --%ResistLoop|1;[$ResistsCount]
     --&hasModifier|0
     --?"X[&Resists[&ResistLoop]]" -inc "silver" -or "X[&Resists[&ResistLoop]]" -inc "adamantine" -or "X[&Resists[&ResistLoop]]" -inc "magical"|&hasModifier;1
@@ -1304,6 +1306,7 @@
     --?"X[&Resists[&ResistLoop]]" -inc "[%3%]"|>IsResistant;[%2%]
     --:FINISH_RESIST_CHECK|
   --%|
+  --:SKIP_RESIST_CHECK|
   --%ImmuneLoop|1;[$ImmunesCount]
     --&hasModifier|0
     --?"X[&Immunes[&ImmuneLoop]]" -inc "silver" -or "X[&Immunes[&ImmuneLoop]]" -inc "adamantine" -or "X[&Immunes[&ImmuneLoop]]" -inc "magical"|&hasModifier;1
@@ -1315,6 +1318,7 @@
     --?"X[&Immunes[&ImmuneLoop]]" -inc "[%3%]"|>IsImmune;[%2%]
     --:FINISH_IMMUNE_CHECK|
   --%|
+  --:SKIP_IMMUNE_CHECK|
   --<|
   --:IsVulnerable| --&[%1%]| * 2 [Vulnerable] --<|
   --:IsResistant| --&[%1%]| \ 2 [Resistant] --<|
