@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.0.6
+  --/|Version     : 2.0.7
   --/|Requires SC : 2.0.2g+
   --/|Author      : Kurt Jaegers
 
@@ -335,19 +335,25 @@
     --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
     --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1
     --=ToHit|[&rollType] + [*R:attack_tohit]
+    --&dmgModType1|
+    --&dmgModType2|
+    --?"X[*T:npc]" -ne "X1" -or [&UseResistances] -eq 0|SKIP_NPC_DMG_MODS
+    -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:attack_damagetype]
+    -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:attack_damagetype2]
+    --:SKIP_NPC_DMG_MODS|
     --+Attack|[$ToHit] vs AC [*T:ac]
     --?[$ToHit.Base] -eq 20|NPCA_CRIT
     --?[$ToHit.Base] -eq 1|NPCA_MISS
     --?[$ToHit.Total] -lt [*T:ac]|NPCA_MISS
     --?"X[*R:attack_damage2]" -ne X|NPCA_HIT_TWODAMAGE
-    --=Damage|[*R:attack_damage]    
+    --=Damage|[*R:attack_damage] [&dmgModType1]
     --+Hit|[$Damage] [*R:attack_damagetype]
     --+|[*R:description]
     -->[&damageRoutine]|[&action_target];[&hitPointsBar];-[$Damage.Raw]
     --^NPCA_DONE|
     --:NPCA_HIT_TWODAMAGE|
-    --=Damage|[*R:attack_damage]
-    --=Damage2|[*R:attack_damage2]
+    --=Damage|[*R:attack_damage] [&dmgModType1]
+    --=Damage2|[*R:attack_damage2] [&dmgModType2]
     --=TotalDamage|[$Damage.Raw] + [$Damage2.Raw]
     --+Hit|[$Damage] [*R:attack_damagetype] and [$Damage2] [*R:attack_damagetype2]
     --+|[*R:description]
@@ -356,14 +362,14 @@
 
     --:NPCA_CRIT|
     --?"X[*R:attack_damage2]" -ne X|NPCA_CRIT_TWODAMAGE
-    --=Damage|[*R:attack_damage] + [*R:attack_crit]
+    --=Damage|[*R:attack_damage] + [*R:attack_crit] [&dmgModType1]
     -->[&damageRoutine]|[&action_target];[&hitPointsBar];-[$Damage.Raw]
     --+Critical|[$Damage] [*R:attack_damagetype]
     --+|[*R:description]
     --^NPCA_DONE|
     --:NPCA_CRIT_TWODAMAGE|
-    --=Damage|[*R:attack_damage] + [*R:attack_crit]
-    --=Damage2|[*R:attack_damage2] + [*R:attack_crit2]
+    --=Damage|[*R:attack_damage] + [*R:attack_crit] [&dmgModType1]
+    --=Damage2|[*R:attack_damage2] + [*R:attack_crit2]  [&dmgModType2]
     --=TotalDamage|[$Damage.Raw] + [$Damage2.Raw]    
     --+Critical|[$Damage] [*R:attack_damagetype] and [$Damage2] [*R:attack_damagetype2]
     --+|[*R:description]
