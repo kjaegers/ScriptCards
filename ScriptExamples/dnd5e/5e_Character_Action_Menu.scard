@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.0.8
+  --/|Version     : 2.0.9
   --/|Requires SC : 2.0.2g+
   --/|Author      : Kurt Jaegers
 
@@ -338,8 +338,8 @@
     --&dmgModType1|
     --&dmgModType2|
     --?"X[*T:npc]" -ne "X1" -or [&UseResistances] -eq 0|SKIP_NPC_DMG_MODS
-    -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:attack_damagetype]
-    -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:attack_damagetype2]
+    -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:attack_damagetype];0;0;0
+    -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:attack_damagetype2];0;0;0
     --:SKIP_NPC_DMG_MODS|
     --+Attack|[$ToHit] vs AC [*T:ac]
     --?[$ToHit.Base] -eq 20|NPCA_CRIT
@@ -716,9 +716,16 @@
   --?[$attack_crit] -eq 1|&hitdesc;critically hits|&hitdesc;hits
   --&dmgModType1|
   --&dmgModType2|
+  --&isMagical|0
+  --?"X[*R:atkmagic]" -ne "X" -and "X[*R:atkmagic]" -ne "X0"|&isMagical;1
+  --&isSilver|0
+  --?"X[*R:atkname]" -inc "Silver"|&isSilver;1
+  --&isAdamant|0
+  --?"X[*R:atkname]" -inc "Adamantine"|&isAdamant;1
+  --/+|Magic: [&isMagical], Silver: [&isSilver], Ad: [&isAdamant]
   --?"X[*T:npc]" -ne "X1" -or [&UseResistances] -eq 0|SKIP_CALC_DMG_MODS
-  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:dmgtype]
-  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:dmg2type]
+  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:dmgtype];[&isMagical];[&isSilver];[&isAdamant]
+  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:dmg2type];[&isMagical];[&isSilver];[&isAdamant]
   --:SKIP_CALC_DMG_MODS|
   --=attackDamage|[&dmgroll] [&dmgModType1]
   --=attackDamage2|[&dmgroll2] [&dmgModType2]
@@ -798,7 +805,7 @@
   --?[$cantrip_crit] -eq 1|&damageRoll;+ [&PC_GDM_CRIT]|&damageRoll;+ [&PC_GDM]
   --&dmgModType1|
   --?"X[*T:npc]" -ne "X1" -or [&UseResistances] -eq 0|SKIP_PC_CANTRIP_RESIST
-  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:spelldamagetype]
+  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:spelldamagetype];1;0;0
   --:SKIP_PC_CANTRIP_RESIST|
   --=cantripDamage|[&damageRoll] [&dmgModType1]
   --?"X[*R:spellsave]" -ne "X"|CANTRIP_SAVE|CANTRIP_NO_SAVE
@@ -882,8 +889,8 @@
   --?"X[*T:npc]" -ne "X1" -or [&UseResistances] -eq 0|SKIP_PC_SPELL_RESIST
   --&dmgModType1|
   --&dmgModType2|
-  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:spelldamagetype]
-  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:spelldamagetype2]
+  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:spelldamagetype];1;0;0
+  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:spelldamagetype2];1;0;0
   --:SKIP_PC_SPELL_RESIST|
   
   --&damageRoll|[*R:spelldamage]
@@ -1271,17 +1278,43 @@
   --&[%2%]|CR[*[%1%]:npc_challenge] [*[%1%]:npc_type], AC [*[%1%]:[%3%]], HP [*[%1%]:t-bar[&hitPointsBar]_value]/[*[%1%]:hp^]
   --<||
  
-  --:CheckDamageModifiersNPC|characterid;damageVariableName;damageType
+  --:CheckDamageModifiersNPC|characterid;damageVariableName;damageType;isMagical(0 or 1);IsSilver (0 or 1);IsAdamantine (0 or 1)
   --&[%2%]|
   --#parameterdelimiter|!!
-  --~Check_Type|string!!tolowercase!![%3%]
-  --~Check_Vuln|string!!tolowercase!![*[%1%]:npc_vulnerabilities]
-  --~Check_Resist|string!!tolowercase!![*[%1%]:npc_resistances]
-  --~Check_Immune|string!!tolowercase!![*[%1%]:npc_immunities]
-  ----#parameterdelimiter|;
-  --?"[&Check_Vuln]" -inc "[&Check_Type]"|>IsVulnerable;[%2%]
-  --?"[&Check_Resist]" -inc "[&Check_Type]"|>IsResistant;[%2%]
-  --?"[&Check_Immune]" -inc "[&Check_Type]"|>IsImmune;[%2%]
+  --~Vulns|string!!split!!;!![*[%1%]:npc_vulnerabilities]
+  --~Resists|string!!split!!;!![*[%1%]:npc_resistances]
+  --~Immunes|string!!split!!;!![*[%1%]:npc_immunities]
+  --#parameterdelimiter|;
+  --%VulnLoop|1;[$VulnsCount]
+    --&hasModifier|0
+    --?"X[&Vulns[&VulnLoop]]" -inc "silver" -or "X[&Vulns[&VulnLoop]]" -inc "adamantine" -or "X[&Vulns[&VulnLoop]]" -inc "magical"|&hasModifier;1
+    --?"X[&Vulns[&VulnLoop]]" -inc "[%3%]" -and "X[&Vulns[&VulnLoop]]" -inc "adamantine" -and [%6%] -eq 1|>IsVulnerable;[%2%]
+    --?"X[&Vulns[&VulnLoop]]" -inc "[%3%]" -and "X[&Vulns[&VulnLoop]]" -inc "silver" -and [%5%] -eq 1|>IsVulnerable;[%2%]
+    --?"X[&Vulns[&VulnLoop]]" -inc "[%3%]" -and "X[&Vulns[&VulnLoop]]" -inc "magical" -and [%4%] -eq 1|>IsVulnerable;[%2%]
+    --?"X[&Vulns[&VulnLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|>IsVulnerable;[%2%]
+  --%|
+  --%ResistLoop|1;[$ResistsCount]
+    --&hasModifier|0
+    --?"X[&Resists[&ResistLoop]]" -inc "silver" -or "X[&Resists[&ResistLoop]]" -inc "adamantine" -or "X[&Resists[&ResistLoop]]" -inc "magical"|&hasModifier;1
+    --?"X[&Resists[&ResistLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|>IsResistant;[%2%]
+    --?"X[&Resists[&ResistLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|FINISH_RESIST_CHECK   
+    --?"X[&Resists[&ResistLoop]]" -inc "[%3%]" -and "X[&Resists[&ResistLoop]]" -inc "adamantine" -and [%6%] -eq 1|FINISH_RESIST_CHECK
+    --?"X[&Resists[&ResistLoop]]" -inc "[%3%]" -and "X[&Resists[&ResistLoop]]" -inc "silver" -and [%5%] -eq 1|FINISH_RESIST_CHECK
+    --?"X[&Resists[&ResistLoop]]" -inc "[%3%]" -and "X[&Resists[&ResistLoop]]" -inc "magical" -and [%4%] -eq 1|FINISH_RESIST_CHECK
+    --?"X[&Resists[&ResistLoop]]" -inc "[%3%]"|>IsResistant;[%2%]
+    --:FINISH_RESIST_CHECK|
+  --%|
+  --%ImmuneLoop|1;[$ImmunesCount]
+    --&hasModifier|0
+    --?"X[&Immunes[&ImmuneLoop]]" -inc "silver" -or "X[&Immunes[&ImmuneLoop]]" -inc "adamantine" -or "X[&Immunes[&ImmuneLoop]]" -inc "magical"|&hasModifier;1
+    --?"X[&Immunes[&ImmuneLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|>IsImmune;[%2%]
+    --?"X[&Immunes[&ImmuneLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|FINISH_IMMUNE_CHECK
+    --?"X[&Immunes[&ImmuneLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 1 -and "X[&Immunes[&ImmuneLoop]]" -inc "adamantine" -and [%6%] -eq 1|FINISH_IMMUNE_CHECK
+    --?"X[&Immunes[&ImmuneLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 1 -and "X[&Immunes[&ImmuneLoop]]" -inc "silver" -and [%5%] -eq 1|>FINISH_IMMUNE_CHECK;[%2%]
+    --?"X[&Immunes[&ImmuneLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 1 -and "X[&Immunes[&ImmuneLoop]]" -inc "magical" -and [%4%] -eq 1|>FINISH_IMMUNE_CHECK;[%2%]
+    --?"X[&Immunes[&ImmuneLoop]]" -inc "[%3%]"|>IsImmune;[%2%]
+    --:FINISH_IMMUNE_CHECK|
+  --%|
   --<|
   --:IsVulnerable| --&[%1%]| * 2 [Vulnerable] --<|
   --:IsResistant| --&[%1%]| \ 2 [Resistant] --<|
