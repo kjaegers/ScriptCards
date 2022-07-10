@@ -44,7 +44,7 @@
   --&AllNPCActionsToSender|0
 
   --/|Set this to either "scriptcards", "token-mod", "alterbars", "damagebuttons" or anything else to not apply damage
-  --&damageApplyScript|damagebuttons
+  --&damageApplyScript|dontapplydamage
 
   --/|If using "damagebuttons" and this is set to 1, the damage buttons will be whispered to the DM instead of being added to the card
   --&whisperDamageButtonsToDM|1
