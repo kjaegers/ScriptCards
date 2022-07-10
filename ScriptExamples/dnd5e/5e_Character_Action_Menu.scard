@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.0.7
+  --/|Version     : 2.0.8
   --/|Requires SC : 2.0.2g+
   --/|Author      : Kurt Jaegers
 
@@ -1273,10 +1273,12 @@
  
   --:CheckDamageModifiersNPC|characterid;damageVariableName;damageType
   --&[%2%]|
-  --~Check_Type|string;tolowercase;[%3%]
-  --~Check_Vuln|string;tolowercase;[*[%1%]:npc_vulnerabilities]
-  --~Check_Resist|string;tolowercase;[*[%1%]:npc_resistances]
-  --~Check_Immune|string;tolowercase;[*[%1%]:npc_immunities]
+  --#parameterdelimiter|!!
+  --~Check_Type|string!!tolowercase!![%3%]
+  --~Check_Vuln|string!!tolowercase!![*[%1%]:npc_vulnerabilities]
+  --~Check_Resist|string!!tolowercase!![*[%1%]:npc_resistances]
+  --~Check_Immune|string!!tolowercase!![*[%1%]:npc_immunities]
+  ----#parameterdelimiter|;
   --?"[&Check_Vuln]" -inc "[&Check_Type]"|>IsVulnerable;[%2%]
   --?"[&Check_Resist]" -inc "[&Check_Type]"|>IsResistant;[%2%]
   --?"[&Check_Immune]" -inc "[&Check_Type]"|>IsImmune;[%2%]
