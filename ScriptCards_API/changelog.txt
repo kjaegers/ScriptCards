@@ -1,5 +1,9 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.0.2h - New string function: striphtml will remove all HTML tags from a string.
+
+v 2.0.2g - Minor bug fixes
+
 v 2.0.2f - The subtitle for the card is now run thorugh processInlineFormatting in order to allow buttons and other formatting in that space.
 
 v 2.0.2e - Added the ability to set currentside of a multisided token and have the image update.

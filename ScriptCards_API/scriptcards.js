@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.0.2g";
+	const APIVERSION = "2.0.2h";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -961,7 +961,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												}
 											}
 										} else {
-											log(`ScriptCards Error: Modify attribute called without valid ID`)
+											log(`ScriptCards Error: Modify attribute called without valid ID ${thisTag}, ${thisContent}`)
 										}
 										break;
 								}
@@ -1573,6 +1573,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 											case "touppercase":
 												stringVariables[variableName] = params[2].toUpperCase();
+												break;
+
+											case "striphtml":
+												stringVariables[variableName] = params[2].replace(/<[^>]*>?/gm, '');
 												break;
 
 											case "trim":
