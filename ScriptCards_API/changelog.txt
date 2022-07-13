@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.0.2i - Bug fix when retrieving repeating section values that are purely numeric (was leaving them out of the returned list)
+
 v 2.0.2h - New string function: striphtml will remove all HTML tags from a string.
 
 v 2.0.2g - Minor bug fixes
