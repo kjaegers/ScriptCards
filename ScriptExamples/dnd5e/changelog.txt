@@ -1,5 +1,9 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-07-17 - 5E Magic Missile 2.2
+             Exclusively uses ScriptCards to apply damage, since using token-mod or alterbars will only apply damage from one missile if a target is
+             selected more than once (order/timing of execution of the scripts gets in the way).
+
 2022-07-09 - 5E Character Action Menu 2.0.5
              NOTE: This is a major update to the 5E Character Action Menu, and requires the absolute latest version of ScriptCards (2.0.2g at the 
              time of this writing) for all of its features to be supported.

@@ -1,7 +1,7 @@
 !script {{
   --/|Script Name : 5E Magic Missile
-  --/|Version     : 2.1
-  --/|Requires SC : 1.4.2+ when used with token-mod or alterbars. 1.5.2+ standalone
+  --/|Version     : 2.2
+  --/|Requires SC : 1.5.2+
   --/|Author      : Kurt Jaegers
 
   --/|Description : Handles the D&D 5E spell Magic Missile, with the ability to select a dynamic
@@ -11,7 +11,7 @@
   --/|              TokenMod to update Bar 3. These can be changed by altering the settings below.
   --/|              If you use one die roll for Magic Missile, update the damageMode variable below.
   
-  --/|Set this to either "scriptcards", "token-mod", "alterbars", or anything else to not apply damage
+  --/|Set this to either "scriptcards" or anything else to not apply damage
   --&damageApplyScript|scriptcards
 
   --/|Set this to the bar number you use to track hit points
@@ -42,8 +42,6 @@
   --/|Determine damage subroutine. Start by assuming we aren't going to apply damage
   --&damageRoutine|DontApplyDamage
   --?[&damageApplyScript] -eq "scriptcards"|&damageRoutine;ApplyDamageScriptCards  
-  --?[&damageApplyScript] -eq "token-mod"|&damageRoutine;ApplyDamageTokenmod
-  --?[&damageApplyScript] -eq "alterbars"|&damageRoutine;ApplyDamageAlterbars
 
   --a|[&SoundEffectTrack]
 
@@ -78,7 +76,7 @@
   --^DoneResist|
 
   --:DoneResist|
-  -->[&damageRoutine]|[&ThisTarget];[&hitPointsBar];[$ResultantDamage.Raw]
+  -->[&damageRoutine]|[&ThisTarget];[&hitPointsBar];-[$ResultantDamage.Raw]
   --<|
 
   --:BuildAndAskTargets|
@@ -103,24 +101,11 @@
   
   --/|Apply damage via ScriptCards' built-in object modification function (new in ScriptCards 1.5.0)
   --:ApplyDamageScriptCards|Parameters are tokenid;bar#;amount
-  --!t:[%1%]|bar[%2%]_value:+=[%3%]
-  --<|
-
-  --/|Token-Mod doesn't have a "set to a relative number", so we get the current bar value, subtract thedamage amount
-  --/|make sure it doesn't fall below 0, and set the amount back into the bar.
-  --:ApplyDamageTokenmod|Parameters are tokenid;bar#;amount
   --=applyValue|[%3%]
-  --?[$applyValue] -lt 0|=applyValue;[$applyValue] {NEG}
-  --=newValue|[*[%1%]:t-bar[%2%]_value] - [$applyValue]
+  --=newValue|[*[%1%]:t-bar[%2%]_value] + [$applyValue]
   --?[$newValue] -lt 0|=newValue;0
-  --@token-mod|_ignore-selected _ids [%1%] _set bar[%2%]_value|[$newValue.Raw]
-  --<| 
-  
-  --/|AlterBars supports relative values for the amount parameter, so we just pass it the value with a "-" in front of it.
-  --:ApplyDamageAlterbars|Parameters are tokenid;bar#;amount
-  --=applyValue|[%3%]
-  --?[$applyValue] -lt 0|=applyValue;[$applyValue] {NEG}
-  --@alter|_target|[%1%] _bar|[%2%] _amount|-[%3%] _show|none
+  --?[$newValue] -gt [*[%1%]:t-bar[%2%]_max]|=newValue;[*[%1%]:t-bar[%2%]_max]
+  --!t:[%1%]|bar[%2%]_value:[$newValue.Raw]
   --<|
 
   --/|Just a dummy routine that doesn't do anything, but it is easier to do it this way than adding logic to see if we are
