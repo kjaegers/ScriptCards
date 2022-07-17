@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.0.2j - [@Array()] or [@Array(length)] now returns the number of items in the array, while [@Array(maxindex)] or [@Array(lastindex)] will return
+           the index value of the last item (length - 1)
+
 v 2.0.2i - Bug fix when retrieving repeating section values that are purely numeric (was leaving them out of the returned list)
 
 v 2.0.2h - New string function: striphtml will remove all HTML tags from a string.
