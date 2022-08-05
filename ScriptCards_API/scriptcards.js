@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.0.2k";
+	const APIVERSION = "2.0.4";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1335,17 +1335,21 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (params.length >= 3) {
 										var token1 = getObj("graphic", params[1]);
 										var token2 = getObj("graphic", params[2]);
-										var scale = 1.0;
-										var page = getObj("page", token1.get("_pageid"));
-										if (page) { scale = page.get("snapping_increment") }
+										if (token1 !== null && token2 !== null) {
+											try {
+											var scale = 1.0;
+											var page = getObj("page", token1.get("_pageid"));
+											if (page) { scale = page.get("snapping_increment") }
 
-										if (token1 && token2) {
 											// Calculate the Chebyshev Distance between the grid points
 											var x1 = token1.get("left") / (scale * 70);
 											var x2 = token2.get("left") / (scale * 70);
 											var y1 = token1.get("top") / (scale * 70);
 											var y2 = token2.get("top") / (scale * 70);
 											result = Math.floor(Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2)));
+											} catch {
+												result = 0;
+											}
 										}
 									}
 									rollVariables[variableName] = parseDiceRoll(result.toString(), cardParameters);
@@ -1356,16 +1360,20 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (params.length >= 3) {
 										var token1 = getObj("graphic", params[1]);
 										var token2 = getObj("graphic", params[2]);
-										var scale = 1.0;
-										var page = getObj("page", token1.get("_pageid"));
-										if (page) { scale = page.get("snapping_increment") }
-										if (token1 && token2) {
-											// Calculate the euclidean unit distance between two tokens (params[1] and params[2])
-											var x1 = token1.get("left") / (scale * 70);
-											var x2 = token2.get("left") / (scale * 70);
-											var y1 = token1.get("top") / (scale * 70);
-											var y2 = token2.get("top") / (scale * 70);
-											result = Math.floor(Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2)));
+										if (token1 !== null && token2 !== null) {
+											try {
+												var scale = 1.0;
+												var page = getObj("page", token1.get("_pageid"));
+												if (page) { scale = page.get("snapping_increment") }
+												// Calculate the euclidean unit distance between two tokens (params[1] and params[2])
+												var x1 = token1.get("left") / (scale * 70);
+												var x2 = token2.get("left") / (scale * 70);
+												var y1 = token1.get("top") / (scale * 70);
+												var y2 = token2.get("top") / (scale * 70);
+												result = Math.floor(Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2)));
+											} catch {
+												result = 0;
+											}
 										}
 									}
 									rollVariables[variableName] = parseDiceRoll(result.toString(), cardParameters);
@@ -1377,17 +1385,21 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (params.length >= 3) {
 										var token1 = getObj("graphic", params[1]);
 										var token2 = getObj("graphic", params[2]);
-										var scale = 1.0;
-										var page = getObj("page", token1.get("_pageid"));
-										if (page) { scale = page.get("snapping_increment") }
-										if (token1 && token2) {
-											// Calculate the euclidean unit distance between two tokens (params[1] and params[2])
-											var x1 = token1.get("left");
-											var x2 = token2.get("left");
-											var y1 = token1.get("top");
-											var y2 = token2.get("top");
-											result = Math.floor(Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2)));
-											if (params[0].toLowerCase() == "euclideanlong") { result = result / (scale * 70); }
+										if (token1 !== null && token2 !== null) {
+											try {
+												var scale = 1.0;
+												var page = getObj("page", token1.get("_pageid"));
+												if (page) { scale = page.get("snapping_increment") }
+												// Calculate the euclidean unit distance between two tokens (params[1] and params[2])
+												var x1 = token1.get("left");
+												var x2 = token2.get("left");
+												var y1 = token1.get("top");
+												var y2 = token2.get("top");
+												result = Math.floor(Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2)));
+												if (params[0].toLowerCase() == "euclideanlong") { result = result / (scale * 70); }
+											} catch { 
+												result = 0;
+											}
 										}
 									}
 									rollVariables[variableName] = parseDiceRoll(result.toString(), cardParameters);
@@ -1399,17 +1411,21 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (params.length >= 3) {
 										var token1 = getObj("graphic", params[1]);
 										var token2 = getObj("graphic", params[2]);
-										var scale = 1.0;
-										var page = getObj("page", token1.get("_pageid"));
-										if (page) { scale = page.get("snapping_increment") }
-										if (token1 && token2) {
-											// Calculate the manhattan unit distance between two tokens (params[1] and params[2])
-											var x1 = token1.get("left") / (scale * 70);
-											var x2 = token2.get("left") / (scale * 70);
-											var y1 = token1.get("top") / (scale * 70);
-											var y2 = token2.get("top") / (scale * 70);
-											result = Math.abs(x2 - x1) + Math.abs(y2 - y1);
-										}
+										if (token1 !== null && token2 !== null) {
+											try {
+												var scale = 1.0;
+												var page = getObj("page", token1.get("_pageid"));
+												if (page) { scale = page.get("snapping_increment") }
+												// Calculate the manhattan unit distance between two tokens (params[1] and params[2])
+												var x1 = token1.get("left") / (scale * 70);
+												var x2 = token2.get("left") / (scale * 70);
+												var y1 = token1.get("top") / (scale * 70);
+												var y2 = token2.get("top") / (scale * 70);
+												result = Math.abs(x2 - x1) + Math.abs(y2 - y1);
+											} catch {
+												result = 0;
+											}
+										} 
 									}
 									rollVariables[variableName] = parseDiceRoll(result.toString(), cardParameters);
 									break;
@@ -2754,15 +2770,27 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						var vIndex = 0;
 						var TestMatch = thisMatch.match(/(?<=\().*?(?=[)]])/g)[0].toString();
 						if (TestMatch == "" || TestMatch.toLowerCase() == "length") {
-							replacement = arrayVariables[vName].length.toString();
+							if (arrayVariables[vName] !== null) {
+								replacement = arrayVariables[vName].length.toString();
+							} else {
+								replacement = "undefined array";
+							}
 						}
 						if (TestMatch.toLowerCase() == "lastindex" || TestMatch.toLowerCase() == "maxindex") {
-							replacement = (arrayVariables[vName].length - 1).toString();
+							if (arrayVariables[vName] !== null) {
+								replacement = (arrayVariables[vName].length - 1).toString();
+							} else {
+								replacement = "undefined array";
+							}
 						}
 						if (thisMatch.match(/(?<=\().*?(?=[)]])/g) !== null) {
 							vIndex = parseInt(thisMatch.match(/(?<=\().*?(?=[)]])/g)[0]);
-							if (arrayVariables[vName] && arrayVariables[vName].length > vIndex) {
-								replacement = arrayVariables[vName][vIndex];
+							if (arrayVariables[vName] !== null) {
+								if (arrayVariables[vName] && arrayVariables[vName].length > vIndex) {
+									replacement = arrayVariables[vName][vIndex];
+								}
+							} else {
+								replacement = "undefined array";
 							}
 						}
 						if (cardParameters.debug !== "0") {

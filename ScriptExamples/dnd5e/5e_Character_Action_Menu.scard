@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.0.10
+  --/|Version     : 2.0.11
   --/|Requires SC : 2.0.2g+
   --/|Author      : Kurt Jaegers
 
@@ -961,7 +961,7 @@
   --X|
 
   --:SAVING_THROW|
-  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender]||[
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1|[
   --#whisper|self
   --]|[
   --#whisper|

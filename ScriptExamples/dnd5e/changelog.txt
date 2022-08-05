@@ -1,5 +1,10 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-08-05 - 5E Character Action menu 2.0.11
+             - Damage resistance/vulnerability/immunity now attempts to check for special cases like Silver, Adamant, and Magical damage
+             - Bug fix in whispering saving throws to the appropriate targets.
+             - Other smaller bug fixes.
+
 2022-07-17 - 5E Magic Missile 2.2
              Exclusively uses ScriptCards to apply damage, since using token-mod or alterbars will only apply damage from one missile if a target is
              selected more than once (order/timing of execution of the scripts gets in the way).

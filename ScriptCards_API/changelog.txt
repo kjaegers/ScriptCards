@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.0.4  - Some additional sandbox protection when referencing array elements that don't exist and when using some built in functions without
+           appropriate parameters
+
 v 2.0.2k - Bug fix for [*R>...] attribute name lookup when using --Rbyindex to locate repeating rows by index number
 
 v 2.0.2j - [@Array()] or [@Array(length)] now returns the number of items in the array, while [@Array(maxindex)] or [@Array(lastindex)] will return
