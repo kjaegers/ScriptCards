@@ -1409,7 +1409,7 @@
   --#parameterdelimiter|$
   --~newConditions|string$replaceall$;$,$[&newConditions]
   --#parameterdelimiter|;
-  --!t:[%1%]|statusmarkers:[&newConditions]
+  --!t:[%1%]|statusmarkers: [&newConditions]
   --:DONE_REMOVE_STATUS_MARKER|
   --<|  
 
