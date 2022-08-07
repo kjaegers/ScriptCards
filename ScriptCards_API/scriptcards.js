@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.0.4";
+	const APIVERSION = "2.0.5";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1021,6 +1021,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (jumpDest) {
 											switch (jumpDest.charAt(0)) {
 												case ">": resultType = "gosub"; break;
+												case "<": resultType = "return"; break;
 												case "%": resultType = "next"; break;
 												case "=":
 												case "&":
@@ -1037,6 +1038,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														lineCounter = lineLabels[jumpDest];
 													} else {
 														log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`);
+													}
+													break;
+												case "return":
+													if (returnStack.length > 0) {
+														callParamList = parameterStack.pop();
+														lineCounter = returnStack.pop();
 													}
 													break;
 												case "gosub":
@@ -2162,6 +2169,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (jumpDest) {
 								switch (jumpDest.charAt(0)) {
 									case ">": resultType = "gosub"; break;
+									case "<": resultType = "return"; break;
 									case "%": resultType = "next"; break;
 									case "[": resultType = "block"; break;
 									case "=":
@@ -2181,6 +2189,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											log(`ScriptCards Error: Label ${jumpDest} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`);
 										}
 										break;
+									case "return":
+										if (returnStack.length > 0) {
+											callParamList = parameterStack.pop();
+											lineCounter = returnStack.pop();
+										}
+										break;										
 									case "gosub":
 										jumpDest = jumpDest.substring(1);
 										parameterStack.push(callParamList);
