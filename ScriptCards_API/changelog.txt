@@ -1,6 +1,6 @@
 ScriptCards Roll20 API Script Changelog
 
-v 2.0.6  - array;stringify now accepts an optional additional parameter that will be used as the separator when joining the array into a string if
+v 2.1.0  - array;stringify now accepts an optional additional parameter that will be used as the separator when joining the array into a string if
            the parameter is present (Ex. --~Result|array;stringify;MyArray;, will result in a comma separated array instead of the default, which
            is separated by the current value of #parameterdelimiter)
 
