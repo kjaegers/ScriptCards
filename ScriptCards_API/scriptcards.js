@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.0.5";
+	const APIVERSION = "2.1.0";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -303,7 +303,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						sendChat("API", metacard);
 					}
 				})
-				on('destroy:graphic', function (obj) { 
+				on('destroy:graphic', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:graphic" });
 					if (ability !== undefined && ability !== [] && ability[0] !== undefined) {
 						log("running this for some reason")
@@ -778,39 +778,204 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						// Handle setting object values
 						if (thisTag.charAt(0) === "!") {
 							if (thisTag.length > 1) {
-								var objectType = thisTag.substring(1, 2).toLowerCase();
-								switch (objectType) {
-									case "o":
-										var objtype = thisTag.substring(2, 3).toLowerCase();
-										if (objtype == "c") {
-											var returnVarName = thisTag.substring(4);
-											var settings = thisContent.split(cardParameters.parameterdelimiter);
-											if (returnVarName && settings[0]) {
-												var newChar = createObj("character", { name: settings[0] });
-												if (newChar) {
-													stringVariables[returnVarName] = newChar.id
-												} else {
-													stringVariables[returnVarName] = "OBJECT_CREATION_ERROR";
+								if (thisTag.substring(2, 3) == ":") {
+									var objectType = thisTag.substring(1, 2).toLowerCase();
+									switch (objectType) {
+										case "o":
+											var objtype = thisTag.substring(2, 3).toLowerCase();
+											if (objtype == "c") {
+												var returnVarName = thisTag.substring(4);
+												var settings = thisContent.split(cardParameters.parameterdelimiter);
+												if (returnVarName && settings[0]) {
+													var newChar = createObj("character", { name: settings[0] });
+													if (newChar) {
+														stringVariables[returnVarName] = newChar.id
+													} else {
+														stringVariables[returnVarName] = "OBJECT_CREATION_ERROR";
+													}
 												}
 											}
-										}
-										break;
+											break;
 
-									case "t":
-										var tokenID = thisTag.substring(3);
-										if (tokenID.toLowerCase() == "s") {
-											if (cardParameters.sourcetoken) {
-												tokenID = cardParameters.sourcetoken;
+										case "t":
+											var tokenID = thisTag.substring(3);
+											if (tokenID.toLowerCase() == "s") {
+												if (cardParameters.sourcetoken) {
+													tokenID = cardParameters.sourcetoken;
+												}
 											}
-										}
-										if (tokenID.toLowerCase() == "t") {
-											if (cardParameters.targettoken) {
-												tokenID = cardParameters.targettoken;
+											if (tokenID.toLowerCase() == "t") {
+												if (cardParameters.targettoken) {
+													tokenID = cardParameters.targettoken;
+												}
 											}
-										}
-										var settings = thisContent.split("|");
-										var theToken = getObj("graphic", tokenID);
-										if (theToken) {
+											var settings = thisContent.split("|");
+											var theToken = getObj("graphic", tokenID);
+											if (theToken) {
+												for (var i = 0; i < settings.length; i++) {
+													var thisSetting = settings[i].split(":");
+													var settingName = thisSetting.shift();
+													var settingValue = thisSetting.join(':');
+													if (settingName.toLowerCase() == "imgsrc") {
+														settingValue = getCleanImgsrc(settingValue);
+													}
+													if (settingName.toLowerCase() == "currentside") {
+														if (settingValue) {
+															var sides = theToken.get("sides").split("|");
+															if (sides[Number(settingValue)]) {
+																if (settingValue == "0") { settingValue = ""; }
+																theToken.set("currentSide", settingValue);
+																var newImgSrc = getCleanImgsrc(sides[Number(settingValue)].replace("%3A", ":").replace("%3F", "?"));
+																theToken.set("imgsrc", newImgSrc);
+															}
+														}
+
+													}
+													if (settingValue && (settingValue.startsWith("+=") || settingValue.startsWith("-="))) {
+														var currentValue = theToken.get(settingName);
+														var delta = settingValue.substring(2);
+														if (isNumber(currentValue) && isNumber(delta)) {
+															settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
+														} else {
+															settingValue = currentValue + delta;
+														}
+													}
+													if (cardParameters.formatoutputforobjectmodification == "1") {
+														settingValue = processInlineFormatting(settingValue, cardParameters);
+													}
+
+													if (typeof (theToken.get(settingName)) == "boolean" && settingValue) {
+														switch (settingValue.toLowerCase()) {
+															case "true": settingValue = true; break;
+															case "false": settingValue = false; break;
+														}
+													}
+
+													//if (settingName && settingValue) { 
+													if (settingName) {
+														theToken.set(settingName, settingValue);
+													}
+												}
+											} else {
+												log(`ScriptCards Error: Modify Token called without valid TokenID`)
+											}
+											break;
+
+										case "c":
+											var charID = thisTag.substring(3);
+											if (charID.toLowerCase() == "s") {
+												if (cardParameters.sourcecharacter) {
+													tokenID = cardParameters.sourcecharacter.id;
+												}
+											}
+											if (charID.toLowerCase() == "t") {
+												if (cardParameters.targetcharacter) {
+													tokenID = cardParameters.targetcharacter.id;
+												}
+											}
+											var settings = thisContent.split("|");
+											var theCharacter = getObj("graphic", charID);
+											if (theCharacter) {
+												for (var i = 0; i < settings.length; i++) {
+													var thisSetting = settings[i].split(":");
+													var settingName = thisSetting.shift();
+													var settingValue = thisSetting.join(':');
+													if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
+														var currentValue = theCharacter.get(settingName);
+														var delta = settingValue.substring(2);
+														if (isNumber(currentValue) && isNumber(delta)) {
+															settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
+														} else {
+															settingValue = currentValue + delta;
+														}
+													}
+													theCharacter.set(settingName, settingValue);
+												}
+											} else {
+												log(`ScriptCards Error: Modify character called without valid characterID`)
+											}
+											break;
+
+										case "a":
+											var objectID = thisTag.substring(3);
+											if (objectID.toLowerCase() == "s") {
+												if (cardParameters.sourcecharacter) {
+													objectID = cardParameters.sourcecharacter.id;
+												}
+											}
+											if (objectID.toLowerCase() == "t") {
+												if (cardParameters.targetcharacter) {
+													objectID = cardParameters.targetcharacter.id;
+												}
+											}
+											var characterObj = undefined;
+											var tokenTest = getObj("graphic", objectID);
+											if (tokenTest) {
+												characterObj = getObj("character", tokenTest.get("represents"));
+											} else {
+												characterObj = getObj("character", objectID);
+											}
+											if (characterObj !== undefined) {
+												var settings = thisContent.split("|");
+												for (var i = 0; i < settings.length; i++) {
+													var thisSetting = settings[i].split(":");
+													var settingName = thisSetting.shift();
+													var createAttribute = false;
+													var setType = "current";
+													if (settingName.startsWith("!")) {
+														createAttribute = true;
+														settingName = settingName.substring(1);
+													}
+													if (settingName.endsWith("^")) {
+														setType = "max";
+														settingName = settingName.slice(0, -1);
+													}
+													var settingValue = thisSetting.join(":");
+													var theAttribute = findObjs({
+														type: 'attribute',
+														characterid: characterObj.id,
+														name: settingName
+													}, { caseInsensitive: true })[0];
+													if (settingName.toLowerCase() !== "bio" && settingName.toLowerCase() !== "gmnotes" && settingName.toLowerCase() !== "notes") {
+														if (theAttribute) {
+															if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
+																var currentValue = theAttribute.get(setType);
+																var delta = settingValue.substring(2);
+																if (isNumber(currentValue) && isNumber(delta)) {
+																	settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
+																} else {
+																	settingValue = currentValue + delta;
+																}
+															}
+															theAttribute.set(setType, settingValue);
+														} else {
+															if (createAttribute) {
+																theAttribute = createObj('attribute', {
+																	characterid: characterObj.id,
+																	name: settingName,
+																	current: setType == "current" ? settingValue : "",
+																	max: setType == "max" ? settingValue : ""
+																});
+															}
+														}
+													} else {
+														log(`ScriptCards Error: Setting notes, gmnotes, or bio are not currently supported.`);
+													}
+												}
+											} else {
+												log(`ScriptCards Error: Modify attribute called without valid ID ${thisTag}, ${thisContent}`)
+											}
+											break;
+									}
+								} else {
+									var objectInfo = thisTag.substring(1).split(":");
+									log(objectInfo)
+									if (objectInfo.length == 2) {
+										var objectType = objectInfo[0];
+										var objectID = objectInfo[1];
+										var thisObject = getObj(objectType, objectID);
+										if (thisObject !== undefined) {
+											var settings = thisContent.split("|");
 											for (var i = 0; i < settings.length; i++) {
 												var thisSetting = settings[i].split(":");
 												var settingName = thisSetting.shift();
@@ -818,152 +983,26 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												if (settingName.toLowerCase() == "imgsrc") {
 													settingValue = getCleanImgsrc(settingValue);
 												}
-												if (settingName.toLowerCase() == "currentside") {
-													if (settingValue) {
-														var sides = theToken.get("sides").split("|");
-														if (sides[Number(settingValue)]) {
-															if (settingValue == "0") { settingValue = ""; }
-															theToken.set("currentSide", settingValue);
-															var newImgSrc = getCleanImgsrc(sides[Number(settingValue)].replace("%3A",":").replace("%3F","?"));
-															theToken.set("imgsrc", newImgSrc);
-														}
-													}
-													
-												}
-												if (settingValue && (settingValue.startsWith("+=") || settingValue.startsWith("-="))) {
-													var currentValue = theToken.get(settingName);
-													var delta = settingValue.substring(2);
-													if (isNumber(currentValue) && isNumber(delta)) {
-														settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
-													} else {
-														settingValue = currentValue + delta;
-													}
-												}
+
 												if (cardParameters.formatoutputforobjectmodification == "1") {
 													settingValue = processInlineFormatting(settingValue, cardParameters);
 												}
 
-												if (typeof (theToken.get(settingName)) == "boolean" && settingValue) {
+												if (typeof (thisObject.get(settingName)) == "boolean" && (settingValue !== undefined)) {
 													switch (settingValue.toLowerCase()) {
 														case "true": settingValue = true; break;
 														case "false": settingValue = false; break;
 													}
 												}
 
-												if (settingName && settingValue) { 
-													theToken.set(settingName, settingValue);
+												if (settingName !== undefined) {
+													thisObject.set(settingName, settingValue);
 												}
 											}
 										} else {
-											log(`ScriptCards Error: Modify Token called without valid TokenID`)
+											log(`ScriptCards Error: Modify object called without valid object type or object ID`)
 										}
-										break;
-
-									case "c":
-										var charID = thisTag.substring(3);
-										if (charID.toLowerCase() == "s") {
-											if (cardParameters.sourcecharacter) {
-												tokenID = cardParameters.sourcecharacter.id;
-											}
-										}
-										if (charID.toLowerCase() == "t") {
-											if (cardParameters.targetcharacter) {
-												tokenID = cardParameters.targetcharacter.id;
-											}
-										}
-										var settings = thisContent.split("|");
-										var theCharacter = getObj("graphic", charID);
-										if (theCharacter) {
-											for (var i = 0; i < settings.length; i++) {
-												var thisSetting = settings[i].split(":");
-												var settingName = thisSetting.shift();
-												var settingValue = thisSetting.join(':');
-												if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
-													var currentValue = theCharacter.get(settingName);
-													var delta = settingValue.substring(2);
-													if (isNumber(currentValue) && isNumber(delta)) {
-														settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
-													} else {
-														settingValue = currentValue + delta;
-													}
-												}
-												theCharacter.set(settingName, settingValue);
-											}
-										} else {
-											log(`ScriptCards Error: Modify character called without valid characterID`)
-										}
-										break;
-
-									case "a":
-										var objectID = thisTag.substring(3);
-										if (objectID.toLowerCase() == "s") {
-											if (cardParameters.sourcecharacter) {
-												objectID = cardParameters.sourcecharacter.id;
-											}
-										}
-										if (objectID.toLowerCase() == "t") {
-											if (cardParameters.targetcharacter) {
-												objectID = cardParameters.targetcharacter.id;
-											}
-										}
-										var characterObj = undefined;
-										var tokenTest = getObj("graphic", objectID);
-										if (tokenTest) {
-											characterObj = getObj("character", tokenTest.get("represents"));
-										} else {
-											characterObj = getObj("character", objectID);
-										}
-										if (characterObj !== undefined) {
-											var settings = thisContent.split("|");
-											for (var i = 0; i < settings.length; i++) {
-												var thisSetting = settings[i].split(":");
-												var settingName = thisSetting.shift();
-												var createAttribute = false;
-												var setType = "current";
-												if (settingName.startsWith("!")) {
-													createAttribute = true;
-													settingName = settingName.substring(1);
-												}
-												if (settingName.endsWith("^")) {
-													setType = "max";
-													settingName = settingName.slice(0, -1);
-												}
-												var settingValue = thisSetting.join(":");
-												var theAttribute = findObjs({
-													type: 'attribute',
-													characterid: characterObj.id,
-													name: settingName
-												}, { caseInsensitive: true })[0];
-												if (settingName.toLowerCase() !== "bio" && settingName.toLowerCase() !== "gmnotes" && settingName.toLowerCase() !== "notes") {
-													if (theAttribute) {
-														if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
-															var currentValue = theAttribute.get(setType);
-															var delta = settingValue.substring(2);
-															if (isNumber(currentValue) && isNumber(delta)) {
-																settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
-															} else {
-																settingValue = currentValue + delta;
-															}
-														}
-														theAttribute.set(setType, settingValue);
-													} else {
-														if (createAttribute) {
-															theAttribute = createObj('attribute', {
-																characterid: characterObj.id,
-																name: settingName,
-																current: setType == "current" ? settingValue : "",
-																max: setType == "max" ? settingValue : ""
-															});
-														}
-													}
-												} else {
-													log(`ScriptCards Error: Setting notes, gmnotes, or bio are not currently supported.`);
-												}
-											}
-										} else {
-											log(`ScriptCards Error: Modify attribute called without valid ID ${thisTag}, ${thisContent}`)
-										}
-										break;
+									}
 								}
 							}
 						}
@@ -1344,16 +1383,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										var token2 = getObj("graphic", params[2]);
 										if (token1 !== null && token2 !== null) {
 											try {
-											var scale = 1.0;
-											var page = getObj("page", token1.get("_pageid"));
-											if (page) { scale = page.get("snapping_increment") }
+												var scale = 1.0;
+												var page = getObj("page", token1.get("_pageid"));
+												if (page) { scale = page.get("snapping_increment") }
 
-											// Calculate the Chebyshev Distance between the grid points
-											var x1 = token1.get("left") / (scale * 70);
-											var x2 = token2.get("left") / (scale * 70);
-											var y1 = token1.get("top") / (scale * 70);
-											var y2 = token2.get("top") / (scale * 70);
-											result = Math.floor(Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2)));
+												// Calculate the Chebyshev Distance between the grid points
+												var x1 = token1.get("left") / (scale * 70);
+												var x2 = token2.get("left") / (scale * 70);
+												var y1 = token1.get("top") / (scale * 70);
+												var y2 = token2.get("top") / (scale * 70);
+												result = Math.floor(Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2)));
 											} catch {
 												result = 0;
 											}
@@ -1404,7 +1443,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												var y2 = token2.get("top");
 												result = Math.floor(Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2)));
 												if (params[0].toLowerCase() == "euclideanlong") { result = result / (scale * 70); }
-											} catch { 
+											} catch {
 												result = 0;
 											}
 										}
@@ -1432,7 +1471,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											} catch {
 												result = 0;
 											}
-										} 
+										}
 									}
 									rollVariables[variableName] = parseDiceRoll(result.toString(), cardParameters);
 									break;
@@ -1699,34 +1738,35 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (params[1].toLowerCase() == "sort") {
 											if (arrayVariables[params[2]]) {
 												arrayVariables[params[2]].sort();
+												if (params[3] !== undefined) {
+													if (params[3].toLowerCase().startsWith("desc")) {
+														arrayVariables[params[2]].reverse();
+													}
+												}
 											}
 										}
 										if (params[1].toLowerCase() == "numericsort") {
 											if (arrayVariables[params[2]]) {
 												arrayVariables[params[2]].sort(function (a, b) { return parseInt(a) - parseInt(b) });
+												if (params[3] !== undefined) {
+													if (params[3].toLowerCase().startsWith("desc")) {
+														arrayVariables[params[2]].reverse();
+													}
+												}
 											}
 										}
 										if (params[1].toLowerCase() == "stringify") {
 											if (arrayVariables[params[2]]) {
-												stringVariables[variableName] = arrayVariables[params[2]].join(cardParameters.parameterdelimiter);
+												var sep = cardParameters.parameterdelimiter;
+												if (params[3] !== null && params[3] !== undefined) {
+													sep = params[3];
+												}
+												stringVariables[variableName] = arrayVariables[params[2]].join(sep);
 											} else {
 												stringVariables[variableName] = "";
 											}
 										}
-										if (params[1].toLowerCase() == "rollabletables") {
-											arrayVariables[params[2]] = [];
-											var tables = findObjs({ _type: "rollabletable" });
-											for (var x = 0; x < tables.length; x++) {
-												arrayVariables[params[2]].push(tables.get("name"));
-											}
-										}
-										if (params[1].toLowerCase() == "pageobjects") {
-											var pages = findObjs({ _type: "page" });
-											arrayVariables[params[2]] = [];
-											for (var x = 0; x < pages.length; x++) {
-												arrayVariables[params[2]].push(pages[x].get("id"));
-											}
-										}
+
 										if (params[1].toLowerCase() == "pagetokens") {
 											arrayVariables[params[2]] = [];
 											var pageid = params[3];
@@ -1784,20 +1824,30 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												if (variableName) { stringVariables[variableName] = "0"; }
 											}
 										}
-										if (params[1].toLowerCase() == "playerobjects") {
-											var players = findObjs({ _type: "player" });
+
+										if (params[1].toLowerCase().startsWith("objects:")) {
+											var details = params[1].split(":");
+											var objects = findObjs({ _type: details[1].toLowerCase() });
+											var lookupField = "name";
+											if (details[1].toLowerCase() == "player") { lookupField = "_displayname"; }
+											if (details[1].toLowerCase() == "jukeboxtrack") { lookupField = "title"; }
+											if (details[1].toLowerCase() == "hand") { lookupField = "_type"; }
+											if (details[1].toLowerCase() == "card") { lookupField = "_type"; }
+											if (details[1].toLowerCase() == "campaign") { lookupField = "_type"; }
+											if (details[1].toLowerCase() == "path") { lookupField = "stroke"; }
+											if (details[1].toLowerCase() == "text") { lookupField = "text"; }
 											arrayVariables[params[2]] = [];
-											for (var x = 0; x < players.length; x++) {
-												arrayVariables[params[2]].push(players[x].get("id"));
+											for (var x = 0; x < objects.length; x++) {
+												if (params[3] !== undefined) {
+													if (objects[x].get(lookupField).toLowerCase().startsWith(params[3].toLowerCase())) {
+														arrayVariables[params[2]].push(objects[x].get("_id"));
+													}
+												} else {
+													arrayVariables[params[2]].push(objects[x].get("_id"));
+												}
 											}
 										}
-										if (params[1].toLowerCase() == "handoutobjects") {
-											var players = findObjs({ _type: "handout" });
-											arrayVariables[params[2]] = [];
-											for (var x = 0; x < players.length; x++) {
-												arrayVariables[params[2]].push(players[x].get("id"));
-											}
-										}
+
 										if (params[1].toLowerCase() == "selectedtokens") {
 											if (msg.selected) {
 												arrayVariables[params[2]] = [];
@@ -2194,7 +2244,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											callParamList = parameterStack.pop();
 											lineCounter = returnStack.pop();
 										}
-										break;										
+										break;
 									case "gosub":
 										jumpDest = jumpDest.substring(1);
 										parameterStack.push(callParamList);
@@ -2689,15 +2739,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			return [];
 		}
 	}
-	
+
 	function resolveAttributeSubstitution(characterid, reference) {
-		if(typeof reference.match === "function") {
-			while(reference.match(/\@(?:[\{])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-\+|\)]*?(?!\w+[\{])(\})/g) != null) {
+		if (typeof reference.match === "function") {
+			while (reference.match(/\@(?:[\{])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-\+|\)]*?(?!\w+[\{])(\})/g) != null) {
 				var thisMatch = reference.match(/\@(?:[\{])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-\+|\)]*?(?!\w+[\{])(\})/g)[0];
-				var attrName = thisMatch.substring(2, thisMatch.length-1);
+				var attrName = thisMatch.substring(2, thisMatch.length - 1);
 				var replacement = getAttrByName(characterid, attrName);
 				reference = reference.replace(thisMatch, replacement);
-			}		
+			}
 		}
 
 		return reference;
@@ -2874,7 +2924,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 						if (token == undefined && character == undefined) {
 							// Try finding a Player object
-							var player = getObj("player", activeCharacter) ;
+							var player = getObj("player", activeCharacter);
 							if (player !== undefined) {
 								attribute = player.get(attrName) || "";
 							}
@@ -2897,6 +2947,24 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						// campaign attributes
 						var attrName = thisMatch.substring(4, thisMatch.length - 1);
 						replacement = Campaign().get(attrName) || "";
+					}
+
+					if (thisMatch.charAt(2).toLowerCase() == "o") {
+						// object attributes. Format is [*Oobjectid:objecttype:property]
+						var objectInfo = thisMatch.replace("[", "").replace("]", "").split(":");
+						if (objectInfo.length == 4) {
+							var objectID = objectInfo[1];
+							var objectType = objectInfo[2];
+							var propertyName = objectInfo[3];
+							var thisObj = getObj(objectType, objectID);
+							if (thisObj !== undefined && !(propertyName == "action")) {
+								replacement = thisObj.get(propertyName) || "";
+							} else {
+								replacement = ""
+							}
+						} else {
+							replacment = ""
+						}
 					}
 
 					if (thisMatch.charAt(2).toLowerCase() == "r") {
@@ -3445,10 +3513,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			if (basebutton.toLowerCase() !== buttons[button].toLowerCase()) {
 				var tempbutton = buttons[button].replace("[button:", "").replace("[Button:", "").replace("[BUTTON:", "").split("]")[0];
 				var customs = tempbutton.split(":");
-				var firstColorUsed=false;
+				var firstColorUsed = false;
 				for (var c in customs) {
 					if (customs[c].startsWith("#")) {
-						if (firstColorUsed) { customBackgroundColor = customs[c]; } else {customTextColor = customs[c]; firstColorUsed = true;}
+						if (firstColorUsed) { customBackgroundColor = customs[c]; } else { customTextColor = customs[c]; firstColorUsed = true; }
 					} else {
 						if (customs[c].toLowerCase().endsWith("px")) {
 							customfontsize = customs[c];
@@ -3484,10 +3552,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			if (basebutton.toLowerCase() !== sheetbuttons[button].toLowerCase()) {
 				var tempbutton = sheetbuttons[button].replace("[sheetbutton:", "").replace("[Sheetbutton:", "").replace("[SHEETBUTTON:", "").split("]")[0];
 				var customs = tempbutton.split(":");
-				var firstColorUsed=false;
+				var firstColorUsed = false;
 				for (var c in customs) {
 					if (customs[c].startsWith("#")) {
-						if (firstColorUsed) { customBackgroundColor = customs[c]; } else {customTextColor = customs[c]; firstColorUsed = true;}
+						if (firstColorUsed) { customBackgroundColor = customs[c]; } else { customTextColor = customs[c]; firstColorUsed = true; }
 					} else {
 						if (customs[c].toLowerCase().endsWith("px")) {
 							customfontsize = customs[c];
@@ -3532,10 +3600,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			if (basebutton.toLowerCase() !== reentrantbuttons[button].toLowerCase()) {
 				var tempbutton = reentrantbuttons[button].replace("[rbutton:", "").replace("[Rbutton:", "").replace("[RBUTTON:", "").split("]")[0];
 				var customs = tempbutton.split(":");
-				var firstColorUsed=false;
+				var firstColorUsed = false;
 				for (var c in customs) {
 					if (customs[c].startsWith("#")) {
-						if (firstColorUsed) { customBackgroundColor = customs[c]; } else {customTextColor = customs[c]; firstColorUsed = true;}
+						if (firstColorUsed) { customBackgroundColor = customs[c]; } else { customTextColor = customs[c]; firstColorUsed = true; }
 					} else {
 						if (customs[c].toLowerCase().endsWith("px")) {
 							customfontsize = customs[c];
@@ -4170,7 +4238,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				}
 				while ((explodeValue > 0) && (thisRoll >= explodeValue)) {
 					thisReroll = rollWithReroll(sides, rerollThreshold, rerollType, rerollUnlimited);
-					thisRoll =Number(thisReroll[1]);
+					thisRoll = Number(thisReroll[1]);
 					thisTotal += Number(thisReroll[1]);
 					thisText += "!" + thisReroll[0].toString();
 				}

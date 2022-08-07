@@ -1,5 +1,41 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.0.6  - array;stringify now accepts an optional additional parameter that will be used as the separator when joining the array into a string if
+           the parameter is present (Ex. --~Result|array;stringify;MyArray;, will result in a comma separated array instead of the default, which
+           is separated by the current value of #parameterdelimiter)
+
+         - array;sort and array;numericsort now accept an optional additional parameter. If this is set to "descending", to sort order will be
+           reversed (Ex. --~|array;numericsort;MyArray;Descending)
+           
+         - It is now possible to set token values to blank with --!t-X statements
+         
+         - Arrays of object IDs can now be retrieved with array;objects:objecttype;filter. Filter is optional, and will correspond to a field on the
+           object to check if the field begins with the filter text. The object types are: campaign, player, page, path, text, graphic, character, 
+           attribute, ability, handout, macro, rollabletable, tableitem, deck, card, hand, jukeboxtrack, custfx. The filter fields are "name" if the
+           object type has a name property, _displayname for players, title for jukeboxtracks, stroke (color) for paths, text for text and not
+           supported for campaign, card, and hand objects. Filters are not case sensitive
+             Ex: --~|array;objects:handout;MyArray;magic item
+           will return an array with the object IDs of all handouts with a name starting with "magic item"
+
+         - The variable reference notation [*O:objectId:objecttype:property] can be used to retrieve any property from any type of object (with the
+           standard limitations on bio, notes, etc.) The object types are: campaign, player, page, path, text, graphic, character, attribute, ability,
+           handout, macro, rollabletable, tableitem, deck, card, hand, jukeboxtrack, custfx. Note that you are likely better off using the type-specific
+           referencing types when available (like [*C:] for campaign, etc.) Note that retrieving the "action" property of a macros and abilities is not
+           supported, as this will often lead to a sandbox crash as ScriptCards tries to parse any potential variables in the macro text.
+
+         - Object modification statements (--!) now support the ability to modify any type of object by specifying the object type and object id in the tag
+           portion of the statement. Note that very little checking is done on this (if the property you are setting is imgsrc, the image sorce will be
+           reformatted per Roll20 requirements). Ex:
+
+             --!graphic:@{selected|token_id}|bar1_value:256
+             
+           will set the "bar1_vlaue" property of the selected graphic object to 256. As with variable referencing, you are likely better off using the
+           specific object type commands (ie, --!t: and --!a:, etc.) when they are available. Note that setting Bio, Notes, and GMNotes will actually make
+           the setting, but it isn't immediate and will not necessarially be available if read back within the same script. It will also throw a console
+           message about needing to pass a callback.
+
+         - Some cleanup of undocumented and/or orphaned code
+
 v 2.0.5  - Adds the "<" character as a special signifier in conditional (--?) and case (--c) statements. This will cause a return from a subroutine
            if the execution path of the conditional/case would hit the < character (ie, --?1 -eq 1|<)
 
