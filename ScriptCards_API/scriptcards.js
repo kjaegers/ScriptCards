@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.0";
+	const APIVERSION = "2.1.1";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1269,7 +1269,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 								case "turnorder":
 									var variableName = thisTag.substring(1);
-									if (params.length == 2) {
+									if (params.length >= 2) {
 										if (params[1].toLowerCase() == "clear") {
 											Campaign().set("turnorder", "");
 										}
@@ -1282,6 +1282,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												stringVariables[variableName] = turnorder[0].id
 											}
 										}
+										if (params[1].toLowerCase() == "sort") {
+											var turnorder = [];
+											if (Campaign().get("turnorder") !== "") {
+												turnorder = JSON.parse(Campaign().get("turnorder"));
+												turnorder.sort((a,b) => (Number(a.pr) > Number(b.pr)) ? 1 : ((Number(b.pr) > Number(a.pr)) ? -1 : 0))
+												turnorder.reverse();
+												Campaign().set("turnorder", JSON.stringify(turnorder));
+											}
+										}										
 									}
 									if (params.length == 3) {
 										if (params[1].toLowerCase() == "removetoken") {
@@ -1303,6 +1312,17 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													stringVariables[variableName] = turnorder[x].pr;
 													//log(`Set variable to ${turnorder[x].pr}`)
 												}
+											}
+										}
+										if (params[1].toLowerCase() == "sort") {
+											var turnorder = [];
+											if (Campaign().get("turnorder") !== "") {
+												turnorder = JSON.parse(Campaign().get("turnorder"));
+												turnorder.sort((a,b) => (Number(a.pr) > Number(b.pr)) ? 1 : ((Number(b.pr) > Number(a.pr)) ? -1 : 0))
+												turnorder.reverse();
+												if ((params[2].toLowerCase().startsWith("a"))) { turnorder.reverse(); }
+												if ((params[2].toLowerCase().startsWith("u"))) { turnorder.reverse(); }
+												Campaign().set("turnorder", JSON.stringify(turnorder));
 											}
 										}
 									}

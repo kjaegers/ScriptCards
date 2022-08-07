@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.1  - The built-in turnorder function now supports sorting the turn order: --~turnorder|sort will sort numerically in descending order. adding
+           and optional third parameter with a value of either "a" (for ascending) or "u" (for up) will sort numerically in ascending order.
+
 v 2.1.0  - array;stringify now accepts an optional additional parameter that will be used as the separator when joining the array into a string if
            the parameter is present (Ex. --~Result|array;stringify;MyArray;, will result in a comma separated array instead of the default, which
            is separated by the current value of #parameterdelimiter)
