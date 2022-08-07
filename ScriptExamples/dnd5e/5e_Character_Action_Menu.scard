@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.0.11
+  --/|Version     : 2.0.12
   --/|Requires SC : 2.0.2g+
   --/|Author      : Kurt Jaegers
 
@@ -100,12 +100,16 @@
 
   --/|If set to 1, damage immunity, vulnerability, and resistance will be included in damage rolls
   --&UseResistances|1
+  
+  --/|If set to a non-zero value, this will be used as the name of the conditional marker to be set on the caster if the cast spell requires concentration
+  --&ConcentrationMarkerName|snail
 
   --/|End Settings Area
   --/|=========================================================================================================
 
   --/|Give the script a reentrant name based on the selected character id so we can have multiple instances at the same time
   --#reentrant|CharacterAction @{selected|character_id}
+  --&saveTokenID|@{selected|token_id}
   --&QB|? --&QB|+{ --&QE|}
   --&AB|@ --&AB|+{
   
@@ -862,6 +866,7 @@
   -->Find_Active_Global_Save_Modifiers|[$cantrip_target];TARGET_GSM
   --Rfind|[*S:character_id];[&spellInfo2];repeating_spell-[&spellInfo1];spellname
   --#targettoken|[&spellInfo3]
+  --?"[*R:spellconcentration]" -inc "concentration=1" -and [&ConcentrationMarkerName]" -ne "0"|>ADD_STATUS_MARKER;[&saveTokenID];[&ConcentrationMarkerName]
   --?"[*R:spelloutput]" -eq ATTACK|PC_ATTACK_SPELL|PC_CARD_SPELL
 
   --:PC_ATTACK_SPELL|
@@ -1380,5 +1385,32 @@
   --:SETTING_NOT_FOUND|
   --!a:[&TOG_CHAR_ID]|5ECAM_SETTINGS:[*[&TOG_CHAR_ID]:5ECAM_SETTINGS]$[&TOG_SETTING]1$
   --^DISPLAY_CHARACTER_CONFIG_MENU|
+  --X|
+
+  --:ADD_STATUS_MARKER|Token_ID;Status Marker
+  --~|array;statusmarkers;Conditions;[%1%]
+  --~hasCondition|array;indexof;Conditions;[%2%]
+  --?[&hasCondition] -ne "ArrayError"|DONE_ADD_STATUS_MARKER
+  --~|array;add;Conditions;[%2%]
+  --~newConditions|array;stringify;Conditions
+  --#parameterdelimiter|$
+  --~newConditions|string$replaceall$;$,$[&newConditions]
+  --#parameterdelimiter|;
+  --!t:[%1%]|statusmarkers:[&newConditions]
+  --:DONE_ADD_STATUS_MARKER|
+  --<|
+
+  --:REMOVE_STATUS_MARKER|Token_ID;Status Marker
+  --~|array;statusmarkers;Conditions;[%1%]
+  --~hasCondition|array;indexof;Conditions;[%2%]
+  --?[&hasCondition] -eq "ArrayError"|DONE_REMOVE_STATUS_MARKER
+  --~|array;remove;Conditions;[%2%]
+  --~newConditions|array;stringify;Conditions
+  --#parameterdelimiter|$
+  --~newConditions|string$replaceall$;$,$[&newConditions]
+  --#parameterdelimiter|;
+  --!t:[%1%]|statusmarkers:[&newConditions]
+  --:DONE_REMOVE_STATUS_MARKER|
+  --<|  
 
 }}
