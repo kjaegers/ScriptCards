@@ -2,7 +2,8 @@ Change Log for items in the ScriptExamples/dnd5e Folder:
 
 2022-08-07 - 5E Character Action Menu 2.0.12
              - Added the ability to set a status marker when casting spells that require concentration. Set the ConcentrationMarkerName value in the settings
-               area to the name of the marker you wish to set when a concentration spell is cast.
+               area to the name of the marker you wish to set when a concentration spell is cast. Note that Spell_Mule spells will need to handle this 
+               functionality on their own, as they are not processed by the Action Menu.
 
 2022-08-05 - 5E Character Action menu 2.0.11
              - Damage resistance/vulnerability/immunity now attempts to check for special cases like Silver, Adamant, and Magical damage
