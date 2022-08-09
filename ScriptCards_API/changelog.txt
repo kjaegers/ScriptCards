@@ -1,5 +1,13 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.2  - New array definition functions:
+           array;fromrepeatingsection;ArrayName;character_id;repeating_section_name;repeating_field_name
+             will return an array by looking up all of the repeating section entries on Character_ID for the "repeating_section_name" repeating list
+             and return an array consisting of all of the values of repeating_field_name for that section.
+           array;fullrepeatingsection;ArrayName;character_id;repeating_section_name;field1:field2:field3;separation_sequence
+             will return an array the same as fromrepeatingsection except that multiple fields can be added to the array entries. The returned values
+             will be separated in the array entry by separation_sequence. Note that the field list is colon (:) separated.
+
 v 2.1.1  - The built-in turnorder function now supports sorting the turn order: --~turnorder|sort will sort numerically in descending order. adding
            and optional third parameter with a value of either "a" (for ascending) or "u" (for up) will sort numerically in ascending order.
 

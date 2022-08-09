@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.1";
+	const APIVERSION = "2.1.2";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1286,11 +1286,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											var turnorder = [];
 											if (Campaign().get("turnorder") !== "") {
 												turnorder = JSON.parse(Campaign().get("turnorder"));
-												turnorder.sort((a,b) => (Number(a.pr) > Number(b.pr)) ? 1 : ((Number(b.pr) > Number(a.pr)) ? -1 : 0))
+												turnorder.sort((a, b) => (Number(a.pr) > Number(b.pr)) ? 1 : ((Number(b.pr) > Number(a.pr)) ? -1 : 0))
 												turnorder.reverse();
 												Campaign().set("turnorder", JSON.stringify(turnorder));
 											}
-										}										
+										}
 									}
 									if (params.length == 3) {
 										if (params[1].toLowerCase() == "removetoken") {
@@ -1318,7 +1318,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											var turnorder = [];
 											if (Campaign().get("turnorder") !== "") {
 												turnorder = JSON.parse(Campaign().get("turnorder"));
-												turnorder.sort((a,b) => (Number(a.pr) > Number(b.pr)) ? 1 : ((Number(b.pr) > Number(a.pr)) ? -1 : 0))
+												turnorder.sort((a, b) => (Number(a.pr) > Number(b.pr)) ? 1 : ((Number(b.pr) > Number(a.pr)) ? -1 : 0))
 												turnorder.reverse();
 												if ((params[2].toLowerCase().startsWith("a"))) { turnorder.reverse(); }
 												if ((params[2].toLowerCase().startsWith("u"))) { turnorder.reverse(); }
@@ -2045,6 +2045,67 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												arrayVariables[params[2]].push(splitString[x]);
 											}
 											arrayIndexes[params[2]] = 0;
+										}
+									}
+									if (params.length == 6) {
+										if (params[1].toLowerCase() == "fromrepeatingsection" || params[1].toLowerCase() == "fromrepsection") {
+											if (params[2] !== "") {
+												try {
+													arrayVariables[params[2]] = [];
+													var pushValue = "";
+													var localSectionIDs = getRepeatingSectionIDs(params[3], params[4]);
+													if (localSectionIDs && localSectionIDs.length > 0) {
+														for (var x = 0; x < localSectionIDs.length; x++) {
+															var thisRepeatingSection = getSectionAttrsByID(params[3], params[4], localSectionIDs[x]);
+															pushValue = "";
+															for (var q = 0; q < thisRepeatingSection.length; q++) {
+																if (thisRepeatingSection[q].split("|")[0] == params[5]) {
+																	pushValue = thisRepeatingSection[q].split("|")[1];
+																}
+															}
+															arrayVariables[params[2]].push(pushValue);
+														}
+													}
+												} catch {
+													arrayVariables[params[2]] = [];
+												}
+											}
+										}
+									}
+									if (params.length == 7) {
+										if (params[1].toLowerCase() == "fullrepeatingsection" || params[1].toLowerCase() == "fullrepsection") {
+											if (params[2] !== "") {
+												try {
+													arrayVariables[params[2]] = [];
+													var pushValue = "";
+													var localSectionIDs = getRepeatingSectionIDs(params[3], params[4]);
+													var attrList = params[5].split(":");
+													if (localSectionIDs && localSectionIDs.length > 0) {
+														for (var x = 0; x < localSectionIDs.length; x++) {
+															pushValue = [];
+															var thisRepeatingSection = getSectionAttrsByID(params[3], params[4], localSectionIDs[x]);
+															for (var y = 0; y < attrList.length; y++) {
+																var found = false
+																for (var q = 0; q < thisRepeatingSection.length; q++) {
+																	if (thisRepeatingSection[q].split("|")[0] == attrList[y]) {
+																		if (thisRepeatingSection[q].split("|")[1] != null) {
+																			pushValue.push(thisRepeatingSection[q].split("|")[1]);
+																			found = true
+																		} else {
+																			pushValue.push("");
+																		}
+
+																	}
+																}
+																if (!found) { pushValue.push(""); }
+															}
+															arrayVariables[params[2]].push(pushValue.join(params[6]));
+														}
+													}
+												} catch {
+													arrayVariables[params[2]] = [];
+												}
+											}
 										}
 									}
 									break;
