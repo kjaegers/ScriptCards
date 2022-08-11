@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.3  - Standardized null/undefined comparisons to avoid potential sandbox crashes in many places across the code.
+
 v 2.1.2  - New array definition functions:
            array;fromrepeatingsection;ArrayName;character_id;repeating_section_name;repeating_field_name
              will return an array by looking up all of the repeating section entries on Character_ID for the "repeating_section_name" repeating list
