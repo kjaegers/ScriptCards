@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.3";
+	const APIVERSION = "2.1.4";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2774,7 +2774,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (WhisperTarget == "self") {
 										WhisperTarget = getObj("player", msg.playerid).get("displayname");
 									}
-									sendChat(msg.who, `/w "${WhisperTarget}" ${cardOutput}`);
+									sendChat(msg.who, `/w "${WhisperTarget}" ${emote} ${cardOutput}`);
 									//sendChat(msg.who, "/w \"" + WhisperTarget + "\" " + cardOutput );
 								}
 							}

@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.4  - When using --#whisper| with a non-blank value, the output of the emote area would be skipped. This has been fixed.
+           Testing new GitHub integration with Discord channel.
+
 v 2.1.3  - Standardized null/undefined comparisons to avoid potential sandbox crashes in many places across the code.
 
 v 2.1.2  - New array definition functions:
