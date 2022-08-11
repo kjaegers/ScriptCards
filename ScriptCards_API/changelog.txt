@@ -1,5 +1,13 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.5  - String variable referencing now supports substring parameters if the variable name is followed by parenthesis. 
+           Examples:
+             [&MyString]         = "The Quick Brown Fox Jumps Over the Lazy Dog"
+             [&MyString(4)]      =      "Quick Brown Fox Jumps Over the Lazy Dog"
+             [&MyString(4,5)]    =      "Quick"
+             [&MyString(-3)]     =                                          "Dog"
+             [&MyString(-8,4)]   =                                     "Lazy"
+
 v 2.1.4  - When using --#whisper| with a non-blank value, the output of the emote area would be skipped. This has been fixed.
            Testing new GitHub integration with Discord channel.
 

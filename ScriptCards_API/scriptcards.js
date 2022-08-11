@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.4";
+	const APIVERSION = "2.1.5";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2842,20 +2842,52 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		//var charId = "";
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
-		while (content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-\+|\)]*?(?!\w+[\[])(\])/g) != null) {
-			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-\+|\)]*?(?!\w+[\[])(\])/g)[0];
+		while (content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\,|\_|\>|\^|\-\+|\)]*?(?!\w+[\[])(\])/g) != null) {
+			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\,|\_|\>|\^|\-\+|\)]*?(?!\w+[\[])(\])/g)[0];
 			var replacement = "";
 			switch (thisMatch.charAt(1)) {
 				case "&":
 					// Replace a string variable
-					var vName = thisMatch.substring(2, thisMatch.length - 1);
-					if (stringVariables[vName] != null) {
-						replacement = stringVariables[vName];
+					if (thisMatch.match(/(?<=\[\&).*?(?=[\(])/g) != null) {
+						// String variable with substring information
+						var vName = thisMatch.match(/(?<=\[\&).*?(?=[\(])/g)[0];
+						if (stringVariables[vName] != null) {
+							try {
+								var TestMatch = thisMatch.match(/(?<=\().*?(?=[)]])/g)[0].toString();
+								var substringInfo = TestMatch.split(",");
+								if (substringInfo.length == 1) {
+									if (parseInt(substringInfo[0]) >= 0) {
+										replacement = stringVariables[vName].substring(parseInt(substringInfo[0]));
+									} else {
+										replacement = stringVariables[vName].substring(stringVariables[vName].length + parseInt(substringInfo[0]));
+									}
+								} else {
+									if (parseInt(substringInfo[0]) >= 0) {
+										var first = parseInt(substringInfo[0]);
+										var last =  first + parseInt(substringInfo[1]);
+										replacement = stringVariables[vName].substring(first, last);
+									} else {
+										var first = stringVariables[vName].length + parseInt(substringInfo[0]);
+										var last = first + parseInt(substringInfo[1]);
+										replacement = stringVariables[vName].substring(first,last);
+									}
+								}
+							} catch {
+								replcement = "Substring reference error."
+							}
+						} else {
+							replacement = ""
+						}
 					} else {
-						replacement = "";
-					}
-					if (cardParameters.debug !== "0") {
-						log(`ContentIn: ${content} Match: ${thisMatch}, vName: ${vName}, replacement ${replacement}`)
+						var vName = thisMatch.substring(2, thisMatch.length - 1);
+						if (stringVariables[vName] != null) {
+							replacement = stringVariables[vName];
+						} else {
+							replacement = "";
+						}
+						if (cardParameters.debug !== "0") {
+							log(`ContentIn: ${content} Match: ${thisMatch}, vName: ${vName}, replacement ${replacement}`)
+						}
 					}
 					break;
 
