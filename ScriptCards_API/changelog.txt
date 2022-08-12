@@ -1,6 +1,27 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.6  - Additional string variable referencing options are now available. Some options require multiple parmeters, in which case they are
+           separated by commas (,). Most of the sequences are case sensitive, though some have "i" variants (icontains, for example) that operate
+           in a non-case sensitive mode. NOTE: None of these options modify the value of the string variable - they simply return the result to
+           the location in the script where the variable is referenced.
+
+           Examples:
+            [&MyString]                      = "The quick Brown Fox jumps over the Lazy Dog"
+            [&MyString(length)]              = 43
+            [&MyString(tolowercase)]         = "the quick brown fox jumps over the lazy dog"
+            [&MyString(touppercase)]         = "THE QUICK BROWN FOX JUMPS OVER THE LAZY DOG"
+            [&MyString(totitlecase)]         = "The Quick Brown Fox Jumps Over The Lazy Dog"
+            [&MyString(replace,quick,fast)]  = "The fast Brown Fox jumps over the Lazy Dog"
+            [&MyString(replaceall,o,i)]      = "The fast Briwn Fix jumps iver the Lazy Dig"
+            [&MyString(contains,Dog)]        = 1    <-- Case sensitive contains
+            [&MyString(contains,dog)]        = 0    <-- Case sensitive contains
+            [&MyString(icontains,dog)]       = 1    <-- Non-Case Sensitive contains
+            [&MyString(indexof,Jumps)]       = -1   <-- Case sensitive indexof - indexof returns -1 if not found
+            [&MyString(iindexof,jumps)]      = 20   <-- Non-case sensitive indexof. First location where the sequence occurs
+            [&MyString(lastindexof,o)]       = 41   <-- The character position (0-based) of the last time the sequence occurs
+
 v 2.1.5  - String variable referencing now supports substring parameters if the variable name is followed by parenthesis. 
+
            Examples:
              [&MyString]         = "The Quick Brown Fox Jumps Over the Lazy Dog"
              [&MyString(4)]      =      "Quick Brown Fox Jumps Over the Lazy Dog"

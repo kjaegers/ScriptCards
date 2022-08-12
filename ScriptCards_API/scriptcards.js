@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.5";
+	const APIVERSION = "2.1.6";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1738,9 +1738,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												break;
 
 											case "replaceall":
-												var str = params[4];
-												while (str.includes(params[2])) { str = str.replace(params[2], params[3]) }
-												stringVariables[variableName] = str;
+												if (!params[3].includes(params[2])) {
+													var str = params[4];
+													while (str.includes(params[2])) { str = str.replace(params[2], params[3]) }
+													stringVariables[variableName] = str;
+												}
 												break;
 										}
 									}
@@ -2842,8 +2844,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		//var charId = "";
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
-		while (content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\,|\_|\>|\^|\-\+|\)]*?(?!\w+[\[])(\])/g) != null) {
-			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\,|\_|\>|\^|\-\+|\)]*?(?!\w+[\[])(\])/g)[0];
+		//while (content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\,|\_|\>|\^|\-\+|\)]*?(?!\w+[\[])(\])/g) != null) {
+		//	var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\,|\_|\>|\^|\-\+|\)]*?(?!\w+[\[])(\])/g)[0];
+		while (content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
+			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[^\[\]]*?(?!\.+[\[])(\])/g)[0];
 			var replacement = "";
 			switch (thisMatch.charAt(1)) {
 				case "&":
@@ -2855,24 +2859,121 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							try {
 								var TestMatch = thisMatch.match(/(?<=\().*?(?=[)]])/g)[0].toString();
 								var substringInfo = TestMatch.split(",");
-								if (substringInfo.length == 1) {
-									if (parseInt(substringInfo[0]) >= 0) {
-										replacement = stringVariables[vName].substring(parseInt(substringInfo[0]));
-									} else {
-										replacement = stringVariables[vName].substring(stringVariables[vName].length + parseInt(substringInfo[0]));
+								//var substringInfo = TestMatch.match(/("[^"]*")|[^,]+/g)
+								if (isNaN(substringInfo[0])) {
+									switch (substringInfo[0].toLowerCase()) {
+										case "length": replacement = stringVariables[vName].length; break;
+
+										case "tolowercase":
+										case "lower":
+										case "tolower":
+										case "lowercase": replacement = stringVariables[vName].toLowerCase(); break;
+
+										case "touppercase":
+										case "upper":
+										case "toupper":
+										case "uppercase": replacement = stringVariables[vName].toUpperCase(); break;
+
+										case "totitlecase":
+										case "titlecase":
+										case "title":
+											replacement = stringVariables[vName].toLowerCase()
+												.split(' ')
+												.map(function (word) {
+													return (word.charAt(0).toUpperCase() + word.slice(1));
+												})
+												.join(" ")
+											break;
+
+										case "contains":
+										case "includes":
+										case "icontains":
+										case "iincludes":
+											if (substringInfo.length == 2) {
+												var c1 = stringVariables[vName]; var c2 = substringInfo[1]
+												if (substringInfo[0].toLowerCase().startsWith("i")) { c1 = c1.toLowerCase(); c2 = c2.toLowerCase(); }
+												if (c1.includes(c2)) {
+													replacement = "1"
+												} else {
+													replacement = "0"
+												}
+											} else {
+												replacement = "Contains Argument Error"
+												log("ScriptCards Error : String contains evalulation incorrect arguments")
+											}
+											break;
+
+										case "indexof":
+										case "iindexof":
+											if (substringInfo.length == 2) {
+												var c1 = stringVariables[vName]; var c2 = substringInfo[1]
+												if (substringInfo[0].toLowerCase().startsWith("i")) { c1 = c1.toLowerCase(); c2 = c2.toLowerCase(); }
+												replacement = c1.indexOf(c2);
+											} else {
+												replacement = "Indexof Argument Error"
+												log("ScriptCards Error : String contains evalulation incorrect arguments")
+											}
+											break;
+
+										case "lastindexof":
+										case "ilastindexof":
+											if (substringInfo.length == 2) {
+												var c1 = stringVariables[vName]; var c2 = substringInfo[1]
+												if (substringInfo[0].toLowerCase().startsWith("i")) { c1 = c1.toLowerCase(); c2 = c2.toLowerCase(); }
+												replacement = c1.lastIndexOf(c2);
+											} else {
+												replacement = "Indexof Argument Error"
+												log("ScriptCards Error : String contains evalulation incorrect arguments")
+											}
+											break;
+
+										case "replace":
+											if (substringInfo.length == 3) {
+												replacement = stringVariables[vName].replace(substringInfo[1], substringInfo[2]);
+											} else {
+												replacement = "";
+											}
+											break;
+
+										case "replaceall":
+											if (substringInfo.length == 3) {
+												try {
+													if (substringInfo[2].indexOf(substringInfo[1]) == -1) {
+														var str = stringVariables[vName];
+														while (str.includes(substringInfo[1])) { str = str.replace(substringInfo[1], substringInfo[2]) }
+														replacement = str;
+													} else {
+														log(`ScriptCards Error : Replace all string cannot contain the search string: ${substringInfo[0]}, ${substringInfo[1]}, ${substringInfo[2]}`);
+														replacement = stringVariables[vName];
+													}
+												} catch (e) {
+													log(e);
+												}
+											} else {
+												replacement = "";
+											}
 									}
 								} else {
-									if (parseInt(substringInfo[0]) >= 0) {
-										var first = parseInt(substringInfo[0]);
-										var last =  first + parseInt(substringInfo[1]);
-										replacement = stringVariables[vName].substring(first, last);
+									if (substringInfo.length == 1) {
+										if (parseInt(substringInfo[0]) >= 0) {
+											replacement = stringVariables[vName].substring(parseInt(substringInfo[0]));
+										} else {
+											replacement = stringVariables[vName].substring(stringVariables[vName].length + parseInt(substringInfo[0]));
+										}
 									} else {
-										var first = stringVariables[vName].length + parseInt(substringInfo[0]);
-										var last = first + parseInt(substringInfo[1]);
-										replacement = stringVariables[vName].substring(first,last);
+										if (parseInt(substringInfo[0]) >= 0) {
+											var first = parseInt(substringInfo[0]);
+											var last = first + parseInt(substringInfo[1]);
+											replacement = stringVariables[vName].substring(first, last);
+										} else {
+											var first = stringVariables[vName].length + parseInt(substringInfo[0]);
+											var last = first + parseInt(substringInfo[1]);
+											replacement = stringVariables[vName].substring(first, last);
+										}
 									}
 								}
-							} catch {
+							} catch (e) {
+								log(e)
 								replcement = "Substring reference error."
 							}
 						} else {
