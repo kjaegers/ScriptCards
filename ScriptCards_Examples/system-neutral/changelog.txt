@@ -1,5 +1,8 @@
 Change Log for items in the ScriptExamples/system-neutral Folder:
 
+2022-08-13 - Added CustomTurnInfo - Just a quick example to show pulling apart turn tracker entries and working with their components. Requires
+             ScriptCards 2.1.6 or higher because it uses string referencing functions to shorten up the code.
+
 2022-03-04 - Themed Macro Button Menu Template 1.0.0 - New script sample that uses a macro mule and a few attributes to generate themed menu of 
              buttons to click the various macros. The macros can be anything that can be placed on a character's ability page, including other ScriptCards scripts.
 

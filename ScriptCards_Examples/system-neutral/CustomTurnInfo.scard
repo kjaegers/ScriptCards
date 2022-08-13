@@ -1,0 +1,33 @@
+!script {{ 
+  --?"X[*C:turnorder]X" -eq "X[]X"|SKIP
+  --/|Split the turn order up into its components, save in order1, order2, etc.
+  --~order|string;split;},{;[*C:turnorder]
+  --/|Strip out [, {, }, ], and " characters from the entry
+  --~order1|string;replaceall;[;;[&order1]
+  --~order1|string;replaceall;];;[&order1]
+  --~order1|string;replaceall;{;;[&order1]
+  --~order1|string;replaceall;};;[&order1]
+  --~order1|string;replaceall;";;[&order1]
+  --/|Split the turn order into it's pieces and store in ThisTurn1, ThisTurn2, etc.
+  --~ThisTurn|string;split;,;[&order1]
+  --&Custom|UNKNOWN
+  --/|Loop thru ThisTurn1, ThisTurn2, etc and find the pieces of the turn order information
+  --%loop|1;[$ThisTurnCount]
+    --?[&ThisTurn[&loop](0,2)] -eq id|&ID;[&ThisTurn[&loop](replace,id:,)]
+    --?[&ThisTurn[&loop](0,2)] -eq cu|&Custom;[&ThisTurn[&loop](replace,custom:,)]
+    --?[&ThisTurn[&loop](0,2)] -eq fo|&Formula;[&ThisTurn[&loop](replace,formula:,)]
+    --?[&ThisTurn[&loop](0,2)] -eq pr|&Init;[&ThisTurn[&loop](replace,pr:,)]
+  --%|
+  --/|If there is no "custom" value found, assume this isn't a custom turn.
+  --?[&Custom] -eq UNKNOWN|NOT_CUSTOM_TURN
+  --/|Custom items have an id of "-1", so if it is anything else, it isn't a custom turn
+  --?"[&ID]" -ne "-1"|NOT_CUSTOM_TURN
+
+  --/|Display the info about the custom turn
+  --+Custom Turn|The current turn tracker entry is a custom turn named [b][&Custom][/b], with an initiative counter value of [b][&Init][/b] and a round formula of [b][&Formula][/b]
+  --^SKIP|
+
+  --:NOT_CUSTOM_TURN| 
+  --+|The current turn tracker entry is not a custom entry
+  --:SKIP|
+}}
