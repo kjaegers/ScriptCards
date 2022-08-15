@@ -1,0 +1,91 @@
+!script {{
+  --/|Script Name : chage_campaign_turnorer expanded Trigger example
+  --/|Version     : 1.0.0
+  --/|Requires SC : 2.1.7
+  --/|Author      : Kurt Jaegers
+
+  --/|TRIGGER_REPLACEMENTS
+
+  -->GET_CURRENT_TURN_INFO|TID;INIT;CUSTOM;FORMULA;PAGE;name
+  --?"X[&TID]" -eq "X"|DONT_DISPLAY
+  --/|Set the card's title to the name of the token whose turn it is
+  --#title|[&name]
+  --?[&TID] -eq -1|CUSTOM_TURN
+  --/|Display the token and an alert that it is that token's turn
+  --+[img width=70][*[&TID]:t-imgsrc][/img]|[b][*[&TID]:t-name]'s turn[/b]
+  --/|Display status effects active on the token (if any)
+  --?"X[*[&TID]:t-statusmarkers]" -eq "X"|NEXT_TURN
+  --+Current Effects|[*[&TID]:t-statusmarkers]
+  --^NEXT_TURN|
+  --:CUSTOM_TURN|
+  --+Custom Turn|This is a custom turn named [b][&name][/b] with a value of [b][&INIT][/b] and a round formula of [b][&FORMULA][/b]
+
+  --:NEXT_TURN|
+  -->GET_NEXT_TURN_INFO|TID;INIT;CUSTOM;FORMULA;PAGE;name
+  --?"X[&TID]" -eq "X"|DONE
+  --+|[b][&name][/b] is on deck...
+
+  --:DONE|
+--X|
+
+--:DONT_DISPLAY|
+--#hidecard|1
+--X|
+
+--/|=========================================================================================================
+--/| FUNCTION CODE BEGINS HERE
+--/|=========================================================================================================
+
+--:GET_CURRENT_TURN_INFO|TokenID, InitCounter, CustomName, Formula, page, name
+--?"X[$_toCount.Raw]" -eq "X"|>_to_PARSE_TURN_ORDER
+--?[$_toCount] -eq 0|_to_CLEAR_AND_RETURN
+-->_to_GET_TURN_INFO|[%1%];[%2%];[%3%];[%4%];[%5%];[%6%];"[&_to1(replaceall,;,!!!)]"
+--<|
+
+--:GET_NEXT_TURN_INFO|TokenID, InitCounter, CustomName, Formula, page, name
+--?"X[$_toCount.Raw]" -eq "X"|>_to_PARSE_TURN_ORDER
+--?[$_toCount] -lt 2|_to_CLEAR_AND_RETURN
+-->_to_GET_TURN_INFO|[%1%];[%2%];[%3%];[%4%];[%5%];[%6%];[&_to2(replaceall,;,!!!)]
+--<|
+
+--:GET_LAST_TURN_INFO|TokenID, InitCounter, CustomName, Formula, page, name
+--?"X[$_toCount.Raw]" -eq "X"|>_to_PARSE_TURN_ORDER
+--?[$_toCount] -lt 1|_to_CLEAR_AND_RETURN
+-->_to_GET_TURN_INFO|[%1%];[%2%];[%3%];[%4%];[%5%];[%6%];[&_to[$_toCount.Raw](replaceall,;,!!!)]
+--<|
+
+--:GET_NUMBERED_TURN_INFO|TurNumber, TokenID, InitCounter, CustomName, Formula, page, name
+--?"X[$_toCount.Raw]" -eq "X"|>_to_PARSE_TURN_ORDER
+--?[$_toCount] -lt [%7%]|_to_CLEAR_AND_RETURN
+-->_to_GET_TURN_INFO|[%1%];[%2%];[%3%];[%4%];[%5%];[%6%];[&_to[%7%](replaceall,;,!!!)]
+--<|
+
+--:_to_PARSE_TURN_ORDER|
+--&_to_temp|[*C:turnorder]
+--&_to_temp|[&_to_temp(replaceall,",)]
+--&_to_temp|[&_to_temp(replaceall,;,!!!)]
+--&_to_temp|[&_to_temp(1)] 
+--&_to_temp|[&_to_temp(0,[=[&_to_temp(length)]-1])]
+--?"X[&_to_temp]X" -eq "X[]X"|_to_CLEAR_AND_RETURN
+--~_to|string;split;},{;[&_to_temp]
+--<|
+
+--:_to_CLEAR_AND_RETURN|
+--&[%1%]| --&[%2%]| --&[%3%]| --&[%4%]| --&[%5%]| --&[%6%]| 
+--<|
+
+--:_to_GET_TURN_INFO|
+--&_work_turn|[%7%]
+--&_work_turn|[&_work_turn(replaceall,!!!,;)]
+--&_work_turn|[&_work_turn(replaceall,{,)] --&_work_turn|[&_work_turn(replaceall,},)] 
+--~_to_ThisTurn|string;split;,;[&_work_turn]
+--%_toLoop|1;[$_to_ThisTurnCount]
+  --?"[&_to_ThisTurn[&_toLoop](0,2)]" -eq "id"|&[%1%];[&_to_ThisTurn[&_toLoop](replace,id:,)]
+  --?"[&_to_ThisTurn[&_toLoop](0,2)]" -eq "pr"|&[%2%];[&_to_ThisTurn[&_toLoop](replace,pr:,)]
+  --?"[&_to_ThisTurn[&_toLoop](0,2)]" -eq "cu"|&[%3%];[&_to_ThisTurn[&_toLoop](replace,custom:,)]
+  --?"[&_to_ThisTurn[&_toLoop](0,2)]" -eq "fo"|&[%4%];[&_to_ThisTurn[&_toLoop](replace,formula:,)]
+  --?"[&_to_ThisTurn[&_toLoop](0,2)]" -eq "_p"|&[%5%];[&_to_ThisTurn[&_toLoop](replace,_pageid:,)]
+--%|
+--?[&[%1%]] -ne -1|&[%6%];[*[&[%1%]]:t-name]|&[%6%];[&[%3%]]
+--<|
+}}

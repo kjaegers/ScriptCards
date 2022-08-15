@@ -1,0 +1,102 @@
+!script {{
+  --/|Script Name : TurnOrderFunctions
+  --/|Version     : 1.0.0
+  --/|Requires SC : 2.1.7
+  --/|Author      : Kurt Jaegers
+
+  --/|IMPORTANT NOTE: THIS IS NOT A STANDALONE SCRIPT. This script provides a set of functionst that can be added to
+  --/|                your own scripts or to a ScriptCards library in order to aid in dealing with the Roll20 Turn Tracker.
+  
+  --/|Functions     : The following functions are meant to be called by your script. Note that anyhting starting with _to is
+  --/|                intended to be for internal use of the functions themselves and should not be used/relied upon outside the
+  --/|                context of the TurnOrderFunctions code.
+  --/|
+  --/|                GET_CURRENT_TURN_INFO   - Returns information for the current entry in the turn tracker
+  --/|                GET_NEXT_TURN_INFO      - Returns information for the next upcoming entry in the turn tracker
+  --/|                GET_LAST_TURN_INFO      - Returns information for the final entry in the turn tracker
+  --/|
+  --/|                  All of these functions accept 6 parameters, which are all the names of string variables that will be
+  --/|                  set after the analysis of the information for the given turn. The parameters are :
+  --/|                     Param 1 : Variable to set to the Token ID for the token representing the turn (if any)
+  --/|                     Param 2 : Variable to set to the initiative value for the turn (ie, the Initiative number)
+  --/|                     Param 3 : Variable to set to the Custom text for a turn that doesn't represent a token
+  --/|                     Param 4 : Variable to set to the per-round formula setting for the custom turn
+  --/|                     Param 5 : Variable to set to the Page ID where the turn resides
+  --/|                     Param 6 : Variable to set to the display name, which is the token name for turns that represent
+  --/|                               tokens, and the Custom text for custom (non-token) turn entries
+  --/|
+  --/|                GET_NUMBERED_TURN_INFO
+  --/|                  This function is identical to the three above, except it adds an additional parameter the is the
+  --/|                  number of the turn to examine (in sequence) from the top of the turn tracker list (starting at 1)
+  
+
+  --/|This section is just a sample of calling a function and displaying the returned results. Here we are getting the information
+  --/|for the current turn (GET_CURRENT_TURN_INFO) and storing the results in string variables named "TID" (for Token ID), "INIT" 
+  --/|(for the initiative value), "CUSTOM" (for the custom text), "FORMULA" (for the per-round formula), "PAGE" (for the page 
+  --/|ID the turn is on), and "name" for the value of either the  token name or the custom text.
+-->GET_CURRENT_TURN_INFO|TID;INIT;CUSTOM;FORMULA;PAGE;name
+--+TID|[&TID]
+--+INIT|[&INIT]
+--+CUSTOM|[&CUSTOM]
+--+FORMULA|[&FORMULA]
+--+PAGE|[&PAGE]
+--+name|[&name]
+--X|
+
+--/|=========================================================================================================
+--/| FUNCTION CODE BEGINS HERE
+--/|=========================================================================================================
+
+--:GET_CURRENT_TURN_INFO|TokenID, InitCounter, CustomName, Formula, page, name
+--?"X[$_toCount.Raw]" -eq "X"|>_to_PARSE_TURN_ORDER
+--?[$_toCount] -eq 0|_to_CLEAR_AND_RETURN
+-->_to_GET_TURN_INFO|[%1%];[%2%];[%3%];[%4%];[%5%];[%6%];"[&_to1(replaceall,;,!!!)]"
+--<|
+
+--:GET_NEXT_TURN_INFO|TokenID, InitCounter, CustomName, Formula, page, name
+--?"X[$_toCount.Raw]" -eq "X"|>_to_PARSE_TURN_ORDER
+--?[$_toCount] -lt 2|_to_CLEAR_AND_RETURN
+-->_to_GET_TURN_INFO|[%1%];[%2%];[%3%];[%4%];[%5%];[%6%];[&_to2(replaceall,;,!!!)]
+--<|
+
+--:GET_LAST_TURN_INFO|TokenID, InitCounter, CustomName, Formula, page, name
+--?"X[$_toCount.Raw]" -eq "X"|>_to_PARSE_TURN_ORDER
+--?[$_toCount] -lt 1|_to_CLEAR_AND_RETURN
+-->_to_GET_TURN_INFO|[%1%];[%2%];[%3%];[%4%];[%5%];[%6%];[&_to[$_toCount.Raw](replaceall,;,!!!)]
+--<|
+
+--:GET_NUMBERED_TURN_INFO|TurNumber, TokenID, InitCounter, CustomName, Formula, page, name
+--?"X[$_toCount.Raw]" -eq "X"|>_to_PARSE_TURN_ORDER
+--?[$_toCount] -lt [%7%]|_to_CLEAR_AND_RETURN
+-->_to_GET_TURN_INFO|[%1%];[%2%];[%3%];[%4%];[%5%];[%6%];[&_to[%7%](replaceall,;,!!!)]
+--<|
+
+--:_to_PARSE_TURN_ORDER|
+--&_to_temp|[*C:turnorder]
+--&_to_temp|[&_to_temp(replaceall,",)]
+--&_to_temp|[&_to_temp(replaceall,;,!!!)]
+--&_to_temp|[&_to_temp(1)] 
+--&_to_temp|[&_to_temp(0,[=[&_to_temp(length)]-1])]
+--?"X[&_to_temp]X" -eq "X[]X"|_to_CLEAR_AND_RETURN
+--~_to|string;split;},{;[&_to_temp]
+--<|
+
+--:_to_CLEAR_AND_RETURN|
+--&[%1%]| --&[%2%]| --&[%3%]| --&[%4%]| --&[%5%]| --&[%6%]| 
+--<|
+
+--:_to_GET_TURN_INFO|
+--&_work_turn|[%7%]
+--&_work_turn|[&_work_turn(replaceall,!!!,;)]
+--&_work_turn|[&_work_turn(replaceall,{,)] --&_work_turn|[&_work_turn(replaceall,},)] 
+--~_to_ThisTurn|string;split;,;[&_work_turn]
+--%_toLoop|1;[$_to_ThisTurnCount]
+  --?"[&_to_ThisTurn[&_toLoop](0,2)]" -eq "id"|&[%1%];[&_to_ThisTurn[&_toLoop](replace,id:,)]
+  --?"[&_to_ThisTurn[&_toLoop](0,2)]" -eq "pr"|&[%2%];[&_to_ThisTurn[&_toLoop](replace,pr:,)]
+  --?"[&_to_ThisTurn[&_toLoop](0,2)]" -eq "cu"|&[%3%];[&_to_ThisTurn[&_toLoop](replace,custom:,)]
+  --?"[&_to_ThisTurn[&_toLoop](0,2)]" -eq "fo"|&[%4%];[&_to_ThisTurn[&_toLoop](replace,formula:,)]
+  --?"[&_to_ThisTurn[&_toLoop](0,2)]" -eq "_p"|&[%5%];[&_to_ThisTurn[&_toLoop](replace,_pageid:,)]
+--%|
+--?[&[%1%]] -ne -1|&[%6%];[*[&[%1%]]:t-name]|&[%6%];[&[%3%]]
+--<|
+}}

@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.6";
+	const APIVERSION = "2.1.7";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1121,13 +1121,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													*/
 													break;
 												case "stringset":
-													if (varName && varValue) {
+													if (varName) {
+														if (varValue == null) { varValue = "" }
 														if (resultType == "stringset" && varValue.charAt(0) == "+") {
 															varValue = (stringVariables[varName] || "") + varValue.substring(1);
 														}
 														stringVariables[varName] = replaceVariableContent(varValue, cardParameters, true);
 													} else {
-														log(`ScriptCards Error: Variable name or value not specified in conditional on line ${lineCounter} (${thisTag})`);
+														log(`ScriptCards Error: Variable name or value not specified in conditional on line ${lineCounter} (${thisTag}) ${thisContent}`);
 													}
 													break;
 												case "next":
@@ -2364,13 +2365,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										*/
 										break;
 									case "stringset":
-										if (varName && varValue) {
+										if (varName) {
+											if (varValue == null) { varValue = "" }
 											if (resultType == "stringset" && varValue.charAt(0) == "+") {
 												varValue = (stringVariables[varName] || "") + varValue.substring(1);
 											}
 											stringVariables[varName] = replaceVariableContent(varValue, cardParameters, false);
 										} else {
-											log(`ScriptCards Error: Variable name or value not specified in conditional on line ${lineCounter} (${thisTag}, ${thisContent})`);
+											log(`ScriptCards Error: Variable name or value not specified in conditional on line ${lineCounter} (varName:${varName}, value:${varValue})`);
 										}
 										break;
 									case "next":

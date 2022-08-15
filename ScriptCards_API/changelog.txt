@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.7  - Bug fix for setting string values to empty strings as a result of a conditional/case statement.
+
 v 2.1.6  - Additional string variable referencing options are now available. Some options require multiple parmeters, in which case they are
            separated by commas (,). Most of the sequences are case sensitive, though some have "i" variants (icontains, for example) that operate
            in a non-case sensitive mode. NOTE: None of these options modify the value of the string variable - they simply return the result to
