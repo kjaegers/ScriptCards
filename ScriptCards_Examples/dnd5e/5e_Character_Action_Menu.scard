@@ -1,7 +1,7 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.0.12
-  --/|Requires SC : 2.0.2g+
+  --/|Version     : 2.1.0
+  --/|Requires SC : 2.1.7
   --/|Author      : Kurt Jaegers
 
   --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
@@ -103,15 +103,36 @@
   
   --/|If set to a non-zero value, this will be used as the name of the conditional marker to be set on the caster if the cast spell requires concentration
   --&ConcentrationMarkerName|snail
+  
+  --/|If set to a non-zero value, the script will attempt to resolve a character for a player that runs it without a selected token
+  --&DetectPlayersToken|1
 
   --/|End Settings Area
   --/|=========================================================================================================
 
+  
+  --/|Determine if a token is selected or if we need to (and can based on config) automatically find a token for this player.
+  --?"[@SC_SelectedTokens()]" -eq "undefined array" -and [&DetectPlayersToken] -ne 1|REPORT_NEED_SELECTED_TOKEN
+  --?"[@SC_SelectedTokens()]" -ne "undefined array" -and "X[@SC_SelectedTokens()]" -eq "X1"|BEGIN_WITH_SC_SELECTED_TOKENS
+  --?"[@SC_SelectedTokens()]" -gt 1|REPORT_MULTIPLE_SELECTED_TOKEN
+  --?[&DetectPlayersToken] -ne 1 -and "X[@SC_SelectedTokens()]" -ne "X1"|REPORT_NEED_SELECTED_TOKEN
+  --?[&DetectPlayersToken] -ne 1 -and "X[@SC_SelectedTokens()]" -eq "X1"|BEGIN_WITH_SC_SELECTED_TOKENS
+  --?[&SendingPlayerIsGM] -eq 1 -and "X[@SC_SelectedTokens()]" -ne "X1"|REPORT_NEED_SELECTED_TOKEN
+
+  -->GET_CONTROLLED_TOKENS_FROM_PAGETOKENS|saveTokenID
+  --?"X[&saveTokenID]" -eq "X"|REPORT_NO_TOKENS_ON_PAGE
+  --?"[&saveTokenID]" -inc ","|REPORT_MULTIPLE_POSSIBLE_TOKENS
+  --^SKIP_SELECTED_TOKENS|
+
+  --:BEGIN_WITH_SC_SELECTED_TOKENS|
+  --&saveTokenID|[@SC_SelectedTokens(0)]
+  --:SKIP_SELECTED_TOKENS|
+
   --/|Give the script a reentrant name based on the selected character id so we can have multiple instances at the same time
-  --#reentrant|CharacterAction @{selected|character_id}
-  --&saveTokenID|@{selected|token_id}
+  --#reentrant|CharacterAction [&saveTokenID]
   --&QB|? --&QB|+{ --&QE|}
   --&AB|@ --&AB|+{
+  --&TB|& --&TB|+# --&TB|+64 --&TB|+; --&TB|+{
   
   --/|Set up some style information for the action menu and subsequent cards. These attempt to somewhat
   --/|simulate the 5E style
@@ -138,7 +159,7 @@
   --#whisper|self
 
   --/|Store the selected character so we can use it later even if it gets de-selected
-  --#sourcetoken|@{selected|token_id}
+  --#sourcetoken|[&saveTokenID]
 
   --?[&UseNamedCharacterSettings] -eq 1|[
     --lsettings|[*S:character_name]
@@ -211,7 +232,7 @@
       --+[*R:name]|[*R:description]
       --^skip_ma_button|
       --:skip_multiattack|
-      --&NPCActions|+ [rbutton][*R:name]::EXEC_NPC_ACTION;[*R:name]|&#64;{target|token_id}[/rbutton] 
+      --&NPCActions|+ [rbutton][*R:name]::EXEC_NPC_ACTION;[*R:name]|[&TB]target|token_id}[/rbutton] 
       --:skip_ma_button|
       --Rnext|
       --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Action_Display
@@ -223,7 +244,7 @@
   --&NPCBonusActions|[br]
   --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
     --:NPC_Bonus_Action_Display|
-      --&NPCBonusActions|+ [rbutton][*R:name]::EXEC_NPC_BONUS_ACTION;[*R:name]|&#64;{target|token_id}[/rbutton] 
+      --&NPCBonusActions|+ [rbutton][*R:name]::EXEC_NPC_BONUS_ACTION;[*R:name]|[&TB]target|token_id}[/rbutton] 
       --Rnext|
       --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Bonus_Action_Display
     --+Bonus Actions|[&NPCBonusActions]
@@ -234,7 +255,7 @@
   --&NPCReactions|[br]
   --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
     --:NPC_Reaction_Display|
-      --&NPCReactions|+ [rbutton][*R:name]::EXEC_NPC_REACTION;[*R:name]|&#64;{target|token_id}[/rbutton] 
+      --&NPCReactions|+ [rbutton][*R:name]::EXEC_NPC_REACTION;[*R:name]|[&TB]target|token_id}[/rbutton] 
       --Rnext|
       --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Reaction_Display
     --+Reactions|[&NPCReactions]
@@ -245,7 +266,7 @@
   --&NPCLegendaryActions|[br]
   --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
     --:NPC_Legendary_Action_Display|
-      --&NPCLegendaryActions|+ [rbutton][*R:name]::EXEC_NPC_LEGENDARY_ACTION;[*R:name]|&#64;{target|token_id}[/rbutton] 
+      --&NPCLegendaryActions|+ [rbutton][*R:name]::EXEC_NPC_LEGENDARY_ACTION;[*R:name]|[&TB]target|token_id}[/rbutton] 
       --Rnext|
       --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Legendary_Action_Display
       --+Legendary Actions|[&NPCLegendaryActions]
@@ -263,7 +284,7 @@
       --&PCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|NONE[/rbutton]
       --^NPC_CANTRIP_END_GENERATE|
       --:NPC_CANTRIP_GENERATE_WITH_TARGET|
-      --&NPCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|&#64;{target|token_id}[/rbutton] 
+      --&NPCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|[&TB]target|token_id}[/rbutton] 
       --^NPC_CANTRIP_END_GENERATE|
       --:MULE_NPC_CANTRIP|
       --&PCCantrips|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
@@ -298,7 +319,7 @@
       --:NPC_SKIP_SLOT_LIST|
       --&slotString||9
       --:NPC_DONE_SLOT_LIST|
-      --&NPCSpells|+ [rbutton][*R:spellname]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|&#64;{target|token_id}[&slotString][/rbutton] 
+      --&NPCSpells|+ [rbutton][*R:spellname]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|[&TB]target|token_id}[&slotString][/rbutton] 
       --^NPC_DONE_SPELL_BUTTON|
       --:MULE_NPC_SPELL|
       --&NPCSpells|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
@@ -510,7 +531,7 @@
   --?"[*R:atkname]" -ne "NoRepeatingAttributeLoaded"|[
     --:PCAttacks_Display|
       --?"X[*R:spelldesc_link]" -ne "X"|SKIP_SPELL_ATTACK
-      --&PCAttacks|+ [rbutton][*R:atkname]::EXEC_PC_ATTACK;[*R:atkname]|&#64;{target|token_id}[/rbutton] 
+      --&PCAttacks|+ [rbutton][*R:atkname]::EXEC_PC_ATTACK;[*R:atkname]|[&TB]target|token_id}[/rbutton] 
       --:SKIP_SPELL_ATTACK|
       --Rnext|
       --?"[*R:atkname]" -ne "NoRepeatingAttributeLoaded"|PCAttacks_Display
@@ -529,7 +550,7 @@
       --&PCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|NONE[/rbutton]
       --^CANTRIP_END_GENERATE|
       --:CANTRIP_GENERATE_WITH_TARGET|
-      --&PCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|&#64;{target|token_id}[/rbutton] 
+      --&PCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|[&TB]target|token_id}[/rbutton] 
       --^CANTRIP_END_GENERATE|
       --:MULE_CANTRIP|
       --&PCCantrips|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
@@ -611,7 +632,7 @@
       --~testMule|system;findability;[&spellmulename];[&testName]
       --?[&testMule] -ne "AbilityNotFound"|MULE_SPELL
 
-      --&PCSpells|+ [rbutton][*R:spellname][&spellsuffix]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|&#64;{target|token_id}[&slotString][/rbutton]
+      --&PCSpells|+ [rbutton][*R:spellname][&spellsuffix]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|[&TB]target|token_id}[&slotString][/rbutton]
       --=PCSpellCount|[$PCSpellCount.Raw] + 1 
       --^DONE_SPELL_BUTTON|
       --:MULE_SPELL|
@@ -1262,7 +1283,7 @@
   --X|
 
   --:_setGlobalMod|name;value
-  --!a:@{selected|character_id}|[%1%]:[%2%]  
+  --!a:[&saveTokenID][%1%]:[%2%]  
   --<|
 
   --:_TOGGLE_ERROR|Bad name
@@ -1412,5 +1433,35 @@
   --!t:[%1%]|statusmarkers: [&newConditions]
   --:DONE_REMOVE_STATUS_MARKER|
   --<|  
+
+  --:GET_CONTROLLED_TOKENS_FROM_PAGETOKENS|
+  --~|array;pagetokens;_FCT_Tokens;[*C:playerpageid];pc
+  --%_loop|0;[@_FCT_Tokens(maxindex)]
+    --&_FCT_TID|[@_FCT_Tokens([&_loop])]
+    --&_FCT_CHAR|[*[&_FCT_TID]:t-represents]
+    --?"X[*O:[&_FCT_CHAR]:character:controlledby]" -ninc [&SendingPlayerID]|%
+    --?"X[&[%1%]]" -eq "X"|&[%1%];+[&_FCT_TID]|&[%1%];+,[&_FCT_TID]]
+  --%|
+  --<|
+
+  --:REPORT_NEED_SELECTED_TOKEN|
+  --#whisper|self
+  --+No Token Selected|You need to have a single token selected in order to use the 5E Character Action Menu.
+  --X|
+
+  --:REPORT_MULTIPLE_SELECTED_TOKEN|
+  --#whisper|self
+  --+Multiple Tokens Selected|You need to have a single token selected in order to use the 5E Character Action Menu.
+  --X|
+
+  --:REPORT_NO_TOKENS_ON_PAGE|
+  --#whisper|self
+  --+No Controlled Tokens|You do not appear to have any tokens on this page under your control.
+  --X|
+
+  --:REPORT_MULTIPLE_POSSIBLE_TOKENS|
+  --#whisper|self
+  --+Multiple Tokens|You appear to have more than one controlled token on this page. You will need to select a token manually to use the 5E Character Action Menu
+  --X|
 
 }}
