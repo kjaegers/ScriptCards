@@ -1,0 +1,80 @@
+!script {{
+  --/|Script Name : StatusMarkerFunctions
+  --/|Version     : 1.0.0
+  --/|Requires SC : 2.1.7
+  --/|Author      : Kurt Jaegers
+
+  --/|IMPORTANT NOTE: THIS IS NOT A STANDALONE SCRIPT. This script provides a set of functionst that can be added to
+  --/|                your own scripts or to a ScriptCards library in order to aid in dealing with the Roll20 Status Markers.
+  
+  --/|Functions     : The following functions are meant to be called by your script.
+  --/|
+  --/|                CHECK_STATUS_MARKER - TokenID;MarkerToFind;ExistsVariable;CountVariable
+  --/|                     Will check the given token (TokenID) for the status marker (MarkerToFind) and set two return
+  --/|                     string variables: (ExistsVariable) will be 1 if the token has the marker, and (CountVariable)
+  --/|                     will contain the counter number on the marker (default 0 for no number)
+  --/||
+  --/|                REMOVE_STATUS_MARKER - TokenID;MarkerToRemove
+  --/|                     Will remove any variation of (MarkerToRemove from the given token (TokenID)
+  --/|
+  --/|                Add_STATUS_MARKER - TokenID;MarkerToAdd;Count
+  --/|                     Will add (MarkerToAdd) to the given token (TokenID). If count is specified with a number
+  --/|                     betweeen 1 and 9, the number will be placed on top of the status marker.
+  --/|
+  
+  --/|This section is just a sample of calling a function and displaying the returned results. Here we are getting the information
+  --/|for the current turn (GET_CURRENT_TURN_INFO) and storing the results in string variables named "TID" (for Token ID), "INIT" 
+  --/|(for the initiative value), "CUSTOM" (for the custom text), "FORMULA" (for the per-round formula), "PAGE" (for the page 
+  --/|ID the turn is on), and "name" for the value of either the  token name or the custom text.    
+
+  -->ADD_STATUS_MARKER|@{selected|token_id};snail;3
+
+  --X|
+
+  --:ADD_STATUS_MARKER|Token_ID;Status Marker;Count
+  -->REMOVE_STATUS_MARKER|[%1%];[%2%]
+  --~|array;statusmarkers;Conditions;[%1%]
+  --&toAdd|[%2%]
+  --?"X[%3%]" -ne "X" -and "X[%3%]" -ne "X0"|&toAdd;[%2%]@[%3%]
+  --~|array;add;Conditions;[&toAdd]
+  --~newConditions|array;stringify;Conditions
+  --#parameterdelimiter|$
+  --~newConditions|string$replaceall$;$,$[&newConditions]
+  --#parameterdelimiter|;
+  --!t:[%1%]|statusmarkers:[&newConditions]
+  --:DONE_ADD_STATUS_MARKER|
+  --<|
+
+  --:REMOVE_STATUS_MARKER|Token_ID;Status Marker
+  -->CHECK_STATUS_MARKER|[%1%];[%2%];MarkerExists;MarkerCounter  
+  --?[&MarkerExists] -eq 0|<
+  --~|array;statusmarkers;Conditions;[%1%]
+  --?[&MarkerCounter] -eq 0|&toCheckFor;[%2%]|&toCheckFor;[%2%]@[&MarkerCounter]
+  --~hasCondition|array;indexof;Conditions;[&toCheckFor]
+  --?[&hasCondition] -eq "ArrayError"|DONE_REMOVE_STATUS_MARKER
+  --~|array;remove;Conditions;[&toCheckFor]
+  --~newConditions|array;stringify;Conditions
+  --#parameterdelimiter|$
+  --~newConditions|string$replaceall$;$,$[&newConditions]
+  --#parameterdelimiter|;
+  --!t:[%1%]|statusmarkers: [&newConditions]
+  --:DONE_REMOVE_STATUS_MARKER|
+  --<|  
+  
+  --:CHECK_STATUS_MARKER|TokenID;MarkerToFind;Exists;Counter
+  --~|array;statusmarkers;Conditions;[%1%]
+  --&FoundMarker|-1
+  --%loop|0;[@Conditions(maxindex)]
+    --&Temp|[@Conditions([&loop])]
+	--?[&Temp(indexof,[%2%])] -eq 0|&FoundMarker;[&loop]
+  --%|
+  --?[&FoundMarker] -ne -1|FOUND_STATUS_MARKER
+  --&[%3%]|0 --&[%4%]|0 --<|
+  --:FOUND_STATUS_MARKER|
+  --&[%3%]|1
+  --&[%4%]|0
+  --&ThisMarker|[@Conditions([&FoundMarker])]
+  --?[&ThisMarker(contains,@)] -eq 0|<
+  --~[%4%]|string;after;@;[@Conditions([&FoundMarker])]
+  --<|
+ }}
