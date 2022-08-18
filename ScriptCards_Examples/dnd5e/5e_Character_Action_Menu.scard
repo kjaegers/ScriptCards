@@ -1269,11 +1269,9 @@
   --X|
 
   --:TOGGLE_GDM|GDM Name
-  --#debug|1
   --Rfind|[*S:character_id];[&reentryval];repeating_damagemod;global_damage_name
   --?"[*R:global_damage_name]" -eq "NoRepeatingAttributeLoaded"|_TOGGLE_ERROR
   --?"[*R:global_damage_active_flag]" -eq "1"|>_setGlobalMod;[*R>global_damage_active_flag];0|>_setGlobalMod;[*R>global_damage_active_flag];1
-  --#debug|0
   --^proc_pc|
   --X|
 
