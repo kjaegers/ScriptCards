@@ -2,11 +2,11 @@ Change Log for items in the ScriptExamples/dnd5e Folder:
 
 2022-08-18 - 5E Character Action Menu 2.1.2
              - Added support for Short/Long rests as buttons in the subtitle area of the action menu. A long rest is more or less a single click, while
-               a short rest will bring up a new menu allowing the player to spend hit dice. Warlock packt spells are reovered on a short rest, while a 
+               a short rest will bring up a new menu allowing the player to spend hit dice. Warlock packt spells are recovered on a short rest, while a 
                long rest will recover all HP and spell slots. Can be disabled by changing &ShowRestButtons to 0 in the settings area.
              - Removed the default "snail" marker for concentration since it was only there for testing :) You can set a marker in the settings area
                to be applied to tokens when they cast a concentration spell.
-             - Incorporated the newly writted status marker support functions to make dealing with status markers more reliable. The only interaction
+             - Incorporated the newly written status marker support functions to make dealing with status markers more reliable. The only interaction
                with them (for now) is setting a concentration marker.
 
 2022-08-18 - 5E Character Action Menu 2.1.1
