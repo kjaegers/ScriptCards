@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.1.0
+  --/|Version     : 2.1.1
   --/|Requires SC : 2.1.7
   --/|Author      : Kurt Jaegers
 
@@ -67,7 +67,7 @@
   --/|needs to be enabled, and a resource named to match the Ammo (case sensitive) needs to exist on the sheet to track ammo.
   --&requireAmmo|1
 
-  --/|If set to 1, global attack modifiers/damage will be listed a buttons that can be clicked to toggle them on and off. NOTE: due to
+  --/|If set to 1, global attack modifiers/damage will be listed as buttons that can be clicked to toggle them on and off. NOTE: due to
   --/|roll20's strangeness in handling some attributes, if a global modifier has never been turned on from the character sheet, the
   --/|buttons here may not be able to set the active state. Opening the character sheet and toggling the modifier on and  back off will
   --/|fix it permanently for that modifier.
@@ -101,7 +101,7 @@
   --/|If set to 1, damage immunity, vulnerability, and resistance will be included in damage rolls
   --&UseResistances|1
   
-  --/|If set to a non-zero value, this will be used as the name of the conditional marker to be set on the caster if the cast spell requires concentration
+  --/|If set to a non-blank value, this will be used as the name of the conditional marker to be set on the caster if the cast spell requires concentration
   --&ConcentrationMarkerName|snail
   
   --/|If set to a non-zero value, the script will attempt to resolve a character for a player that runs it without a selected token
@@ -1269,9 +1269,11 @@
   --X|
 
   --:TOGGLE_GDM|GDM Name
+  --#debug|1
   --Rfind|[*S:character_id];[&reentryval];repeating_damagemod;global_damage_name
   --?"[*R:global_damage_name]" -eq "NoRepeatingAttributeLoaded"|_TOGGLE_ERROR
   --?"[*R:global_damage_active_flag]" -eq "1"|>_setGlobalMod;[*R>global_damage_active_flag];0|>_setGlobalMod;[*R>global_damage_active_flag];1
+  --#debug|0
   --^proc_pc|
   --X|
 
@@ -1283,7 +1285,7 @@
   --X|
 
   --:_setGlobalMod|name;value
-  --!a:[&saveTokenID][%1%]:[%2%]  
+  --!a:[&saveTokenID]|[%1%]:[%2%]  
   --<|
 
   --:_TOGGLE_ERROR|Bad name

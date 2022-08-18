@@ -1,5 +1,8 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-08-18 - 5E Character Action Menu 2.1.1
+             - Fix for a bug introduced in 2.1.0 that broke toggling gloal modifier states on/off
+
 2022-08-17 - 5E Character Action Menu 2.1.0
              - New option : DetectPlayersToken. If set to 1, the players will not need to select a token manually as long as they control a single
                token on the current Player Page (ribbon page) when executing the Action Menu macro
