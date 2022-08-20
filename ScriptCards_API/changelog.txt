@@ -1,5 +1,17 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.7a - Conditional (--?) and Case (--C) statements now support additional actions for their results. If the first character of a given result
+           is a +, a line of output will be generated with the "tag" (bolded) portion of the line separated from the "content" portion by a 
+           semicolon. If the first character is a *, a GM-Only output line will be generated following the same format.
+           
+           Example:
+           !script {{
+             --=Roll|1d4
+             --+Roll|[$Roll]
+             --?[$Roll] -eq 1|*Roll;Was a FUMBLE!|*Roll;Was greater than 1
+             --C[$Roll]|1:+Roll;Was a 1!|2:+Roll;Was a 2!|3:+Roll;Was a 3!|4:+Roll;Was a 4!
+           }}
+
 v 2.1.7  - Bug fix for setting string values to empty strings as a result of a conditional/case statement.
 
 v 2.1.6  - Additional string variable referencing options are now available. Some options require multiple parmeters, in which case they are
