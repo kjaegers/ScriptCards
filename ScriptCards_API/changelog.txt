@@ -1,9 +1,12 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.7b - Using object modifiction to set barX_link is now possible, as ScriptCards will locate the attribute ID of the specified attribute on the
+           character the token represents and set the link property.
+
 v 2.1.7a - Conditional (--?) and Case (--C) statements now support additional actions for their results. If the first character of a given result
            is a +, a line of output will be generated with the "tag" (bolded) portion of the line separated from the "content" portion by a 
            semicolon. If the first character is a *, a GM-Only output line will be generated following the same format.
-           
+
            Example:
            !script {{
              --=Roll|1d4
