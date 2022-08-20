@@ -356,6 +356,7 @@
   --~action_target|string;after;|;[&reentryval]
   --#targettoken|[&action_target]
   --#leftsub|[*S:character_name]
+  --#rightsub|
   --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]
   --Rfind|[*S:character_id];[&action_name];repeating_npcaction;name
   --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
@@ -433,6 +434,7 @@
   --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]
   --Rfind|[*S:character_id];[&action_name];repeating_npcbonusaction;name
   --#leftsub|[*R:name]
+  --#rightsub|
   --?"[*R:attack_flag]" -eq on|NPCA_MAKE_AN_ATTACK
   --^NPCA_NOT_ATTACK|
   --X|
@@ -450,6 +452,7 @@
   --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]
   --Rfind|[*S:character_id];[&action_name];repeating_npcreaction;name
   --#leftsub|[*R:name]
+  --#rightsub|
   --?"[*R:attack_flag]" -eq on|NPCA_MAKE_AN_ATTACK
   --^NPCA_NOT_ATTACK|
   --X|
@@ -467,6 +470,7 @@
   --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]  
   --Rfind|[*S:character_id];[&action_name];repeating_npcaction-l;name
   --#leftsub|[*R:name]
+  --#righsub|
   --?"[*R:attack_flag]" -eq on|NPCA_MAKE_AN_ATTACK
   --^NPCA_NOT_ATTACK|
   --X|  
@@ -682,6 +686,7 @@
   --/Rdump|
   --#title|[*R:atkname]
   --#leftsub|[*S:character_name]
+  --#rightsub|
   --&attack_crit|0
   --&rollType|1d20
   --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
@@ -860,6 +865,7 @@
   --:PC_CARD_CANTRIP|
   --#title|[&cantrip_name]
   --#leftsub|[*S:character_name]
+  --#rightsub|
   --+|[*R:spelldescription]
   --:PC_DONE_CANTRIP|
   --X|
@@ -886,6 +892,7 @@
   --&action_target|[&spellInfo3]
   --#title|[&spellInfo2]
   --#leftsub|[*S:character_name]
+  --#rightsub|
   --#whisper|
   --#emotestate|visible
   --#targettoken|[&action_target]
@@ -1011,6 +1018,7 @@
   --=SavingThrow|[&rollEquation] + [*S:[&saveType]] [ [&saveInfo1]] [&GSM_VALUES]
   --#title|[&saveInfo1] Save
   --#leftsub|[*S:character_name]
+  --#rightsub|
   --+Result|[$SavingThrow]
   --X|
 
@@ -1032,6 +1040,7 @@
   --=SkillCheck|[&rollEquation] + [*S:[&skillType]] [ [&skillInfo1]]
   --#title|[&skillDisplayName] Check
   --#leftsub|[*S:character_name]
+  --#rightsub|
   --+Result|[$SkillCheck]
   --X|
 
