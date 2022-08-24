@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.7c";
+	const APIVERSION = "2.1.8";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -649,10 +649,43 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (loopCounter && loopCounter !== "!") {
 								if (loopControl[loopCounter]) { log(`ScriptCards: Warning - loop counter ${loopCounter} reused inside itself on line ${lineCounter}.`); }
 								var params = thisContent.split(cardParameters.parameterdelimiter);
-								if (params.length === 2) { params.push("1"); } // Add a "1" as the assumed step value if only two parameters
+								if (params.length === 2 && params[0].toLowerCase().endsWith("each")) {
+									// This will be a for-each loop, so the first (and only) parameter must be an array name
+									if (arrayVariables[params[1]] && arrayVariables[params[1]].length > 0) {
+										loopControl[loopCounter] = { loopType: "foreach", initial: 0, current: 0, end: arrayVariables[params[1]].length - 1, step: 1, nextIndex: lineCounter, arrayName: params[1] }
+										stringVariables[loopCounter] = arrayVariables[params[1]][0];
+										loopStack.push(loopCounter);
+										if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
+									} else {
+										log(`ScriptCards For...Each loop without a defined array or with empty array on line ${lineCounter}`)
+									}
+								}
+								if (params.length === 2 && (params[0].toLowerCase().endsWith("while") || params[0].toLowerCase().endsWith("until") )) {
+									var originalContent = getLineContent(cardLines[lineCounter]);
+									var contentParts = originalContent.split(cardParameters.parameterdelimiter);
+									var isTrue = processFullConditional(replaceVariableContent(contentParts[1], cardParameters)) ||  params[0].toLowerCase().endsWith("until");
+									if (isTrue) {
+										loopControl[loopCounter] = { loopType: params[0].toLowerCase().endsWith("until") ? "until" : "while", initial: 0, current: 0, end: 999999, step: 1, nextIndex: lineCounter, condition: contentParts[1] }
+										stringVariables[loopCounter] = "true";
+										loopStack.push(loopCounter);
+										if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
+									} else {
+										var line = lineCounter;
+										for (line = lineCounter + 1; line < cardLines.length; line++) {
+											if (getLineTag(cardLines[line], line, "").trim() == "%") {
+												lineCounter = line;
+											}
+										}
+										if (lineCounter > cardLines.length) {
+											log(`ScriptCards: Warning - no end block marker found for loop block started ${loopCounter}`);
+											lineCounter = cardLines.length + 1;
+										}
+									}
+								}
+								if (params.length === 2 && (!params[0].toLowerCase().endsWith("each")) && (!params[0].toLowerCase().endsWith("until")) && (!params[0].toLowerCase().endsWith("while"))) { params.push("1"); } // Add a "1" as the assumed step value if only two parameters
 								if (params.length === 3) {
 									if (isNumeric(params[0]) && isNumeric(params[1]) && isNumeric(params[2]) && parseInt(params[2]) != 0) {
-										loopControl[loopCounter] = { initial: parseInt(params[0]), current: parseInt(params[0]), end: parseInt(params[1]), step: parseInt(params[2]), nextIndex: lineCounter }
+										loopControl[loopCounter] = { loopType: "fornext", initial: parseInt(params[0]), current: parseInt(params[0]), end: parseInt(params[1]), step: parseInt(params[2]), nextIndex: lineCounter }
 										stringVariables[loopCounter] = params[0];
 										loopStack.push(loopCounter);
 										if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
@@ -669,7 +702,31 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									var currentLoop = loopStack[loopStack.length - 1];
 									if (loopControl[currentLoop]) {
 										loopControl[currentLoop].current += loopControl[currentLoop].step;
-										stringVariables[currentLoop] = loopControl[currentLoop].current.toString();
+										switch (loopControl[currentLoop].loopType) {
+											case "fornext":
+												stringVariables[currentLoop] = loopControl[currentLoop].current.toString();
+												break;
+											case "foreach":
+												try {
+													stringVariables[currentLoop] = arrayVariables[loopControl[currentLoop].arrayName][loopControl[currentLoop].current]
+												} catch {
+													stringVariables[currentLoop] = "ArrayError"
+												}
+												break;
+											case "while":
+												var isTrue = processFullConditional(replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
+												if (!isTrue) {
+													loopCounter = "!"
+												}
+												break;
+											case "until":
+												var isTrue = processFullConditional(replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
+												if (isTrue) {
+													loopCounter = "!"
+												}
+												break;
+												
+										}
 										if ((loopControl[currentLoop].step > 0 && loopControl[currentLoop].current > loopControl[currentLoop].end) ||
 											(loopControl[currentLoop].step < 0 && loopControl[currentLoop].current < loopControl[currentLoop].end) ||
 											loopCounter == "!") {
@@ -822,16 +879,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													if (settingName.toLowerCase() == "bar1_link" ||
 														settingName.toLowerCase() == "bar2_link" ||
 														settingName.toLowerCase() == "bar3_link") {
-															var theChar = getObj("character", theToken.get("represents"));
-															if (theChar != null) {
-																try {
-																	var theAttribute = findObjs({_type:"attribute", _characterid: theChar.get("_id"), name: settingValue})[0];
-																} catch { log("Error setting bar link. Attribute not found.") }
-																if (theAttribute != null) {
-																	settingValue = theAttribute.get("_id");
-																}
+														var theChar = getObj("character", theToken.get("represents"));
+														if (theChar != null) {
+															try {
+																var theAttribute = findObjs({ _type: "attribute", _characterid: theChar.get("_id"), name: settingValue })[0];
+															} catch { log("Error setting bar link. Attribute not found.") }
+															if (theAttribute != null) {
+																settingValue = theAttribute.get("_id");
 															}
 														}
+													}
 
 													if (settingName.toLowerCase() == "currentside") {
 														if (settingValue) {
@@ -963,10 +1020,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 															}
 															theAttribute.set(setType, settingValue);
 															if (setType == "current") {
-																theAttribute.setWithWorker({current: settingValue});
+																theAttribute.setWithWorker({ current: settingValue });
 															}
 															if (setType == "max") {
-																theAttribute.setWithWorker({max: settingValue});
+																theAttribute.setWithWorker({ max: settingValue });
 															}
 														} else {
 															if (createAttribute) {
@@ -1069,6 +1126,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						if (thisTag.charAt(0).toLowerCase() === "c") {
 							var testvalue = thisTag.substring(1);
 							var cases = thisContent.split("|");
+							var blockSkip = false;
+							var blockChar = "";
 							if (cases) {
 								for (var x = 0; x < cases.length; x++) {
 									var testcase = cases[x].split(":")[0];
@@ -1152,18 +1211,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													break;
 												case "rollset":
 													rollVariables[varName] = parseDiceRoll(replaceVariableContent(varValue, cardParameters), cardParameters, true);
-													/*
-													if (varName.indexOf('.') == -1) {
-														rollVariables[varName] = parseDiceRoll(replaceVariableContent(thisContent, cardParameters), cardParameters, true);
-													} else {
-														var parts = varName.split(".");
-														if (parts[0] && rollVariables[parts[0]]) {
-															if (parts[1] && rollVariables[parts[0]][parts[1]]) {
-																rollVariables[parts[0]][parts[1]] = replaceVariableContent(thisContent, cardParameters);
-															}
-														}
-													}
-													*/
 													break;
 												case "stringset":
 													if (varName) {
@@ -1179,26 +1226,55 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												case "next":
 													if (loopStack.length >= 1) {
 														var currentLoop = loopStack[loopStack.length - 1];
+														var breakLoop = false;
 														if (loopControl[currentLoop]) {
 															loopControl[currentLoop].current += loopControl[currentLoop].step;
-															stringVariables[currentLoop] = loopControl[currentLoop].current.toString();
+															switch (loopControl[currentLoop].loopType) {
+																case "fornext":
+																	stringVariables[currentLoop] = loopControl[currentLoop].current.toString();
+																	break;
+																case "foreach":
+																	try {
+																		stringVariables[currentLoop] = arrayVariables[loopControl[currentLoop].arrayName][loopControl[currentLoop].current]
+																	} catch {
+																		stringVariables[currentLoop] = "ArrayError"
+																	}
+																	break;
+																case "while":
+																case "until":
+																	breakLoop = true;
+																	break;
+															}
 															if ((loopControl[currentLoop].step > 0 && loopControl[currentLoop].current > loopControl[currentLoop].end) ||
 																(loopControl[currentLoop].step < 0 && loopControl[currentLoop].current < loopControl[currentLoop].end) ||
-																jumpDest.charAt(1) == "!") {
+																jumpDest.charAt(1) == "!" ||  breakLoop) {
 																loopStack.pop();
 																delete loopControl[currentLoop];
+																blockSkip = true;
+																blockChar = "%";
 															} else {
 																lineCounter = loopControl[currentLoop].nextIndex;
 															}
 														}
-													} else {
-														log(`ScriptCards: Error - Loop end statement without and active loop on line ${lineCounter}`);
 													}
 													break;
 											}
 											x = cases.length + 1;
 										}
 									}
+								}
+							}
+							if (blockSkip) {
+								var line = lineCounter;
+								for (line = lineCounter + 1; line < cardLines.length; line++) {
+									if (getLineTag(cardLines[line], line, "").trim() == blockChar) {
+										lineCounter = line;
+										break;
+									}
+								}
+								if (lineCounter > cardLines.length) {
+									log(`ScriptCards: Warning - no end block marker found for block started reference on line ${lineCounter}`);
+									lineCounter = cardLines.length + 1;
 								}
 							}
 						}
@@ -2421,18 +2497,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										break;
 									case "rollset":
 										rollVariables[varName] = parseDiceRoll(replaceVariableContent(varValue, cardParameters, false), cardParameters);
-										/*
-										if (varName.indexOf('.') == -1) {
-											rollVariables[varName] = parseDiceRoll(replaceVariableContent(thisContent, cardParameters), cardParameters, true);
-										} else {
-											var parts = varName.split(".");
-											if (parts[0] && rollVariables[parts[0]]) {
-												if (parts[1] && rollVariables[parts[0]][parts[1]]) {
-													rollVariables[parts[0]][parts[1]] = replaceVariableContent(thisContent, cardParameters);
-												}
-											}
-										}
-										*/
 										break;
 									case "stringset":
 										if (varName) {
@@ -2448,12 +2512,28 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									case "next":
 										if (loopStack.length >= 1) {
 											var currentLoop = loopStack[loopStack.length - 1];
+											var breakLoop = false;
 											if (loopControl[currentLoop]) {
 												loopControl[currentLoop].current += loopControl[currentLoop].step;
-												stringVariables[currentLoop] = loopControl[currentLoop].current.toString();
+												switch (loopControl[currentLoop].loopType) {
+													case "fornext":
+														stringVariables[currentLoop] = loopControl[currentLoop].current.toString();
+														break;
+													case "foreach":
+														try {
+															stringVariables[currentLoop] = arrayVariables[loopControl[currentLoop].arrayName][loopControl[currentLoop].current]
+														} catch {
+															stringVariables[currentLoop] = "ArrayError"
+														}
+														break;
+													case "while":
+													case "until":
+														breakLoop = true;
+														break;
+												}
 												if ((loopControl[currentLoop].step > 0 && loopControl[currentLoop].current > loopControl[currentLoop].end) ||
 													(loopControl[currentLoop].step < 0 && loopControl[currentLoop].current < loopControl[currentLoop].end) ||
-													jumpDest.charAt(1) == "!") {
+													jumpDest.charAt(1) == "!" || breakLoop) {
 													loopStack.pop();
 													delete loopControl[currentLoop];
 													blockSkip = true;
@@ -2462,8 +2542,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													lineCounter = loopControl[currentLoop].nextIndex;
 												}
 											}
-										} else {
-											log(`ScriptCards: Error - Loop end statement without and active loop on line ${lineCounter}`);
 										}
 										break;
 									case "block":

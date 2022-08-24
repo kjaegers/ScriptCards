@@ -1,5 +1,58 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.8  - New looping structures: For...Each, While, and Until. 
+
+           A For...Each loop takes an array a parameter (following the "foreach" identifier) and will iterate over each item in the array. Each 
+           time through the loop, the loop control variable will be set to the current item in the array. For the 5E character sheet, the following 
+           code would display a list of all of the defined Attacks for a PC:
+
+           !script {{
+             --~|array;fromrepeatingsection;Attacks;@{selected|character_id};repeating_attack;atkname
+             --%loop|foreach;Attacks
+                --+Attack|[&loop]
+             --%|
+           }}
+
+           Conditional and case statements can use the % and %! branch indicators to continue to the next iteration (%) or exit the loop (%!) as normal.
+
+           ----
+
+           While loops and Until loops function very similarly to each other, and accept a condition after the "while" or "until" keywords. In
+           a While loop, the condition is checked before the loop initiates, so it is possible that the loop will not run at all if the condition
+           is not true when the loop starts. An Until loop will always run at least once, with the condition being checked at the end. If the
+           condition is true as the end of an iteration, the loop will end.
+
+           Both of these loops will generate and display a number that grows until it has 12 digits. 
+
+           !script {{
+             --=Iteration|0
+             --&MyString|[=1d10 - 1]
+             --%loop|while;[&MyString(length)] -lt 12
+                --=Iteration|[$Iteration] + 1 
+                --+Iteration [$Iteration.Raw]|[&MyString]
+                --&MyString|[&MyString][=1d10 - 1]
+             --%|
+             --+Final|[&MyString], [&MyString(length)]
+           }}
+
+           !script {{
+             --=Iteration|0
+             --&MyString|[=1d10 - 1]
+             --%loop|until;[&MyString(length)] -ge 12
+                --=Iteration|[$Iteration] + 1 
+                --+Iteration [$Iteration.Raw]|[&MyString]
+                --&MyString|[&MyString][=1d10 - 1]
+             --%|
+             --+Final|[&MyString], [&MyString(length)]
+           }}
+
+           However, if the initial value of &MyString was, for example, "0123456789012" (13 digits) the while loop would not run at all because 
+           the condition is not true when the loop begins. The until loop would run at least once, resulting in a 14 digit number. Note that a
+           poorly formed while/until condition can result in an infinite loop, which will cause ScriptCards to reach its statement execution limit
+           and abort processing to prevent a sandbox crash. You will get a console log message to that effect if this happens.
+
+           For while and until loops, the % and %! branch indicators in conditional and case statements both exit the loop completely.
+
 v 2.1.7c - When setting attribute values with --!a, the setting will be made normally (with obj.set) and then again with obj.setWithWorker. Note 
            that while this allows sheetworkers to run on the changed value, this happens asynchronously, hence the normal set prior to the worker.
 
