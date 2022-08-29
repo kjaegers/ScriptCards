@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.1.3
+  --/|Version     : 2.1.4
   --/|Requires SC : 2.1.7
   --/|Author      : Kurt Jaegers
 
@@ -509,6 +509,7 @@
     -->Create_Global_Damage_Modifier_Buttons|[*S:character_id];gdmbuttons
     -->Create_Global_Save_Modifier_Buttons|[*S:character_id];gsmbuttons
     -->Create_Global_AC_Modifier_Buttons|[*S:character_id];gacmbuttons
+    -->Create_Global_Skill_Modifier_Buttons|[*S:character_id];gskmbuttons
     --#buttonpadding|[&smallButtonPadding]
     --&GDEnd|
     --?[&compactGlobalModDisplay] -eq 0|&GDEnd;[/c]
@@ -517,7 +518,7 @@
     --?[&compactGlobalModDisplay] -eq 1|&GAMDisplay;[b]Atk Mods[/b] 
     --+|[&GAMDisplay] [&gambuttons] [&GDEnd]
     --:skip_gam_display|
-    --?"X[&gacmbuttons]" -eq "X" -or "[&perCharacterOptions]" -inc "$SGACM0$"|skip_gacm_display
+    --?"X[&gacmbuttons]" -eq "X" -or "[&perCharacterOptions]" -inc "$SGCM0$"|skip_gacm_display
     --&GACMDisplay|[c][b]Global AC Mods[/b][br]
     --?[&compactGlobalModDisplay] -eq 1|&GACMDisplay;[b]AC Mods[/b] 
     --+|[&GACMDisplay] [&gacmbuttons] [&GDEnd]
@@ -532,6 +533,11 @@
     --?[&compactGlobalModDisplay] -eq 1|&GSMDisplay;[b]Save Mods[/b] 
     --+|[&GSMDisplay] [&gsmbuttons] [&GDEnd]
     --:skip_gsm_display|
+    --?"X[&gskmbuttons]" -eq "X" -or "[&perCharacterOptions]" -inc "$SGKM0$"|skip_gskm_display
+    --&GSKMDisplay|[c][b]Global Skill Mods[/b][br]
+    --?[&compactGlobalModDisplay] -eq 1|&GSKMDisplay;[b]Skill Mods[/b] 
+    --+|[&GSKMDisplay] [&gskmbuttons] [&GDEnd]
+    --:skip_gskm_display|
     --#buttonpadding|[&defaultButtonPadding]
   --]| 
 
@@ -1165,12 +1171,29 @@
   --&[%2%]|[&_GACMB_Temp] 
   --<|
 
+  --:Create_Global_Skill_Modifier_Buttons|character_id;StringVariableToSet
+  --&_GSKMB_Temp| 
+  --Rfirst|[%1%];repeating_skillmod
+  --:_GSKMB_Loop|
+  --?"[*R:global_skill_name]" -eq "NoRepeatingAttributeLoaded"|_GACMB_DONE
+  --?"[*R:global_skill_active_flag]" -eq "1"|>_AddGSKMB;[*R:global_skill_name];00AA00
+  --?"[*R:global_skill_active_flag]" -ne "1"|>_AddGSKMB;[*R:global_skill_name];AA0000  
+  --Rnext| 
+  --?"[*R:global_skill_name]" -ne "NoRepeatingAttributeLoaded"|_GSKMB_Loop
+  --:_GSKMB_DONE|
+  --&[%2%]|[&_GSKMB_Temp] 
+  --<|  
+
   --:_AddGSMB| 
   --&_GSMB_Temp|+ [rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GSM;[%1%][/rbutton] 
   --<|  
 
   --:_AddGACMB| 
   --&_GACMB_Temp|+ [rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GACM;[%1%][/rbutton] 
+  --<|  
+
+  --:_AddGSKMB| 
+  --&_GSKMB_Temp|+ [rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GSKM;[%1%][/rbutton] 
   --<|  
 
   --:Get_Ability_Modifier|attribute_string;returnnumericvalue;returnnamestring
@@ -1330,6 +1353,13 @@
   --^proc_pc|
   --X|  
 
+  --:TOGGLE_GSKM|GACM Name
+  --Rfind|[*S:character_id];[&reentryval];repeating_skillmod;global_skill_name
+  --?"[*R:global_skill_name]" -eq "NoRepeatingAttributeLoaded"|_TOGGLE_ERROR
+  --?"[*R:global_skill_active_flag]" -eq "1"|>_setGlobalMod;[*R>global_skill_active_flag];0|>_setGlobalMod;[*R>global_skill_active_flag];1
+  --^proc_pc|
+  --X|  
+
   --:_setGlobalMod|name;value
   --!a:[&saveTokenID]|[%1%]:[%2%]  
   --<|
@@ -1407,7 +1437,9 @@
   -->CREATE_SETTINGS_TOGGLE_BUTTON|[*S:character_id];Attack;SGAM;BTN_SGAM
   -->CREATE_SETTINGS_TOGGLE_BUTTON|[*S:character_id];Damage;SGDM;BTN_SGDM
   -->CREATE_SETTINGS_TOGGLE_BUTTON|[*S:character_id];Save;SGSM;BTN_SGSM
-  --+|[c][&BTN_SGAM] [&BTN_SGDM] [&BTN_SGSM][/c]
+  -->CREATE_SETTINGS_TOGGLE_BUTTON|[*S:character_id];AC;SGCM;BTN_SGAC
+  -->CREATE_SETTINGS_TOGGLE_BUTTON|[*S:character_id];Skill;SGKM;BTN_SGSK
+  --+|[c][&BTN_SGAM] [&BTN_SGDM] [&BTN_SGSM] [&BTN_SGAC] [&BTN_SGSK][/c]
   --+|[b][c]Display Skill and Saves Buttons[/c][/b]
   -->CREATE_SETTINGS_TOGGLE_BUTTON|[*S:character_id];Skills & Saves;SSAS;BTN_SSAS
   --+|[c][&BTN_SSAS][/c]
@@ -1432,7 +1464,7 @@
   --<|
 
   --:SET_DEFAULT_PER_CHARACTER_SETTINGS|CharacterID
-  --&SettingsString|$SGAM1$$SGDM1$$SGSM1$$SGMB1$$SSAS1$
+  --&SettingsString|$SGAM1$$SGDM1$$SGSM1$$SGMB1$$SSAS1$$SGCM1$$SGKM1$
   --!a:[%1%]|!5ECAM_SETTINGS:[&SettingsString]
   --<|
 

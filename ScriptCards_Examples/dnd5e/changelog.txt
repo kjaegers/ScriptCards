@@ -1,5 +1,8 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-08-20 - 5E Character Action Menu 2.1.4
+             - Added support for Global Skill Mods and made global AC and global Skill mod buttons optional in the per-char config menu
+
 2022-08-29 - 5E Character Action Menu 2.1.3
              - Adds support for Global AC modifiers
 
