@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.1.2
+  --/|Version     : 2.1.3
   --/|Requires SC : 2.1.7
   --/|Author      : Kurt Jaegers
 
@@ -508,6 +508,7 @@
     -->Create_Global_Attack_Modifier_Buttons|[*S:character_id];gambuttons
     -->Create_Global_Damage_Modifier_Buttons|[*S:character_id];gdmbuttons
     -->Create_Global_Save_Modifier_Buttons|[*S:character_id];gsmbuttons
+    -->Create_Global_AC_Modifier_Buttons|[*S:character_id];gacmbuttons
     --#buttonpadding|[&smallButtonPadding]
     --&GDEnd|
     --?[&compactGlobalModDisplay] -eq 0|&GDEnd;[/c]
@@ -516,6 +517,11 @@
     --?[&compactGlobalModDisplay] -eq 1|&GAMDisplay;[b]Atk Mods[/b] 
     --+|[&GAMDisplay] [&gambuttons] [&GDEnd]
     --:skip_gam_display|
+    --?"X[&gacmbuttons]" -eq "X" -or "[&perCharacterOptions]" -inc "$SGACM0$"|skip_gacm_display
+    --&GACMDisplay|[c][b]Global AC Mods[/b][br]
+    --?[&compactGlobalModDisplay] -eq 1|&GACMDisplay;[b]AC Mods[/b] 
+    --+|[&GACMDisplay] [&gacmbuttons] [&GDEnd]
+    --:skip_gacm_display|
     --?"X[&gdmbuttons]" -eq "X" -or "[&perCharacterOptions]" -inc "$SGDM0$"|skip_gdm_display
     --&GDMDisplay|[c][b]Global Damage Mods[/b][br]
     --?[&compactGlobalModDisplay] -eq 1|&GDMDisplay;[b]Dmg Mods[/b] 
@@ -1146,8 +1152,25 @@
   --&[%2%]|[&_GSMB_Temp] 
   --<|
   
+  --:Create_Global_AC_Modifier_Buttons|character_id;StringVariableToSet
+  --&_GACMB_Temp| 
+  --Rfirst|[%1%];repeating_acmod
+  --:_GACMB_Loop|
+  --?"[*R:global_ac_name]" -eq "NoRepeatingAttributeLoaded"|_GACMB_DONE
+  --?"[*R:global_ac_active_flag]" -eq "1"|>_AddGACMB;[*R:global_ac_name];00AA00
+  --?"[*R:global_ac_active_flag]" -ne "1"|>_AddGACMB;[*R:global_ac_name];AA0000  
+  --Rnext| 
+  --?"[*R:global_ac_name]" -ne "NoRepeatingAttributeLoaded"|_GACMB_Loop
+  --:_GACMB_DONE|
+  --&[%2%]|[&_GACMB_Temp] 
+  --<|
+
   --:_AddGSMB| 
   --&_GSMB_Temp|+ [rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GSM;[%1%][/rbutton] 
+  --<|  
+
+  --:_AddGACMB| 
+  --&_GACMB_Temp|+ [rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GACM;[%1%][/rbutton] 
   --<|  
 
   --:Get_Ability_Modifier|attribute_string;returnnumericvalue;returnnamestring
@@ -1295,10 +1318,17 @@
 
   --:TOGGLE_GSM|GSM Name
   --Rfind|[*S:character_id];[&reentryval];repeating_savemod;global_save_name
-  --?"[*R:global_savee_name]" -eq "NoRepeatingAttributeLoaded"|_TOGGLE_ERROR
+  --?"[*R:global_save_name]" -eq "NoRepeatingAttributeLoaded"|_TOGGLE_ERROR
   --?"[*R:global_save_active_flag]" -eq "1"|>_setGlobalMod;[*R>global_save_active_flag];0|>_setGlobalMod;[*R>global_save_active_flag];1
   --^proc_pc|
   --X|
+
+  --:TOGGLE_GACM|GACM Name
+  --Rfind|[*S:character_id];[&reentryval];repeating_acmod;global_ac_name
+  --?"[*R:global_ac_name]" -eq "NoRepeatingAttributeLoaded"|_TOGGLE_ERROR
+  --?"[*R:global_ac_active_flag]" -eq "1"|>_setGlobalMod;[*R>global_ac_active_flag];0|>_setGlobalMod;[*R>global_ac_active_flag];1
+  --^proc_pc|
+  --X|  
 
   --:_setGlobalMod|name;value
   --!a:[&saveTokenID]|[%1%]:[%2%]  

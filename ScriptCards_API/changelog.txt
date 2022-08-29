@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.9  - Crash prevention code when rolling on corrupted roll tables that have a blank or non-numeric weight value assigned to an entry.
+           Changed the order of setting attributes to use the sheetworker before a direct set.
+
 v 2.1.8  - New looping structures: For...Each, While, and Until. 
 
            A For...Each loop takes an array a parameter (following the "foreach" identifier) and will iterate over each item in the array. Each 

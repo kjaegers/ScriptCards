@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.8";
+	const APIVERSION = "2.1.9";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1018,13 +1018,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 																	settingValue = currentValue + delta;
 																}
 															}
-															theAttribute.set(setType, settingValue);
 															if (setType == "current") {
 																theAttribute.setWithWorker({ current: settingValue });
 															}
 															if (setType == "max") {
 																theAttribute.setWithWorker({ max: settingValue });
 															}
+															theAttribute.set(setType, settingValue);
 														} else {
 															if (createAttribute) {
 																theAttribute = createObj('attribute', {
@@ -4260,17 +4260,27 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				var itemCount = 0;
 				var maxRoll = 0;
 				tableItems.forEach(function (item) {
-					var thisWeight = parseInt(item.get("weight"));
-					rollIndex += thisWeight;
-					for (var x = lastRollIndex + 1; x <= rollIndex; x++) {
-						rollResults[x] = itemCount;
+					try {
+						var thisWeight = parseInt(item.get("weight"));
+						if (isNaN(thisWeight)) { thisWeight = 1 }
+						rollIndex += thisWeight;
+						for (var x = lastRollIndex + 1; x <= rollIndex; x++) {
+							rollResults[x] = itemCount;
+						}
+						itemCount += 1;
+						maxRoll += thisWeight;
+						lastRollIndex += thisWeight;
+					} catch {
+						log(`ScriptCards: Exception attempting to get rollable table item information`)
 					}
-					itemCount += 1;
-					maxRoll += thisWeight;
-					lastRollIndex += thisWeight;
 				});
 				var tableRollResult = randomInteger(maxRoll);
-				return [tableItems[rollResults[tableRollResult]].get("name"), tableItems[rollResults[tableRollResult]].get("avatar")];
+				try {
+					return [tableItems[rollResults[tableRollResult]].get("name"), tableItems[rollResults[tableRollResult]].get("avatar")];
+				} catch {
+					log(`ScriptCards: Exception while reading table results for table item ${tableRollResult}`)
+					return "", ""
+				}
 			} else {
 				return ["", ""];
 			}

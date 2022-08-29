@@ -1,5 +1,8 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-08-29 - 5E Character Action Menu 2.1.3
+             - Adds support for Global AC modifiers
+
 2022-08-18 - 5E Character Action Menu 2.1.2
              - Added support for Short/Long rests as buttons in the subtitle area of the action menu. A long rest is more or less a single click, while
                a short rest will bring up a new menu allowing the player to spend hit dice. Warlock packt spells are recovered on a short rest, while a 
