@@ -190,6 +190,7 @@
   --:SKIP_PER_CHAR_SETTINGS|
   
   --?[*S:npc] -eq 1 -or [&ShowRestButtons] -ne 1|SKIP_REST_BUTTONS
+  --?"[&perCharacterOptions]" -inc "$SHRB0$"|SKIP_REST_BUTTONS
   --#rightsub|Rest: [rbutton][&CLOCK]::DO_SHORT_REST[/rbutton][rbutton][&BED]::DO_LONG_REST[/rbutton]
   --:SKIP_REST_BUTTONS|
 
@@ -1443,6 +1444,9 @@
   --+|[b][c]Display Skill and Saves Buttons[/c][/b]
   -->CREATE_SETTINGS_TOGGLE_BUTTON|[*S:character_id];Skills & Saves;SSAS;BTN_SSAS
   --+|[c][&BTN_SSAS][/c]
+  -->CREATE_SETTINGS_TOGGLE_BUTTON|[*S:character_id];Rest Buttons in Header;SHRB;BTN_SHRB
+  --+|[b][c]Other Features[/c][/b]
+  --+|[c][&BTN_SHRB][/c]
   --X|
 
   --:CREATE_SETTINGS_TOGGLE_BUTTON|character_id;SettingName;SettingCode;ReturnStringVar
@@ -1464,7 +1468,7 @@
   --<|
 
   --:SET_DEFAULT_PER_CHARACTER_SETTINGS|CharacterID
-  --&SettingsString|$SGAM1$$SGDM1$$SGSM1$$SGMB1$$SSAS1$$SGCM1$$SGKM1$
+  --&SettingsString|$SGAM1$$SGDM1$$SGSM1$$SGMB1$$SSAS1$$SGCM1$$SGKM1$$SHRB1$
   --!a:[%1%]|!5ECAM_SETTINGS:[&SettingsString]
   --<|
 
