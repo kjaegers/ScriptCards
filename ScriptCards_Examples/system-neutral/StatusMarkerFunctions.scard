@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : StatusMarkerFunctions
-  --/|Version     : 1.0.0
+  --/|Version     : 1.0.1
   --/|Requires SC : 2.1.7
   --/|Author      : Kurt Jaegers
 
@@ -27,7 +27,7 @@
   --/|(for the initiative value), "CUSTOM" (for the custom text), "FORMULA" (for the per-round formula), "PAGE" (for the page 
   --/|ID the turn is on), and "name" for the value of either the  token name or the custom text.    
 
-  -->ADD_STATUS_MARKER|@{selected|token_id};snail;3
+  -->ADD_STATUS_MARKER|@{selected|token_id};snail;5
 
   --X|
 
@@ -35,7 +35,8 @@
   -->REMOVE_STATUS_MARKER|[%1%];[%2%]
   --~|array;statusmarkers;Conditions;[%1%]
   --&toAdd|[%2%]
-  --?"X[%3%]" -ne "X" -and "X[%3%]" -ne "X0"|&toAdd;[%2%]@[%3%]
+  --?"X[%3%]" -ne "X" -and "X[%3%]" -ne "X0"|=countToAdd;[%3%] {MIN:0} {MAX:9}
+  --?"X[%3%]" -ne "X" -and "X[%3%]" -ne "X0"|&toAdd;[%2%]@[$countToAdd.Raw]
   --~|array;add;Conditions;[&toAdd]
   --~newConditions|array;stringify;Conditions
   --#parameterdelimiter|$

@@ -1,5 +1,8 @@
 Change Log for items in the ScriptExamples/system-neutral Folder:
 
+2022-08-20 - Added StatusMarkerFuncitons - an example library of functions for dealing with (adding, removing, looking for) status markers on
+             tokens. Supports status markers with counters on them.
+
 2022-08-13 - Added CustomTurnInfo - Just a quick example to show pulling apart turn tracker entries and working with their components. Requires
              ScriptCards 2.1.6 or higher because it uses string referencing functions to shorten up the code.
 
