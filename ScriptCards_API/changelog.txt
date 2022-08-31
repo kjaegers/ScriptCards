@@ -1,5 +1,10 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.10 - Added setting: formatinforequesttext. If set to a non 0 value, will pass the prompt portion of the --i command through the inline formatter.
+           Added system;dropoutputlines function. third parameter can be "direct", "gmonly" or "both" and will abandon any --+ and/or --* lines already
+           output by the script.
+           Bug Fix : Flavor text in roll formula tootips will now display again.
+
 v 2.1.9  - Crash prevention code when rolling on corrupted roll tables that have a blank or non-numeric weight value assigned to an entry.
            Changed the order of setting attributes to use the sheetworker before a direct set.
 

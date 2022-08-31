@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.9";
+	const APIVERSION = "2.1.10";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -131,6 +131,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		outputtagprefix: "",
 		outputcontentprefix: " ",
 		enableattributesubstitution: "0",
+		formatinforequesttext: "0",
 		styleTableTag: " border-collapse:separate; border: solid black 2px; border-radius: 6px; -moz-border-radius: 6px; ",
 		stylenone: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; ",
 		stylenormal: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolornormal}; border-color: #87850A; color: #000000;",
@@ -635,6 +636,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								}
 							}
 							var flavorText = stashType.split(";")[0];
+							if (cardParameters.formatinforequesttext !== "0") {
+								flavorText = processInlineFormatting(flavorText, cardParameters);
+							}
 							var buttonLabel = stashType.split(";")[1];
 
 							stashAScript(myGuid, cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, varList, "X", arrayVariables, arrayIndexes, gmonlyLines);
@@ -1385,6 +1389,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													}
 												}
 												break;
+											
+											case "dropoutputlines":
+												if (params[2].toLowerCase() == "all" || params[2].toLowerCase() == "both" || params[2].toLowerCase() == "direct") {
+													outputLines = [];
+												}
+												if (params[2].toLowerCase() == "all" || params[2].toLowerCase() == "both" || params[2].toLowerCase() == "gmonly") {
+													gmonlyLines = [];
+												}
 										}
 									}
 									break;
@@ -2366,7 +2378,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 						// Handle direct output lines
 						if (thisTag.charAt(0) === "+") {
-							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent, cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
+							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent.replace(/\[&zwnj;/g,"["), cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
 
 							tableLineCounter += 1;
 							if (tableLineCounter % 2 == 0) {
@@ -2994,6 +3006,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		//var charId = "";
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
+		content = content.replace(/\[&zwnj;/g, "[")
 		//while (content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\,|\_|\>|\^|\-\+|\)]*?(?!\w+[\[])(\])/g) != null) {
 		//	var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\,|\_|\>|\^|\-\+|\)]*?(?!\w+[\[])(\])/g)[0];
 		while (content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
@@ -3127,14 +3140,22 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								replcement = "Substring reference error."
 							}
 						} else {
-							replacement = ""
+							if (vName.startsWith("zwnj;")) {
+								replacement = "[" + vName.replace(/zwnj;/g, "") + "]"
+							} else {						
+								replacement = ""
+							}
 						}
 					} else {
 						var vName = thisMatch.substring(2, thisMatch.length - 1);
 						if (stringVariables[vName] != null) {
 							replacement = stringVariables[vName];
 						} else {
-							replacement = "";
+							if (vName.startsWith("zwnj;")) {
+								replacement = "[" + vName.replace(/zwnj;/g, "") + "]"
+							} else {
+								replacement = "";
+							}
 						}
 						if (cardParameters.debug !== "0") {
 							log(`ContentIn: ${content} Match: ${thisMatch}, vName: ${vName}, replacement ${replacement}`)
@@ -3695,7 +3716,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 						rollResult.Text += ` ${text} `;
-						//log(rollResult.Text);
 					}
 				}
 			}
