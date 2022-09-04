@@ -1,6 +1,8 @@
 Change Log for items in the ScriptExamples/system-neutral Folder:
 
-2022-08-20 - Added StatusMarkerFuncitons - an example library of functions for dealing with (adding, removing, looking for) status markers on
+2022-09-04 - Updated StatusMarkerFuntions to include a CLEAR_STATUS_MARKERS function and to ignore counter numbers when adding the "dead" marker.
+
+2022-08-20 - Added StatusMarkerFunctions - an example library of functions for dealing with (adding, removing, looking for) status markers on
              tokens. Supports status markers with counters on them. Limited count of status marker numbers to 0 thru 9
 
 2022-08-13 - Added CustomTurnInfo - Just a quick example to show pulling apart turn tracker entries and working with their components. Requires
