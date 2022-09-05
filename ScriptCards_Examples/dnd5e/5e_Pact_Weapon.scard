@@ -1,0 +1,88 @@
+!script {{
+  --/|Script Name : 5e_Pact_Weapon
+  --/|Version     : 1.0.0
+  --/|Requires SC : 2.1.7
+  --/|Author      : Kurt Jaegers
+
+  --/|This script can be run by a Warlock player to summon a pact weapon of their choice. The following setup is required for this
+  --/|to work:
+  --/|  - Create a character called "Pact Weapon Mule" (case sensitive)
+  --/|  - Drag weapons from the Compendium to the mule for any weapon you wish to be pact summonable
+  --/|  - On the warlock character, drag a ranged weapon from the compendium to the character's attack list
+  --/|  - Change the name of the new weapon on the warlock to "Pact Weapon - Weapon" (the important part is that it starts with "Pact Weapon -")
+  
+  --#reentrant|pactweapons!@{selected|token_id}
+  --#title|Select Pact Weapon
+  --#whisper|self
+  
+  --/|Note we will need substitute characeters so we can build strings that reference character attributes
+  --&ob|{ --&cb|} --&at|@
+  --#sourcetoken|@{selected|token_id}
+  
+  --/|Locate the Pact Weapon Mule and retrieve all of the defined attacks
+  --&pactMule|@{Pact Weapon Mule|character_id}
+  --"X[&pactMule]" -eq "X"|error_no_mule
+  --~|array;fromrepeatingsection;pactWeapons;[&pactMule];repeating_attack;atkname
+  --~|array;sort;pactWeapons
+  --%weapon|foreach;pactWeapons
+    --+|[rbutton][&weapon]::SET_PACT_WEAPON;[&weapon][/rbutton]
+  --%|
+  --X| End of the main script run
+
+  --/| ====== Reentrant Secions Below ======
+
+  --:SET_PACT_WEAPON|WeaponName
+  --/|Try to locate the warlock character
+  --&pactEntry|UNKNOWN
+  --~|array;fromrepeatingsection;playerAttacks;[*S:character_id];repeating_attack;atkname
+  --%weapon|foreach;playerAttacks
+    --?"[&weapon]" -inc "Pact Weapon -"|&pactEntry;[&weapon]
+  --%|
+  --?"[&pactEntry]" -eq "UNKNOWN"|error_no_pact_entry
+
+  --/|Locate the weapon entry on the Pact Weapon Mule
+  --Rfind|[&pactMule];[&reentryval];repeating_attack;atkname
+  --?"[*R:atkname]" -eq "NoRepeatingAttributeLoaded"|error_no_weapon
+
+  --/|Cache the values from the mule weapon entry, adding "Pact Weapon - " in front of the name
+  --&atkname|Pact Weapon - [*R:atkname]
+  --&dmgbase|[*R:dmgbase]
+  --&dmgtype|[*R:dmgtype]
+  --&atkrange|[*R:atkrange]
+  --&atkattr_base|[&at][&ob][*R:atkattr_base][&cb]
+  --&dmgattr|[&at][&ob][*R:dmgattr][&cb]
+  --&atkdmgtype|[*R:atkdmgtype]
+  
+  --/|Load the repeating section for the Pact Weapon entry on the warlock character
+  --Rfind|@{selected|character_id};[&pactEntry];repeating_attack;atkname
+  --?"[*R:atkname]" -eq "NoRepeatingAttributeLoaded"|error_no_pact_entry
+
+  --/|Update the repeating section values on the warlock character sheet from the cached entries
+  --!a:[*S:character_id]|[*R>dmgbase]:[&dmgbase]|[*R>atkname]:[&atkname]|[*R>dmgtype]:[&dmgtype]|
+  --!a:[*S:character_id]|[*R>atkattr_base]:[&atkattr_base]|[*R>dmgattr]:[&dmgattr]|[*R>atkdmgtype]:[&atkdmgtype]|
+  --!a:[*S:character_id]|[*R>atkrange]:[&atkrange]|
+  
+  --/|Got no errors, so report out the results. Could include emotes or extra output lines in this section
+  --#whisper|
+  --#title|Pact Weapon
+  --+Pact Weapon|[*S:character_name] summons a [&reentryval]
+  --X|
+
+  --:error_no_mule|
+  --#title|Pact Weapon Selector|
+  --+Error|No character named "Pact Weapon Mule" was found.
+  --X|
+
+  --:error_no_pact_entry|
+  --#title|Pact Weapon Selector|
+  --+Error|The selected character doesn't have an attack entry that starts with "Pact Weapon -"
+  --X|
+
+  --:error_no_weapon|
+  --#title|Pact Weapon Selector|
+  --+Error|The Pact Weapon Mule does not have an attack entry matching [&reentryval]
+  --X|
+
+  --:error|
+  --+An error occured setting pact weapon|
+}}
