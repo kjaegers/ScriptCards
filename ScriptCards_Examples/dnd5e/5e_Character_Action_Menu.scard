@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.1.4
+  --/|Version     : 2.1.6
   --/|Requires SC : 2.1.7
   --/|Author      : Kurt Jaegers
 
@@ -14,6 +14,9 @@
 
   --/|=========================================================================================================
   --/|Settings Area - Customize the behavior of the script here
+
+  --/|What bar do you use for representing hit points for damage application?
+  --&hitPointsBar|1
 
   --/|If you create a "spell mule" character and put its name here, it's ability list will be checked for
   --/|abilities that match the name of each spell found on PCs. If a match is found, the button that is
@@ -37,14 +40,14 @@
   --/|If this value is set to 1, a list of available spell slots are displayed above the spells list in the action menu. (only if trackPCSpellSlots is 1)
   --&showPCSpellSlotList|1
 
-  --/|If this value is set to 1 PC attack rolls will have the target's AC masked from players.
+  --/|If this value is set to attack rolls will have the target's numeric AC value hidden
   --&sendGmInfo|0
 
   --/|If this value is set to 1, NPC actions (except spellcasting) will be whispered to the sender only and not displayed to everyone
   --&AllNPCActionsToSender|0
 
   --/|Set this to either "scriptcards", "token-mod", "alterbars", "damagebuttons" or anything else to not apply damage
-  --&damageApplyScript|dontapplydamage
+  --&damageApplyScript|damagebuttons
 
   --/|If using "damagebuttons" and this is set to 1, the damage buttons will be whispered to the DM instead of being added to the card
   --&whisperDamageButtonsToDM|1
@@ -52,14 +55,12 @@
   --/|If using "damagebuttons" for damage and this value is 1, the DM is whispered a message about damage application
   --&whisperDamageButtonResultsToDM|1
 
-  --/|What bar do you use for representing hit points for damage application?
-  --&hitPointsBar|1
-
   --/|If set to 1, the Action Menu will include advantage/normal/disadvantage toggles (and won't use the character sheet toggle)
   --&selfHandleAdvantageMode|1
   
   --/|Used with SelfHandleAdvantageMode. 0=Normal, 1=Advantage, 2=Disadvantage
   --&defaultAdvantageMode|0
+
   --/|Used with SelfHandleAdvantageMode. 0=Button color coding only. 1=Show "Normal", "Advantage", "Disadvantage" text
   --&showAdvantageModeText|0
 
@@ -109,6 +110,31 @@
 
   --/|If set to 1, rest buttons will be shown in the title bar
   --&ShowRestButtons|1
+  
+  --/|List spells here, separated by semicolons, that should be kept in the PC Attacks display with "[After Cast]" appended to them
+  --~|array;define;SpellsToKeepWithSuffix;Spiritual Weapon;Scorching Ray
+
+  --/|List spells here, separated by semicolons, that should be kept in the PC Attacks display with no suffix appended to them
+  --~|array;define;SpellsToKeepNoSuffix;
+  
+  --/|NOTE: This section is experimental and needs further testing. Setting "statusmod_MARKERNAME" allows you to define modifiers that will be applied
+  --/|to NPCs based on the status markers active on the NPC. The following modifiers are supported:
+  --/| attack:value        (use +X [Desc] to provide a value and description, Can be -X as well) 
+  --/| damage:value        (use +X [Desc] to provide a value and description, Can be -X as well)
+  --/| rollmode:mode       (use d for disadvantage, a for advantage, n for normal)
+  --/| attackermode:mode   (use d for disadvantage, a for advantage, n for normal)
+  --/| ac:value            (use +X [Desc] to provide a value and description, Can be -X as well) 
+  --/| resist:dmgtypes     (use - to separate damage types, ex bludgeoning-slashing-piercing)
+  --/| immune:dmgtypes     (use - to separate damage types, ex bludgeoning-slashing-piercing)
+  --/| vuln:dmgtypes       (use - to separate damage types, ex bludgeoning-slashing-piercing)
+
+  --/|For the staus marker mods to work, you will need to set this to 1 and edit/create some modifiers. The items here are just samples.
+  --&useTokenMakersForNPCModifiers|0
+  --&statusmod_snail|rollmode:d
+  --&statusmod_fist|resist:bludgeoning-piercing-slashing
+  --&statusmod_strong|damage:+2 [Strong]
+  --&statusmod_overdrive|attack:+2 [Haste]
+  --&statusmod_tread|ac:-2 [Prone]
 
   --/|End Settings Area
   --/|=========================================================================================================
@@ -297,7 +323,8 @@
       --&NPCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|[&TB]target|token_id}[/rbutton] 
       --^NPC_CANTRIP_END_GENERATE|
       --:MULE_NPC_CANTRIP|
-      --&PCCantrips|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
+      --/&PCCantrips|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
+      --&PCCantrips|+ [button][*R:spellname]::~[&spellmulename]|[&testName][/button] 
       --:NPC_CANTRIP_END_GENERATE|
       --Rnext|
       --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|NPCCantrips_Display
@@ -332,7 +359,8 @@
       --&NPCSpells|+ [rbutton][*R:spellname]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|[&TB]target|token_id}[&slotString][/rbutton] 
       --^NPC_DONE_SPELL_BUTTON|
       --:MULE_NPC_SPELL|
-      --&NPCSpells|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
+      --/&NPCSpells|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
+      --&NPCSpells|+ [button][*R:spellname]::~[&spellmulename]|[&testName][/button] 
       --:NPC_DONE_SPELL_BUTTON|
       --Rnext|
       --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|NPCSpells_Display
@@ -367,30 +395,40 @@
     --&rollType|1d20
     --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
     --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
+    -->DETERMINE_NPC_STATUS_MODIFIERS|[*S:t-id]
     --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 0|&rollType;1d20
     --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
     --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1
-    --=ToHit|[&rollType] + [*R:attack_tohit]
+    --?"X[&NPC_ROLLMODE]" -ne "X"|&rollType;[&NPC_ROLLMODE]
+    --=ToHit|[&rollType] + [*R:attack_tohit] [&NPC_ATKMOD]
     --&dmgModType1|
     --&dmgModType2|
     --?"X[*T:npc]" -ne "X1" -or [&UseResistances] -eq 0|SKIP_NPC_DMG_MODS
+    -->DETERMINE_NPC_STATUS_MODIFIERS|[*T:t-id]    
     -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:attack_damagetype];0;0;0
     -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:attack_damagetype2];0;0;0
     --:SKIP_NPC_DMG_MODS|
-    --?[*T:NPC] -eq 1|=AC;[*T:npc_ac]|=AC;[*T:AC]
-    --+Attack|[$ToHit] vs AC [$AC.Raw]
+    -->DETERMINE_NPC_STATUS_MODIFIERS|[*S:t-id]
+    --=AC|[*T:ac]
+    --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
+    --?[&sendGmInfo] -eq 1|[
+      --+[*R:atkname] Attack|rolled [$ToHit] vs the target's AC[br][br]
+      --*[*R:atkname] Attack|rolled [$ToHit] vs AC [b][$AC.Raw][/b]
+    --]|[
+      --+[*R:atkname] Attack|rolled [$ToHit] vs AC [b][$AC.Raw][/b][br][br]
+    --]|    
     --?[$ToHit.Base] -eq 20|NPCA_CRIT
     --?[$ToHit.Base] -eq 1|NPCA_MISS
     --?[$ToHit.Total] -lt [$AC]|NPCA_MISS
     --?"X[*R:attack_damage2]" -ne X|NPCA_HIT_TWODAMAGE
-    --=Damage|[*R:attack_damage] [&dmgModType1]
+    --=Damage|[*R:attack_damage] [&NPC_DMGMOD] [&dmgModType1]
     --+Hit|[$Damage] [*R:attack_damagetype]
     --+|[*R:description]
     -->[&damageRoutine]|[&action_target];[&hitPointsBar];-[$Damage.Raw]
     --^NPCA_DONE|
     --:NPCA_HIT_TWODAMAGE|
-    --=Damage|[*R:attack_damage] [&dmgModType1]
-    --=Damage2|[*R:attack_damage2] [&dmgModType2]
+    --=Damage|[*R:attack_damage] [&NPC_DMGMOD] [&dmgModType1]
+    --=Damage2|[*R:attack_damage2] [&NPC_DMGMOD] [&dmgModType2]
     --=TotalDamage|[$Damage.Raw] + [$Damage2.Raw]
     --+Hit|[$Damage] [*R:attack_damagetype] and [$Damage2] [*R:attack_damagetype2]
     --+|[*R:description]
@@ -399,14 +437,14 @@
 
     --:NPCA_CRIT|
     --?"X[*R:attack_damage2]" -ne X|NPCA_CRIT_TWODAMAGE
-    --=Damage|[*R:attack_damage] + [*R:attack_crit] [&dmgModType1]
+    --=Damage|[*R:attack_damage] + [*R:attack_crit] [&NPC_DMGMOD] [&dmgModType1]
     -->[&damageRoutine]|[&action_target];[&hitPointsBar];-[$Damage.Raw]
     --+Critical|[$Damage] [*R:attack_damagetype]
     --+|[*R:description]
     --^NPCA_DONE|
     --:NPCA_CRIT_TWODAMAGE|
-    --=Damage|[*R:attack_damage] + [*R:attack_crit] [&dmgModType1]
-    --=Damage2|[*R:attack_damage2] + [*R:attack_crit2]  [&dmgModType2]
+    --=Damage|[*R:attack_damage] + [*R:attack_crit] [&NPC_DMGMOD] [&dmgModType1]
+    --=Damage2|[*R:attack_damage2] + [*R:attack_crit2] [&NPC_DMGMOD] [&dmgModType2]
     --=TotalDamage|[$Damage.Raw] + [$Damage2.Raw]    
     --+Critical|[$Damage] [*R:attack_damagetype] and [$Damage2] [*R:attack_damagetype2]
     --+|[*R:description]
@@ -556,8 +594,11 @@
   --&PCAttacks|[br]
   --?"[*R:atkname]" -ne "NoRepeatingAttributeLoaded"|[
     --:PCAttacks_Display|
-      --?"X[*R:spelldesc_link]" -ne "X"|SKIP_SPELL_ATTACK
-      --&PCAttacks|+ [rbutton][*R:atkname]::EXEC_PC_ATTACK;[*R:atkname]|[&TB]target|token_id}[/rbutton] 
+      --&keepSpell|N
+      --&spellSuffix|
+      -->CHECK_SPELLS_TO_KEEP|[*R:atkname];keepSpell;spellSuffix
+      --?"X[*R:spelldesc_link]" -ne "X" -and [&keepSpell] -eq N|SKIP_SPELL_ATTACK
+      --&PCAttacks|+ [rbutton][*R:atkname][&spellSuffix]::EXEC_PC_ATTACK;[*R:atkname]|[&TB]target|token_id}[/rbutton] 
       --:SKIP_SPELL_ATTACK|
       --Rnext|
       --?"[*R:atkname]" -ne "NoRepeatingAttributeLoaded"|PCAttacks_Display
@@ -579,7 +620,8 @@
       --&PCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|[&TB]target|token_id}[/rbutton] 
       --^CANTRIP_END_GENERATE|
       --:MULE_CANTRIP|
-      --&PCCantrips|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
+      --/&PCCantrips|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
+      --&PCCantrips|+ [button][*R:spellname]::~[&spellmulename]|[&testName][/button] 
       --:CANTRIP_END_GENERATE|
       --Rnext|
       --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|PCCantrips_Display
@@ -662,7 +704,8 @@
       --=PCSpellCount|[$PCSpellCount.Raw] + 1 
       --^DONE_SPELL_BUTTON|
       --:MULE_SPELL|
-      --&PCSpells|+ [sheetbutton][*R:spellname][&spellsuffix]::[&spellmulename]::[&testName][/sheetbutton] 
+      --/&PCSpells|+ [sheetbutton][*R:spellname][&spellsuffix]::[&spellmulename]::[&testName][/sheetbutton] 
+      --&PCSpells|+ [button][*R:spellname][&spellsuffix]::~[&spellmulename]|[&testName][/button] 
       --=PCSpellCount|[$PCSpellCount.Raw] + 1 
       --:DONE_SPELL_BUTTON|
       --Rnext|
@@ -685,11 +728,13 @@
   --~attack_name|string;before;|;[&reentryval]
   --~attack_target|string;after;|;[&reentryval]
   --#targettoken|[&attack_target]
+  -->DETERMINE_NPC_STATUS_MODIFIERS|[*T:t-id]
   --#emotetext|[*S:t-name] uses [&attack_name] against [*T:t-name]
   -->Find_Active_Global_Attack_Modifiers|[*S:character_id];PC_GAM
   -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM
   -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM_CRIT;1
   --Rfind|[*S:character_id];[&attack_name];repeating_attack;atkname
+  --?[*R:attack_flag] -ne 1|
   --?[&requireAmmo] -eq 0|NoAmmoNeededPC_Attack
   --?"X[*R:ammo]" -eq "X"|NoAmmoNeededPC_Attack
   --~ResourceUsed|string;before;|;[*R:ammo]
@@ -707,6 +752,7 @@
   --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 0|&rollType;1d20
   --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
   --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1  
+  --?"X[&NPC_ATTACKAGAINSTMODE]" -ne "X"|&rollType;[&NPC_ATTACKAGAINSTMODE]
   --&arString|[&rollType]
   --=attrMod|0
   --&attrName|Attr
@@ -743,9 +789,10 @@
   --?[*R:atkmagic] -gt 0|&dmgroll2;+ + [*R:atkmagic] [Magic]
   --?[*R:atkmagic] -lt 0|&dmgroll2;+ [*R:atkmagic] [Magic]
   --=AC|[*T:ac]
-  --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
+  --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac] [&NPC_ACMOD]
   --?[&sendGmInfo] -eq 1|[
     --+[*R:atkname] Attack|rolled [$attackRoll] vs the target's AC[br][br]
+    --*[*R:atkname] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b]
   --]|[
     --+[*R:atkname] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b][br][br]
   --]|
@@ -843,6 +890,7 @@
   --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
   --?[&sendGmInfo] -eq 1|[
     --+[*R:spellattack] Attack|rolled [$attackRoll] vs the target's AC[br][br]
+    --*[*R:spellattack] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b]
   --]|[
     --+[*R:spellattack] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b][br][br]
   --]|
@@ -935,6 +983,7 @@
   --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
     --?[&sendGmInfo] -eq 1|[
     --+[*R:spellattack] Attack|rolled [$attackRoll] vs the target's AC[br][br]
+    --*[*R:spellattack] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b]
   --]|[
     --+[*R:spellattack] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b][br][br]
   --]|
@@ -1387,9 +1436,9 @@
   --:CheckDamageModifiersNPC|characterid;damageVariableName;damageType;isMagical(0 or 1);IsSilver (0 or 1);IsAdamantine (0 or 1)
   --&[%2%]|
   --#parameterdelimiter|!!
-  --~Vulns|string!!split!!;!![*[%1%]:npc_vulnerabilities]
-  --~Resists|string!!split!!;!![*[%1%]:npc_resistances]
-  --~Immunes|string!!split!!;!![*[%1%]:npc_immunities]
+  --~Vulns|string!!split!!;!![*[%1%]:npc_vulnerabilities];[&NPC_VULNS]
+  --~Resists|string!!split!!;!![*[%1%]:npc_resistances];[&NPC_RESISTS]
+  --~Immunes|string!!split!!;!![*[%1%]:npc_immunities];[&NPC_IMMUNES]
   --#parameterdelimiter|;
   --%VulnLoop|1;[$VulnsCount]
     --&hasModifier|0
@@ -1670,4 +1719,48 @@
   --?"X[*S:multiclass2_flag]" -eq "X1" -and [*S:multiclass2] -eq "Warlock"|&[%1%];[*S:multiclass2_lvl]
   --?"X[*S:multiclass3_flag]" -eq "X1" -and [*S:multiclass3] -eq "Warlock"|&[%1%];[*S:multiclass2_lvl]
   --<|
+
+  --:CHECK_SPELLS_TO_KEEP|AttackName; Return variable;suffix
+  --~index|array;indexof;SpellsToKeepWithSuffix;[%1%]
+  --~index2|array;indexof;SpellsToKeepNoSuffix;[%1%]
+  --?"[&index]" -eq "ArrayError" -and "[&index2]" -eq "ArrayError"|<
+  --?"[&index]" -ne "ArrayError"|&[%3%]; [After Cast]
+  --&[%2%]|Y
+  --<|
+
+  --:DETERMINE_NPC_STATUS_MODIFIERS|TokenID
+  --&NPC_ATKMOD| --&NPC_DMGMOD| --&NPC_ACMOD| --&NPC_ROLLMODE| --&NPC_SAVEMODE_str| --&NPC_SAVEMODE_dex| --&NPC_SAVEMODE_con|
+  --&NPC_SAVEMODE_int| --&NPC_SAVEMODE_wis| --&NPC_SAVEMODE_cha| --&NPC_RESISTS| --&NPC_VULNS| --&NPC_IMMUNES|
+  --&NPC_ATTACKAGAINSTMODE|
+  --?[&useTokenMakersForNPCModifiers] -eq "0"|<
+  --?"X[*[%1%]:t-statusmarkers]" -eq "X"|<
+  --?"X[*T:npc]" -ne "X1""|<
+  --~|array;fromstring;tokenMarkers;,;[*[%1%]:t-statusmarkers]
+  --%loop|foreach;tokenMarkers
+    --~markerName|string;before;@;[&loop]
+    --?"X[&statusmod_[&markerName]]" -eq "X"|%
+    --~param|string;split;:;[&statusmod_[&markerName]]
+    --?[&param1] -eq "attack"|&NPC_ATKMOD;+ [&param2]
+    --?[&param1] -eq "damage"|&NPC_DMGMOD;+ [&param2]
+    --?[&param1] -eq "ac"|&NPC_ACMOD;+ [&param2]
+    --?[&param1] -eq "rollmode" -and [&param2] -eq "d"|&NPC_ROLLMODE;2d20kl1
+    --?[&param1] -eq "rollmode" -and [&param2] -eq "a"|&NPC_ROLLMODE;2d20kh1
+    --?[&param1] -eq "rollmode" -and [&param2] -eq "n"|&NPC_ROLLMODE;2d20
+    --?[&param1] -eq "attackermode" -and [&param2] -eq "d"|&NPC_ATTACKAGAINSTMODE;2d20kl1
+    --?[&param1] -eq "attackermode" -and [&param2] -eq "a"|&NPC_ATTACKAGAINSTMODE;2d20kh1
+    --?[&param1] -eq "attackermode" -and [&param2] -eq "n"|&NPC_ATTACKAGAINSTMODE;2d20
+    --?[&param1] -eq "resist"|&NPC_RESISTS;+ [&param2]
+    --?[&param1] -eq "immune"|&NPC_IMMUNES;+ [&param2]
+    --?[&param1] -eq "vuln"|&NPC_VULNS;+ [&param2]
+    --?[&param1] -ne "savemode"|%
+    --+[&param3]|
+    --~|array;fromstring;savelist;-;[&param3]
+    --%saves|foreach;savelist
+        --?[&param2] -eq "d"|&NPC_SAVEMODE_[&saves];2d20kl1
+        --?[&param2] -eq "a"|&NPC_SAVEMODE_[&saves];2d20kh1
+        --?[&param2] -eq "n"|&NPC_SAVEMODE_[&saves];2d20
+    --%|
+  --%|
+  --<|
+
 }}

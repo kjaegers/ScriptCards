@@ -1,0 +1,14 @@
+!script {{
+  --/| Quick script to report out all token markers with their full IDs
+
+  --#parameterdelimiter|&&&
+  --~markers|string&&&replaceall&&&},{&&&;&&&[*C:token_markers]
+  --#parameterdelimiter|;
+  --~|array;define;token_markers;[&markers]
+  --%loop|foreach;token_markers
+    --~thisMarker|string;replaceall;[{;;[&loop]
+    --~thisMarker|string;replaceall;";;[&thisMarker]
+    --~parts|string;split;,;[&thisMarker]
+    --+[img width=15 height=15][&parts4(4)][/img]|[&parts3(4)]
+  --%|
+}}

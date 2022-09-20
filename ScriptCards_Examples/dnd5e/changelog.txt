@@ -1,5 +1,31 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-09-20 - 5E Character Action Menu 2.1.6
+             - The sendGmInfo setting now masks the AC for all attack rolls and also sends the GM an output line detailing the attack.
+             - Updated the Spell Mule code the use buttons by name instead of character ID to work around a bug in Roll20's late-loading system. It
+               should no longer be necessary to open the Spell Mule character sheet before using the Action Menu now.
+             - Two new array definition in the settings area allow you to specify items on the Attack & Spellcasting section of the character sheet that
+               should be displayed in the PC Attacks section even if they are spells. The examples already there is Spiritual Weapon, which allows the
+               player to use the Spell button to cast the weapon, and then use the PC Attacks button to make an attack with the weapon on subsequent
+               turns without expending a spell slot, and Scorching Ray with allows the rays after the first to be cast from PC Attacks also without
+               expending spell slots. There is no "enforcement" of this secondary casting - it is just a convenience option.
+             - New setting section : useTokenMakersForNPCModifiers. If set to 1 you can define the impact of token markers on NPCs. The following modifiers 
+               are supported:
+                 attack:value        (use +X [Desc] to provide a value and description, Can be -X as well) 
+                 damage:value        (use +X [Desc] to provide a value and description, Can be -X as well)
+                 rollmode:mode       (use d for disadvantage, a for advantage, n for normal)
+                 attackermode:mode   (use d for disadvantage, a for advantage, n for normal)
+                 ac:value            (use +X [Desc] to provide a value and description, Can be -X as well) 
+                 resist:dmgtypes     (use - to separate damage types, ex bludgeoning-slashing-piercing)
+                 immune:dmgtypes     (use - to separate damage types, ex bludgeoning-slashing-piercing)
+                 vuln:dmgtypes       (use - to separate damage types, ex bludgeoning-slashing-piercing)
+
+2022-09-15 - 5E Character Action menu 2.1.5
+             - Added new configuration parameters SpellsToKeepWithSuffix and SpellsToKeepNoSuffix. These are arrays that list the names of spells
+               that, if listed in a characters Attacks & Spellcasting area, will be left in the PC Attacks section (as well as the spells list). This
+               is useful for spells that continue to deal damage over time (Spiritual Weapon, for example) without the need to expend another spell
+               slot.
+
 2022-08-20 - 5E Character Action Menu 2.1.4
              - Added support for Global Skill Mods and made global AC and global Skill mod buttons optional in the per-char config menu
 
