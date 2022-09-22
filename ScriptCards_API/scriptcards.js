@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.10";
+	const APIVERSION = "2.1.11";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -664,10 +664,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										log(`ScriptCards For...Each loop without a defined array or with empty array on line ${lineCounter}`)
 									}
 								}
-								if (params.length === 2 && (params[0].toLowerCase().endsWith("while") || params[0].toLowerCase().endsWith("until") )) {
+								if (params.length === 2 && (params[0].toLowerCase().endsWith("while") || params[0].toLowerCase().endsWith("until"))) {
 									var originalContent = getLineContent(cardLines[lineCounter]);
 									var contentParts = originalContent.split(cardParameters.parameterdelimiter);
-									var isTrue = processFullConditional(replaceVariableContent(contentParts[1], cardParameters)) ||  params[0].toLowerCase().endsWith("until");
+									var isTrue = processFullConditional(replaceVariableContent(contentParts[1], cardParameters)) || params[0].toLowerCase().endsWith("until");
 									if (isTrue) {
 										loopControl[loopCounter] = { loopType: params[0].toLowerCase().endsWith("until") ? "until" : "while", initial: 0, current: 0, end: 999999, step: 1, nextIndex: lineCounter, condition: contentParts[1] }
 										stringVariables[loopCounter] = "true";
@@ -729,7 +729,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													loopCounter = "!"
 												}
 												break;
-												
+
 										}
 										if ((loopControl[currentLoop].step > 0 && loopControl[currentLoop].current > loopControl[currentLoop].end) ||
 											(loopControl[currentLoop].step < 0 && loopControl[currentLoop].current < loopControl[currentLoop].end) ||
@@ -1251,7 +1251,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 															}
 															if ((loopControl[currentLoop].step > 0 && loopControl[currentLoop].current > loopControl[currentLoop].end) ||
 																(loopControl[currentLoop].step < 0 && loopControl[currentLoop].current < loopControl[currentLoop].end) ||
-																jumpDest.charAt(1) == "!" ||  breakLoop) {
+																jumpDest.charAt(1) == "!" || breakLoop) {
 																loopStack.pop();
 																delete loopControl[currentLoop];
 																blockSkip = true;
@@ -1389,7 +1389,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													}
 												}
 												break;
-											
+
 											case "dropoutputlines":
 												if (params[2].toLowerCase() == "all" || params[2].toLowerCase() == "both" || params[2].toLowerCase() == "direct") {
 													outputLines = [];
@@ -1855,6 +1855,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												} else {
 													stringVariables[variableName] = params[3].substring(params[3].length - Number(params[2]));
 												}
+												break;
+
+											case "stripchars":
+												var str = params[3]
+												for (var i = 0; i < params[2].length; i++) {
+													while (str.includes(params[2].substring(i, i + 1))) {
+														str = str.replace(params[2].substring(i, i + 1), "")
+													}
+												}
+												stringVariables[variableName] = str;
 												break;
 
 										}
@@ -2378,7 +2388,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 						// Handle direct output lines
 						if (thisTag.charAt(0) === "+") {
-							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent.replace(/\[&zwnj;/g,"["), cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
+							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent.replace(/\[&zwnj;/g, "["), cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
 
 							tableLineCounter += 1;
 							if (tableLineCounter % 2 == 0) {
@@ -3142,7 +3152,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						} else {
 							if (vName.startsWith("zwnj;")) {
 								replacement = "[" + vName.replace(/zwnj;/g, "") + "]"
-							} else {						
+							} else {
 								replacement = ""
 							}
 						}
@@ -3319,6 +3329,26 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (cardParameters.enableattributesubstitution !== "0") {
 								replacement = resolveAttributeSubstitution(character.get("_id"), replacement);
 							}
+						}
+					}
+
+					if (thisMatch.charAt(2).toLowerCase() == "g") {
+						// Game State Variables
+						var objectInfo = StripAndSplit(thisMatch, ":");
+						replacement = ""
+
+						if (state[objectInfo[1]] != null) {
+							var baseObj = state[objectInfo[1]]
+							for (var ai = 2; ai < objectInfo.length; ai++) {
+								if (Object.prototype.hasOwnProperty.call(baseObj, objectInfo[ai])) {
+									baseObj = baseObj[objectInfo[ai]]
+								} else {
+									replacement = "StateObjectReferenceError"
+								}
+							}
+						}
+						if (replacement !== "StateObjectReferenceError") {
+							replacement = baseObj.toString() == "[object Object]" ? JSON.stringify(baseObj) : baseObj.toString();
 						}
 					}
 
@@ -3879,6 +3909,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		for (var image in images) {
 			var work = images[image].replace("[img", "<img").replace("[/img]", "></img>").replace("]", " src=");
 			outputLine = outputLine.replace(images[image], work);
+		}
+		var webms = outputLine.match(/(\[webm(.*?)\](.*?)\[\/webm\])/gi);
+		for (var webm in webms) {
+			var work = webms[webm].replace("[webm]", "<video autoplay loop width=100% &#115;&#114;&#99;='").replace("[/webm]", "' type=video/webm></video>");
+			log(work);
+			outputLine = outputLine.replace(webms[webm], work);
 		}
 		var statusmarkers = outputLine.match(/\[sm(.*?)\](.*?)\[\/sm\]/gi);
 		for (var sm in statusmarkers) {
@@ -4744,6 +4780,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			rollSet[lowestIndex] = 0;
 			rollSetText[lowestIndex] = "[x" + rollSetText[lowestIndex] + "x]"
 		}
+	}
+
+	function StripAndSplit(content, delimeter) {
+		log(content)
+		//var work = content.replace("[","").replace(")","").replace("(","").replace(")","")
+		var work = content.replace(/[^a-z0-9áéíóúñü:; \,_-]/gim, "");
+		log(work);
+		log(work.split(delimeter));
+		return work.split(delimeter);
 	}
 
 	const getCleanImgsrc = (imgsrc) => {

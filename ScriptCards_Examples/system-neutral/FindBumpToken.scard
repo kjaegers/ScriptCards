@@ -1,0 +1,83 @@
+!script {{
+  --/|Script Name : FundBimpToken
+  --/|Version     : 1.0.0
+  --/|Requires SC : 2.1.11
+  --/|Author      : Kurt Jaegers
+
+  --/|IMPORTANT NOTE: THIS IS NOT A STANDALONE SCRIPT. This script provides a set of functionst that can be added to
+  --/|                your own scripts or to a ScriptCards library.
+  
+  --/|Functions     : 
+  --/|  FIND_BUMP_MASTER_TOKEN
+  --/|          Pass a Token ID for the "ghost" bump token and a string variable name for the
+  --/|          return value. The function will return the token id of the real token it is 
+  --/|          standing in for. If the passed token ID is already the real token, the same ID will 
+  --/|          be returned. If the token ID isn't registered with bump, the return value will 
+  --/|          be empty.
+  --/|
+  --/|  FIND_BUMP_SHADOW_TOKEN
+  --/|          Pass a Token ID for the real token and a string variable name for the
+  --/|          return value. The function will return the token id of the ghost token it is 
+  --/|          associated with. If the passed token ID is already the ghost token, the same ID will 
+  --/|          be returned. If the token ID isn't registered with bump, the return value will 
+  --/|          be empty.
+  --/|
+  --/|  FIND_BUMP_TOKEN_PAIR
+  --/|          Takes a token ID as parameter 1 and two string variable names as parameters 2 and 3.
+  --/|          Acts as a combination of the two previous functions, returning the real token (param 2)
+  --/|          and the shadow token (param 3) given either of the tokens as the first parameter
+  
+
+  --/|This section is just a sample of calling a function and displaying the returned results. 
+
+  -->FIND_BUMP_MASTER_TOKEN|@{selected|token_id};realtoken
+  --+Real Token|[&realtoken]
+
+  -->FIND_BUMP_SHADOW_TOKEN|@{selected|token_id};ghosttoken
+  --+Shadow Token|[&ghosttoken]
+
+  -->FIND_BUMP_TOKEN_PAIR|@{selected|token_id};mastertoken;shadowtoken
+  --+Pair|[b]Master[/b]:[&mastertoken], [b]Shadow[/b]:[&shadowtoken]
+  --X|
+
+  --/|=========================================================================================================
+  --/| FUNCTION CODE BEGINS HERE
+  --/|=========================================================================================================
+
+  --:FIND_BUMP_MASTER_TOKEN|TokenID of Slave Token;Return var
+  --~work|string;replaceall;",";"&&&";[*G:Bump:mirrored]
+  --~work|string;stripchars;{}";[&work]
+  --~|array;fromstring;workarray;&&&;[&work]
+  --&searchVal|[%1%]
+  --&[%2%]|
+  --%loop|foreach;workarray
+    --?"[&loop]" -ninc "[&searchVal]"|%
+    --~[%2%]|string;before;:;[&loop]
+  --%|
+  --<|
+
+  --:FIND_BUMP_SHADOW_TOKEN|TokenID of Slave Token;Return var
+  --~work|string;replaceall;",";"&&&";[*G:Bump:mirrored]
+  --~work|string;stripchars;{}";[&work]
+  --~|array;fromstring;workarray;&&&;[&work]
+  --&searchVal|[%1%]
+  --&[%2%]|
+  --%loop|foreach;workarray
+    --?"[&loop]" -ninc "[&searchVal]"|%
+    --~[%2%]|string;after;:;[&loop]
+  --%|
+  --<|
+
+  --:FIND_BUMP_TOKEN_PAIR|TokenID of Slave Token;Maste Token Var;Shadow Token Var
+  --~work|string;replaceall;",";"&&&";[*G:Bump:mirrored]
+  --~work|string;stripchars;{}";[&work]
+  --~|array;fromstring;workarray;&&&;[&work]
+  --&searchVal|[%1%]
+  --&[%2%]|
+  --%loop|foreach;workarray
+    --?"[&loop]" -ninc "[&searchVal]"|%
+    --~[%2%]|string;before;:;[&loop]
+    --~[%3%]|string;after;:;[&loop]
+  --%|
+  --<|
+}}

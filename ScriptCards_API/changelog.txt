@@ -1,5 +1,25 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.11 - New String function : stripchars removes all occurrances of any of a given set of 
+           characters from a string:
+           --~output|string;stripchars;{}";[&MyInputString]
+           would remove all {, }, and " characters from MyInputString and store it in output.
+
+         - Added the [*G:...] refence pattern to retrieve game state information. Game state info
+           cannot be written (except with the aleady existing functions), but state can be read from
+           any API's game state information as long as you know the keys/paths. As an example, if you
+           have my EncounterHelper API installed, you can reference the current schema with:
+           
+           [*G:EncounterHelper:schemaVersion]
+
+           Each component of the state variable tree is separate by colons. If the returned entity is
+           an object, it will be stringified before being returned. To get a list of all of the
+           state information associated with EncounterHelper, you would use:
+
+           [*G:EncounterHelper]
+
+           Which would return a JSON string representing the stored state data.
+
 v 2.1.10 - Added setting: formatinforequesttext. If set to a non 0 value, will pass the prompt portion of the --i command through the inline formatter.
            Added system;dropoutputlines function. third parameter can be "direct", "gmonly" or "both" and will abandon any --+ and/or --* lines already
            output by the script.

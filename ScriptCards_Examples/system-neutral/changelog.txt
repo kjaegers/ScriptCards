@@ -1,5 +1,7 @@
 Change Log for items in the ScriptExamples/system-neutral Folder:
 
+2022-09-22 - Added FindBumpToken sample functions for retrieving real/shadow tokens from Bump
+
 2022-09-20 - Added ReportStatusMarkers, a simple script to list all of the status markers defined in your game with their image and their full name.
 
 2022-09-04 - Updated StatusMarkerFuntions to include a CLEAR_STATUS_MARKERS function and to ignore counter numbers when adding the "dead" marker.
