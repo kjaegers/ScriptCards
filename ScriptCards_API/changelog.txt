@@ -1,5 +1,20 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.12 - Revamped the string setting commands (--&, --~|string, --? with a & result, etc.) to allow array element references to be
+           set with them, so "--&fruits(1)|watermelon" will set the second element (the indexes start at 0) to "watermelon"). If the
+           array does not exist, it will be created. If the element index is greater than the highest index in the array, the element
+           will be added to the array. If the index is negative, the element will be added to the beginning of the array. If the index
+           exists within the array, the current value for that element will be replaced.
+
+           As indicated above, in addition to the --& command, the following types of commands will also work with this notation:
+           
+           --~fruits(1)|string;touppercase;grape
+           --?1 -eq 1|&fruits(999);mango|&fruits(999);kiwi
+           --c[$Result]|1:&fruits(999);apple|2:&fruits(999);banana|3:&fruits(999);watermelon
+           
+           IMPORTANT NOTE: If you have ScriptCards code that uses numbers in parenthesis after string names (ie, Boom(5), this will be
+           a breaking change to that code, though this should be very, very uncommon) 
+
 v 2.1.11 - New String function : stripchars removes all occurrances of any of a given set of 
            characters from a string:
            --~output|string;stripchars;{}";[&MyInputString]

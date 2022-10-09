@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.11";
+	const APIVERSION = "2.1.12";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1094,12 +1094,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 						// Handle setting string values
 						if (thisTag.charAt(0) === "&") {
-							var variableName = thisTag.substring(1).trim();
-							if (thisContent.charAt(0) == "+") {
-								stringVariables[variableName] = (stringVariables[variableName] || "") + replaceVariableContent(thisContent.substring(1), cardParameters, true);
-							} else {
-								stringVariables[variableName] = replaceVariableContent(thisContent, cardParameters, true);
-							}
+							setStringOrArrayElement(thisTag.substring(1), thisContent, cardParameters);
 						}
 
 						// Handle data read statements
@@ -1218,11 +1213,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													break;
 												case "stringset":
 													if (varName) {
-														if (varValue == null) { varValue = "" }
-														if (resultType == "stringset" && varValue.charAt(0) == "+") {
-															varValue = (stringVariables[varName] || "") + varValue.substring(1);
-														}
-														stringVariables[varName] = replaceVariableContent(varValue, cardParameters, true);
+														setStringOrArrayElement(varName, varValue, cardParameters);
 													} else {
 														log(`ScriptCards Error: Variable name or value not specified in conditional on line ${lineCounter} (${thisTag}) ${thisContent}`);
 													}
@@ -1780,32 +1771,34 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											//stringfuncs;strlength;string
 											case "strlength":
 											case "length":
-												rollVariables[variableName] = parseDiceRoll((params[2].length.toString()), cardParameters);
+												setStringOrArrayElement(variableName, parseDiceRoll((params[2].length.toString()), cardParameters), cardParameters)
 												break;
 
 											case "tolowercase":
-												stringVariables[variableName] = params[2].toLowerCase();
+												setStringOrArrayElement(variableName, params[2].toLowerCase(), cardParameters)
 												break;
 
 											case "touppercase":
-												stringVariables[variableName] = params[2].toUpperCase();
+												setStringOrArrayElement(variableName, params[2].toUpperCase(), cardParameters)
 												break;
 
 											case "striphtml":
-												stringVariables[variableName] = params[2].replace(/<[^>]*>?/gm, '');
+												setStringOrArrayElement(variableName, params[2].replace(/<[^>]*>?/gm, ''), cardParameters)
 												break;
 
 											case "trim":
-												stringVariables[variableName] = params[2].trim();
+												setStringOrArrayElement(variableName, params[2].trim(), cardParameters)
 												break;
 
 											case "totitlecase":
-												stringVariables[variableName] = params[2].toLowerCase()
-													.split(' ')
-													.map(function (word) {
-														return (word.charAt(0).toUpperCase() + word.slice(1));
-													})
-													.join(" ")
+												setStringOrArrayElement(variableName,
+													params[2].toLowerCase()
+														.split(' ')
+														.map(function (word) {
+															return (word.charAt(0).toUpperCase() + word.slice(1));
+														})
+														.join(" "),
+													cardParameters);
 												break;
 										}
 									}
@@ -1824,36 +1817,36 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											//stringfuncs;before;delimiter;string
 											case "before":
 												if (params[3].indexOf(params[2]) < 0) {
-													stringVariables[variableName] = params[3];
+													setStringOrArrayElement(variableName, params[3], cardParameters)
 												} else {
-													stringVariables[variableName] = params[3].substring(0, params[3].indexOf(params[2]));
+													setStringOrArrayElement(variableName, params[3].substring(0, params[3].indexOf(params[2])), cardParameters);
 												}
 												break;
 
 											//stringfuncs;after;delimeter;string
 											case "after":
 												if (params[3].indexOf(params[2]) < 0) {
-													stringVariables[variableName] = params[3];
+													setStringOrArrayElement(variableName, params[3], cardParameters)
 												} else {
-													stringVariables[variableName] = params[3].substring(params[3].indexOf(params[2]) + params[2].length);
+													setStringOrArrayElement(variableName,params[3].substring(params[3].indexOf(params[2]) + params[2].length), cardParameters);
 												}
 												break;
 
 											//stringfuncs;left;count;string
 											case "left":
 												if (params[3].length < Number(params[2])) {
-													stringVariables[variableName] = params[3];
+													setStringOrArrayElement(variableName, params[3], cardParameters)
 												} else {
-													stringVariables[variableName] = params[3].substring(0, Number(params[2]));
+													setStringOrArrayElement(variableName, params[3].substring(0, Number(params[2])), cardParameters);
 												}
 												break;
 
 											//stringfuncs;right;count;string
 											case "right":
 												if (params[3].length < Number(params[2])) {
-													stringVariables[variableName] = params[3];
+													setStringOrArrayElement(variableName, params[3], cardParameters)
 												} else {
-													stringVariables[variableName] = params[3].substring(params[3].length - Number(params[2]));
+													setStringOrArrayElement(variableName, params[3].substring(params[3].length - Number(params[2])), cardParameters);
 												}
 												break;
 
@@ -1864,7 +1857,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														str = str.replace(params[2].substring(i, i + 1), "")
 													}
 												}
-												stringVariables[variableName] = str;
+												setStringOrArrayElement(variableName, str, cardParameters);
 												break;
 
 										}
@@ -1874,18 +1867,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										switch (params[1].toLowerCase()) {
 											//stringfuncs0;substring1;start2;length3;string4
 											case "substring":
-												stringVariables[variableName] = params[4].substring(Number(params[2]) - 1, Number(params[3]) + Number(params[2]) - 1);
+												setStringOrArrayElement(variableName, params[4].substring(Number(params[2]) - 1, Number(params[3]) + Number(params[2]) - 1), cardParameters);
 												break;
 
 											case "replace":
-												stringVariables[variableName] = params[4].replace(params[2], params[3]);
+												setStringOrArrayElement(variableName, params[4].replace(params[2], params[3]), cardParameters);
 												break;
 
 											case "replaceall":
 												if (!params[3].includes(params[2])) {
 													var str = params[4];
 													while (str.includes(params[2])) { str = str.replace(params[2], params[3]) }
-													stringVariables[variableName] = str;
+													setStringOrArrayElement(variableName, str, cardParameters);
 												}
 												break;
 										}
@@ -1927,9 +1920,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												if (params[3] != null && params[3] != null) {
 													sep = params[3];
 												}
-												stringVariables[variableName] = arrayVariables[params[2]].join(sep);
+												setStringOrArrayElement(variableName, arrayVariables[params[2]].join(sep), cardParameters);
 											} else {
-												stringVariables[variableName] = "";
+												setStringOrArrayElement(variableName, "", cardParameters);
 											}
 										}
 
@@ -2264,7 +2257,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 
 						// Handle API Call Lines
-						if (thisTag.charAt(0) === "@") {
+						if (thisTag.charAt(0) === "@" && thisTag.indexOf("(") == -1) {
 							var apicmd = thisTag.substring(1);
 							var spacer = " ";
 							const slash = "\\";
@@ -2522,13 +2515,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										break;
 									case "stringset":
 										if (varName) {
-											if (varValue == null) { varValue = "" }
-											if (resultType == "stringset" && varValue.charAt(0) == "+") {
-												varValue = (stringVariables[varName] || "") + varValue.substring(1);
-											}
-											stringVariables[varName] = replaceVariableContent(varValue, cardParameters, false);
+											setStringOrArrayElement(varName, varValue, cardParameters);
 										} else {
-											log(`ScriptCards Error: Variable name or value not specified in conditional on line ${lineCounter} (varName:${varName}, value:${varValue})`);
+											log(`ScriptCards Error: Variable name or value not specified in conditional on line ${lineCounter} (${thisTag}) ${thisContent}`);
 										}
 										break;
 									case "next":
@@ -4798,6 +4787,40 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 		return;
 	};
+
+	function setStringOrArrayElement(varName, varValue, cardParameters) {
+		// Determine if the varName is a string or Array Element
+		if (varName.match(/(.*)\((-?\d*)\)/)) {
+			// It's an array element reference, split into a name and index
+			var match = varName.match(/(.*)\((-?\d*)\)/);
+			var arrayName = match[1];
+			var arrayIndex = match[2];
+
+			if (isNumber(arrayIndex)) {
+				// If the array doesn't exist, create an empty array
+				if (arrayVariables[arrayName] == null) {
+					arrayVariables[arrayName] = [];
+				}
+				if (arrayVariables[arrayName].length >= (arrayIndex - 1) && arrayIndex >= 0) {
+					arrayVariables[arrayName][arrayIndex] = varValue;
+				} else {
+					if (arrayIndex < 0) {
+						arrayVariables[arrayName].unshift(varValue);	
+					} else {
+						arrayVariables[arrayName].push(varValue);
+					}
+				}
+			}
+		} else {
+			if (varValue == null) { varValue = "" }
+
+			if (varValue.charAt(0) == "+") {
+				varValue = (stringVariables[varName] || "") + varValue.substring(1);
+			}
+
+			stringVariables[varName] = replaceVariableContent(varValue, cardParameters, true);
+		}
+	}
 
 	return {}
 })();
