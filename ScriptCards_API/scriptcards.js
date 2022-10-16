@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.12";
+	const APIVERSION = "2.1.13";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -3719,6 +3719,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (tableResult) {
 						rollResult.tableEntryText = tableResult[0];
 						rollResult.tableEntryImgURL = tableResult[1];
+						rollResult.Total = tableResult[2];
+						rollResult.Base = tableResult[2];
+						rollResult.RollText = `[T#${rollTableName}]`;
+						rollResult.Text = tableResult[0];
 						rollResult.tableEntryValue = isNaN(rollResult.tableEntryText) ? 0 : parseInt(rollResult.tableEntryText);
 					}
 				}
@@ -4304,10 +4308,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				var lastRollIndex = 0;
 				var itemCount = 0;
 				var maxRoll = 0;
+				var nonOneWeights = 0;
 				tableItems.forEach(function (item) {
 					try {
 						var thisWeight = parseInt(item.get("weight"));
 						if (isNaN(thisWeight)) { thisWeight = 1 }
+						if (thisWeight !== 1) { nonOneWeights += 1; }
 						rollIndex += thisWeight;
 						for (var x = lastRollIndex + 1; x <= rollIndex; x++) {
 							rollResults[x] = itemCount;
@@ -4321,7 +4327,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				});
 				var tableRollResult = randomInteger(maxRoll);
 				try {
-					return [tableItems[rollResults[tableRollResult]].get("name"), tableItems[rollResults[tableRollResult]].get("avatar")];
+					if (nonOneWeights == 0) {
+						return [tableItems[rollResults[tableRollResult]].get("name"), tableItems[rollResults[tableRollResult]].get("avatar"), tableRollResult];
+					} else {
+						return [tableItems[rollResults[tableRollResult]].get("name"), tableItems[rollResults[tableRollResult]].get("avatar"), 0];
+					}
 				} catch {
 					log(`ScriptCards: Exception while reading table results for table item ${tableRollResult}`)
 					return "", ""

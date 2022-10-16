@@ -1,5 +1,11 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.13 - When rolling on rollable tables [T#TableName] if the weights on all of the table entries are 1, the "dice roll" number will
+           be saved to the .Total and .Base values for the roll. For any table with at least 1 weight greater than 1, the values will
+           both be set to 0 since the roll value would be meaningless as the table gets expanded to account for weights. In addition,
+           for all rollable table rolls, the Text and RollText values are now filled in as well, with Text being set to the roll table
+           text value from the table (same as tableEntryText).
+
 v 2.1.12 - Revamped the string setting commands (--&, --~|string, --? with a & result, etc.) to allow array element references to be
            set with them, so "--&fruits(1)|watermelon" will set the second element (the indexes start at 0) to "watermelon"). If the
            array does not exist, it will be created. If the element index is greater than the highest index in the array, the element
