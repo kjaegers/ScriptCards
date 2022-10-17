@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.13";
+	const APIVERSION = "2.1.14";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1425,6 +1425,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											}
 											for (var x = turnorder.length - 1; x >= 0; x--) {
 												if (turnorder[x].id == params[2]) {
+													turnorder.splice(x, 1);
+												}
+											}
+											Campaign().set("turnorder", JSON.stringify(turnorder));
+										}
+										if (params[1].toLowerCase() == "removecustom") {
+											var turnorder = [];
+											if (Campaign().get("turnorder") !== "") {
+												turnorder = JSON.parse(Campaign().get("turnorder"));
+											}
+											for (var x = turnorder.length - 1; x >= 0; x--) {
+												if (turnorder[x].id == -1 && turnorder[x].custom == params[2]) {
 													turnorder.splice(x, 1);
 												}
 											}
