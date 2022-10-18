@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.14";
+	const APIVERSION = "2.1.15";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2010,8 +2010,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											arrayVariables[params[2]] = [];
 											for (var x = 0; x < objects.length; x++) {
 												if (params[3] != null) {
+													var okFilter = false || params[3] == "";
+													var okChar = !(params[4] != null) || objects[x].get("characterid") == params[4];
 													if (objects[x].get(lookupField).toLowerCase().startsWith(params[3].toLowerCase())) {
-														arrayVariables[params[2]].push(objects[x].get("_id"));
+														okFilter = true;
+													}
+													if (okFilter && okChar) {
+														arrayVariables[params[2]].push(objects[x].get("_id"));	
 													}
 												} else {
 													arrayVariables[params[2]].push(objects[x].get("_id"));

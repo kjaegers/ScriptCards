@@ -1,5 +1,9 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.15 - Added the ability to add an additional parameter to array;objects:type;filter to specify a character id for the object
+           if it is appropriate. For example, to find all abilities for a given character: 
+           --~|array;objects:ability;AbilArray;;@{selected|character_id}
+
 v 2.1.14 - Added "removecustom" as a subfunction for turnorder. Allows for the removal, by custom name, of a custom entry in the
            turn tracker. Ex: --~|turnorder;removecustom;Round Counter
 
