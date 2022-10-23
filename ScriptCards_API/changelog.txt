@@ -1,5 +1,25 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.16 - Adds the --w command, which has two related methods of use. --w#| (ie, --w5|) will sleep the sandbox for # seconds (up to 10)
+           Note that this has limited usefulness and multiple delays could crash the sandbox by Roll20 thinking it entered an infinite loop.
+           The second option is --w#:regularscriptcardsline, for example: --w5:a|CureLightWounds which would run the script normally and
+           trigger the system to run the ScriptCard line indicated 5 seconds later. This is done by generating a mini ScriptCard containing
+           that single line. Variable referencing is processed when this mini-card is generated. Example:
+           
+           !script {{ 
+             --&SoundToPlay|Spell_FireBurst
+             --w3:a|[&SoundToPlay]
+             --w4:vtoken|@{selected|token_id} nova-fire
+             --w5:!t:@{selected|token_id}|left:250
+           }}
+
+           This script will run and output the ScriptCards title. Three seconds later, the Spell_FireBurst audio track will play. One second
+           after that, a nova-fire VFX will play at the selected token location, and finally a second after that the token will be moved 
+           to x-position 250.
+
+           Note: If the delayed command is a direct output (--+) or GM output (--*) command, the mini-ScriptCard will display the line as
+           a new card with the title hidden.
+
 v 2.1.15 - Added the ability to add an additional parameter to array;objects:type;filter to specify a character id for the object
            if it is appropriate. For example, to find all abilities for a given character: 
            --~|array;objects:ability;AbilArray;;@{selected|character_id}

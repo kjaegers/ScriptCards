@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.15";
+	const APIVERSION = "2.1.16";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -647,6 +647,25 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							sendChat(msg.who, `/w ${msg.who} ${flavorText}` + makeButton(buttonLabel, `!sc-resume ${myGuid}-|-${buildLine}`, cardParameters));
 						}
 
+						// Handle "w" (wait) statements
+						if (thisTag.charAt(0).toLowerCase() == "w") {
+							if (thisTag.length == 1) {
+								DelaySandboxExecution(thisContent);
+							} else {
+								if (thisTag.indexOf(":") > 0) {
+									var delayArgs = thisTag.substring(1).split(":");
+									var delayLength = delayArgs[0];
+									delayArgs.shift();
+									var delayCommand = delayArgs.join(":");
+									var hideInfo = "--#hidecard|1"
+									if (delayCommand.charAt(0) == "+" || delayCommand.charAt(0) == "*") {
+										hideInfo = "--#hidetitlecard|1"
+									}
+									setTimeout(delayFunction("", `!script {{ ${hideInfo} --${replaceVariableContent(delayCommand)}|${replaceVariableContent(thisContent)} }}`), parseFloat(delayLength) * 1000)
+								}
+							}
+						}
+
 						// Handle looping statements
 						if (thisTag.charAt(0) === "%") {
 							var loopCounter = thisTag.substring(1);
@@ -1050,7 +1069,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									}
 								} else {
 									var objectInfo = thisTag.substring(1).split(":");
-									log(objectInfo)
 									if (objectInfo.length == 2) {
 										var objectType = objectInfo[0];
 										var objectID = objectInfo[1];
@@ -1840,7 +1858,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												if (params[3].indexOf(params[2]) < 0) {
 													setStringOrArrayElement(variableName, params[3], cardParameters)
 												} else {
-													setStringOrArrayElement(variableName,params[3].substring(params[3].indexOf(params[2]) + params[2].length), cardParameters);
+													setStringOrArrayElement(variableName, params[3].substring(params[3].indexOf(params[2]) + params[2].length), cardParameters);
 												}
 												break;
 
@@ -2016,7 +2034,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														okFilter = true;
 													}
 													if (okFilter && okChar) {
-														arrayVariables[params[2]].push(objects[x].get("_id"));	
+														arrayVariables[params[2]].push(objects[x].get("_id"));
 													}
 												} else {
 													arrayVariables[params[2]].push(objects[x].get("_id"));
@@ -3318,9 +3336,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 						if (character != null && (!attrName.toLowerCase().startsWith("t-"))) {
-							attribute = getAttrByName(character.id, attrName, opType);
-							if (attribute === undefined) {
-								attribute = character.get(attrName);
+							if (attrName !== "bio" && attrName !== "notes" && attrName !== "gmnotes") {
+								attribute = getAttrByName(character.id, attrName, opType);
+								if (attribute === undefined) {
+									attribute = character.get(attrName);
+								}
+							} else {
+								character.get(attrName, function (a) {
+									attribute = a;
+								});
 							}
 						}
 						if (token == undefined && character == undefined) {
@@ -4815,6 +4839,23 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return;
 	};
 
+	function DelaySandboxExecution(thisContent) {
+		var now = new Date;
+		var startTime = (now.getHours() * 60 * 60) + (now.getMinutes() * 60) + now.getSeconds();
+		var delay = parseFloat(thisContent);
+		if (delay > 10) { delay = 10; }
+		var endTime = startTime + delay;
+		while (endTime > (now.getHours() * 60 * 60) + (now.getMinutes() * 60) + now.getSeconds()) {
+			now = new Date;
+		}
+	}
+
+	function delayFunction(speaker, output) {
+		return function () {
+			sendChat("ScriptCards", output.trim());
+		}
+	}
+
 	function setStringOrArrayElement(varName, varValue, cardParameters) {
 		// Determine if the varName is a string or Array Element
 		if (varName.match(/(.*)\((-?\d*)\)/)) {
@@ -4832,7 +4873,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					arrayVariables[arrayName][arrayIndex] = varValue;
 				} else {
 					if (arrayIndex < 0) {
-						arrayVariables[arrayName].unshift(varValue);	
+						arrayVariables[arrayName].unshift(varValue);
 					} else {
 						arrayVariables[arrayName].push(varValue);
 					}
@@ -4857,3 +4898,5 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 // Support for AirBag Crash Handler (if installed)
 if (typeof MarkStop === "function") MarkStop('ScriptCards');
+
+
