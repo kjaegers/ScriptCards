@@ -858,7 +858,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						// Handle setting object values
 						if (thisTag.charAt(0) === "!") {
 							if (thisTag.length > 1) {
-								if (thisTag.substring(2, 3) == ":") {
+								if (thisTag.substring(3, 4) == ":") {
 									var objectType = thisTag.substring(1, 2).toLowerCase();
 									switch (objectType) {
 										case "o":
@@ -873,6 +873,30 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													} else {
 														stringVariables[returnVarName] = "OBJECT_CREATION_ERROR";
 													}
+												}
+											}
+											if (objtype == "b") {
+												var info = thisTag.substring(4).split(":");
+												if (info.length >= 3) {
+													var theCharacter = getObj("character", info[1])
+													var returnVarName = info[0];
+													var isTokenAction = false;
+													if (info[3] != null && info[3].toLowerCase() == "y") {
+														isTokenAction = true;
+													}
+													if (theCharacter != null) {
+														var newAbility = createObj("ability", {
+															name: info[2],
+															_characterid: info[1],
+															action: thisContent,
+															istokenaction: isTokenAction
+														});
+														stringVariables[returnVarName] = newAbility.id;
+													} else {
+														stringVariables[returnVarName] = "OBJECT_CREATION_ERROR";
+													}
+												} else {
+													stringVariables[returnVarName] = "OBJECT_CREATION_ERROR";
 												}
 											}
 											break;

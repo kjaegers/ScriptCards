@@ -1,5 +1,30 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.17 - Added the ability to create abilities with the --! command. The syntax is --!ob:ReturnVarName:CharacterID:AbilityName:IsTokenAction|Text of the Ability
+           For example, this will create an abilitiy called "SayHello" on the selected character that runs the Lightning-Bolt ability from the Spell_Mule character.
+
+           !script {{
+             --&obrac|{
+             --&cbrac|}
+             --&perc|%
+             --!ob:AbilID:@{selected|character_id}:SayHello:y|[&perc][&obrac]Spell_Mule|Lightning-Bolt[&cbrac]
+             --+AbilID|[&AbilID]
+           }}
+
+           To break this line (--!ob:AbilID:@{selected|character_id}:SayHello:y|[&perc][&obrac]Spell_Mule|Lightning-Bolt[&cbrac]) down:
+             --! is the start of an object moficiation command
+             o means create a new object
+             b means aBility ("A" would be reserved for attributes)
+             AbilID is the string variable that the object id of the new ability will be returned to
+             @{selected|character_id} is filled in with the Character ID of the currently selected character
+             SayHello is The name of the ability that will be created
+             y says that this ability should show up as a token action button when the token is selected
+             [&perc][&obrac]Spell_Mule|Lightning-Bolt[&cbrac] is the text of the ability, with variables used on place of %, { and } to avoid having them
+               processed by the chat server.
+
+           You could also include references global macros by creating --&hash|# and placing that before the global macro name in the ability text, Ex:
+           --!ob:AbilID:@{selected|character_id}:ActionMenu:y|[&hash]ActionMenu
+
 v 2.1.16 - Adds the --w command, which has two related methods of use. --w#| (ie, --w5|) will sleep the sandbox for # seconds (up to 10)
            Note that this has limited usefulness and multiple delays could crash the sandbox by Roll20 thinking it entered an infinite loop.
            The second option is --w#:regularscriptcardsline, for example: --w5:a|CureLightWounds which would run the script normally and
