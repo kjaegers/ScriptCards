@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.16";
+	const APIVERSION = "2.1.17";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -898,6 +898,26 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												} else {
 													stringVariables[returnVarName] = "OBJECT_CREATION_ERROR";
 												}
+											}
+											if (objtype == "p") {
+												var tagInfo = thisTag.split(":");
+												var returnVarName = tagInfo[1];
+												var info = thisContent.split("|");
+												for (var x = 0; x < info.length; x++) {
+													var subInfo = info[x].split(":")
+													var thisInfo = `"${subInfo[0]}":"${subInfo[1]}"`;
+													info[x] = thisInfo
+													log(info[x])
+												}
+												log(`{${info.join(',')}}`);
+												var parsedJSON = JSON.parse(`{${info.join(',')}}`);
+												var newPath = createObj("path", parsedJSON);
+												if (newPath != null) {
+													stringVariables[returnVarName] = newPath.id;
+												} else {
+													stringVariables[returnVarName] = "OBJECT_CREATION_ERROR";
+												}
+
 											}
 											break;
 
