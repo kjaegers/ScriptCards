@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.17";
+	const APIVERSION = "2.1.18";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -858,7 +858,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						// Handle setting object values
 						if (thisTag.charAt(0) === "!") {
 							if (thisTag.length > 1) {
-								if (thisTag.substring(3, 4) == ":") {
+								if (thisTag.charAt(2) == ":" || thisTag.charAt(3) == ":") {
 									var objectType = thisTag.substring(1, 2).toLowerCase();
 									switch (objectType) {
 										case "o":

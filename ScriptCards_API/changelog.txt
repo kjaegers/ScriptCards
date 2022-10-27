@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.18 - Bug fix for what I broke in 2.1.17 :)
+
 v 2.1.17 - Added the ability to create abilities with the --! command. The syntax is --!ob:ReturnVarName:CharacterID:AbilityName:IsTokenAction|Text of the Ability
            For example, this will create an abilitiy called "SayHello" on the selected character that runs the Lightning-Bolt ability from the Spell_Mule character.
 
