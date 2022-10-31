@@ -4990,7 +4990,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				}
 			}
 		} else {
-			log(varValue);
 			if (varValue == null) { varValue = "" }
 
 			if (typeof(varValue) === 'string' && varValue.charAt(0) == "+") {
