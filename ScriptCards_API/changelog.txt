@@ -1,5 +1,34 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.1.19 - Object creation now supports the creation of repeating rows via --!or. The syntax is: --!or:character_id:sectionName|value:current:max|value:current:max...
+           For example, to create a language proficiency on the currently selected character (5E):
+
+           --!or:@{selected|character_id}:proficiencies|prof_type:LANGUAGE|name:Abyssal
+           
+           The max portion is optional and can be left out if it doesn't make sense (as in the line above). A bit more complicated example is below. This creates a
+           repeating_npcaction on the currently selected character (note that ScriptCards doesn't have a way to check to see if the section exists, it will just create
+           the appropriate attributes on the character - again, this is a 5E example, but repeating sections on any sheet can be created as long as you know what
+           attributes you need to specify and the name of the section):
+
+           !script {{
+             --!or:@{selected|character_id}:npcaction|
+                name:Mega Bite|
+                attack_flag:on|
+                attack_type:melee|
+                attack_target:one target|
+                attack_range:5 ft.|
+                attack_tohit:8|
+                attack_damage:1d4 + 3|
+                attack_damagetype:piercing|
+                attack_tohitrange:+5, Reach 5ft., one target|
+                attack_onhit:5 (1d4 + 3) piercing damage|
+                attack_crit:1d4
+           }}
+
+           Note that this is all one ScriptCards line, and could be written that way. Placing each attribute/value pair on its own line makes it a bit clearer to read, though.
+
+           ScriptCards will assume that the section starts with "repeating_" so it should not be specified in the section parameter (hence "npcaction" instead of "repeating_npcaction")
+
 v 2.1.18 - Bug fix for what I broke in 2.1.17 :)
 
 v 2.1.17 - Added the ability to create abilities with the --! command. The syntax is --!ob:ReturnVarName:CharacterID:AbilityName:IsTokenAction|Text of the Ability

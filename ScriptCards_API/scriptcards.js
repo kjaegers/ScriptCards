@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.18";
+	const APIVERSION = "2.1.19";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -899,6 +899,38 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													stringVariables[returnVarName] = "OBJECT_CREATION_ERROR";
 												}
 											}
+											if (objtype == "r") {
+												var info = thisTag.substring(4).split(":");
+												if (info.length >= 2) {
+													var theCharacter = getObj("character", info[0])
+													var theSection = info[1];
+													var rowID = generateRowID();
+													var info = thisContent.split("|");
+													if (theCharacter != null) {
+														for (var x = 0; x < info.length; x++) {
+															var subInfo = info[x].split(":");
+															subInfo.push("");
+															subInfo.push("");
+															subInfo.push("");
+															try {
+															// eslint-disable-next-line no-unused-vars
+															var newAttribute = createObj("attribute",
+																{
+																	name: `repeating_${theSection}_${rowID}_${subInfo[0].trim()}`,
+																	_characterid: theCharacter.id,
+																	current: subInfo[1].trim(),
+																	max: subInfo[2].trim()
+																}
+															)
+															} catch { 
+																log(`ScriptCards: Error creating repeating section values on character ${theCharacter}, section ${theSection}`)
+															}
+														}
+													}
+
+												}
+											}
+											/*
 											if (objtype == "p") {
 												var tagInfo = thisTag.split(":");
 												var returnVarName = tagInfo[1];
@@ -919,6 +951,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												}
 
 											}
+											*/
 											break;
 
 										case "t":
@@ -4899,6 +4932,39 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			sendChat("ScriptCards", output.trim());
 		}
 	}
+
+	const generateUUID = (() => {
+		let a = 0;
+		let b = [];
+		return () => {
+			let c = (new Date()).getTime() + 0;
+			let f = 7;
+			let e = new Array(8);
+			let d = c === a;
+			a = c;
+			for (; 0 <= f; f--) {
+				e[f] = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".charAt(c % 64);
+				c = Math.floor(c / 64);
+			}
+			c = e.join("");
+			if (d) {
+				for (f = 11; 0 <= f && 63 === b[f]; f--) {
+					b[f] = 0;
+				}
+				b[f]++;
+			} else {
+				for (f = 0; 12 > f; f++) {
+					b[f] = Math.floor(64 * Math.random());
+				}
+			}
+			for (f = 0; 12 > f; f++) {
+				c += "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz".charAt(b[f]);
+			}
+			return c;
+		};
+	})();
+
+	const generateRowID = () => generateUUID().replace(/_/g, "Z");
 
 	function setStringOrArrayElement(varName, varValue, cardParameters) {
 		// Determine if the varName is a string or Array Element
