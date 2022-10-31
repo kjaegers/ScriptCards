@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.19";
+	const APIVERSION = "2.1.19a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -4990,9 +4990,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				}
 			}
 		} else {
+			log(varValue);
 			if (varValue == null) { varValue = "" }
 
-			if (varValue.charAt(0) == "+") {
+			if (typeof(varValue) === 'string' && varValue.charAt(0) == "+") {
 				varValue = (stringVariables[varName] || "") + varValue.substring(1);
 			}
 
