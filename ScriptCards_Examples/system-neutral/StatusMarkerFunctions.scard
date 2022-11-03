@@ -20,17 +20,26 @@
   --/|                ADD_STATUS_MARKER - TokenID;MarkerToAdd;Count
   --/|                     Will add (MarkerToAdd) to the given token (TokenID). If count is specified with a number
   --/|                     betweeen 1 and 9, the number will be placed on top of the status marker.
+  --/|                DECREMENT_STATUS_MARKER - TokenID;MarkerToDecrement;Blank, 0 or 1 (OPTIONAL)
+  --/|                     If (MarkerToDecrement) exists on the on token (TokenID), the counter number will be
+  --/|                     decreased by 1. If a third parameter is added and set to 1, the status marker will
+  --/|                     be removed when decrementing from 1 to no counter. If set to 0, the marker will be
+  --/|                     be removed when decrementing for a marker without a counter. If not specified, the
+  --/|                     marker will not be removed when the counter would go below 1 or 0.
   --/|
   --/|                CLEAR_STATUS_MARKERS - TokenID
   --/|                     Removes all status markers from the indicated token.
   
-  --/|This section is just a sample of calling a function and displaying the returned results. Here we are getting the information
-  --/|for the current turn (GET_CURRENT_TURN_INFO) and storing the results in string variables named "TID" (for Token ID), "INIT" 
-  --/|(for the initiative value), "CUSTOM" (for the custom text), "FORMULA" (for the per-round formula), "PAGE" (for the page 
-  --/|ID the turn is on), and "name" for the value of either the  token name or the custom text.    
+  --/|The commented out lines below are just samples of calling some of the functions in this script.
+  
+  --/|Remove all status markers from the selected token
+  --/>CLEAR_STATUS_MARKERS|@{selected|token_id}
 
-  --/|>CLEAR_STATUS_MARKERS|@{selected|token_id}
-  --/|>ADD_STATUS_MARKER|@{selected|token_id};snail;5
+  --/|Add the "snail" status marker with a counter of 5 to the selected token
+  --/>ADD_STATUS_MARKER|@{selected|token_id};snail;5
+
+  --/|Decrement the counter on the "snail" status marker on the selected token, removing it if the number goes below 1
+  --/>DECREMENT_STATUS_MARKER|@{selected|token_id};snail;1
 
   --X|
 
@@ -65,6 +74,18 @@
   --!t:[%1%]|statusmarkers: [&newConditions]
   --:DONE_REMOVE_STATUS_MARKER|
   --<|  
+
+  --:DECREMENT_STATUS_MARKER|Token_ID;Status Marker;Optional:0=remove marker if decrementing from 0 or 1=Remove marker if decrementing TO 0.
+  -->CHECK_STATUS_MARKER|[%1%];[%2%];_DEC_EXIST;_DEC_COUNT
+  --?[&_DEC_EXIST] -eq 0|DONE_DECREMENT_STATUS_MARKER
+  --?[&_DEC_COUNT] -eq 0 -and "X[%3%]" -eq "X"|DONE_DECREMENT_STATUS_MARKER
+  -->REMOVE_STATUS_MARKER|[%1%];[%2%]
+  --?[&_DEC_COUNT] -eq 1 -and "X[%3%]" -eq "X1"|DONE_DECREMENT_STATUS_MARKER
+  --?[&_DEC_COUNT] -eq 0 -and "X[%3%]" -eq "X0"|DONE_DECREMENT_STATUS_MARKER
+  --?[&_DEC_COUNT] -gt 1|>ADD_STATUS_MARKER;[%1%];[%2%];[=[&_DEC_COUNT]-1]
+  --?[&_DEC_COUNT] -eq 1|>ADD_STATUS_MARKER;[%1%];[%2%]
+  --:DONE_DECREMENT_STATUS_MARKER|
+  --<|
   
   --:CHECK_STATUS_MARKER|TokenID;MarkerToFind;Exists;Counter
   --~|array;statusmarkers;Conditions;[%1%]
