@@ -1,5 +1,10 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-11-07 - 5E Character Action Menu 2.2.0
+             - Adds support for the template functionality added in ScriptCards 2.2.0. Default template is "none". Setting &Template in the settings
+               area allows you to specify any available template.
+             - Removed leading spaces from button displays and put them at the end of the button for better visual display
+
 2022-09-20 - 5E Character Action Menu 2.1.6
              - The sendGmInfo setting now masks the AC for all attack rolls and also sends the GM an output line detailing the attack.
              - Updated the Spell Mule code the use buttons by name instead of character ID to work around a bug in Roll20's late-loading system. It

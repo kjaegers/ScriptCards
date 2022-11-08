@@ -1,5 +1,46 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.2.0  - ScriptCards now supports templates that override the visual appearance of an output card. These are based on the Genre Templates in Keithcurtis'
+           Supernotes 0.2.0. If you have that mod installed, you will gain access to the 10 templates it contains. ScriptCards itself adds three templates
+           to the mix, and you can define your own templates via a mule character.
+
+           Keith's thread: https://app.roll20.net/forum/post/11173104/script-supernotes-0-dot-2-0-now-with-genre-templates/?pageforid=11173104#post-11173104
+           Until it comes up on OneClick, you will need to download the temporary git version of the code (linked to near the bottom of the first post in
+           that thread) and install it manually. This will give you access to Keith's tmeplates.
+
+           To utilize a template, simply set the --#overridetemplate| option to the desired template (or "none" if you want to specify none, though that is the
+           default setting). 
+           
+           The templates from Keith's mod are: generic, dark, gothic, crt, steam, scroll, apoc, faraway, lcars, notebook.
+           ScriptCards defines: dnd5e, dnd1e_green, dnd1e_amber
+
+           Note that using a template really is an override - none of your appearance settings (titlefone, button styles, etc.) will be used when displaying a
+           ScriptCard with an override template.
+
+           A template consists of six sections of CSS code (Keith defines two more that aren't used by ScriptCards): boxcode, titlecode, textcode, buttonwrapper, 
+           buttonstyle, and footer. Note that in ScriptCards case, the button wrapper is output right before the end of the card, and doesn't actually do anything
+           with buttons - it simply allows for the footer to be in the right spot. It should still be included to match the div counts, however.
+
+           If you wish to define your own templates, create a character called "ScriptCards_TemplateMule" (case sensitive) and create an ability with the name
+           of your template. The text of the ability MUST be constructed carefully, and I'll include a sample below. Essentially, you need one line for each of the
+           six sections, with all "<" and ">" characters replaed with "{" and "}". Note that this means you won't be able to use curly braces inside the template.
+           Each line begins with the name of the section (ie, boxcode) followed by two colons (::). Each line ends with two vertical bars (||). Leading spaces in the
+           line will be removed automatically, as will line breaks. I suggest working on your styles in something like Notepad++ and pasting them over.
+
+           IN ORDER TO USE YOUR MULE STYLES AFTER ENTERING/EDITING ONE, you will need to restart your sandbox, as they are only checked at load time.
+
+           Here is a simple example: (I'm not saying it *looks* good :))
+
+           boxcode::{div style='background-color: #18769c; box-shadow: 0 0 3px #fff; display: block; text-align: left; font-size: 13px; padding: 5px; 
+           margin-bottom: 2px; color: black; font-family: sans-serif; white-space: pre-wrap; line-height:1.3em; font-style:normal'}||
+           titlecode::{div style='margin: 0.5em 1em 0.25em 1em; font-size: 16px; font-variant: small-caps; font-family: "Goblin One", sans-serif; color: #000; 
+           display: block; margin-block-start: 1em; margin-block-end: 0; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;'}||
+           textcode::{/div}{div}{div style='font-weight: normal; display: block; margin: 0 1em 0 1em;'}||
+           buttonwrapper::{div style='display:block;'}||
+           buttonstyle::style='display:inline-block; font-size: 10px; color:#000; padding: 2px 0px 2px 0px; background-color: transparent; border: 1px solid black; 
+           text-align: center; border-radius: 0px;'||
+           footer::
+
 v 2.1.19 - Object creation now supports the creation of repeating rows via --!or. The syntax is: --!or:character_id:sectionName|value:current:max|value:current:max...
            For example, to create a language proficiency on the currently selected character (5E):
 

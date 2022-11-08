@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.1.6
+  --/|Version     : 2.2.0
   --/|Requires SC : 2.1.7
   --/|Author      : Kurt Jaegers
 
@@ -111,6 +111,8 @@
   --/|If set to 1, rest buttons will be shown in the title bar
   --&ShowRestButtons|1
   
+  --&Template|none
+  
   --/|List spells here, separated by semicolons, that should be kept in the PC Attacks display with "[After Cast]" appended to them
   --~|array;define;SpellsToKeepWithSuffix;Spiritual Weapon;Scorching Ray
 
@@ -164,6 +166,7 @@
   --&TB|& --&TB|+# --&TB|+64 --&TB|+; --&TB|+{
   --&BED|& --&BED|+# --&BED|+128719;
   --&CLOCK|& --&CLOCK|+# --&CLOCK|+128336;
+  --&SPACE|X X --&SPACE|[&SPACE(1,1)]
   
   --/|Set up some style information for the action menu and subsequent cards. These attempt to somewhat
   --/|simulate the 5E style
@@ -184,6 +187,7 @@
   --#tablebgcolor|#fffebd
   --#lineheight|9pt
   --#buttonpadding|[&defaultButtonPadding]
+  --#overridetemplate|[&Template]
 
   --/|The menu is whispered to the player executing the macro. #whisper will be set again later for the
   --/|actual output to be public.
@@ -268,7 +272,7 @@
       --+[*R:name]|[*R:description]
       --^skip_ma_button|
       --:skip_multiattack|
-      --&NPCActions|+ [rbutton][*R:name]::EXEC_NPC_ACTION;[*R:name]|[&TB]target|token_id}[/rbutton] 
+      --&NPCActions|+[rbutton][*R:name]::EXEC_NPC_ACTION;[*R:name]|[&TB]target|token_id}[/rbutton][&SPACE]
       --:skip_ma_button|
       --Rnext|
       --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Action_Display
@@ -280,7 +284,7 @@
   --&NPCBonusActions|[br]
   --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
     --:NPC_Bonus_Action_Display|
-      --&NPCBonusActions|+ [rbutton][*R:name]::EXEC_NPC_BONUS_ACTION;[*R:name]|[&TB]target|token_id}[/rbutton] 
+      --&NPCBonusActions|+[rbutton][*R:name]::EXEC_NPC_BONUS_ACTION;[*R:name]|[&TB]target|token_id}[/rbutton][&SPACE]
       --Rnext|
       --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Bonus_Action_Display
     --+Bonus Actions|[&NPCBonusActions]
@@ -291,7 +295,7 @@
   --&NPCReactions|[br]
   --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
     --:NPC_Reaction_Display|
-      --&NPCReactions|+ [rbutton][*R:name]::EXEC_NPC_REACTION;[*R:name]|[&TB]target|token_id}[/rbutton] 
+      --&NPCReactions|+[rbutton][*R:name]::EXEC_NPC_REACTION;[*R:name]|[&TB]target|token_id}[/rbutton][&SPACE]
       --Rnext|
       --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Reaction_Display
     --+Reactions|[&NPCReactions]
@@ -302,7 +306,7 @@
   --&NPCLegendaryActions|[br]
   --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
     --:NPC_Legendary_Action_Display|
-      --&NPCLegendaryActions|+ [rbutton][*R:name]::EXEC_NPC_LEGENDARY_ACTION;[*R:name]|[&TB]target|token_id}[/rbutton] 
+      --&NPCLegendaryActions|+[rbutton][*R:name]::EXEC_NPC_LEGENDARY_ACTION;[*R:name]|[&TB]target|token_id}[/rbutton][&SPACE]
       --Rnext|
       --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Legendary_Action_Display
       --+Legendary Actions|[&NPCLegendaryActions]
@@ -317,14 +321,13 @@
       --~testMule|system;findability;[&spellmulename];[&testName]
       --?[&testMule] -ne "AbilityNotFound"|MULE_NPC_CANTRIP
       --?"[*R:spelloutput]" -eq ATTACK|NPC_CANTRIP_GENERATE_WITH_TARGET
-      --&PCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|NONE[/rbutton]
+      --&PCCantrips|+[rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|NONE[/rbutton][&SPACE]
       --^NPC_CANTRIP_END_GENERATE|
       --:NPC_CANTRIP_GENERATE_WITH_TARGET|
-      --&NPCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|[&TB]target|token_id}[/rbutton] 
+      --&NPCCantrips|+[rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|[&TB]target|token_id}[/rbutton][&SPACE]
       --^NPC_CANTRIP_END_GENERATE|
       --:MULE_NPC_CANTRIP|
-      --/&PCCantrips|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
-      --&PCCantrips|+ [button][*R:spellname]::~[&spellmulename]|[&testName][/button] 
+      --&PCCantrips|+[button][*R:spellname]::~[&spellmulename]|[&testName][/button][&SPACE]
       --:NPC_CANTRIP_END_GENERATE|
       --Rnext|
       --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|NPCCantrips_Display
@@ -356,11 +359,10 @@
       --:NPC_SKIP_SLOT_LIST|
       --&slotString||9
       --:NPC_DONE_SLOT_LIST|
-      --&NPCSpells|+ [rbutton][*R:spellname]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|[&TB]target|token_id}[&slotString][/rbutton] 
+      --&NPCSpells|+[rbutton][*R:spellname]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|[&TB]target|token_id}[&slotString][/rbutton][&SPACE]
       --^NPC_DONE_SPELL_BUTTON|
       --:MULE_NPC_SPELL|
-      --/&NPCSpells|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
-      --&NPCSpells|+ [button][*R:spellname]::~[&spellmulename]|[&testName][/button] 
+      --&NPCSpells|+[button][*R:spellname]::~[&spellmulename]|[&testName][/button][&SPACE]
       --:NPC_DONE_SPELL_BUTTON|
       --Rnext|
       --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|NPCSpells_Display
@@ -598,7 +600,7 @@
       --&spellSuffix|
       -->CHECK_SPELLS_TO_KEEP|[*R:atkname];keepSpell;spellSuffix
       --?"X[*R:spelldesc_link]" -ne "X" -and [&keepSpell] -eq N|SKIP_SPELL_ATTACK
-      --&PCAttacks|+ [rbutton][*R:atkname][&spellSuffix]::EXEC_PC_ATTACK;[*R:atkname]|[&TB]target|token_id}[/rbutton] 
+      --&PCAttacks|+[rbutton][*R:atkname][&spellSuffix]::EXEC_PC_ATTACK;[*R:atkname]|[&TB]target|token_id}[/rbutton][&SPACE]
       --:SKIP_SPELL_ATTACK|
       --Rnext|
       --?"[*R:atkname]" -ne "NoRepeatingAttributeLoaded"|PCAttacks_Display
@@ -614,14 +616,13 @@
       --~testMule|system;findability;[&spellmulename];[&testName]
       --?[&testMule] -ne "AbilityNotFound"|MULE_CANTRIP
       --?"[*R:spelloutput]" -eq ATTACK|CANTRIP_GENERATE_WITH_TARGET
-      --&PCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|NONE[/rbutton]
+      --&PCCantrips|+[rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|NONE[/rbutton][&SPACE]
       --^CANTRIP_END_GENERATE|
       --:CANTRIP_GENERATE_WITH_TARGET|
-      --&PCCantrips|+ [rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|[&TB]target|token_id}[/rbutton] 
+      --&PCCantrips|+[rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|[&TB]target|token_id}[/rbutton][&SPACE]
       --^CANTRIP_END_GENERATE|
       --:MULE_CANTRIP|
-      --/&PCCantrips|+ [sheetbutton][*R:spellname]::[&spellmulename]::[&testName][/sheetbutton] 
-      --&PCCantrips|+ [button][*R:spellname]::~[&spellmulename]|[&testName][/button] 
+      --&PCCantrips|+[button][*R:spellname]::~[&spellmulename]|[&testName][/button][&SPACE]
       --:CANTRIP_END_GENERATE|
       --Rnext|
       --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|PCCantrips_Display
@@ -700,12 +701,11 @@
       --~testMule|system;findability;[&spellmulename];[&testName]
       --?[&testMule] -ne "AbilityNotFound"|MULE_SPELL
 
-      --&PCSpells|+ [rbutton][*R:spellname][&spellsuffix]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|[&TB]target|token_id}[&slotString][/rbutton]
+      --&PCSpells|+[rbutton][*R:spellname][&spellsuffix]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|[&TB]target|token_id}[&slotString][/rbutton][&SPACE]
       --=PCSpellCount|[$PCSpellCount.Raw] + 1 
       --^DONE_SPELL_BUTTON|
       --:MULE_SPELL|
-      --/&PCSpells|+ [sheetbutton][*R:spellname][&spellsuffix]::[&spellmulename]::[&testName][/sheetbutton] 
-      --&PCSpells|+ [button][*R:spellname][&spellsuffix]::~[&spellmulename]|[&testName][/button] 
+      --&PCSpells|+[button][*R:spellname][&spellsuffix]::~[&spellmulename]|[&testName][/button][&SPACE]
       --=PCSpellCount|[$PCSpellCount.Raw] + 1 
       --:DONE_SPELL_BUTTON|
       --Rnext|
@@ -1032,9 +1032,6 @@
     --&damageToApply|
   --]|
  
-  --/&damageRoll|+ [&ability_bonus]
-  --/&damageRoll2|+ [&ability_bonus]
-
   --=spellDamage|[&damageRoll] [&dmgModType1]
   --=spellDamage2|[&damageRoll2] [&dmgModType2]
   --=TotalDamage|[$spellDamage.Raw] + [$spellDamage2.Raw]
@@ -1175,7 +1172,7 @@
   --<|
   
   --:_AddGAMB| 
-  --&_GAMB_Temp|+ [rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GAM;[%1%][/rbutton] 
+  --&_GAMB_Temp|+[rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GAM;[%1%][/rbutton][&SPACE]
   --<|
 
   --:Create_Global_Damage_Modifier_Buttons|character_id;StringVariableToSet
@@ -1192,7 +1189,7 @@
   --<|
   
   --:_AddGDMB| 
-  --&_GDMB_Temp|+ [rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GDM;[%1%][/rbutton] 
+  --&_GDMB_Temp|+[rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GDM;[%1%][/rbutton][&SPACE]
   --<|
 
   --:Create_Global_Save_Modifier_Buttons|character_id;StringVariableToSet
@@ -1235,15 +1232,15 @@
   --<|  
 
   --:_AddGSMB| 
-  --&_GSMB_Temp|+ [rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GSM;[%1%][/rbutton] 
+  --&_GSMB_Temp|+[rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GSM;[%1%][/rbutton][&SPACE]
   --<|  
 
   --:_AddGACMB| 
-  --&_GACMB_Temp|+ [rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GACM;[%1%][/rbutton] 
+  --&_GACMB_Temp|+[rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GACM;[%1%][/rbutton][&SPACE]
   --<|  
 
   --:_AddGSKMB| 
-  --&_GSKMB_Temp|+ [rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GSKM;[%1%][/rbutton] 
+  --&_GSKMB_Temp|+[rbutton:#ffffff:#[%2%]:8px][%1%]::TOGGLE_GSKM;[%1%][/rbutton][&SPACE]
   --<|  
 
   --:Get_Ability_Modifier|attribute_string;returnnumericvalue;returnnamestring
@@ -1645,7 +1642,7 @@
   --=HitDiceUsed|[$HitDiceUsed] + 1
   --=hitpointsRegained|[$hitpointsRegained] + [$HitDieRoll]
   --=NewHitPoints|[*S:hp] + [$HitDieRoll] {MAX:[*S:hp^]}
-  --&hitDieRolls|+ [$HitDieRoll]
+  --&hitDieRolls|+[$HitDieRoll][&SPACE]
   --!a:[&saveTokenID]|hp:[$NewHitPoints]
   --!a:[&saveTokenID]|hit_dice:-=1
   --^CONTINUE_SHORT_RESTING|

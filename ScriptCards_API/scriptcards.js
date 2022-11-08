@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.1.19b";
+	const APIVERSION = "2.2.0";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -132,6 +132,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		outputcontentprefix: " ",
 		enableattributesubstitution: "0",
 		formatinforequesttext: "0",
+		overridetemplate: "none",
 		styleTableTag: " border-collapse:separate; border: solid black 2px; border-radius: 6px; -moz-border-radius: 6px; ",
 		stylenone: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; ",
 		stylenormal: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolornormal}; border-color: #87850A; color: #000000;",
@@ -167,6 +168,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	var arrayVariables = {};
 	var arrayIndexes = {};
 	var tokenMarkerURLs = [];
+	var templates;
 
 	//We use several variables to track repeating section (--R) commands
 	var repeatingSection = undefined;
@@ -197,6 +199,70 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (state[APINAME].storedStrings == undefined) { state[APINAME].storedStrings = {}; }
 		if (state[APINAME].storedSnippets == undefined) { state[APINAME].storedSnippets = {}; }
 		if (state[APINAME].triggersenabled == undefined) { state[APINAME].triggersenabled = true; }
+		if (Supernotes_Templates != null) {
+			templates = Object.assign({}, Supernotes_Templates);
+		}
+		templates["dnd5e"] = {
+			boxcode: `<div style='background-image: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url(https://i.imgur.com/8Mm94QY.png); background-size: 100% 100%; box-shadow: 0 0 3px #fff; display: block; text-align: left; font-size: 13px; padding: 5px; margin-bottom: 2px; color: black; font-family: serif; white-space: pre-wrap; line-height:1.2em; font-style:normal'>`, //"Bookinsanity", 
+			titlecode: `<div style='margin: 0.5em 1em 0.25em 1em; font-size: 18px; font-variant: small-caps; border-bottom: 2px solid #d3b63b; font-family: "MrEavesSmallCaps", Monsterrat, serif; color: #8b281c; display: block; margin-block-start: 1em; margin-block-end: 0; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;'>`, //padding-bottom: .1rem;
+			textcode: "</div><div><div style='font-weight: normal; display: block; margin: 0 1em 0 1em;'>",
+			buttonwrapper: `<div style='display:block;'>`, 
+			buttonstyle: `style='display:inline-block; margin: 0px; font-size: 10px; color:#fff; padding: 2px 1px 1px 2px; background-color: #d00; text-align: center; border-radius: 5px;'`,
+			playerbuttonstyle: `style='display:inline-block; color:#000; font-weight:normal; background-color: transparent;padding: 0px; border: none;'`,
+			buttondivider: `<span style='color:#000; margin:0px;'> • </span>`,
+			handoutbuttonstyle: `style='display:inline-block; color:#13f2fc; font-weight:normal; background-color: transparent; padding: 0px; border: none;'`,
+			footer: ""
+		};		
+		templates["dnd1e_green"] = {
+			boxcode: `<div style='background-color: #b5dcb0; box-shadow: 0 0 3px #fff; display: block; text-align: left; font-size: 13px; padding: 5px; margin-bottom: 2px; color: black; font-family: sans-serif; white-space: pre-wrap; line-height:1.3em; font-style:normal'>`,
+			titlecode: `<div style='margin: 0.5em 1em 0.25em 1em; font-size: 16px; font-variant: small-caps; font-family: "Goblin One", sans-serif; color: #000; display: block; margin-block-start: 1em; margin-block-end: 0; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;'>`, //padding-bottom: .1rem;
+			textcode: "</div><div><div style='font-weight: normal; display: block; margin: 0 1em 0 1em;'>",
+			buttonwrapper: `<div style='display:block;'>`, 
+			buttonstyle: `style='display:inline-block; font-size: 10px; color:#000; padding: 2px 0px 2px 0px; background-color: transparent; border: 1px solid black; text-align: center; border-radius: 0px;'`,
+			playerbuttonstyle: `style='display:inline-block; color:#000; font-weight:normal; background-color: transparent;padding: 0px; border: none;'`,
+			buttondivider: `<span style='color:#000; margin:0px;'> • </span>`,
+			handoutbuttonstyle: `style='display:inline-block; color:#13f2fc; font-weight:normal; background-color: transparent; padding: 0px; border: none;'`,
+			footer: ""
+		};		
+		templates["dnd1e_amber"] = {
+			boxcode: `<div style='background-color: #f3d149; box-shadow: 0 0 3px #fff; display: block; text-align: left; font-size: 13px; padding: 5px; margin-bottom: 2px; color: black; font-family: sans-serif; white-space: pre-wrap; line-height:1.3em; font-style:normal'>`,
+			titlecode: `<div style='margin: 0.5em 1em 0.25em 1em; font-size: 16px; font-variant: small-caps; font-family: "Goblin One", sans-serif; color: #000; display: block; margin-block-start: 1em; margin-block-end: 0; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;'>`, //padding-bottom: .1rem;
+			textcode: "</div><div><div style='font-weight: normal; display: block; margin: 0 1em 0 1em;'>",
+			buttonwrapper: `<div style='display:block;'>`, 
+			buttonstyle: `style='display:inline-block; font-size: 10px; color:#000; padding: 2px 1px 1px 2px; background-color: transparent; border: 1px solid black; text-align: center; border-radius: 0px;'`,
+			playerbuttonstyle: `style='display:inline-block; color:#000; font-weight:normal; background-color: transparent;padding: 0px; border: none;'`,
+			buttondivider: `<span style='color:#000; margin:0px;'> • </span>`,
+			handoutbuttonstyle: `style='display:inline-block; color:#13f2fc; font-weight:normal; background-color: transparent; padding: 0px; border: none;'`,
+			footer: ""
+		};
+		try {
+			var findTemplateChar = findObjs({ _type: "character", name: "ScriptCards_TemplateMule" })[0];
+		} catch { 
+			//log(`ScriptCards: TemplateMule not found`) 
+		}
+		if (findTemplateChar) {
+			var muleTemplates = findObjs({_type:"ability", characterid: findTemplateChar.id});
+			if (muleTemplates) {
+				for(var x=0; x<muleTemplates.length; x++) {
+					var tempName = muleTemplates[x].get("name")
+					templates[tempName] = {}
+					var templateText = muleTemplates[x].get("action")
+					var templateLines = templateText.split("||")
+					for (var i=0; i<templateLines.length; i++) {
+						var pieces = templateLines[i].replace(/(\r\n|\n|\r)/gm, "").split("::")
+						pieces[1] = pieces[1].replace(/\{/g,"<").replace(/\}/g,">").trim()
+						pieces[0] = pieces[0].trim()
+						if (pieces[0] == 'boxcode') { templates[tempName].boxcode = pieces[1] }
+						if (pieces[0] == 'titlecode') { templates[tempName].titlecode = pieces[1] }
+						if (pieces[0] == 'textcode') { templates[tempName].textcode = pieces[1] }
+						if (pieces[0] == 'buttonwrapper') { templates[tempName].buttonwrapper = pieces[1] }
+						if (pieces[0] == 'buttonstyle') { templates[tempName].buttonstyle = pieces[1] }
+						if (pieces[0] == 'footer') { templates[tempName].footer = pieces[1] }
+					}
+				}
+			}
+		}
+		log(`ScriptCards: ${Object.keys(templates).length} Templates loaded`);
 
 		if (state[APINAME].triggersenabled) {
 			var findTriggerChar = findObjs({ _type: "character", name: "ScriptCards_Triggers" })[0];
@@ -450,6 +516,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 					// Builds up a list of lines that will appear on the output display
 					var outputLines = [];
+					var bareoutputLines = [];
 					var gmonlyLines = [];
 					var lineCounter = 1;
 
@@ -499,6 +566,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						if (scriptCardsStashedScripts[stashIndex].returnStack) { returnStack = JSON.parse(scriptCardsStashedScripts[stashIndex].returnStack); }
 						if (scriptCardsStashedScripts[stashIndex].parameterStack) { parameterStack = JSON.parse(scriptCardsStashedScripts[stashIndex].parameterStack); }
 						if (scriptCardsStashedScripts[stashIndex].outputLines) { outputLines = JSON.parse(scriptCardsStashedScripts[stashIndex].outputLines); }
+						if (scriptCardsStashedScripts[stashIndex].bareoutputLines) { bareoutputLines = JSON.parse(scriptCardsStashedScripts[stashIndex].bareoutputLines); }
 						if (scriptCardsStashedScripts[stashIndex].gmonlyLines) { gmonlyLines = JSON.parse(scriptCardsStashedScripts[stashIndex].gmonlyLines); }
 						if (scriptCardsStashedScripts[stashIndex].repeatingSectionIDs) { repeatingSectionIDs = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingSectionIDs); }
 						if (scriptCardsStashedScripts[stashIndex].repeatingSection) { repeatingSection = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingSection); }
@@ -591,6 +659,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 					if (isReentrant) {
 						outputLines = [];
+						bareoutputLines = [];
 						gmonlyLines = [];
 						var entryLabel = resumeArgs[1].split(";")[0];
 						stringVariables["reentryval"] = resumeArgs[1].split(";")[1];
@@ -637,11 +706,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 							var flavorText = stashType.split(";")[0];
 							if (cardParameters.formatinforequesttext !== "0") {
-								flavorText = processInlineFormatting(flavorText, cardParameters);
+								flavorText = processInlineFormatting(flavorText, cardParameters, false);
 							}
 							var buttonLabel = stashType.split(";")[1];
 
-							stashAScript(myGuid, cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, varList, "X", arrayVariables, arrayIndexes, gmonlyLines);
+							stashAScript(myGuid, cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, varList, "X", arrayVariables, arrayIndexes, gmonlyLines, bareoutputLines);
 							lineCounter = cardLines.length + 100;
 							cardParameters.hidecard = "1";
 							sendChat(msg.who, `/w ${msg.who} ${flavorText}` + makeButton(buttonLabel, `!sc-resume ${myGuid}-|-${buildLine}`, cardParameters));
@@ -816,6 +885,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									}
 									break;
 
+								case "overridetemplate":
+									if (templates[thisContent.trim().toLowerCase()] != null) {
+										cardParameters.overridetemplate = thisContent.trim().toLowerCase();
+									} else {
+										cardParameters.overridetemplate = "none";
+									}
+									break;
+
 								case "titlecardgradient":
 									if (thisContent.trim() !== "0") {
 										cardParameters["titlecardbackgroundimage"] = gradientStyle;
@@ -913,16 +990,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 															subInfo.push("");
 															subInfo.push("");
 															try {
-															// eslint-disable-next-line no-unused-vars
-															var newAttribute = createObj("attribute",
-																{
-																	name: `repeating_${theSection}_${rowID}_${subInfo[0].trim()}`,
-																	_characterid: theCharacter.id,
-																	current: subInfo[1].trim(),
-																	max: subInfo[2].trim()
-																}
-															)
-															} catch { 
+																// eslint-disable-next-line no-unused-vars
+																var newAttribute = createObj("attribute",
+																	{
+																		name: `repeating_${theSection}_${rowID}_${subInfo[0].trim()}`,
+																		_characterid: theCharacter.id,
+																		current: subInfo[1].trim(),
+																		max: subInfo[2].trim()
+																	}
+																)
+															} catch {
 																log(`ScriptCards: Error creating repeating section values on character ${theCharacter}, section ${theSection}`)
 															}
 														}
@@ -1012,7 +1089,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														}
 													}
 													if (cardParameters.formatoutputforobjectmodification == "1") {
-														settingValue = processInlineFormatting(settingValue, cardParameters);
+														settingValue = processInlineFormatting(settingValue, cardParameters, false);
 													}
 
 													if (typeof (theToken.get(settingName)) == "boolean" && settingValue) {
@@ -1161,7 +1238,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												}
 
 												if (cardParameters.formatoutputforobjectmodification == "1") {
-													settingValue = processInlineFormatting(settingValue, cardParameters);
+													settingValue = processInlineFormatting(settingValue, cardParameters, false);
 												}
 
 												if (typeof (thisObject.get(settingName)) == "boolean" && (settingValue != null)) {
@@ -1275,7 +1352,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 															while (rowData.indexOf("=X=FONTCOLOR=X=") > 0) { rowData = rowData.replace("=X=FONTCOLOR=X=", cardParameters.oddrowfontcolor); }
 															while (rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.oddrowbackground}; background-image: ${cardParameters.oddrowbackgroundimage}; `); }
 														}
-														rowData = processInlineFormatting(rowData, cardParameters);
+
+														rowData = processInlineFormatting(rowData, cardParameters, false);
 														if (resultType == "directoutput") {
 															outputLines.push(rowData);
 														} else {
@@ -1479,6 +1557,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											case "dropoutputlines":
 												if (params[2].toLowerCase() == "all" || params[2].toLowerCase() == "both" || params[2].toLowerCase() == "direct") {
 													outputLines = [];
+													bareoutputLines = [];
 												}
 												if (params[2].toLowerCase() == "all" || params[2].toLowerCase() == "both" || params[2].toLowerCase() == "gmonly") {
 													gmonlyLines = [];
@@ -2494,6 +2573,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						// Handle direct output lines
 						if (thisTag.charAt(0) === "+") {
 							var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent.replace(/\[&zwnj;/g, "["), cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
+							var rawRowData = buildRawRowOutput(thisTag.substring(1), replaceVariableContent(thisContent.replace(/\[&zwnj;/g, "["), cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
 
 							tableLineCounter += 1;
 							if (tableLineCounter % 2 == 0) {
@@ -2505,9 +2585,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								while (rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.oddrowbackground}; background-image: ${cardParameters.oddrowbackgroundimage}; `); }
 								//while(rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.oddrowbackground}; `); }
 							}
-							rowData = processInlineFormatting(rowData, cardParameters);
+							rowData = processInlineFormatting(rowData, cardParameters, false);
+							rawRowData = processInlineFormatting(rawRowData, cardParameters, true);
 
 							outputLines.push(rowData);
+							bareoutputLines.push(rawRowData);
 						}
 
 						if (thisTag.charAt(0) === "*") {
@@ -2523,7 +2605,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								while (rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.oddrowbackground}; background-image: ${cardParameters.oddrowbackgroundimage}; `); }
 								//while(rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.oddrowbackground}; `); }
 							}
-							rowData = processInlineFormatting(rowData, cardParameters);
+							rowData = processInlineFormatting(rowData, cardParameters, false);
 
 							gmonlyLines.push(rowData);
 						}
@@ -2594,7 +2676,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												while (rowData.indexOf("=X=FONTCOLOR=X=") > 0) { rowData = rowData.replace("=X=FONTCOLOR=X=", cardParameters.oddrowfontcolor); }
 												while (rowData.indexOf("=X=ROWBG=X=") > 0) { rowData = rowData.replace("=X=ROWBG=X=", ` background: ${cardParameters.oddrowbackground}; background-image: ${cardParameters.oddrowbackgroundimage}; `); }
 											}
-											rowData = processInlineFormatting(rowData, cardParameters);
+											rowData = processInlineFormatting(rowData, cardParameters, false);
 											if (resultType == "directoutput") {
 												outputLines.push(rowData);
 											} else {
@@ -2691,7 +2773,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						// Handle X lines (exit)
 						if (thisTag.charAt(0).toLowerCase() == "x") {
 							if (cardParameters["reentrant"] !== 0) {
-								stashAScript(cardParameters["reentrant"], cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, varList, "X", arrayVariables, arrayIndexes, gmonlyLines);
+								stashAScript(cardParameters["reentrant"], cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, varList, "X", arrayVariables, arrayIndexes, gmonlyLines, bareoutputLines);
 							}
 							lineCounter = cardLines.length + 1;
 						}
@@ -2973,7 +3055,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						subtitle = cardParameters.rightsub;
 					}
 
-					subtitle = processInlineFormatting(subtitle, cardParameters);
+					subtitle = processInlineFormatting(subtitle, cardParameters, (cardParameters.overridetemplate.toLowerCase() !== "none"));
 
 					var cardOutput;
 					var gmoutput;
@@ -3036,6 +3118,33 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 					cardOutput = removeInlineRolls(cardOutput, cardParameters);
 					emote = removeInlineRolls(emote, cardParameters);
+
+					if (cardParameters.overridetemplate.toLowerCase() !== "none") {
+						var textCode = templates[cardParameters.overridetemplate].textcode;
+						if (textCode && textCode.indexOf("font-style:") == -1) {
+							textCode = textCode.slice(0, textCode.lastIndexOf(";")) + "; font-style: normal;" + textCode.slice(textCode.lastIndexOf(";") + 1)
+						}
+						var titleCode = templates[cardParameters.overridetemplate].titlecode
+						if (titleCode && titleCode.indexOf("font-style:") == -1) {
+							titleCode = titleCode.slice(0, titleCode.lastIndexOf(";")) + "; font-style: normal;" + titleCode.slice(titleCode.lastIndexOf(";") + 1)
+						}
+						var boxCode = templates[cardParameters.overridetemplate].boxcode
+						if (boxCode && boxCode.indexOf("font-style:") == -1) {
+							boxCode = boxCode.slice(0, boxCode.lastIndexOf(";")) + "; font-style: normal;" + boxCode.slice(boxCode.lastIndexOf(";") + 1)
+						}						
+						cardOutput = boxCode + titleCode + cardParameters.title + textCode;
+						if (subtitle != "") {
+							cardOutput += `<div align=center>${subtitle}</div>`
+						}
+						for (var x = 0; x < outputLines.length; x++) {
+							cardOutput += bareoutputLines[x];
+						}
+						cardOutput += templates[cardParameters.overridetemplate].buttonwrapper
+							//templates[cardParameters.overridetemplate].buttondivider + " " 
+						cardOutput += '</div></div></div>' + templates[cardParameters.overridetemplate].footer + "</div>"
+						cardOutput = replaceStyleInformation(cardOutput, cardParameters);
+						cardOutput = removeInlineRolls(cardOutput, cardParameters);
+					}
 
 					if (cardParameters.hidecard == "0") {
 						if (emote !== "") {
@@ -3911,6 +4020,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return htmlRowTemplate.replace("=X=ROWDATA=X=", `<strong>${tagprefix}${tag}</strong>${contentprefix}${content}`);
 	}
 
+	function buildRawRowOutput(tag, content, tagprefix, contentprefix) {
+		return `<div><strong>${tagprefix}${tag}</strong>${contentprefix}${content}</div>`;
+	}
+
 	function buildTooltip(text, tip, style) {
 		var tooltipStyle = ` font-family: ${defaultParameters.titlefont}; font-size: ${defaultParameters.titlefontsize}; font-weight: normal; font-style: normal; ${style} `;
 		return `<span style='${tooltipStyle}' class='showtip tipsy' title='${tip.toString().replace(/\~/g, "")}'>${text}</span>`;
@@ -3993,8 +4106,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return outputLine;
 	}
 
-	function processInlineFormatting(outputLine, cardParameters) {
+	function processInlineFormatting(outputLine, cardParameters, raw) {
 		if (cardParameters.disableinlineformatting !== "0") { return outputLine; }
+		//outputLine = parseMarkdown(outputLine);
 		outputLine = outputLine.replace(/\[\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})\](.*?)\[\/[\#]\]/g, "<span style='color: #$1;'>$2</span>"); // [#xxx] or [#xxxx]...[/#] for color codes. xxx is a 3-digit hex code
 		outputLine = outputLine.replace(/\[hr(.*?)\]/gi, '<hr style="width:95%; align:center; margin:0px 0px 5px 5px; border-top:2px solid $1;">');
 		//outputLine = outputLine.replace(/\[hr\]/gi, '<table width=100% height=2px><tr><td bgcolor=red></td><font size=xx-small>&nbsp;</font></tr></table>');
@@ -4012,6 +4126,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		outputLine = outputLine.replace(/\[[Ii]\](.*?)\[\/[Ii]\]/g, "<i>$1</i>"); // [I]...[/I] for italics
 		outputLine = outputLine.replace(/\[[Uu]\](.*?)\[\/[Uu]\]/g, "<u>$1</u>"); // [U]...[/u] for underline
 		outputLine = outputLine.replace(/\[[Ss]\](.*?)\[\/[Ss]\]/g, "<s>$1</s>"); // [S]...[/s] for strikethru
+		outputLine = outputLine.replace(/\[[Qq]\](.*?)\[\/[Qq]\]/g, "<blockquote style='margin-left:10px';>$1</blockquote>"); // [S]...[/s] for strikethru
 		outputLine = outputLine.replace(/\[[Cc]\](.*?)\[\/[Cc]\]/g, "<div style='text-align: center; display:block;'>$1</div>"); // [C]..[/C] for center
 		outputLine = outputLine.replace(/\[[Ll]\](.*?)\[\/[Ll]\]/g, "<span style='text-align: left;'>$1</span>"); // [L]..[/L] for left
 		outputLine = outputLine.replace(/\[[Rr]\](.*?)\[\/[Rr]\]/g, "<div style='text-align: right; float: right;'>$1</div><div style='clear: both;'></div>"); // [R]..[/R] for right
@@ -4034,7 +4149,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var work = statusmarkers[sm].replace("[sm", "<img ").replace("[/sm]", "></img>").replace("]", " src=" + tokenMarkerURLs[markername]);
 			outputLine = outputLine.replace(statusmarkers[sm], work);
 		}
-		//var buttons = outputLine.match(/\[button\](.*?)\:\:(.*?)\[\/button\]/gi);
 		var buttons = outputLine.match(/\[button(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)\:\:(.*?)\[\/button\]/gi);
 		for (var button in buttons) {
 			var customTextColor = undefined;
@@ -4054,26 +4168,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 					}
 				}
-				/*
-				if (customs.length >= 1) {
-					customTextColor = customs[0];
-					if (customs.length == 2) {
-						customBackgroundColor = customs[1];
-					}
-				}
-				*/
 			}
-			//var title = buttons[button].split("::")[0].replace("[button]","").replace("[Button]", "").replace("[BUTTON]","");
-			//var action = buttons[button].split("::")[1].replace("[/button]","").replace("[/Button]", "").replace("[/BUTTON]","");
 			var title = basebutton.split("::")[0].replace("[button]", "").replace("[Button]", "").replace("[BUTTON]", "");
 			var action = basebutton.split("::")[1].replace("[/button]", "").replace("[/Button]", "").replace("[/BUTTON]", "");
 			if (cardParameters.dontcheckbuttonsforapi == "0") {
 				action = action.replace(/(^|\ +)_/g, " --");
 			}
-			outputLine = outputLine.replace(buttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor, customfontsize));
+			if (raw == true) {
+				outputLine = outputLine.replace(buttons[button], makeTemplateButton(title, action, cardParameters));
+			} else {
+				outputLine = outputLine.replace(buttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor, customfontsize));
+			}
 		}
 
-		//var sheetbuttons = outputLine.match(/\[sheetbutton\](.*?)\:\:(.*?)\:\:(.*?)\[\/sheetbutton\]/gi);
 		var sheetbuttons = outputLine.match(/\[sheetbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)\:\:(.*?)\:\:(.*?)\[\/sheetbutton\]/gi);
 		for (var button in sheetbuttons) {
 			var customTextColor = undefined;
@@ -4118,7 +4225,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				if (cardParameters.dontcheckbuttonsforapi == "0") {
 					action = action.replace(/(^|\ +)_/g, " --");
 				}
-				outputLine = outputLine.replace(sheetbuttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor, customfontsize));
+				if (raw == true) {
+					outputLine = outputLine.replace(sheetbuttons[button], makeTemplateButton(title, action, cardParameters));
+				} else {
+					outputLine = outputLine.replace(sheetbuttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor, customfontsize));
+				}
 			}
 		}
 
@@ -4145,56 +4256,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var title = basebutton.split("::")[0].replace("[rbutton]", "").replace("[Rbutton]", "").replace("[RBUTTON]", "");
 			var reentrylabel = basebutton.split("::")[1].replace("[/rbutton]", "").replace("[/Rbutton]", "").replace("[/RBUTTON]", "");
 			var action = "!sc-reentrant " + cardParameters["reentrant"] + "-|-" + reentrylabel
-			outputLine = outputLine.replace(reentrantbuttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor, customfontsize));
-		}
-
-		// [apply]15[/apply]
-		// creates buttons:
-		// [-15] [-7] [-3] [+15]
-		// Requires TokenMod
-
-		/*
-		var applybuttons = outputLine.match(/\[applyset\](.*?)\[\/applyset\]/gi);
-		for (var button in applybuttons) {
-			var buttonParameters = {};
-			Object.assign(buttonParameters,cardParameters);
-			buttonParameters.buttonbackground = cardParameters.damagebuttonbackgroundcolor;
-			buttonParameters.buttonbackgroundimage = cardParameters.damagebuttonbackgroundimage;
-			var amount = applybuttons[button].replace(/\[applyset\]/gi,"").replace(/\[\/applyset\]/gi, "");
-			var action = `!token-mod --sel --set bar${cardParameters.hpbar}_value|-${amount}!`;
-			var theseButtons = makeButton("-" + amount.toString(), action, buttonParameters);
-			action = `!token-mod --sel --set bar${cardParameters.hpbar}_value|-${Math.floor(amount * 2)}!`;
-			theseButtons +=  " " + makeButton("-" + Math.floor(amount * 2).toString(), action, buttonParameters);
-			action = `!token-mod --sel --set bar${cardParameters.hpbar}_value|-${Math.floor(amount / 2)}!`;
-			theseButtons +=  " " + makeButton("-" + Math.floor(amount / 2).toString(), action, buttonParameters);
-			action = `!token-mod --sel --set bar${cardParameters.hpbar}_value|-${Math.floor(amount / 4)}!`;
-			theseButtons +=  " " + makeButton("-" + Math.floor(amount / 4).toString(), action, buttonParameters);
-			buttonParameters.buttonbackground = cardParameters.healbuttonbackgroundcolor;
-			buttonParameters.buttonbackgroundimage = cardParameters.healbuttonbackgroundimage;
-			action = `!token-mod --sel --set bar${cardParameters.hpbar}_value|+${amount}!`;
-			theseButtons +=  " " + makeButton("+" + amount.toString(), action, buttonParameters);
-			outputLine = outputLine.replace(applybuttons[button], theseButtons);
-		}
-
-		var applybuttons = outputLine.match(/\[apply\](.*?)\[\/apply\]/gi);
-		for (var button in applybuttons) {
-			var buttonParameters = {};
-			Object.assign(buttonParameters,cardParameters);
-			var amount = applybuttons[button].replace(/\[apply\]/gi,"").replace(/\[\/apply\]/gi, "");
-			var mod = "-";
-			if (Number(amount) > 0) {
-				buttonParameters.buttonbackground = cardParameters.healbuttonbackgroundcolor;
-				buttonParameters.buttonbackgroundimage = cardParameters.healbuttonbackgroundimage;
-				mod = "+";
+			if (raw == true) {
+				outputLine = outputLine.replace(reentrantbuttons[button], makeTemplateButton(title, action, cardParameters));
 			} else {
-				buttonParameters.buttonbackground = cardParameters.damagebuttonbackgroundcolor;
-				buttonParameters.buttonbackgroundimage = cardParameters.damagebuttonbackgroundimage;
+				outputLine = outputLine.replace(reentrantbuttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor, customfontsize));
 			}
-			var action = `!token-mod --sel --set bar${cardParameters.hpbar}_value|${mod}${amount}!`;
-			var theseButtons = makeButton(mod + amount.toString(), action, buttonParameters);
-			outputLine = outputLine.replace(applybuttons[button], theseButtons);
 		}
-		*/
 
 		//DiceFont Stuff
 		var dicefontchars = diceLetters;
@@ -4206,44 +4273,25 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		outputLine = outputLine.replace(/\[d12\](.*?)\[\/d12\]/g, function (x) { var side = parseInt(x.replace("[d12]", "").replace("[/d12]", "").trim()); return "<span style='color: !{dicefontcolor}; font-size:!{dicefontsize}; font-family: dicefontd12;'>" + dicefontchars.charAt(side) + "</span>" });
 		outputLine = outputLine.replace(/\[d20\](.*?)\[\/d20\]/g, function (x) { var side = parseInt(x.replace("[d20]", "").replace("[/d20]", "").trim()); return "<span style='color: !{dicefontcolor}; font-size:!{dicefontsize}; font-family: dicefontd20;'>" + dicefontchars.charAt(side) + "</span>" });
 
+		outputLine = parseMarkdown(outputLine);
+
 		return outputLine;
 	}
 
-	/*
-	function* retrieveAsyncValue(character, value) {
-		var thisAttribute = undefined;
-		character.get(value, function (val) { thisAttribute = val })
-		while (thisAttribute == undefined) { yield thisAttribute; }
-	}
-
-	function setPersistentValue(index, value) {
-		state[APINAME].persistentVariables[index] = value;
-	}
-
-	function getPersistentValue(index) {
-		return state[APINAME].persistentVariables[index];
-	}
-
-	function getRepeatingCount(characterID, prefix, postfix) {
-		var attrs = findObjs({
-			type: 'attribute',
-			characterid: characterID
-		});
-		var attrCount = 0;
-		attrs.forEach(function (s) {
-			if (s.get("name").startsWith(prefix) && s.get("name").endsWith(postfix)) {
-				attrCount += 1;
-			}
-		});
-		return attrCount;
-	}
-	*/
 	function makeButton(title, url, parameters, customTextColor, customBackgroundColor, customfontsize) {
 		var thisButtonStyle = buttonStyle;
 		if (customTextColor) { thisButtonStyle = thisButtonStyle.replace("!{buttontextcolor}", customTextColor) }
 		if (customBackgroundColor) { thisButtonStyle = thisButtonStyle.replace("!{buttonbackground}", customBackgroundColor) }
 		if (customfontsize) { thisButtonStyle = thisButtonStyle.replace("!{buttonfontsize}", customfontsize) }
 		return `<a style="${replaceStyleInformation(thisButtonStyle, parameters)}" href="${removeTags(removeBRs(url))}">${removeTags(removeBRs(title))}</a>`;
+	}
+
+	function makeTemplateButton(title, url, parameters) {
+		if (parameters.overridetemplate !== "none") {
+			return `<a ${templates[parameters.overridetemplate].buttonstyle} href="${removeTags(removeBRs(url))}">${removeTags(removeBRs(title))}</a>`;
+		} else {
+			return "Template button without Template"
+		}
 	}
 
 	function removeInlineRolls(text, cardParameters) {
@@ -4493,7 +4541,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return cardContent;
 	}
 
-	function stashAScript(stashIndex, scriptContent, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, programCounter, outputLines, resultStringName, stashType, arrayVariables, arrayIndexes, gmonlyLines) {
+	function stashAScript(stashIndex, scriptContent, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, programCounter, outputLines, resultStringName, stashType, arrayVariables, arrayIndexes, gmonlyLines, bareoutputLines) {
 		if (scriptCardsStashedScripts[stashIndex]) { delete scriptCardsStashedScripts[stashIndex]; }
 
 		scriptCardsStashedScripts[stashIndex] = {};
@@ -4507,6 +4555,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		scriptCardsStashedScripts[stashIndex].parameterStack = JSON.stringify(parameterStack);
 		scriptCardsStashedScripts[stashIndex].outputLines = JSON.stringify(outputLines);
 		scriptCardsStashedScripts[stashIndex].gmonlyLines = JSON.stringify(gmonlyLines);
+		scriptCardsStashedScripts[stashIndex].bareoutputLines = JSON.stringify(bareoutputLines);
 		scriptCardsStashedScripts[stashIndex].repeatingSectionIDs = JSON.stringify(repeatingSectionIDs);
 		scriptCardsStashedScripts[stashIndex].repeatingSection = JSON.stringify(repeatingSection);
 		scriptCardsStashedScripts[stashIndex].repeatingCharAttrs = JSON.stringify(repeatingCharAttrs);
@@ -4992,7 +5041,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		} else {
 			if (varValue == null) { varValue = "" }
 
-			if (typeof(varValue) === 'string' && varValue.charAt(0) == "+") {
+			if (typeof (varValue) === 'string' && varValue.charAt(0) == "+") {
 				varValue = (stringVariables[varName] || "") + varValue.substring(1);
 			}
 
@@ -5000,6 +5049,21 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			stringVariables[varName] = replaceVariableContent(varValue, cardParameters, true);
 		}
 	}
+
+	function parseMarkdown(markdownText) {
+        const htmlText = markdownText
+            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
+            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
+            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
+            .replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>')
+            .replace(/\*\*(.*)\*\*/gim, '<b>$1</b>')
+            .replace(/\*(.*)\*/gim, '<i>$1</i>')
+            .replace(/!\[(.*?)\]\((.*?)\)/gim, "<img alt='$1' src='$2' />")
+            .replace(/\[(.*?)\]\((.*?)\)/gim, "<a href='$2'>$1</a>")
+            .replace(/\n$/gim, '<br />')
+
+        return htmlText.trim()
+    }
 
 	return {}
 })();
