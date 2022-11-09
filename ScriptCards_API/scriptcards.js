@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.2.0";
+	const APIVERSION = "2.2.0a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -168,7 +168,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	var arrayVariables = {};
 	var arrayIndexes = {};
 	var tokenMarkerURLs = [];
-	var templates;
+	var templates = {};
 
 	//We use several variables to track repeating section (--R) commands
 	var repeatingSection = undefined;
@@ -199,9 +199,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (state[APINAME].storedStrings == undefined) { state[APINAME].storedStrings = {}; }
 		if (state[APINAME].storedSnippets == undefined) { state[APINAME].storedSnippets = {}; }
 		if (state[APINAME].triggersenabled == undefined) { state[APINAME].triggersenabled = true; }
-		if (Supernotes_Templates != null) {
+
+		if (typeof Supernotes_Templates != "undefined") {
 			templates = Object.assign({}, Supernotes_Templates);
 		}
+
 		templates["dnd5e"] = {
 			boxcode: `<div style='background-image: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url(https://i.imgur.com/8Mm94QY.png); background-size: 100% 100%; box-shadow: 0 0 3px #fff; display: block; text-align: left; font-size: 13px; padding: 5px; margin-bottom: 2px; color: black; font-family: serif; white-space: pre-wrap; line-height:1.2em; font-style:normal'>`, //"Bookinsanity", 
 			titlecode: `<div style='margin: 0.5em 1em 0.25em 1em; font-size: 18px; font-variant: small-caps; border-bottom: 2px solid #d3b63b; font-family: "MrEavesSmallCaps", Monsterrat, serif; color: #8b281c; display: block; margin-block-start: 1em; margin-block-end: 0; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;'>`, //padding-bottom: .1rem;
@@ -4108,10 +4110,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function processInlineFormatting(outputLine, cardParameters, raw) {
 		if (cardParameters.disableinlineformatting !== "0") { return outputLine; }
-		//outputLine = parseMarkdown(outputLine);
 		outputLine = outputLine.replace(/\[\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})\](.*?)\[\/[\#]\]/g, "<span style='color: #$1;'>$2</span>"); // [#xxx] or [#xxxx]...[/#] for color codes. xxx is a 3-digit hex code
 		outputLine = outputLine.replace(/\[hr(.*?)\]/gi, '<hr style="width:95%; align:center; margin:0px 0px 5px 5px; border-top:2px solid $1;">');
-		//outputLine = outputLine.replace(/\[hr\]/gi, '<table width=100% height=2px><tr><td bgcolor=red></td><font size=xx-small>&nbsp;</font></tr></table>');
 		outputLine = outputLine.replace(/\[br\]/gi, "<br />");
 		outputLine = outputLine.replace(/\[tr(.*?)\]/gi, "<tr $1>");
 		outputLine = outputLine.replace(/\[\/tr\]/gi, "</tr>");
@@ -5049,21 +5049,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			stringVariables[varName] = replaceVariableContent(varValue, cardParameters, true);
 		}
 	}
-
-	function parseMarkdown(markdownText) {
-        const htmlText = markdownText
-            .replace(/^### (.*$)/gim, '<h3>$1</h3>')
-            .replace(/^## (.*$)/gim, '<h2>$1</h2>')
-            .replace(/^# (.*$)/gim, '<h1>$1</h1>')
-            .replace(/^\> (.*$)/gim, '<blockquote>$1</blockquote>')
-            .replace(/\*\*(.*)\*\*/gim, '<b>$1</b>')
-            .replace(/\*(.*)\*/gim, '<i>$1</i>')
-            .replace(/!\[(.*?)\]\((.*?)\)/gim, "<img alt='$1' src='$2' />")
-            .replace(/\[(.*?)\]\((.*?)\)/gim, "<a href='$2'>$1</a>")
-            .replace(/\n$/gim, '<br />')
-
-        return htmlText.trim()
-    }
 
 	return {}
 })();
