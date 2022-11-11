@@ -27,7 +27,7 @@ v 2.2.0  - ScriptCards now supports templates that override the visual appearanc
            Each line begins with the name of the section (ie, boxcode) followed by two colons (::). Each line ends with two vertical bars (||). Leading spaces in the
            line will be removed automatically, as will line breaks. I suggest working on your styles in something like Notepad++ and pasting them over.
 
-           IN ORDER TO USE YOUR MULE STYLES AFTER ENTERING/EDITING ONE, you will need to restart your sandbox, as they are only checked at load time.
+           You can refresh the available templates by running !sc-reloadtemplates from the chat window.
 
            Here is a simple example: (I'm not saying it *looks* good :))
 
@@ -40,6 +40,7 @@ v 2.2.0  - ScriptCards now supports templates that override the visual appearanc
            buttonstyle::style='display:inline-block; font-size: 10px; color:#000; padding: 2px 0px 2px 0px; background-color: transparent; border: 1px solid black; 
            text-align: center; border-radius: 0px;'||
            footer::
+
 
 v 2.1.19 - Object creation now supports the creation of repeating rows via --!or. The syntax is: --!or:character_id:sectionName|value:current:max|value:current:max...
            For example, to create a language proficiency on the currently selected character (5E):
