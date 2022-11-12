@@ -41,6 +41,16 @@ v 2.2.0  - ScriptCards now supports templates that override the visual appearanc
            text-align: center; border-radius: 0px;'||
            footer::
 
+           Additional Notes:
+           In 2.2.0e, some additional style line options were added. These are slightly different than the Supernotes style lines, but expand on them by allowing
+           you to define style information for the subtitle, table components, and the h1..h5 HTML constructs (now parsed from [h1]...[/h1] thru [h5]...[/h5] by
+           ScriptCards' inline formatting processor). These style lines are added to a templatemule ability as before except that they should only include the
+           options that would go inside a style='...' block and not use single quotes (the are used to wrap the style block). The piece keys for these styles are:
+           subtitlestyle, tablestyle, trstyle, thstyle, tdstyle, h1style, h2style, h3style, h4style, and h5style.
+
+           As part of this change, you can also give a template mule ability the same name as an existing Supernotes/ScriptCards built-in style and override/add
+           the pieces you wish based on the style guidelines above.
+
 
 v 2.1.19 - Object creation now supports the creation of repeating rows via --!or. The syntax is: --!or:character_id:sectionName|value:current:max|value:current:max...
            For example, to create a language proficiency on the currently selected character (5E):
