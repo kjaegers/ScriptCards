@@ -48,6 +48,8 @@ v 2.2.0  - ScriptCards now supports templates that override the visual appearanc
            options that would go inside a style='...' block and not use single quotes (the are used to wrap the style block). The piece keys for these styles are:
            subtitlestyle, tablestyle, trstyle, thstyle, tdstyle, h1style, h2style, h3style, h4style, and h5style.
 
+           Ex: subtitlestyle::font-size:24pt; font-family:Impact; color:red;
+
            As part of this change, you can also give a template mule ability the same name as an existing Supernotes/ScriptCards built-in style and override/add
            the pieces you wish based on the style guidelines above.
 
