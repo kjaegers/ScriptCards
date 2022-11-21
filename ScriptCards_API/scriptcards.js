@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.2.0f";
+	const APIVERSION = "2.2.1";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -272,7 +272,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				}
 			}
 		} catch {
-			log("ScriptCards: Error parsing Tempates Mule. Mule templates may not be available")
+			log("ScriptCards: Error parsing Templates Mule. Mule templates may not be available")
 		}
 		log(`ScriptCards: ${Object.keys(templates).length} Templates loaded`);
 		*/
@@ -477,7 +477,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 				if (apiCmdText.startsWith("!sc-reloadtemplates")) {
 					reload_template_mule();
-					sendChat("ScriptCards", `/w ${msg.who} Templates mule reloaded. ${Object.keys(templates).length} defined tempates.`)
+					sendChat("ScriptCards", `/w ${msg.who} Templates mule reloaded. ${Object.keys(templates).length} defined templates.`)
 				}				
 
 				if (apiCmdText.startsWith("!sc-deletestoredsettings ")) {
@@ -591,6 +591,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						if (scriptCardsStashedScripts[stashIndex].repeatingSectionIDs) { repeatingSectionIDs = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingSectionIDs); }
 						if (scriptCardsStashedScripts[stashIndex].repeatingSection) { repeatingSection = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingSection); }
 						if (scriptCardsStashedScripts[stashIndex].repeatingCharAttrs) { repeatingCharAttrs = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingCharAttrs); }
+						if (scriptCardsStashedScripts[stashIndex].loopControl) {loopControl = scriptCardsStashedScripts[stashIndex].loopControl; }
+						if (scriptCardsStashedScripts[stashIndex].loopStack) {loopStack = scriptCardsStashedScripts[stashIndex].loopStack; }
+						//if (scriptCardsStashedScripts[stashIndex].loopCounter) {loopCounter = scriptCardsStashedScripts[stashIndex].loopCounter; }
 						repeatingCharID = scriptCardsStashedScripts[stashIndex].repeatingCharID;
 						repeatingSectionName = scriptCardsStashedScripts[stashIndex].repeatingSectionName;
 						repeatingIndex = scriptCardsStashedScripts[stashIndex].repeatingIndex;
@@ -750,7 +753,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (delayCommand.charAt(0) == "+" || delayCommand.charAt(0) == "*") {
 										hideInfo = "--#hidetitlecard|1"
 									}
-									setTimeout(delayFunction("", `!script {{ ${hideInfo} --${replaceVariableContent(delayCommand)}|${replaceVariableContent(thisContent)} }}`), parseFloat(delayLength) * 1000)
+									setTimeout(delayFunction("", `!script {{ ${hideInfo} --${replaceVariableContent(delayCommand, cardParameters)}|${replaceVariableContent(thisContent, cardParameters)} }}`), parseFloat(delayLength) * 1000)
 								}
 							}
 						}
@@ -874,7 +877,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							paramName = parameterAliases[paramName] || paramName;
 							if (cardParameters[paramName] != null) {
 								cardParameters[paramName] = thisContent;
-								if (cardParameters.debug == "1") { log(`Setting parameter ${paramName} to value ${thisContent}`) }
+								if (cardParameters.debug == "1") { log(`Setting parameter ${paramName} to value ${thisContent} - ${cardParameters[paramName]}`) }
 							} else {
 								if (cardParameters.debug == "1") { log(`Unable to set parameter ${paramName} to value ${thisContent}`) }
 							}
@@ -2576,10 +2579,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 
-						// Handle setting roll ID variables
+						// Handle setting roll ID variables (--=)
 						if (thisTag.charAt(0) === "=") {
 							var rollIDName = thisTag.substring(1).trim();
 							if (rollIDName.indexOf('.') == -1) {
+								//log(`Param: ${cardParameters.rollhilightcolornormal}`)
 								rollVariables[rollIDName] = parseDiceRoll(replaceVariableContent(thisContent, cardParameters), cardParameters, true);
 							} else {
 								var parts = rollIDName.split(".");
@@ -3307,6 +3311,24 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											}
 											break;
 
+										case "word":
+											if (substringInfo.length == 2) {
+												var words = stringVariables[vName].split(/[\s]/);
+												if (parseInt(substringInfo[1]) > 0) {
+													replacement = words[parseInt(substringInfo[1]) - 1] || "";
+												} else {
+													if (parseInt(substringInfo[1]) == 0) {
+														replacement = stringVariables[vName];
+													} else {
+														replacement = words[words.length + parseInt(substringInfo[1])] || "";
+													}
+												}
+											} else {
+												replacement = "Word Argument Error"
+												log("ScriptCards Error : String contains evalulation incorrect arguments")
+											}
+											break;
+
 										case "indexof":
 										case "iindexof":
 											if (substringInfo.length == 2) {
@@ -3709,7 +3731,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 		var hadOne = false;
 		var hadAce = false;
-		rollResult.Style = defaultParameters.stylenormal;
+		rollResult.Style = cardParameters.stylenormal;
 		var currentOperator = "+";
 
 		for (var x = 0; x < rollComponents.length; x++) {
@@ -4013,6 +4035,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (!hadOne && hadAce) { rollResult.Style = cardParameters.stylecrit; }
 		if (cardParameters.nominmaxhighlight !== "0") { rollResult.Style = cardParameters.stylenormal; }
 		if (cardParameters.norollhighlight !== "0") { rollResult.Style = cardParameters.stylenone; }
+
+		//log(`cardParams: ${cardParameters.rollhilightcolornormal}`)
+		//log(`Style before: ${rollResult.Style}`)
+		rollResult.Style = replaceStyleInformation(rollResult.Style, cardParameters);
+		//log(`Style after: ${rollResult.Style}`)
 
 		rollResult.Text = rollResult.Text.replace(/\+ \+/g, " + ");
 		rollResult.Text = rollResult.Text.replace(/\- \-/g, " - ");
@@ -4598,6 +4625,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		scriptCardsStashedScripts[stashIndex].repeatingIndex = repeatingIndex;
 		scriptCardsStashedScripts[stashIndex].programCounter = programCounter;
 		scriptCardsStashedScripts[stashIndex].resultStringName = resultStringName;
+		scriptCardsStashedScripts[stashIndex].loopControl = loopControl;
+		scriptCardsStashedScripts[stashIndex].loopStack = loopStack;
 		scriptCardsStashedScripts[stashIndex].stashType = stashType;
 	}
 
@@ -5167,7 +5196,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				}
 			}
 		} catch {
-			log("ScriptCards: Error parsing Tempates Mule. Mule templates may not be available")
+			log("ScriptCards: Error parsing Templates Mule. Mule templates may not be available")
 		}
 		log(`ScriptCards: ${Object.keys(templates).length} Templates loaded`);
 	}

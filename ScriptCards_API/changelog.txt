@@ -1,5 +1,19 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.2.1  - Loop information is now stashed with saved scripts (as a result of --i or rbuttons), meaning a loop can continue to operate after being interrupted
+           by an information request.
+
+           Added "word" as a new expanded string referencing option. Supplying an index number of a word in the string will return just that word. Indexes start
+           at 1, and can be negative to return the last word of the string. Index 0 returns the entire string:
+
+           !script {{
+             --&Line|The Quick Brown Fox Jumps Over the Lazy Dog
+             --+Word 1|[&Line(word,1)]
+             --+Word 5|[&Line(Word,5)]
+             --+Last word|[&Line(word,-1)]
+             --+Fourth from end|[&Line(word, -4)]
+           }}
+
 v 2.2.0  - ScriptCards now supports templates that override the visual appearance of an output card. These are based on the Genre Templates in Keithcurtis'
            Supernotes 0.2.0. If you have that mod installed, you will gain access to the 10 templates it contains. ScriptCards itself adds three templates
            to the mix, and you can define your own templates via a mule character.

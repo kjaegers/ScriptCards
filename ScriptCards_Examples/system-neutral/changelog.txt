@@ -1,5 +1,9 @@
 Change Log for items in the ScriptExamples/system-neutral Folder:
 
+2022-11-21 - Updated TurnOrderFunctions to correct comment on GET_NUMBERED_TURN_INFO (turn number is the LAST parameter), and add REFRESH_TURNORDER_CACHE
+             to update the functions view of the turn order if you modify it during the same ScriptCard. Also added GET_TURNORDER_LENGTH, which will
+             get the number of entries in the turn tracker.
+
 2022-09-22 - Added FindBumpToken sample functions for retrieving real/shadow tokens from Bump
 
 2022-09-20 - Added ReportStatusMarkers, a simple script to list all of the status markers defined in your game with their image and their full name.

@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : TurnOrderFunctions
-  --/|Version     : 1.0.0
+  --/|Version     : 1.0.1
   --/|Requires SC : 2.1.7
   --/|Author      : Kurt Jaegers
 
@@ -28,7 +28,16 @@
   --/|                GET_NUMBERED_TURN_INFO
   --/|                  This function is identical to the three above, except it adds an additional parameter the is the
   --/|                  number of the turn to examine (in sequence) from the top of the turn tracker list (starting at 1)
-  
+  --/|                  (ie, GET_NUMBERED_TURN_INFO|TID;INIT;CUSTOM;FORMULA;PAGE;NAME;TURNNUMBER)|
+  --/|
+  --/|                GET_TURNORDER_LENGTH
+  --/|                  This function returns the number of turns in the turn tracker
+  --/|
+  --/|                REFRESH_TURNORDER_CACHE
+  --/|                  The turnorder functions check when called to see if the turn order has been parsed. If you modify the
+  --/|                  turn order in your script, you should call REFRESH_TURNORDER_CACHE to make sure the turnorder functions
+  --/|                  are working with the updated information.
+    
 
   --/|This section is just a sample of calling a function and displaying the returned results. Here we are getting the information
   --/|for the current turn (GET_CURRENT_TURN_INFO) and storing the results in string variables named "TID" (for Token ID), "INIT" 
@@ -65,10 +74,19 @@
 -->_to_GET_TURN_INFO|[%1%];[%2%];[%3%];[%4%];[%5%];[%6%];[&_to[$_toCount.Raw](replaceall,;,!!!)]
 --<|
 
---:GET_NUMBERED_TURN_INFO|TurNumber, TokenID, InitCounter, CustomName, Formula, page, name
+--:GET_NUMBERED_TURN_INFO|TokenID, InitCounter, CustomName, Formula, page, name, turnnumber
 --?"X[$_toCount.Raw]" -eq "X"|>_to_PARSE_TURN_ORDER
 --?[$_toCount] -lt [%7%]|_to_CLEAR_AND_RETURN
 -->_to_GET_TURN_INFO|[%1%];[%2%];[%3%];[%4%];[%5%];[%6%];[&_to[%7%](replaceall,;,!!!)]
+--<|
+
+--:GET_TURNORDER_LENGTH|ReturnValue
+--?"X[$_toCount.Raw]" -eq "X"|>_to_PARSE_TURN_ORDER
+--?"X[&_to1]" -eq "X"|=[%1%];0|=[%1%];[$_toCount]
+--<|
+
+--:REFRESH_TURNORDER_CACHE|
+-->_to_PARSE_TURN_ORDER|
 --<|
 
 --:_to_PARSE_TURN_ORDER|
