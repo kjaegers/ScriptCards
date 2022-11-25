@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.2.0
+  --/|Version     : 2.2.1
   --/|Requires SC : 2.1.7
   --/|Author      : Kurt Jaegers
 
@@ -131,10 +131,10 @@
   --/| vuln:dmgtypes       (use - to separate damage types, ex bludgeoning-slashing-piercing)
 
   --/|For the staus marker mods to work, you will need to set this to 1 and edit/create some modifiers. The items here are just samples.
-  --&useTokenMakersForNPCModifiers|0
+  --&useTokenMarkersForNPCModifiers|0
   --&statusmod_snail|rollmode:d
   --&statusmod_fist|resist:bludgeoning-piercing-slashing
-  --&statusmod_strong|damage:+2 [Strong]
+  --&statusmod_red|damage:+20 [Strong]
   --&statusmod_overdrive|attack:+2 [Haste]
   --&statusmod_tread|ac:-2 [Prone]
 
@@ -397,20 +397,31 @@
     --&rollType|1d20
     --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
     --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
-    -->DETERMINE_NPC_STATUS_MODIFIERS|[*S:t-id]
+    -->DETERMINE_NPC_STATUS_MODIFIERS|[*S:t-id];A
+    -->DETERMINE_NPC_STATUS_MODIFIERS|[*T:t-id];T 
     --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 0|&rollType;1d20
     --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
     --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1
-    --?"X[&NPC_ROLLMODE]" -ne "X"|&rollType;[&NPC_ROLLMODE]
-    --=ToHit|[&rollType] + [*R:attack_tohit] [&NPC_ATKMOD]
+    --?"X[&ANPC_ROLLMODE]" -ne "X" -and "X[&TNPC_ATTACKAGAINSTMODE]" -eq "X"|SKIP_NPC_ATTACK_ROLLMODE_CALC
+    --?"X[&ANPC_ROLLMODE]" -ne "X" -and "X[&TNPC_ATTACKAGAINSTMODE]" -eq "X"|&rollType;[&ANPC_ROLLMODE]
+    --?"X[&ANPC_ROLLMODE]" -ne "X" -and "X[&TNPC_ATTACKAGAINSTMODE]" -eq "X"|SKIP_NPC_ATTACK_ROLLMODE_CALC
+    --?"X[&ANPC_ROLLMODE]" -eq "X" -and "X[&TNPC_ATTACKAGAINSTMODE]" -ne "X"|&rollType;[&TNPC_ATTACKAGAINSTMODE]
+    --?"X[&ANPC_ROLLMODE]" -eq "X" -and "X[&TNPC_ATTACKAGAINSTMODE]" -ne "X"|SKIP_NPC_ATTACK_ROLLMODE_CALC
+    --?"[&ANPC_ROLLMODE] -e "1d20" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;1d20
+    --?"[&ANPC_ROLLMODE] -e "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kh1
+    --?"[&ANPC_ROLLMODE] -e "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kl1
+    --?"[&ANPC_ROLLMODE] -e "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "2d20kh1"|&rollType;2d20kh1
+    --?"[&ANPC_ROLLMODE] -e "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "2d20kl1"|&rollType;2d20kl1
+    --?"[&ANPC_ROLLMODE] -e "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "2d20kl1"|&rollType;1d20
+    --?"[&ANPC_ROLLMODE] -e "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "2d20kh1"|&rollType;1d20
+    --:SKIP_NPC_ATTACK_ROLLMODE_CALC|
+    --=ToHit|[&rollType] + [*R:attack_tohit] [&ANPC_ATKMOD]
     --&dmgModType1|
     --&dmgModType2|
     --?"X[*T:npc]" -ne "X1" -or [&UseResistances] -eq 0|SKIP_NPC_DMG_MODS
-    -->DETERMINE_NPC_STATUS_MODIFIERS|[*T:t-id]    
-    -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:attack_damagetype];0;0;0
-    -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:attack_damagetype2];0;0;0
+    -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:attack_damagetype];0;0;0;T
+    -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:attack_damagetype2];0;0;0;T
     --:SKIP_NPC_DMG_MODS|
-    -->DETERMINE_NPC_STATUS_MODIFIERS|[*S:t-id]
     --=AC|[*T:ac]
     --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
     --?[&sendGmInfo] -eq 1|[
@@ -423,14 +434,14 @@
     --?[$ToHit.Base] -eq 1|NPCA_MISS
     --?[$ToHit.Total] -lt [$AC]|NPCA_MISS
     --?"X[*R:attack_damage2]" -ne X|NPCA_HIT_TWODAMAGE
-    --=Damage|[*R:attack_damage] [&NPC_DMGMOD] [&dmgModType1]
+    --=Damage|[*R:attack_damage] [&ANPC_DMGMOD] [&dmgModType1]
     --+Hit|[$Damage] [*R:attack_damagetype]
     --+|[*R:description]
     -->[&damageRoutine]|[&action_target];[&hitPointsBar];-[$Damage.Raw]
     --^NPCA_DONE|
     --:NPCA_HIT_TWODAMAGE|
-    --=Damage|[*R:attack_damage] [&NPC_DMGMOD] [&dmgModType1]
-    --=Damage2|[*R:attack_damage2] [&NPC_DMGMOD] [&dmgModType2]
+    --=Damage|[*R:attack_damage] [&ANPC_DMGMOD] [&dmgModType1]
+    --=Damage2|[*R:attack_damage2] [&ANPC_DMGMOD] [&dmgModType2]
     --=TotalDamage|[$Damage.Raw] + [$Damage2.Raw]
     --+Hit|[$Damage] [*R:attack_damagetype] and [$Damage2] [*R:attack_damagetype2]
     --+|[*R:description]
@@ -439,14 +450,15 @@
 
     --:NPCA_CRIT|
     --?"X[*R:attack_damage2]" -ne X|NPCA_CRIT_TWODAMAGE
-    --=Damage|[*R:attack_damage] + [*R:attack_crit] [&NPC_DMGMOD] [&dmgModType1]
+    --=Damage|[*R:attack_damage] + [*R:attack_crit] [&ANPC_DMGMOD] [&dmgModType1]
     -->[&damageRoutine]|[&action_target];[&hitPointsBar];-[$Damage.Raw]
     --+Critical|[$Damage] [*R:attack_damagetype]
     --+|[*R:description]
     --^NPCA_DONE|
+    
     --:NPCA_CRIT_TWODAMAGE|
-    --=Damage|[*R:attack_damage] + [*R:attack_crit] [&NPC_DMGMOD] [&dmgModType1]
-    --=Damage2|[*R:attack_damage2] + [*R:attack_crit2] [&NPC_DMGMOD] [&dmgModType2]
+    --=Damage|[*R:attack_damage] + [*R:attack_crit] [&ANPC_DMGMOD] [&dmgModType1]
+    --=Damage2|[*R:attack_damage2] + [*R:attack_crit2] [&ANPC_DMGMOD] [&dmgModType2]
     --=TotalDamage|[$Damage.Raw] + [$Damage2.Raw]    
     --+Critical|[$Damage] [*R:attack_damagetype] and [$Damage2] [*R:attack_damagetype2]
     --+|[*R:description]
@@ -728,7 +740,7 @@
   --~attack_name|string;before;|;[&reentryval]
   --~attack_target|string;after;|;[&reentryval]
   --#targettoken|[&attack_target]
-  -->DETERMINE_NPC_STATUS_MODIFIERS|[*T:t-id]
+  -->DETERMINE_NPC_STATUS_MODIFIERS|[*T:t-id];T
   --#emotetext|[*S:t-name] uses [&attack_name] against [*T:t-name]
   -->Find_Active_Global_Attack_Modifiers|[*S:character_id];PC_GAM
   -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM
@@ -752,7 +764,15 @@
   --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 0|&rollType;1d20
   --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
   --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1  
-  --?"X[&NPC_ATTACKAGAINSTMODE]" -ne "X"|&rollType;[&NPC_ATTACKAGAINSTMODE]
+  --?"X[&TNPC_ATTACKAGAINSTMODE]" -eq "X"|SKIP_PC_ATTACK_NPC_ROLL_MODE_CALC
+  --?"[&rollType] -e "1d20" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;1d20
+  --?"[&rollType] -e "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kh1
+  --?"[&rollType] -e "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kl1
+  --?"[&rollType] -e "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "2d20kh1"|&rollType;2d20kh1
+  --?"[&rollType] -e "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "2d20kl1"|&rollType;2d20kl1
+  --?"[&rollType] -e "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "2d20kl1"|&rollType;1d20
+  --?"[&rollType] -e "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "2d20kh1"|&rollType;1d20
+  --:SKIP_PC_ATTACK_NPC_ROLL_MODE_CALC|
   --&arString|[&rollType]
   --=attrMod|0
   --&attrName|Attr
@@ -1430,12 +1450,12 @@
   --&[%2%]|CR[*[%1%]:npc_challenge] [*[%1%]:npc_type], AC [*[%1%]:[%3%]], HP [*[%1%]:t-bar[&hitPointsBar]_value]/[*[%1%]:hp^]
   --<||
  
-  --:CheckDamageModifiersNPC|characterid;damageVariableName;damageType;isMagical(0 or 1);IsSilver (0 or 1);IsAdamantine (0 or 1)
+  --:CheckDamageModifiersNPC|characterid;damageVariableName;damageType;isMagical(0 or 1);IsSilver (0 or 1);IsAdamantine (0 or 1);NPCType(A or T)
   --&[%2%]|
   --#parameterdelimiter|!!
-  --~Vulns|string!!split!!;!![*[%1%]:npc_vulnerabilities];[&NPC_VULNS]
-  --~Resists|string!!split!!;!![*[%1%]:npc_resistances];[&NPC_RESISTS]
-  --~Immunes|string!!split!!;!![*[%1%]:npc_immunities];[&NPC_IMMUNES]
+  --~Vulns|string!!split!!;!![*[%1%]:npc_vulnerabilities];[&[%7%]NPC_VULNS]
+  --~Resists|string!!split!!;!![*[%1%]:npc_resistances];[&[%7%]NPC_RESISTS]
+  --~Immunes|string!!split!!;!![*[%1%]:npc_immunities];[&[%7%]NPC_IMMUNES]
   --#parameterdelimiter|;
   --%VulnLoop|1;[$VulnsCount]
     --&hasModifier|0
@@ -1725,37 +1745,37 @@
   --&[%2%]|Y
   --<|
 
-  --:DETERMINE_NPC_STATUS_MODIFIERS|TokenID
-  --&NPC_ATKMOD| --&NPC_DMGMOD| --&NPC_ACMOD| --&NPC_ROLLMODE| --&NPC_SAVEMODE_str| --&NPC_SAVEMODE_dex| --&NPC_SAVEMODE_con|
-  --&NPC_SAVEMODE_int| --&NPC_SAVEMODE_wis| --&NPC_SAVEMODE_cha| --&NPC_RESISTS| --&NPC_VULNS| --&NPC_IMMUNES|
-  --&NPC_ATTACKAGAINSTMODE|
-  --?[&useTokenMakersForNPCModifiers] -eq "0"|<
+  --:DETERMINE_NPC_STATUS_MODIFIERS|TokenID;A for Attacker or T for Target
+  --&[%2%]NPC_ATKMOD| --&[%2%]NPC_DMGMOD| --&[%2%]NPC_ACMOD| --&[%2%]NPC_ROLLMODE| --&[%2%]NPC_SAVEMODE_str| --&[%2%]NPC_SAVEMODE_dex| --&[%2%]NPC_SAVEMODE_con|
+  --&[%2%]NPC_SAVEMODE_int| --&[%2%]NPC_SAVEMODE_wis| --&[%2%]NPC_SAVEMODE_cha| --&[%2%]NPC_RESISTS| --&[%2%]NPC_VULNS| --&[%2%]NPC_IMMUNES|
+  --&[%2%]NPC_ATTACKAGAINSTMODE|
+  --?[&useTokenMarkersForNPCModifiers] -eq "0"|<
   --?"X[*[%1%]:t-statusmarkers]" -eq "X"|<
-  --?"X[*T:npc]" -ne "X1""|<
   --~|array;fromstring;tokenMarkers;,;[*[%1%]:t-statusmarkers]
   --%loop|foreach;tokenMarkers
     --~markerName|string;before;@;[&loop]
     --?"X[&statusmod_[&markerName]]" -eq "X"|%
     --~param|string;split;:;[&statusmod_[&markerName]]
-    --?[&param1] -eq "attack"|&NPC_ATKMOD;+ [&param2]
-    --?[&param1] -eq "damage"|&NPC_DMGMOD;+ [&param2]
-    --?[&param1] -eq "ac"|&NPC_ACMOD;+ [&param2]
-    --?[&param1] -eq "rollmode" -and [&param2] -eq "d"|&NPC_ROLLMODE;2d20kl1
-    --?[&param1] -eq "rollmode" -and [&param2] -eq "a"|&NPC_ROLLMODE;2d20kh1
-    --?[&param1] -eq "rollmode" -and [&param2] -eq "n"|&NPC_ROLLMODE;2d20
-    --?[&param1] -eq "attackermode" -and [&param2] -eq "d"|&NPC_ATTACKAGAINSTMODE;2d20kl1
-    --?[&param1] -eq "attackermode" -and [&param2] -eq "a"|&NPC_ATTACKAGAINSTMODE;2d20kh1
-    --?[&param1] -eq "attackermode" -and [&param2] -eq "n"|&NPC_ATTACKAGAINSTMODE;2d20
-    --?[&param1] -eq "resist"|&NPC_RESISTS;+ [&param2]
-    --?[&param1] -eq "immune"|&NPC_IMMUNES;+ [&param2]
-    --?[&param1] -eq "vuln"|&NPC_VULNS;+ [&param2]
+    --?[&param1] -eq "attack"|&[%2%]NPC_ATKMOD;+ [&param2]
+    --?[&param1] -eq "damage"|&[%2%]NPC_DMGMOD;+ [&param2]
+    --?[&param1] -eq "ac"|&[%2%]NPC_ACMOD;+ [&param2]
+    --?[&param1] -eq "rollmode" -and [&param2] -eq "d"|&[%2%]NPC_ROLLMODE;2d20kl1
+    --?[&param1] -eq "rollmode" -and [&param2] -eq "a"|&[%2%]NPC_ROLLMODE;2d20kh1
+    --?[&param1] -eq "rollmode" -and [&param2] -eq "n"|&[%2%]NPC_ROLLMODE;2d20
+    --?[&param1] -eq "attackermode" -and [&param2] -eq "d"|&[%2%]NPC_ATTACKAGAINSTMODE;2d20kl1
+    --?[&param1] -eq "attackermode" -and [&param2] -eq "a"|&[%2%]NPC_ATTACKAGAINSTMODE;2d20kh1
+    --?[&param1] -eq "attackermode" -and [&param2] -eq "n"|&[%2%]NPC_ATTACKAGAINSTMODE;2d20
+    --?[&param1] -eq "resist"|&[%2%]NPC_RESISTS;+ [&param2]
+    --?[&param1] -eq "immune"|&[%2%]NPC_IMMUNES;+ [&param2]
+    --?[&param1] -eq "vuln"|&[%2%]NPC_VULNS;+ [&param2]
     --?[&param1] -ne "savemode"|%
-    --+[&param3]|
+    --?"[*S:[%1%]]" -inc advantage|&[%2%]NPC_ROLLMODE;2d20kh1
+    --?"[*S:[%1%]]" -inc disadvantage|&[%2%]NPC_ROLLMODE;2d20kl1
     --~|array;fromstring;savelist;-;[&param3]
     --%saves|foreach;savelist
-        --?[&param2] -eq "d"|&NPC_SAVEMODE_[&saves];2d20kl1
-        --?[&param2] -eq "a"|&NPC_SAVEMODE_[&saves];2d20kh1
-        --?[&param2] -eq "n"|&NPC_SAVEMODE_[&saves];2d20
+        --?[&param2] -eq "d"|&[%2%]NPC_SAVEMODE_[&saves];2d20kl1
+        --?[&param2] -eq "a"|&[%2%]NPC_SAVEMODE_[&saves];2d20kh1
+        --?[&param2] -eq "n"|&[%2%]NPC_SAVEMODE_[&saves];2d20
     --%|
   --%|
   --<|
