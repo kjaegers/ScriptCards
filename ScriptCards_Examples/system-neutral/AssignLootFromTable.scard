@@ -4,13 +4,9 @@
   --/|Requires SC : 2.1.7
   --/|Author      : Kurt Jaegers
 
-  --/|This script allows you to define "loot tokens" with GMNotes entries crafted to represent unidentified magic items.
-  --/|Running this script with the loot token selected will create buttons to distribute that loot to individual characters,
-  --/|which is done by appending the item name in the GMNotes section of the character's token.
-  --/|
-  --/|The loot token should be structured to have lines beginning with "Item: " followed by the item name (the space after)
-  --/|the colon is required or the items name will be cut off. Items should be entered one per line, hitting enter after each one.
-  
+  --/|Creates a menu of buttons to assign loot from a rollable table. Clicking a button will prompt for a target to assign the loot by
+  --/|appending an entry to the GMNotes section of the token.
+
   --/|Set the name of the table you wish to use here
   --&tableName|go-fish-freshwater-common
   
