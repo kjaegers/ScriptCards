@@ -1,5 +1,8 @@
 Change Log for items in the ScriptExamples/system-neutral Folder:
 
+2022-11-26 - Added AssignUnidentifiedLoot.scard, a simple script to allow you to define "loot tokens" that contain lists of lootable items and distribute
+             them to the GMNotes section of character tokens.
+
 2022-11-21 - Updated TurnOrderFunctions to correct comment on GET_NUMBERED_TURN_INFO (turn number is the LAST parameter), and add REFRESH_TURNORDER_CACHE
              to update the functions view of the turn order if you modify it during the same ScriptCard. Also added GET_TURNORDER_LENGTH, which will
              get the number of entries in the turn tracker.
