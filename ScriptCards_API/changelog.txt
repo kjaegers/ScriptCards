@@ -1,5 +1,19 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.2.2  - Corrected unnecessary message in the console log when setting template to "none".
+
+           Added two new string referencing functions : before and after will return the portion of a string variable before or after the specified substring,
+           or the entire string if it does not contain the search text.
+
+           !script {{
+             --&Line|The Quick Brown Fox Jumps Over the Lazy Dog
+             --+Before|[&Line(before,Fox)]
+             --+After|[&Line(after,Fox)]
+           }}
+
+           Added fromtable as an array creation command: --~tableCount|array;fromtable;MyArray;table-name will create an entry in the MyArray array for each
+           entry in the table-name table, and store the number of items returned in a string variable called tableCount.
+
 v 2.2.1  - Loop information is now stashed with saved scripts (as a result of --i or rbuttons), meaning a loop can continue to operate after being interrupted
            by an information request.
 

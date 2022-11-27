@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.2.1";
+	const APIVERSION = "2.2.3";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -478,7 +478,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				if (apiCmdText.startsWith("!sc-reloadtemplates")) {
 					reload_template_mule();
 					sendChat("ScriptCards", `/w ${msg.who} Templates mule reloaded. ${Object.keys(templates).length} defined templates.`)
-				}				
+				}
 
 				if (apiCmdText.startsWith("!sc-deletestoredsettings ")) {
 					var settingName = msg.content.substring(msg.content.indexOf(" ")).trim();
@@ -591,8 +591,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						if (scriptCardsStashedScripts[stashIndex].repeatingSectionIDs) { repeatingSectionIDs = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingSectionIDs); }
 						if (scriptCardsStashedScripts[stashIndex].repeatingSection) { repeatingSection = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingSection); }
 						if (scriptCardsStashedScripts[stashIndex].repeatingCharAttrs) { repeatingCharAttrs = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingCharAttrs); }
-						if (scriptCardsStashedScripts[stashIndex].loopControl) {loopControl = scriptCardsStashedScripts[stashIndex].loopControl; }
-						if (scriptCardsStashedScripts[stashIndex].loopStack) {loopStack = scriptCardsStashedScripts[stashIndex].loopStack; }
+						if (scriptCardsStashedScripts[stashIndex].loopControl) { loopControl = scriptCardsStashedScripts[stashIndex].loopControl; }
+						if (scriptCardsStashedScripts[stashIndex].loopStack) { loopStack = scriptCardsStashedScripts[stashIndex].loopStack; }
 						//if (scriptCardsStashedScripts[stashIndex].loopCounter) {loopCounter = scriptCardsStashedScripts[stashIndex].loopCounter; }
 						repeatingCharID = scriptCardsStashedScripts[stashIndex].repeatingCharID;
 						repeatingSectionName = scriptCardsStashedScripts[stashIndex].repeatingSectionName;
@@ -912,7 +912,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (templates[thisContent.trim()] != null) {
 										cardParameters.overridetemplate = thisContent.trim();
 									} else {
-										log(`ScriptCards: Unknown template ${thisContent.trim()} specified. Template names are case sensitive. Reverting to "none"`)
+										if (thisContent.trim() !== "none") {
+											log(`ScriptCards: Unknown template ${thisContent.trim()} specified. Template names are case sensitive. Reverting to "none"`)
+										}
 										cardParameters.overridetemplate = "none";
 									}
 									break;
@@ -2124,6 +2126,24 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												}
 											}
 										}
+
+										if (params[1].toLowerCase() == "fromtable") {
+											arrayVariables[params[2]] = [];
+											if (params[1].toLowerCase() == "fromtable") {
+												arrayVariables[params[2]] = [];
+												var theTable = findObjs({ type: "rollabletable", name: params[3] })[0];
+												if (theTable != null) {
+													var tableItems = findObjs({ type: "tableitem", _rollabletableid: theTable.id });
+													if (tableItems != null) {
+														tableItems.forEach(function (item) {
+															arrayVariables[params[2]].push(item.get("name"))
+														})
+													}
+													if (variableName) { stringVariables[variableName] = arrayVariables[params[2]].length; }
+												}
+											}
+										}
+
 										if (params[1].toLowerCase() == "stringify") {
 											if (arrayVariables[params[2]]) {
 												var sep = cardParameters.parameterdelimiter;
@@ -3081,7 +3101,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 
 					subtitle = processInlineFormatting(subtitle, cardParameters, (cardParameters.overridetemplate.toLowerCase() !== "none"));
-					
+
 					var cardOutput;
 					var gmoutput;
 					if (gmonlyLines.length > 0) {
@@ -3159,7 +3179,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 						cardOutput = boxCode + titleCode + cardParameters.title + textCode;
 						if (subtitle != "") {
-							cardOutput += `<div align=center ${FillTemplateStyle("subtitlestyle", cardParameters, true)}> ${subtitle}</div>` 
+							cardOutput += `<div align=center ${FillTemplateStyle("subtitlestyle", cardParameters, true)}> ${subtitle}</div>`
 						}
 						for (var x = 0; x < outputLines.length; x++) {
 							cardOutput += bareoutputLines[x];
@@ -3378,6 +3398,34 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											} else {
 												replacement = "";
 											}
+											break;
+
+										case "before":
+											if (substringInfo.length == 2) {
+												if (stringVariables[vName].includes(substringInfo[1])) {
+													replacement = stringVariables[vName].substring(0, stringVariables[vName].indexOf(substringInfo[1]))
+												} else {
+													replacement = stringVariables[vName]
+												}
+											} else {
+												log(`ScriptCards Error : Before string reference doesn't contains a search parameter`);
+												replacement = stringVariables[vName];
+											}
+											break;
+
+										case "after":
+											if (substringInfo.length == 2) {
+												if (stringVariables[vName].includes(substringInfo[1])) {
+													replacement = stringVariables[vName].substring(stringVariables[vName].indexOf(substringInfo[1]) + substringInfo[1].length)
+												} else {
+													replacement = stringVariables[vName]
+												}
+											} else {
+												log(`ScriptCards Error : After string reference doesn't contains a search parameter`);
+												replacement = stringVariables[vName];
+											}
+											break;
+
 									}
 								} else {
 									if (substringInfo.length == 1) {
@@ -5115,7 +5163,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function reload_template_mule() {
 		templates = {}
-		
+
 		if (typeof Supernotes_Templates != "undefined") {
 			templates = Object.assign({}, Supernotes_Templates);
 		}
@@ -5206,8 +5254,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var thisMatch = attribute.match(/\@\{(.*?)\}/g)[0];
 			var replacement = "";
 			try {
-				replacement = getAttrByName(character.id, thisMatch.replace("@{", "").replace("}", ""), "current");				
-			} catch { 
+				replacement = getAttrByName(character.id, thisMatch.replace("@{", "").replace("}", ""), "current");
+			} catch {
 				log(`Failure looking up attribute ${thisMatch}`)
 			}
 			attribute = attribute.replace(thisMatch, replacement);
@@ -5224,8 +5272,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (cardParameters.overridetemplate == "none") { return "" }
 		if (templates[cardParameters.overridetemplate][piece]) {
 			return `style='${templates[cardParameters.overridetemplate][piece]}'`
-		} else { 
-			return "" 
+		} else {
+			return ""
 		}
 	}
 

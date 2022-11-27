@@ -1,0 +1,68 @@
+!script {{
+  --/|Script Name : AssignLootFromTable
+  --/|Version     : 1.0.0
+  --/|Requires SC : 2.1.7
+  --/|Author      : Kurt Jaegers
+
+  --/|This script allows you to define "loot tokens" with GMNotes entries crafted to represent unidentified magic items.
+  --/|Running this script with the loot token selected will create buttons to distribute that loot to individual characters,
+  --/|which is done by appending the item name in the GMNotes section of the character's token.
+  --/|
+  --/|The loot token should be structured to have lines beginning with "Item: " followed by the item name (the space after)
+  --/|the colon is required or the items name will be cut off. Items should be entered one per line, hitting enter after each one.
+  
+  --/|Set the name of the table you wish to use here
+  --&tableName|go-fish-freshwater-common
+  
+  --#reentrant|DistributeLoot-[&tableName]
+  --#whisper|self
+  
+  --/|Make sure the player running the script is a GM on the game
+  --?[&SendingPlayerIsGM] -eq 0|GMONLY
+
+   --/|Define some replacements we will need later
+  --&CR|< --&CR|+br --&CR|+ />
+  --&TB|& --&TB|+# --&TB|+64 --&TB|+; --&TB|+{
+  --&SPACE|X X --&SPACE|[&SPACE(1,1)]
+
+  --/|Split the notes into an array
+  --~tableCount|array;fromtable;LootList;[&tableName]
+  --~|array;sort;LootList
+  --?[&tableCount] -gt 20|&CR;
+  --&LootButtons|
+  --=ItemCount|0
+  
+  --/|Create a list of buttons
+  --%loop|foreach;LootList
+    --&LootButtons|+[rbutton][&loop]::ASSIGN_LOOT_ITEM;[&loop]|[&TB]target|token_id}[/rbutton][&SPACE][&CR]
+    --=ItemCount|[$ItemCount] + 1
+  --%|
+
+  --/|Abort if there are no loot items in the notes
+  --?[$ItemCount] -eq 0|NOLOOTITEMS
+
+  --/|Show the buttons
+  --+Assign Loot|
+  --+|[&LootButtons]
+  --X|
+
+  --:ASSIGN_LOOT_ITEM|
+  --~ItemName|string;before;|;[&reentryval]
+  --~LootTarget|string;after;|;[&reentryval]
+  --!t:[&LootTarget]|gmnotes:+=[&CR]Looted Item: [&ItemName]
+  --+[*[&LootTarget]:t-name] assigned|[&ItemName]
+  --X|
+
+  --:GMONLY|
+  --+GM ONLY|Only the GM can run this script
+  --X|
+
+  --:NEEDSELECTED|
+  --+No token selected|You need to select a loot token
+  --X|
+
+  --:NOLOOTITEMS|
+  --+No Loot Items|The selected token's GMNotes does not contain any lines beginning with "Item:"
+  --X|
+}}
+
