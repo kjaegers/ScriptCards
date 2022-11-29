@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.2.1
+  --/|Version     : 2.2.2
   --/|Requires SC : 2.1.7
   --/|Author      : Kurt Jaegers
 
@@ -40,7 +40,7 @@
   --/|If this value is set to 1, a list of available spell slots are displayed above the spells list in the action menu. (only if trackPCSpellSlots is 1)
   --&showPCSpellSlotList|1
 
-  --/|If this value is set to attack rolls will have the target's numeric AC value hidden
+  --/|If this value is set to 1, attack rolls will have the target's numeric AC value hidden
   --&sendGmInfo|0
 
   --/|If this value is set to 1, NPC actions (except spellcasting) will be whispered to the sender only and not displayed to everyone
@@ -112,6 +112,9 @@
   --&ShowRestButtons|1
   
   --&Template|none
+  
+  --/|If set to 1, the menu will include custom buttons defined on characters that include the "AM-" prefix in their names.
+  --&DisplayButtonsForAMAbilities|1
   
   --/|List spells here, separated by semicolons, that should be kept in the PC Attacks display with "[After Cast]" appended to them
   --~|array;define;SpellsToKeepWithSuffix;Spiritual Weapon;Scorching Ray
@@ -727,6 +730,7 @@
       --:PC_SKIP_LEVEL_DISPLAY|
      --]|
   --%|
+  --?[&DisplayButtonsForAMAbilities] -eq 1|>DISPLAY_ACTIONMENU_CHARACTER_ABILITIES;[*S:character_id]
   --#buttonpadding|[&smallButtonPadding]
   --X|
 
@@ -1778,6 +1782,26 @@
         --?[&param2] -eq "n"|&[%2%]NPC_SAVEMODE_[&saves];2d20
     --%|
   --%|
+  --<|
+
+  --:DISPLAY_ACTIONMENU_CHARACTER_ABILITIES|Character ID
+  --&DACA_BUTTONS|
+  --~|array;objects:ability;AbilArray;AM-;[%1%]
+  --~|array;define;DACA_OBJS_ID
+  --%loop|foreach;AbilArray
+    --&DACA_OBJS_ID(9999)|[*O:[&loop]:ability:name]|[&loop]
+  --%|
+  --~|array;sort;DACA_OBJS_ID
+  --&DACA_BUTTONS|
+  --%loop|foreach;DACA_OBJS_ID
+    --~DACA_PARTS|string;split;|;[&loop]
+    --&DACA_NAME|[&DACA_PARTS1(3)]
+    --&DACA_BUTTONS|+[button][&DACA_NAME(replaceall,-, )]::~[%1%]|[&DACA_PARTS1][/button]
+  --%|
+  --?"X[&DACA_BUTTONS"] -eq "X"|<
+
+  --+Custom Actions|
+  --+|[&DACA_BUTTONS]
   --<|
 
 }}

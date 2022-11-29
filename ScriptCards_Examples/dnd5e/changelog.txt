@@ -1,5 +1,14 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2022-11-29 - 5E Character Action Menu 2.2.2
+             - Added support for additional ability buttons defined on a per-character basis. If you create abilities on character sheets
+               starting with "AM-", the action menu will create buttons for them at the end of the menu card. The AM- will be removed from
+               the name, dashes will be converted to spaces, and the button list will be alphabetized.
+
+2022-11-24 - 5E Character Action Menu 2.2.1
+             - Fixes the support for token-marker based modifiers introduced in 2.1.6. There were some issues depending on what kind of token
+               the target vs attacker was.
+
 2022-11-07 - 5E Character Action Menu 2.2.0
              - Adds support for the template functionality added in ScriptCards 2.2.0. Default template is "none". Setting &Template in the settings
                area allows you to specify any available template.
