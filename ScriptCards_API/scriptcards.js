@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.2.2";
+	const APIVERSION = "2.2.2a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1195,6 +1195,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													var thisSetting = settings[i].split(":");
 													var settingName = thisSetting.shift();
 													var createAttribute = false;
+													var useSheetWorker = true;
 													var setType = "current";
 													if (settingName.startsWith("!")) {
 														createAttribute = true;
@@ -1203,6 +1204,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													if (settingName.endsWith("^")) {
 														setType = "max";
 														settingName = settingName.slice(0, -1);
+													}
+													if (settingName.startsWith("$")) {
+														useSheetWorker = false;
+														settingName = settingName.substring(1);
 													}
 													var settingValue = thisSetting.join(":");
 													var theAttribute = findObjs({
@@ -1221,13 +1226,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 																	settingValue = currentValue + delta;
 																}
 															}
-															if (setType == "current") {
+															if (setType == "current" && useSheetWorker) {
 																theAttribute.setWithWorker({ current: settingValue });
 															}
-															if (setType == "max") {
+															if (setType == "max" && useSheetWorker) {
 																theAttribute.setWithWorker({ max: settingValue });
 															}
-															theAttribute.set(setType, settingValue);
+															if (!useSheetWorker) {
+																theAttribute.set(setType, settingValue);
+															}
 														} else {
 															if (createAttribute) {
 																theAttribute = createObj('attribute', {
@@ -5285,5 +5292,3 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 // Support for AirBag Crash Handler (if installed)
 if (typeof MarkStop === "function") MarkStop('ScriptCards');
-
-
