@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.2.2a";
+	const APIVERSION = "2.2.3";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1008,6 +1008,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													var theCharacter = getObj("character", info[0])
 													var theSection = info[1];
 													var rowID = generateRowID();
+													stringVariables["SC_LAST_CREATED_ROWID"] = rowID;
 													var info = thisContent.split("|");
 													if (theCharacter != null) {
 														for (var x = 0; x < info.length; x++) {
@@ -1021,10 +1022,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 																	{
 																		name: `repeating_${theSection}_${rowID}_${subInfo[0].trim()}`,
 																		_characterid: theCharacter.id,
-																		current: subInfo[1].trim(),
+																		//current: subInfo[1].trim(),
+																		current: "",
 																		max: subInfo[2].trim()
 																	}
 																)
+																newAttribute.setWithWorker({ current: subInfo[1].trim() });
 															} catch {
 																log(`ScriptCards: Error creating repeating section values on character ${theCharacter}, section ${theSection}`)
 															}

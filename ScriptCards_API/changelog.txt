@@ -1,5 +1,10 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.2.3  - When creating repeating sections with --!or, ScriptCards will now create the attibutes with empty values first and then set them using ScriptWorkers
+           to allow those to trigger properly. A new string variable (SC_LAST_CREATED_ROWID) will be set after using --!or to create a repeating row. This holds
+           the internal row ID of the repeating section, so you could access/update the entries after creating by using "repeating_sectionname_[&SC_LAST_CREATED_ROWID]_attrname",
+           where sectionname is the repeating section name and attrname is the individual attribute of the repeating row you want to work with.
+
 v 2.2.2  - Corrected unnecessary message in the console log when setting template to "none".
 
            Added two new string referencing functions : before and after will return the portion of a string variable before or after the specified substring,
