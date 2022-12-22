@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.2.2
+  --/|Version     : 2.2.3
   --/|Requires SC : 2.1.7
   --/|Author      : Kurt Jaegers
 
@@ -24,6 +24,11 @@
   --/|this script for generic processing. This lets you define "special case" macros for non-standard spells.
   --/|The name of the ability on the spell mule needs to exactly match the spell name (case sensitive)
   --&spellmulename|Spell_Mule
+  
+  --/|If you create a "shared macro mule" character and put its name here, you can define macros to be used
+  --/|generally in your game and a can include a list of macros in a character ability on each character called
+  --/|AMLIST that lists each of the mule's abilities that buttons should be created for the in the custom actions section.
+  --&sharedmacromulename|Macro_Mule
 
   --/|Set to "1" to enable loading of settings information from a saved format named after the character (case sensitive)
   --&UseNamedCharacterSettings|0
@@ -111,7 +116,7 @@
   --/|If set to 1, rest buttons will be shown in the title bar
   --&ShowRestButtons|1
   
-  --&Template|none
+  --&Template|strange
   
   --/|If set to 1, the menu will include custom buttons defined on characters that include the "AM-" prefix in their names.
   --&DisplayButtonsForAMAbilities|1
@@ -324,13 +329,13 @@
       --~testMule|system;findability;[&spellmulename];[&testName]
       --?[&testMule] -ne "AbilityNotFound"|MULE_NPC_CANTRIP
       --?"[*R:spelloutput]" -eq ATTACK|NPC_CANTRIP_GENERATE_WITH_TARGET
-      --&PCCantrips|+[rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|NONE[/rbutton][&SPACE]
+      --&NPCCantrips|+[rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|NONE[/rbutton][&SPACE]
       --^NPC_CANTRIP_END_GENERATE|
       --:NPC_CANTRIP_GENERATE_WITH_TARGET|
       --&NPCCantrips|+[rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|[&TB]target|token_id}[/rbutton][&SPACE]
       --^NPC_CANTRIP_END_GENERATE|
       --:MULE_NPC_CANTRIP|
-      --&PCCantrips|+[button][*R:spellname]::~[&spellmulename]|[&testName][/button][&SPACE]
+      --&NPCCantrips|+[button][*R:spellname]::~[&spellmulename]|[&testName][/button][&SPACE]
       --:NPC_CANTRIP_END_GENERATE|
       --Rnext|
       --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|NPCCantrips_Display
@@ -1791,6 +1796,17 @@
   --%loop|foreach;AbilArray
     --&DACA_OBJS_ID(9999)|[*O:[&loop]:ability:name]|[&loop]
   --%|
+
+  --/|Check for shared macro mule macros
+  -->GET_CHARACTER_ID_BY_NAME|[&sharedmacromulename];MacroMuleID
+  --?[&MacroMuleID] -eq 0|DONE_SHARED_MULE_BUTTONS
+  --~|array;objects:ability;MuleButtonList;AM_SHARED_LIST;[%1%]
+  --?[&muleButtonList] -eq "AbilityNotFound"|DONE_SHARED_MULE_BUTTONS
+  --~|array;objects:character;macro_mule;[&sharedmacromulename]
+  --?[@macro_mule(maxindex)] -lt 0|DONE_SHARED_MULE_BUTTONS
+  --
+
+  --:DONE_SHARED_MULE_BUTTONS|
   --~|array;sort;DACA_OBJS_ID
   --&DACA_BUTTONS|
   --%loop|foreach;DACA_OBJS_ID
@@ -1802,6 +1818,11 @@
 
   --+Custom Actions|
   --+|[&DACA_BUTTONS]
+  --<|
+
+  --:GET_CHARACTER_ID_BY_NAME|
+  --~array;objects:character;found_char_list;[%1%]
+  --?[@found_char_list(maxindex)] -lt 0|&[%2%];0|[%2%];[@found_char_list(0)]
   --<|
 
 }}
