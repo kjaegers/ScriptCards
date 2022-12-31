@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.2.3 
+  --/|Version     : 2.3.0
   --/|Requires SC : 2.1.7
   --/|Author      : Kurt Jaegers
 
@@ -29,6 +29,14 @@
   --/|generally in your game and a can include a list of macros in a character ability on each character called
   --/|AMLIST that lists each of the mule's abilities that buttons should be created for the in the custom actions section.
   --&sharedmacromulename|Macro_Mule
+
+  --/|If you create a mule character and put its name here, you can define macros to be used for NPC Actions, Reactions,
+  --/|Bonus Actions and Legendary Actions. The name matching rules are the same as those for the Spell Mule
+  --&sharedmacromulename|NPCAbility_Mule
+  
+  --/|If you create a mule character and put its name here, you can define macros to be used for PC Actions listed in
+  --/|"Abilities and Spellcasting" section on the character sheet.
+  --&pcabilitymulename|PCAbility_Mule
 
   --/|Set to "1" to enable loading of settings information from a saved format named after the character (case sensitive)
   --&UseNamedCharacterSettings|0
@@ -116,7 +124,7 @@
   --/|If set to 1, rest buttons will be shown in the title bar
   --&ShowRestButtons|1
   
-  --&Template|strange
+  --&Template|none
   
   --/|If set to 1, the menu will include custom buttons defined on characters that include the "AM-" prefix in their names.
   --&DisplayButtonsForAMAbilities|1
@@ -175,6 +183,8 @@
   --&BED|& --&BED|+# --&BED|+128719;
   --&CLOCK|& --&CLOCK|+# --&CLOCK|+128336;
   --&SPACE|X X --&SPACE|[&SPACE(1,1)]
+  --&obrac|[ --&cbrac|]
+  --&vbar||
   
   --/|Set up some style information for the action menu and subsequent cards. These attempt to somewhat
   --/|simulate the 5E style
@@ -271,112 +281,15 @@
   --+|[c][rbutton:8px]Skill Check::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton]     [rbutton:8px]Saving Throw::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton][/c]
   --:SKIP_NPC_SAVES|
 
-  --/|NPC "Actions"
-  --Rfirst|[*S:character_id];repeating_npcaction
-  --&NPCActions|[br]
-  --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
-    --:NPC_Action_Display|
-      --?"[*R:name]" -ne Multiattack|skip_multiattack
-      --+[*R:name]|[*R:description]
-      --^skip_ma_button|
-      --:skip_multiattack|
-      --&NPCActions|+[rbutton][*R:name]::EXEC_NPC_ACTION;[*R:name]|[&TB]target|token_id}[/rbutton][&SPACE]
-      --:skip_ma_button|
-      --Rnext|
-      --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Action_Display
-      --+NPC Actions|[&NPCActions]
-  --]|
-
-  --/|NPC "Bonus Actions"
-  --Rfirst|[*S:character_id];repeating_npcbonusaction
-  --&NPCBonusActions|[br]
-  --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
-    --:NPC_Bonus_Action_Display|
-      --&NPCBonusActions|+[rbutton][*R:name]::EXEC_NPC_BONUS_ACTION;[*R:name]|[&TB]target|token_id}[/rbutton][&SPACE]
-      --Rnext|
-      --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Bonus_Action_Display
-    --+Bonus Actions|[&NPCBonusActions]
-  --]|  
-
-  --/|NPC "Bonus Reactions"
-  --Rfirst|[*S:character_id];repeating_npcreaction
-  --&NPCReactions|[br]
-  --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
-    --:NPC_Reaction_Display|
-      --&NPCReactions|+[rbutton][*R:name]::EXEC_NPC_REACTION;[*R:name]|[&TB]target|token_id}[/rbutton][&SPACE]
-      --Rnext|
-      --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Reaction_Display
-    --+Reactions|[&NPCReactions]
-  --]|
-
-  --/|NPC "Legendary Actions"
-  --Rfirst|[*S:character_id];repeating_npcaction-l
-  --&NPCLegendaryActions|[br]
-  --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
-    --:NPC_Legendary_Action_Display|
-      --&NPCLegendaryActions|+[rbutton][*R:name]::EXEC_NPC_LEGENDARY_ACTION;[*R:name]|[&TB]target|token_id}[/rbutton][&SPACE]
-      --Rnext|
-      --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|NPC_Legendary_Action_Display
-      --+Legendary Actions|[&NPCLegendaryActions]
-  --]|
-
-  --/|NPC Spells
-    --Rfirst|[*S:character_id];repeating_spell-cantrip
-    --&NPCCantrips|[br]
-    --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
-    --:NPCCantrips_Display|
-      --~testName|string;replaceall; ;-;[*R:spellname]
-      --~testMule|system;findability;[&spellmulename];[&testName]
-      --?[&testMule] -ne "AbilityNotFound"|MULE_NPC_CANTRIP
-      --?"[*R:spelloutput]" -eq ATTACK|NPC_CANTRIP_GENERATE_WITH_TARGET
-      --&NPCCantrips|+[rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|NONE[/rbutton][&SPACE]
-      --^NPC_CANTRIP_END_GENERATE|
-      --:NPC_CANTRIP_GENERATE_WITH_TARGET|
-      --&NPCCantrips|+[rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|[&TB]target|token_id}[/rbutton][&SPACE]
-      --^NPC_CANTRIP_END_GENERATE|
-      --:MULE_NPC_CANTRIP|
-      --&NPCCantrips|+[button][*R:spellname]::~[&spellmulename]|[&testName][/button][&SPACE]
-      --:NPC_CANTRIP_END_GENERATE|
-      --Rnext|
-      --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|NPCCantrips_Display
-      --+Cantrips|[&NPCCantrips]
-  --]|
+  -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcaction;name;EXEC_NPC_ACTION;Actions;[&sharedmacromulename];0
+  -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcbonusaction;name;EXEC_NPC_BONUS_ACTION;Bonus Actions;[&sharedmacromulename];0
+  -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcreaction;name;EXEC_NPC_REACTION;Reactions;[&sharedmacromulename];0
+  -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcaction-l;name;EXEC_NPC_LEGENDARY_ACTION;Legendary Actions;[&sharedmacromulename];0
+  -->BUILD_SPELL_BUTTON_LIST|[*S:character_id];repeating_spell-cantrip;spellname;EXEC_PC_CANTRIP;Cantrips;[&sharedmacromulename];0
   --%levelCounter|1;9
-    --Rfirst|[*S:character_id];repeating_spell-[&levelCounter]
-    --&NPCSpells|[br]
-    --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
-      --:NPCSpells_Display|
-      --?[&skipNPCPrepCheck] -eq 1|SKIP_NPC_PREP_CHECK
-      --?"X[*R:spellprepared]" -ne "X1"|NPC_DONE_SPELL_BUTTON
-      --:SKIP_NPC_PREP_CHECK|
-      --~testName|string;replaceall; ;-;[*R:spellname]
-      --~testMule|system;findability;[&spellmulename];[&testName]
-      --?[&testMule] -ne "AbilityNotFound"|MULE_NPC_SPELL
-      --&slotString|
-      --?[&levelCounter] -eq 9|NPC_SKIP_SLOT_LIST
-      --&slotString||&#
-      --&slotString|+63;{Slot Level|
-      --%slotcounter|[&levelCounter];9
-        --&slotString|+[&slotcounter]
-        --?[&slotcounter] -eq 9|NPC_SKIP_VERTICAL_BAR
-        --&slotString|+|
-        --:NPC_SKIP_VERTICAL_BAR|
-      --%|
-      --&slotString|+}
-      --^NPC_DONE_SLOT_LIST|
-      --:NPC_SKIP_SLOT_LIST|
-      --&slotString||9
-      --:NPC_DONE_SLOT_LIST|
-      --&NPCSpells|+[rbutton][*R:spellname]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|[&TB]target|token_id}[&slotString][/rbutton][&SPACE]
-      --^NPC_DONE_SPELL_BUTTON|
-      --:MULE_NPC_SPELL|
-      --&NPCSpells|+[button][*R:spellname]::~[&spellmulename]|[&testName][/button][&SPACE]
-      --:NPC_DONE_SPELL_BUTTON|
-      --Rnext|
-      --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|NPCSpells_Display
-      --+Level [&levelCounter] Spells|[&NPCSpells]
-     --]|
+    -->BUILD_SPELL_BUTTON_LIST|[*S:character_id];repeating_spell-[&levelCounter];spellname;EXEC_PC_SPELL;Level [&levelCounter] Spells;[&spellmulename];[&levelCounter]    
   --%|
+
   --#buttonpadding|[&smallButtonPadding]
   --X|
 
@@ -611,43 +524,8 @@
   --+|[c][rbutton:8px]Skill Check::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton]     [rbutton:8px]Saving Throw::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton][/c]
   --:SKIP_PC_SAVES|
 
-  --/|The PC Attack List (center of the main character sheet)
-  --Rfirst|[*S:character_id];repeating_attack
-  --&PCAttacks|[br]
-  --?"[*R:atkname]" -ne "NoRepeatingAttributeLoaded"|[
-    --:PCAttacks_Display|
-      --&keepSpell|N
-      --&spellSuffix|
-      -->CHECK_SPELLS_TO_KEEP|[*R:atkname];keepSpell;spellSuffix
-      --?"X[*R:spelldesc_link]" -ne "X" -and [&keepSpell] -eq N|SKIP_SPELL_ATTACK
-      --&PCAttacks|+[rbutton][*R:atkname][&spellSuffix]::EXEC_PC_ATTACK;[*R:atkname]|[&TB]target|token_id}[/rbutton][&SPACE]
-      --:SKIP_SPELL_ATTACK|
-      --Rnext|
-      --?"[*R:atkname]" -ne "NoRepeatingAttributeLoaded"|PCAttacks_Display
-      --+PC Attacks|[&PCAttacks]
-  --]|
-
-  --/|The PC's cantrips
-  --Rfirst|[*S:character_id];repeating_spell-cantrip
-  --&PCCantrips|[br]
-  --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
-    --:PCCantrips_Display|
-      --~testName|string;replaceall; ;-;[*R:spellname]
-      --~testMule|system;findability;[&spellmulename];[&testName]
-      --?[&testMule] -ne "AbilityNotFound"|MULE_CANTRIP
-      --?"[*R:spelloutput]" -eq ATTACK|CANTRIP_GENERATE_WITH_TARGET
-      --&PCCantrips|+[rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|NONE[/rbutton][&SPACE]
-      --^CANTRIP_END_GENERATE|
-      --:CANTRIP_GENERATE_WITH_TARGET|
-      --&PCCantrips|+[rbutton][*R:spellname]::EXEC_PC_CANTRIP;[*R:spellname]|[&TB]target|token_id}[/rbutton][&SPACE]
-      --^CANTRIP_END_GENERATE|
-      --:MULE_CANTRIP|
-      --&PCCantrips|+[button][*R:spellname]::~[&spellmulename]|[&testName][/button][&SPACE]
-      --:CANTRIP_END_GENERATE|
-      --Rnext|
-      --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|PCCantrips_Display
-      --+Cantrips|[&PCCantrips]
-  --]|
+  -->BUILD_BUTTON_LIST|[*S:character_id];repeating_attack;atkname;EXEC_PC_ATTACK;Attacks and Actions;[&pcabilitymulename];0;1
+  -->BUILD_SPELL_BUTTON_LIST|[*S:character_id];repeating_spell-cantrip;spellname;EXEC_PC_CANTRIP;Cantrips;[&spellmulename];0
 
   --/|The PC's level 1 thru 9 spells
   --&HighestSlot|9
@@ -668,72 +546,10 @@
     --+|[c][b]Available Spell Slots[/b][/c][&spellSlotInfo1][&spellSlotInfo2][/tr][/t]
     --:SKIP_SLOT_DISPLAY|
   --]|
+
+  --/|The PC's level 1 thru 9 spells
   --%levelCounter|1;9
-    --Rfirst|[*S:character_id];repeating_spell-[&levelCounter]
-    --&PCSpells|[br]
-    --&slotString|
-    --&slotString||&#
-    --&slotString|+63;{Slot Level|
-    --%slotcounter|[&levelCounter];[&HighestSlot]
-      --?[&trackPCSpellSlots] -eq 0|SKIP_THIS_SLOT_CHECK
-      -->GET_AVAILABLE_SPELL_SLOTS|[&slotcounter];hasSlots
-      --?[&hasSlots] -eq 0|SKIP_THIS_SLOT_STRING
-      --:SKIP_THIS_SLOT_CHECK|
-      --&slotString|+[&slotcounter]
-      --?[&slotcounter] -eq [&HighestSlot]|SKIP_THIS_SLOT_STRING
-      --&slotString|+|
-      --:SKIP_THIS_SLOT_STRING|
-    --%|
-
-    --?[&levelCounter] -lt 9|DONE_SLOT_STRING
-    --&slotString||9
-    --:DONE_SLOT_STRING|
-    --&slotString|+}
-    
-    --=PCSpellCount|0
-    --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|[
-      --:PCSpells_Display|
-      --?[&skipPreppedSpellsCheck] -eq 1|SKIP_PREP_CHECK
-      --?[*S:class] -eq "Sorcerer"|SKIP_PREP_CHECK
-      --?[*S:class] -eq "Warlock"|SKIP_PREP_CHECK
-      --?"X[*S:multiclass1_flag]" -eq "X1" -and [*S:multiclass1] -eq "Sorcerer"|SKIP_PREP_CHECK
-      --?"X[*S:multiclass2_flag]" -eq "X1" -and [*S:multiclass2] -eq "Sorcerer"|SKIP_PREP_CHECK
-      --?"X[*S:multiclass3_flag]" -eq "X1" -and [*S:multiclass3] -eq "Sorcerer"|SKIP_PREP_CHECK
-      --?"X[*S:multiclass1_flag]" -eq "X1" -and [*S:multiclass1] -eq "Warlock"|SKIP_PREP_CHECK
-      --?"X[*S:multiclass2_flag]" -eq "X1" -and [*S:multiclass2] -eq "Warlock"|SKIP_PREP_CHECK
-      --?"X[*S:multiclass3_flag]" -eq "X1" -and [*S:multiclass3] -eq "Warlock"|SKIP_PREP_CHECK      
-      --&isWizard|0
-      --?[*S:class] -eq "Wizard"|&isWizard;1
-      --?"X[*S:multiclass1_flag]" -eq "X1" -and [*S:multiclass1] -eq "Wizard"|&isWizard;1
-      --?"X[*S:multiclass2_flag]" -eq "X1" -and [*S:multiclass2] -eq "Wizard"|&isWizard;1
-      --?"X[*S:multiclass3_flag]" -eq "X1" -and [*S:multiclass3] -eq "Wizard"|&isWizard;1
-      --?[&isWizard] -eq 0 -and "X[*R:spellprepared]" -ne "X1"|DONE_SPELL_BUTTON
-      --?"X[*R:spellprepared]" -ne "X1" -and "X[*R:spellritual]" -ne "XYes"|DONE_SPELL_BUTTON
-      --&spellsuffix|
-      --?"X[*R:spellritual]" -eq "XYes"|&spellsuffix; [R]
-      --:SKIP_PREP_CHECK|
-
-      --?[&trackPCSpellSlots] -eq 0|SKIP_FREE_SLOTS_CHECK
-      --?[&HighestSlot] -lt [&levelCounter]|DONE_SPELL_BUTTON
-
-      --:SKIP_FREE_SLOTS_CHECK|    
-      --~testName|string;replaceall; ;-;[*R:spellname]
-      --~testMule|system;findability;[&spellmulename];[&testName]
-      --?[&testMule] -ne "AbilityNotFound"|MULE_SPELL
-
-      --&PCSpells|+[rbutton][*R:spellname][&spellsuffix]::EXEC_PC_SPELL;[&levelCounter]|[*R:spellname]|[&TB]target|token_id}[&slotString][/rbutton][&SPACE]
-      --=PCSpellCount|[$PCSpellCount.Raw] + 1 
-      --^DONE_SPELL_BUTTON|
-      --:MULE_SPELL|
-      --&PCSpells|+[button][*R:spellname][&spellsuffix]::~[&spellmulename]|[&testName][/button][&SPACE]
-      --=PCSpellCount|[$PCSpellCount.Raw] + 1 
-      --:DONE_SPELL_BUTTON|
-      --Rnext|
-      --?"[*R:spellname]" -ne "NoRepeatingAttributeLoaded"|PCSpells_Display
-      --?[$PCSpellCount] -eq 0|PC_SKIP_LEVEL_DISPLAY
-      --+Level [&levelCounter] Spells|[&PCSpells]
-      --:PC_SKIP_LEVEL_DISPLAY|
-     --]|
+    -->BUILD_SPELL_BUTTON_LIST|[*S:character_id];repeating_spell-[&levelCounter];spellname;EXEC_PC_SPELL;Level [&levelCounter] Spells;none;[&levelCounter]    
   --%|
   --?[&DisplayButtonsForAMAbilities] -eq 1|>DISPLAY_ACTIONMENU_CHARACTER_ABILITIES;[*S:character_id]
   --#buttonpadding|[&smallButtonPadding]
@@ -970,6 +786,7 @@
   --~spellInfo|string;split;|;[&reentryval]
   --=UpCast|[&spellInfo4] - [&spellInfo1]
   --?[&trackPCSpellSlots] -eq 0|SKIP_CASTING_SLOT_CHECK
+  --?"[&spellInfo4]" -eq "As Ritual"|SKIP_CASTING_SLOT_CHECK
   -->GET_AVAILABLE_SPELL_SLOTS|[&spellInfo4];castSlotAvailable
   --?[&castSlotAvailable] -eq 0|NO_SLOTS_AVAILABLE
   -->DEDUCT_SPELL_SLOT|[&spellInfo4]
@@ -1793,20 +1610,28 @@
   --&DACA_BUTTONS|
   --~|array;objects:ability;AbilArray;AM-;[%1%]
   --~|array;define;DACA_OBJS_ID
+  --?"[@AbilArray(length)]" -eq "0"|DONE_CHAR_SPECIFIC_BUTTONS
   --%loop|foreach;AbilArray
     --&DACA_OBJS_ID(9999)|[*O:[&loop]:ability:name]|[&loop]
   --%|
+
+  --:DONE_CHAR_SPECIFIC_BUTTONS|character_id
+  --/|Note : due to API issues, this currently does not work. Skipping over this section for now
+  --^DONE_SHARED_MULE_BUTTONS|
 
   --/|Check for shared macro mule macros
   -->GET_CHARACTER_ID_BY_NAME|[&sharedmacromulename];MacroMuleID
   --?[&MacroMuleID] -eq 0|DONE_SHARED_MULE_BUTTONS
   --~|array;objects:ability;MuleButtonList;AM_SHARED_LIST;[%1%]
+  --?"[@MuleButtonList(length)]" -eq 0|DONE_SHARED_MULE_BUTTONS
+  --\|[@MuleButtonList(0)]
+  --\|[*O:[@MuleButtonList(0)]:ability:name] [*O:[@MuleButtonList(0)]:ability:action]
   --?[&muleButtonList] -eq "AbilityNotFound"|DONE_SHARED_MULE_BUTTONS
   --~|array;objects:character;macro_mule;[&sharedmacromulename]
   --?[@macro_mule(maxindex)] -lt 0|DONE_SHARED_MULE_BUTTONS
-  --
 
   --:DONE_SHARED_MULE_BUTTONS|
+  --?"[@DACA_OBJS_ID(length)]" -eq "0"|<
   --~|array;sort;DACA_OBJS_ID
   --&DACA_BUTTONS|
   --%loop|foreach;DACA_OBJS_ID
@@ -1814,15 +1639,120 @@
     --&DACA_NAME|[&DACA_PARTS1(3)]
     --&DACA_BUTTONS|+[button][&DACA_NAME(replaceall,-, )]::~[%1%]|[&DACA_PARTS1][/button]
   --%|
-  --?"X[&DACA_BUTTONS"] -eq "X"|<
+  --?"X[&DACA_BUTTONS]" -eq "X"|<
 
   --+Custom Actions|
   --+|[&DACA_BUTTONS]
   --<|
 
   --:GET_CHARACTER_ID_BY_NAME|
-  --~array;objects:character;found_char_list;[%1%]
-  --?[@found_char_list(maxindex)] -lt 0|&[%2%];0|[%2%];[@found_char_list(0)]
+  --~|array;objects:character;found_char_list;[%1%]
+  --?[@found_char_list(maxindex)] -lt 0|&[%2%];0|&[%2%];[@found_char_list(0)]
   --<|
 
+  --/|To customize for other games : remove or update the items between 5E SPECIFIC START and 5E SPECIFIC END
+
+  --:BUILD_BUTTON_LIST|Character ID;Repeating_section_name;repeating field for name;reentrant point;section header;mule char name/id;filter out spells
+  --Rfirst|[%1%];[%2%]
+  --&AM_BUTTON_LIST|[br]
+  --?"[*R:[%3%]]" -ne "NoRepeatingAttributeLoaded"|[
+    --:AM_BUTTON_LIST_LOOP|   
+      --&DisplayName|[*R:[%3%]]
+
+      --/|5E SPECIFIC START
+      --?"[&DisplayName(contains,Multiattack)]" -eq 1|>SHOW_MULTIATTACK
+      --?"[&DisplayName(contains,Multiattack)]" -eq 1|AM_LIST_CONTINUE
+      --?[%8%] -eq 0|SKIP_BUTTON_LIST_SPELL_CHECK
+      --&keepSpell|N
+      --&spellSuffix|
+      -->CHECK_SPELLS_TO_KEEP|[*R:atkname];keepSpell;spellSuffix
+      --?"X[*R:spelldesc_link]" -ne "X" -and [&keepSpell] -eq N|AM_LIST_CONTINUE
+      --:SKIP_BUTTON_LIST_SPELL_CHECK|
+      --/|5E SPECIFIC END
+
+      --?"[%6%]" -eq "none"|AM_LIST_SKIP_MULE_CHECK
+      --~testName|string;replaceall; ;-;[&DisplayName]
+      --~testMule|system;findability;[%6%];[&testName]
+      --?[&testMule] -eq "AbilityNotFound"|AM_LIST_SKIP_MULE_CHECK
+      --&AM_BUTTON_LIST|+[button][&DisplayName(totitlecase)]::~[%6%]|[&testName][/button][&SPACE]
+      --^AM_LIST_CONTINUE|
+      --:AM_LIST_SKIP_MULE_CHECK|
+      --&AM_BUTTON_LIST|+[rbutton][&DisplayName(totitlecase)]::[%4%];[*R:[%3%]]|[&TB]target|token_id}[/rbutton][&SPACE]
+      --:AM_LIST_CONTINUE|
+      --Rnext|
+      --?"[*R:[%3%]]" -ne "NoRepeatingAttributeLoaded"|AM_BUTTON_LIST_LOOP
+      --+[%5%]|[&AM_BUTTON_LIST]
+  --]|
+  --<|
+
+  --:BUILD_SPELL_BUTTON_LIST|Character ID;Repeating_section_name;repeating field for name;reentrant point;section header;mule char name/id;spell level
+    --Rfirst|[%1%];[%2%]
+    --&AM_BUTTON_LIST|[br]
+    --?"[*R:[%3%]]" -ne "NoRepeatingAttributeLoaded"|[
+    --:AM_SPELL_BUTTON_LIST_LOOP|
+      --&slotString|
+      --&targetString|[&TB]target|token_id}
+      --&DisplayName|[*R:[%3%]]
+      --&DisplayName|[&DisplayName(totitlecase)]
+      --?"X[*R:spellritual]" -eq "XYes"|&DisplayName;+ [R]
+      --&LevelString|[%7%]|
+      --?"[%7%]" -eq 0|&LevelString; 
+      --?"[%7%]" -gt 0|>BUILD_SLOT_LIST;[%7%];slotString;[*R:spellritual]
+      --?[&trackPCSpellSlots] -eq 0|AM_SPELL_BUTTON_SKIP_SLOT_INFO
+      --?[&HighestSlot] -ge [%7%]|AM_SPELL_BUTTON_SKIP_SLOT_INFO
+      --?"X[*R:spellritual]" -eq "XYes"|AM_SPELL_BUTTON_SKIP_SLOT_INFO
+      --/|We are tracking spells and the caster doesn't have a high enough slot, and it isn't a ritual spell.
+      --^SPELL_BUTTON_END_GENERATE|
+      --:AM_SPELL_BUTTON_SKIP_SLOT_INFO|
+      --~testName|string;replaceall; ;-;[*R:[%3%]]
+      --~testMule|system;findability;[&spellmulename];[&testName]
+      --?[&testMule] -ne "AbilityNotFound"|SPELL_BUTTON_MULE
+      --?"[*R:spelloutput]" -eq ATTACK|SPELL_BUTTON_GENERATE_WITH_TARGET
+      --&AM_BUTTON_LIST|+[rbutton][&DisplayName]::[%4%];[&LevelString][*R:[%3%]]|NONE[&slotString][/rbutton][&SPACE]
+      --^SPELL_BUTTON_END_GENERATE|
+      --:SPELL_BUTTON_GENERATE_WITH_TARGET|
+      --&AM_BUTTON_LIST|+[rbutton][&DisplayName]::[%4%];[&LevelString][*R:[%3%]]|[&targetString][&slotString][/rbutton][&SPACE]
+      --^SPELL_BUTTON_END_GENERATE|
+      --:SPELL_BUTTON_MULE|
+      --&AM_BUTTON_LIST|+[button][&DisplayName]::~[&spellmulename]|[&testName][/button][&SPACE]
+      --:SPELL_BUTTON_END_GENERATE|
+      --Rnext|
+      --?"[*R:[%3%]]" -ne "NoRepeatingAttributeLoaded"|AM_SPELL_BUTTON_LIST_LOOP
+      --/|If the list is empty, skip the output|
+      --?"X[&AM_BUTTON_LIST]" -eq "X"|AM_EMPTY_LIST_SKIP
+      --?"X[&AM_BUTTON_LIST]" -eq "X[br]"|AM_EMPTY_LIST_SKIP
+      --+[%5%]|[&AM_BUTTON_LIST]
+      --:AM_EMPTY_LIST_SKIP|
+  --]|
+  --<|
+
+  --:SHOW_MULTIATTACK|description
+  --+Multiattack|[*R:description]
+  --<|
+
+  --:BUILD_SLOT_LIST|Spell Level;return string;is ritual (Yes for true)
+  --&slotString|
+  --?[%1%] -eq 9 -and "X[%3%]" -eq "X"|SKIP_BUILD_SLOT_LIST
+  --&slotString||&#
+  --&slotString|+63;{Slot Level|
+  --?"X[%3%]" -ne "XYes"|SLOT_LIST_NOT_RITUAL
+  --&slotString|+As Ritual|
+  --:SLOT_LIST_NOT_RITUAL|
+  --%slotcounter|[%1%];9
+    --&slotString|+[&slotcounter]
+    --?[&slotcounter] -eq 9|SKIP_SLOT_LIST_VERTICAL_BAR
+    --&slotString|+|
+    --:SKIP_SLOT_LIST_VERTICAL_BAR|
+  --%|
+  --&slotString|+}
+  --^BUILD_SLOT_LIST_DONE|
+  --:SKIP_BUILD_SLOT_LIST|
+  --&slotString||9
+  --:BUILD_SLOT_LIST_DONE|
+  --&[%2%]|[&slotString]
+  --<|
+
+  --:BUILD_TARGET_STRING|
+  --&[%1%]|[&TB]target|token_id}
+  --<|
 }}

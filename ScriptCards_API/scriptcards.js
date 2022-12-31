@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.2.3";
+	const APIVERSION = "2.2.4";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -153,6 +153,50 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		usersetting8: "",
 		usersetting9: "",
 	};
+
+	const SettingsThatAreColors = [
+		"tablebgcolor",
+		"titlecardbackground",
+		"rollhilightcolornormal",
+		"rollhilightcolorcrit",
+		"rollhilightcolorfumble",
+		"rollhilightcolorboth",
+		"titlefontcolor",
+		"subtitlefontcolor",
+		"oddrowbackground",
+		"evenrowbackground",
+		"oddrowfontcolor",
+		"evenrowfontcolor",
+		"emotebackground",
+		"buttonbackground",
+		"buttonbordercolor",
+		"dicefontcolor"
+	];
+
+	//---------------------------------------------------------------------------------------
+    // Handles registering token change events for other api scripts
+    //---------------------------------------------------------------------------------------
+    let observers = {
+        tokenChange: []
+    };
+    
+    const observeTokenChange = function(handler){
+        if(handler && _.isFunction(handler)){
+            observers.tokenChange.push(handler);
+        }
+    };
+
+    const notifyObservers = function(event,obj,prev){
+        _.each(observers[event],function(handler){
+          try {
+            handler(obj,prev);
+          } catch(e) {
+            log(`ScriptCards: An observer threw and exception in handler: ${handler}`);
+          }
+        });
+    };
+    //---------------------------------------------------------------------------------------
+    //---------------------------------------------------------------------------------------
 
 	// HTML Templates for the various pieces of the output card. Replaced sections are marked with
 	// !{...} syntax, and will have values substituted in them when the output line is built.
@@ -956,6 +1000,26 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									}
 									break;
 							}
+							if (SettingsThatAreColors.includes(paramName)) {
+								if (thisContent.trim().match(/^[0-9a-fA-F]{8}$/)) {
+									cardParameters[paramName] = `#${thisContent.trim()}`;
+								}
+								if (thisContent.trim().match(/^[0-9a-fA-F]{6}$/)) {
+									cardParameters[paramName] = `#${thisContent.trim()}`;
+								}
+								if (thisContent.trim().match(/^[0-9a-fA-F]{3}$/)) {
+									cardParameters[paramName] = `#${thisContent.trim()}`;
+								}
+								if (thisContent.trim() == "") {
+									cardParameters[paramName] =  "#00000000"
+								}
+							}
+
+						}
+
+						// Handle console logging
+						if (thisTag.charAt(0) === "\\") {
+							log(thisContent);
 						}
 
 						// Handle setting object values
@@ -1074,6 +1138,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											}
 											var settings = thisContent.split("|");
 											var theToken = getObj("graphic", tokenID);
+											var prevTok = JSON.parse(JSON.stringify(theToken));
+
 											if (theToken) {
 												for (var i = 0; i < settings.length; i++) {
 													var thisSetting = settings[i].split(":");
@@ -1123,14 +1189,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 													if (typeof (theToken.get(settingName)) == "boolean" && settingValue) {
 														switch (settingValue.toLowerCase()) {
-															case "true": settingValue = true; break;
-															case "false": settingValue = false; break;
+															case "true": case "on": case "1": settingValue = true; break;
+															case "false": case "off": case "0": settingValue = false; break;
+															case "": settingValue = !(theToken.get(settingName)); break;
 														}
 													}
 
 													//if (settingName && settingValue) { 
 													if (settingName) {
 														theToken.set(settingName, settingValue);
+														notifyObservers('tokenChange', theToken, prevTok);
 													}
 												}
 											} else {
@@ -3525,7 +3593,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				case "=":
 					var vName = "ScriptCardsInternalDummyRollVariable";
 					var rollFormula = thisMatch.substring(2, thisMatch.length - 1);
-					if (thisMatch.indexOf(":") > 0) {
+					if (thisMatch.indexOf(":") > 0 && thisMatch.indexOf(":") < thisMatch.indexOf("{")) {
 						vName = thisMatch.substring(2, thisMatch.indexOf(":"));
 						rollFormula = thisMatch.substring(thisMatch.indexOf(":") + 1, thisMatch.length - 1);
 					}
@@ -4181,9 +4249,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var left = replaceVariableContent(components[0]).replace(/\"/g, "", cardParameters, false);
 		//var right = inlineReplaceRollVariables(components[2]).replace(/\"/g,"", cardParameters);;
 		var right = replaceVariableContent(components[2]).replace(/\"/g, "", cardParameters, false);
-		if (!isNaN(left)) { left = parseFloat(left); }
-		if (!isNaN(right)) { right = parseFloat(right); }
-
+		if (!isNaN(left) && left !== "") { left = parseFloat(left); }
+		if (!isNaN(right) && right !== "") { right = parseFloat(right); }
 		switch (components[1]) {
 			case "-gt": if (left > right) return true; break;
 			case "-ge": if (left >= right) return true; break;
@@ -5287,7 +5354,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
-	return {}
+	return {
+        ObserveTokenChange: observeTokenChange
+    };
 })();
 
 // Meta marker for the end of ScriptCards
