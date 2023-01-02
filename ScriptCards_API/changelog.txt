@@ -1,5 +1,23 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.2.4a - Fixes an uncommon sandbox crash bug
+           Adds the "fromtable" subcommand for the array function. Will create an array based on the contents of a table. Parameters are the
+           name of the array, the name of the table (case sensitive) and what you want back from the table, which can be "name" for the text
+           value of each entry, "image" for the image URL, or both for both items separated by a vertical bar.
+           Ex: --~|array;fromrollabletable;MyNames;Map-Icons;name
+               --~|array;fromrollabletable;MyImages;Map-Icons;image
+               --~|array;fromrollabletable;MyIcons;Map-Icons;both
+          
+           Usage Example:
+             !script {{
+               --&vbar||
+               --~|array;fromrollabletable;MyIcons;Map-Icons;both
+               --+Array length|Names [@MyIcons(maxindex)]
+               --%loop|foreach;MyIcons
+                 --+[&loop(before,[&vbar])]|[r][img][&loop(after,[&vbar])][/img][/r]
+               --%|
+             }}
+
 v 2.2.4  - Added the --\ command, which logs the content to the API console log. The tag portion of the command is ignored.
          - Started adding code to support event observers - Currently untested
          - It is now possible to compare two empty strings (ie, "" -eq "") and get the proper result. When testing a variable for being empty, always use quotes around it,

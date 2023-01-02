@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.2.4";
+	const APIVERSION = "2.2.4a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -174,29 +174,29 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	];
 
 	//---------------------------------------------------------------------------------------
-    // Handles registering token change events for other api scripts
-    //---------------------------------------------------------------------------------------
-    let observers = {
-        tokenChange: []
-    };
-    
-    const observeTokenChange = function(handler){
-        if(handler && _.isFunction(handler)){
-            observers.tokenChange.push(handler);
-        }
-    };
+	// Handles registering token change events for other api scripts
+	//---------------------------------------------------------------------------------------
+	let observers = {
+		tokenChange: []
+	};
 
-    const notifyObservers = function(event,obj,prev){
-        _.each(observers[event],function(handler){
-          try {
-            handler(obj,prev);
-          } catch(e) {
-            log(`ScriptCards: An observer threw and exception in handler: ${handler}`);
-          }
-        });
-    };
-    //---------------------------------------------------------------------------------------
-    //---------------------------------------------------------------------------------------
+	const observeTokenChange = function (handler) {
+		if (handler && _.isFunction(handler)) {
+			observers.tokenChange.push(handler);
+		}
+	};
+
+	const notifyObservers = function (event, obj, prev) {
+		_.each(observers[event], function (handler) {
+			try {
+				handler(obj, prev);
+			} catch (e) {
+				log(`ScriptCards: An observer threw and exception in handler: ${handler}`);
+			}
+		});
+	};
+	//---------------------------------------------------------------------------------------
+	//---------------------------------------------------------------------------------------
 
 	// HTML Templates for the various pieces of the output card. Replaced sections are marked with
 	// !{...} syntax, and will have values substituted in them when the output line is built.
@@ -244,82 +244,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (state[APINAME].storedStrings == undefined) { state[APINAME].storedStrings = {}; }
 		if (state[APINAME].storedSnippets == undefined) { state[APINAME].storedSnippets = {}; }
 		if (state[APINAME].triggersenabled == undefined) { state[APINAME].triggersenabled = true; }
-
-		/*
-		if (typeof Supernotes_Templates != "undefined") {
-			templates = Object.assign({}, Supernotes_Templates);
-		}
-
-		templates["dnd5e"] = {
-			boxcode: `<div style='background-image: linear-gradient(rgba(255, 255, 255, 0.5), rgba(255, 255, 255, 0.5)), url(https://i.imgur.com/8Mm94QY.png); background-size: 100% 100%; box-shadow: 0 0 3px #fff; display: block; text-align: left; font-size: 13px; padding: 5px; margin-bottom: 2px; color: black; font-family: serif; white-space: pre-wrap; line-height:1.2em; font-style:normal'>`, //"Bookinsanity", 
-			titlecode: `<div style='margin: 0.5em 1em 0.25em 1em; font-size: 18px; font-variant: small-caps; border-bottom: 2px solid #d3b63b; font-family: "MrEavesSmallCaps", Monsterrat, serif; color: #8b281c; display: block; margin-block-start: 1em; margin-block-end: 0; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;'>`, //padding-bottom: .1rem;
-			textcode: "</div><div><div style='font-weight: normal; display: block; margin: 0 1em 0 1em;'>",
-			buttonwrapper: `<div style='display:block;'>`,
-			buttonstyle: `style='display:inline-block; margin: 0px; font-size: 10px; color:#fff; padding: 2px 1px 1px 2px; background-color: #d00; text-align: center; border-radius: 5px;'`,
-			playerbuttonstyle: `style='display:inline-block; color:#000; font-weight:normal; background-color: transparent;padding: 0px; border: none;'`,
-			buttondivider: `<span style='color:#000; margin:0px;'> • </span>`,
-			handoutbuttonstyle: `style='display:inline-block; color:#13f2fc; font-weight:normal; background-color: transparent; padding: 0px; border: none;'`,
-			footer: ""
-		};
-		templates["dnd1e_green"] = {
-			boxcode: `<div style='background-color: #b5dcb0; box-shadow: 0 0 3px #fff; display: block; text-align: left; font-size: 13px; padding: 5px; margin-bottom: 2px; color: black; font-family: sans-serif; white-space: pre-wrap; line-height:1.3em; font-style:normal'>`,
-			titlecode: `<div style='margin: 0.5em 1em 0.25em 1em; font-size: 16px; font-variant: small-caps; font-family: "Goblin One", sans-serif; color: #000; display: block; margin-block-start: 1em; margin-block-end: 0; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;'>`, //padding-bottom: .1rem;
-			textcode: "</div><div><div style='font-weight: normal; display: block; margin: 0 1em 0 1em;'>",
-			buttonwrapper: `<div style='display:block;'>`,
-			buttonstyle: `style='display:inline-block; font-size: 10px; color:#000; padding: 2px 0px 2px 0px; background-color: transparent; border: 1px solid black; text-align: center; border-radius: 0px;'`,
-			playerbuttonstyle: `style='display:inline-block; color:#000; font-weight:normal; background-color: transparent;padding: 0px; border: none;'`,
-			buttondivider: `<span style='color:#000; margin:0px;'> • </span>`,
-			handoutbuttonstyle: `style='display:inline-block; color:#13f2fc; font-weight:normal; background-color: transparent; padding: 0px; border: none;'`,
-			footer: ""
-		};
-		templates["dnd1e_amber"] = {
-			boxcode: `<div style='background-color: #f3d149; box-shadow: 0 0 3px #fff; display: block; text-align: left; font-size: 13px; padding: 5px; margin-bottom: 2px; color: black; font-family: sans-serif; white-space: pre-wrap; line-height:1.3em; font-style:normal'>`,
-			titlecode: `<div style='margin: 0.5em 1em 0.25em 1em; font-size: 16px; font-variant: small-caps; font-family: "Goblin One", sans-serif; color: #000; display: block; margin-block-start: 1em; margin-block-end: 0; margin-inline-start: 0px; margin-inline-end: 0px; font-weight: bold;'>`, //padding-bottom: .1rem;
-			textcode: "</div><div><div style='font-weight: normal; display: block; margin: 0 1em 0 1em;'>",
-			buttonwrapper: `<div style='display:block;'>`,
-			buttonstyle: `style='display:inline-block; font-size: 10px; color:#000; padding: 2px 1px 1px 2px; background-color: transparent; border: 1px solid black; text-align: center; border-radius: 0px;'`,
-			playerbuttonstyle: `style='display:inline-block; color:#000; font-weight:normal; background-color: transparent;padding: 0px; border: none;'`,
-			buttondivider: `<span style='color:#000; margin:0px;'> • </span>`,
-			handoutbuttonstyle: `style='display:inline-block; color:#13f2fc; font-weight:normal; background-color: transparent; padding: 0px; border: none;'`,
-			footer: ""
-		};
-
-		try {
-			var findTemplateChar = findObjs({ _type: "character", name: "ScriptCards_TemplateMule" })[0];
-		} catch {
-			//log(`ScriptCards: TemplateMule not found`) 
-		}
-
-		try {
-			if (findTemplateChar) {
-				var muleTemplates = findObjs({ _type: "ability", characterid: findTemplateChar.id });
-				if (muleTemplates) {
-					for (var x = 0; x < muleTemplates.length; x++) {
-						var tempName = muleTemplates[x].get("name")
-						templates[tempName] = {}
-						var templateText = muleTemplates[x].get("action")
-						var templateLines = templateText.split("||")
-						for (var i = 0; i < templateLines.length; i++) {
-							var pieces = templateLines[i].replace(/(\r\n|\n|\r)/gm, "").split("::")
-							if (pieces && pieces.length == 2) {
-								pieces[1] = pieces[1].replace(/\{/g, "<").replace(/\}/g, ">").trim()
-								pieces[0] = pieces[0].trim()
-								if (pieces[0] == 'boxcode') { templates[tempName].boxcode = pieces[1] }
-								if (pieces[0] == 'titlecode') { templates[tempName].titlecode = pieces[1] }
-								if (pieces[0] == 'textcode') { templates[tempName].textcode = pieces[1] }
-								if (pieces[0] == 'buttonwrapper') { templates[tempName].buttonwrapper = pieces[1] }
-								if (pieces[0] == 'buttonstyle') { templates[tempName].buttonstyle = pieces[1] }
-								if (pieces[0] == 'footer') { templates[tempName].footer = pieces[1] }
-							}
-						}
-					}
-				}
-			}
-		} catch {
-			log("ScriptCards: Error parsing Templates Mule. Mule templates may not be available")
-		}
-		log(`ScriptCards: ${Object.keys(templates).length} Templates loaded`);
-		*/
 
 		reload_template_mule();
 
@@ -516,7 +440,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					metaCard += " }};"
 					sendChat("API", metaCard);
-
 				}
 
 				if (apiCmdText.startsWith("!sc-reloadtemplates")) {
@@ -1011,7 +934,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									cardParameters[paramName] = `#${thisContent.trim()}`;
 								}
 								if (thisContent.trim() == "") {
-									cardParameters[paramName] =  "#00000000"
+									cardParameters[paramName] = "#00000000"
 								}
 							}
 
@@ -2498,6 +2421,35 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											}
 											arrayIndexes[params[2]] = 0;
 										}
+
+										if (params[1].toLowerCase() == "fromrollabletable" || params[1].toLowerCase() == "fromtable") {
+											// params: 1-fromrollabletable, 2-array name, 3-table name, 4-name or avatar or both)
+											if (params[2] !== "") {
+												arrayVariables[params[2]] = [];
+												var theTable = findObjs({ type: "rollabletable", name: params[3] })[0];
+												if (theTable != null) {
+													findObjs({ type: "tableitem", _rollabletableid: theTable.id }).forEach(function (item) {
+														if (item !== null) {
+															switch (params[4].toLowerCase()) {
+																case "avatar":
+																case "image":
+																	arrayVariables[params[2]].push(item.get("avatar"));
+																	break;
+
+																case "name":
+																case "text":
+																	arrayVariables[params[2]].push(item.get("name"));
+																	break;
+
+																case "both":
+																	arrayVariables[params[2]].push(`${item.get("name")}|${item.get("avatar")}`)
+																	break;
+															}
+														}
+													});
+												}
+											}
+										}
 									}
 									if (params.length == 6) {
 										if (params[1].toLowerCase() == "fromrepeatingsection" || params[1].toLowerCase() == "fromrepsection") {
@@ -3641,10 +3593,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 				case "%":
 					// Replace gosub parameter references
-					var vName = thisMatch.match(/(?:\[\%)(.*?)(?:\%\])/g)[0];
-					vName = vName.substring(2, vName.length - 2);
-					if (callParamList[vName] != null) {
-						replacement = callParamList[vName];
+					if (thisMatch.match(/(?:\[\%)(.*?)(?:\%\])/g) !== null) {
+						var vName = thisMatch.match(/(?:\[\%)(.*?)(?:\%\])/g)[0];
+						if (vName !== null) {
+							vName = vName.substring(2, vName.length - 2);
+							if (callParamList[vName] != null) {
+								replacement = callParamList[vName];
+							}
+						}
 					}
 					break;
 
@@ -5355,8 +5311,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	return {
-        ObserveTokenChange: observeTokenChange
-    };
+		ObserveTokenChange: observeTokenChange
+	};
 })();
 
 // Meta marker for the end of ScriptCards
