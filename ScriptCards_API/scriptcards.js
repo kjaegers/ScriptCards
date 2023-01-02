@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.2.4a";
+	const APIVERSION = "2.2.4b";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -3820,7 +3820,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var text = rollComponents[x];
 			var componentHandled = false;
 
-			if (text.match(/^(\d+[dD][fF\d]+)([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(\#)?$/)) {
+			if (text.match(/^(\d+[dDuU][fF\d]+)([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(\#)?$/)) {
 				var thisRollHandled = handleDiceFormats(text);
 				componentHandled = true;
 
@@ -4850,7 +4850,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	// eslint-disable-next-line no-unused-vars
 	function handleDiceFormats(text, rollResult, hadOne, hadAce, currentOperator) {
 		// Split the dice roll into components
-		var matches = text.toLowerCase().match(/^(\d+[dD][fF\d]+)([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(\#)?$/);
+		var matches = text.toLowerCase().match(/^(\d+[dDuU][fF\d]+)([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(\#)?$/);
 
 		var resultSet = {
 			rollSet: [],
@@ -4877,6 +4877,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var rerollThreshold = undefined;
 		var rerollType = "x";
 		var rerollUnlimited = true;
+		var rollUnique = false;
 		var explodeValue = 0;
 		var isWildDie = false;
 		var wildDieDropSelf = false;
@@ -4893,6 +4894,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						keepcount = count;
 						sides = matches[x].split("d")[1]
 						if (sides == "f") { sides = 3; fudgeDice = true; }
+					}
+
+					// Handle XuY
+					if (matches[x].match(/^\d+[uU]\d+$/)) {
+						count = matches[x].split("u")[0]
+						keepcount = count;
+						sides = matches[x].split("u")[1]
+						if (parseInt(keepcount) > parseInt(sides)) { keepcount = sides; count = sides; log(`ScriptCards: Attempt to roll more than ${sides} unique d${sides}`)}
+						rollUnique = true;
 					}
 
 					// Handle keep highest/lowest
@@ -4967,8 +4977,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 			// Roll the dice
 			for (var x = 0; x < count; x++) {
-				var thisDiceRoll = rollWithReroll(sides, rerollThreshold, rerollType, rerollUnlimited);
-				var thisRoll = Number(thisDiceRoll[1]);
+				do {
+					var thisDiceRoll = rollWithReroll(sides, rerollThreshold, rerollType, rerollUnlimited);
+					var thisRoll = Number(thisDiceRoll[1]);
+				} while (resultSet.rollSet.includes(thisRoll) && rollUnique)
 				if (fudgeDice) { thisRoll -= 2; resultSet.dontHilight = true }
 				var thisTotal = thisRoll;
 				//var thisText = thisTotal.toString();

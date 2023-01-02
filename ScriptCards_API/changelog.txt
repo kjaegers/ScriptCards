@@ -1,5 +1,19 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.2.4b - New dice rolling formula is now available: xUy, which is the same as xDy except that only unique rolls will be returned. In other
+           words, if you wanted to roll 8d20, but only get non-repeating values, 8u20 would do so. The values of the dice are stored in a pseudo
+           array in the .RolledDice component of the roll variable.
+
+           Ex:
+
+           !script {{
+             --=Roll|8u20
+             --+Roll|[$Roll]
+             --%loop|1;8
+               --+Roll [&loop]|[$Roll.RolledDice([&loop])]
+             --%|
+           }}
+
 v 2.2.4a - Fixes an uncommon sandbox crash bug
            Adds the "fromtable" subcommand for the array function. Will create an array based on the contents of a table. Parameters are the
            name of the array, the name of the table (case sensitive) and what you want back from the table, which can be "name" for the text
