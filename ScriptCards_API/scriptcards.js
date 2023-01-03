@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.2.4b";
+	const APIVERSION = "2.2.4c";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -134,6 +134,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		enableattributesubstitution: "0",
 		formatinforequesttext: "0",
 		overridetemplate: "none",
+		explodingonesandaces: "0",
 		styleTableTag: " border-collapse:separate; border: solid black 2px; border-radius: 6px; -moz-border-radius: 6px; ",
 		stylenone: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; ",
 		stylenormal: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolornormal}; border-color: #87850A; color: #000000;",
@@ -3513,7 +3514,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						vSuffix = thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g)[0];
 					}
 					if (rollVariables[vName] != null) {
-						replacement = vSuffix == "Raw" ? rollVariables[vName]["Total"] : rollVariables[vName][vSuffix]
+						var rawValue = rollVariables[vName]["Total"].toString();
+						if (rollVariables[vName].PaddingDigits > rawValue.length) {
+							rawValue = rawValue.padStart(rollVariables[vName].PaddingDigits, '0');
+						}
+						switch (vSuffix.toLocaleLowerCase()) {
+							case "raw":
+							case "total":
+								replacement = rawValue;
+							break;
+
+							default:
+								replacement = rollVariables[vName][vSuffix];
+						}
 						if (vSuffix.startsWith("RolledDice") || vSuffix.startsWith("KeptDice") || vSuffix.startsWith("DroppedDice")) {
 							if (thisMatch.match(/(?<=\().*?(?=[)]])/g)) {
 								var vIndex = thisMatch.match(/(?<=\().*?(?=[)]])/g)[0];
@@ -3809,7 +3822,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			DroppedDice: [],
 			RollCount: 0,
 			KeptCount: 0,
-			DroppedCount: 0
+			DroppedCount: 0,
+			PaddingDigits: 0
 		}
 		var hadOne = false;
 		var hadAce = false;
@@ -3839,6 +3853,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						rollResult.Ones++;
 						if (!thisRollHandled.dontHilight) { hadOne = true; }
 					}
+					if (thisRollHandled.rollTextSet[i].indexOf("!") > 0 && cardParameters.explodingonesandaces !== "1") {
+						rollResult.Aces += 1;
+					}
+					if (thisRollHandled.rollTextSet[i].indexOf("!") > 0 && cardParameters.explodingonesandaces == "1") {
+						// Handle reroll ones counting
+						let subrolls = thisRollHandled.rollTextSet[i].split("!");
+						for (var x=1; x < subrolls.length; x++) {
+							if (subrolls[x] == "1") {
+								rollResult.Ones += 1;
+							}
+						}
+						rollResult.Aces += subrolls.length - 1;
+					}
 					if (thisRollHandled.rollSet[i] == thisRollHandled.sides) {
 						rollResult.Aces++;
 						if (!thisRollHandled.dontHilight) { hadAce = true; }
@@ -3849,7 +3876,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						rollResult.Odds++;
 					}
 				}
-
+				
 				switch (currentOperator) {
 					case "+": rollResult.Total += thisRollHandled.rollTotal; if (!thisRollHandled.dontBase) { rollResult.Base += thisRollHandled.rollTotal; } break;
 					case "-": rollResult.Total -= thisRollHandled.rollTotal; if (!thisRollHandled.dontBase) { rollResult.Base -= thisRollHandled.rollTotal; } break;
@@ -3875,6 +3902,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (operation.toLowerCase().startsWith("round:")) {
 						precision = Math.min(6, parseInt(operation.substring(6)));
 						operation = "ROUND:";
+					}
+					if (operation.toLowerCase().startsWith("pad:")) {
+						value1 = parseFloat(operation.substring(4));
+						operation = "PAD";
 					}
 					if (operation.toLowerCase().startsWith("min:")) {
 						value1 = parseFloat(operation.substring(4));
@@ -3974,6 +4005,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 						case "round:":
 							rollResult.Total = rollResult.Total.toFixed(precision);
+							break;
+
+						case "pad":
+							rollResult.PaddingDigits = value1;
 							break;
 
 						case "min":
@@ -4979,7 +5014,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			for (var x = 0; x < count; x++) {
 				do {
 					var thisDiceRoll = rollWithReroll(sides, rerollThreshold, rerollType, rerollUnlimited);
-					var thisRoll = Number(thisDiceRoll[1]);
+					var thisRoll = Number(thisDiceRoll[1]);					
 				} while (resultSet.rollSet.includes(thisRoll) && rollUnique)
 				if (fudgeDice) { thisRoll -= 2; resultSet.dontHilight = true }
 				var thisTotal = thisRoll;

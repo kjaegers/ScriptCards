@@ -1,5 +1,14 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.2.4c - Added the {PAD:X} roll modifier. If added to a roll, the Raw and Total results will be padded with leading zeros to make a value 
+           at least X digits long. 
+           Ex: --=$Roll|1d100 - 1 {PAD:2} 
+           Will ensure that the output will always be a 2-digit number (ie, 03 instead of 3). If the padding length is less than the number
+           of digits in the actual number, it will simply be ignored (123 and {PAD:2} will still be 123, and not 12 or 23)
+         - Added setting #explodingonesandaces which, if set to 1, will count the 1s and Aces on the rerolled dice in an exploding die roll.
+           For example, with this setting off (default) an exploding d6 of 6!6!1 will count as 1 ace and 0 ones. With this setting turned on
+           this would count as 2 aces and 1 one.
+
 v 2.2.4b - New dice rolling formula is now available: xUy, which is the same as xDy except that only unique rolls will be returned. In other
            words, if you wanted to roll 8d20, but only get non-repeating values, 8u20 would do so. The values of the dice are stored in a pseudo
            array in the .RolledDice component of the roll variable.
