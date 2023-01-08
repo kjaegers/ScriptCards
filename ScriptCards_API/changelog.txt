@@ -1,5 +1,18 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.2.4d - Extended the [F]...[/F] inline formatting code to allow a font to be specified. You can now use [F:fontname:fontsize]...[/F]
+           which will create a span (instead of a div) changing the font name and size for that span. Technically the size can be left
+           out, but the results may then be browser dependant on what happens when blank font size is used. The [F##]...[/F] structure
+           remains unchanged and creats a div with the new font size in the current font.
+
+           Added a new roll formula: XmY, which will roll X dice with Y sides but always return Y as the result. (ie, 4m8 will always
+           result in 8,8,8,8 for the dice rolls) Note that this will be flagged in the roll text and hover over indicating that the
+           rolls had a minimimum value and what it was (the roll text above would be "8 {MIN:8}, 8 {MIN:8, 8 {Min:8}, 8 {MIN:8}") to
+           prevent hiding this type of roll. A message will also be sent to the API Console log listing the player that made the roll
+           as well as the roll formula that was used. The intent here is to be able to use something like "[&DamageFormula(replaceall,d,m)]"
+           for critical hit rolls for groups using the maximum roll result for criticals without needing to hardcode the critical
+           values.
+
 v 2.2.4c - Added the {PAD:X} roll modifier. If added to a roll, the Raw and Total results will be padded with leading zeros to make a value 
            at least X digits long. 
            Ex: --=$Roll|1d100 - 1 {PAD:2} 
