@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.2.5  - &SendingPlayer... preset strings now get updated when resuming reentrant script with the ID of the player that caused the script 
+           to resume. A new set of strings &OriginalSendingPlayer... are set when the script is initially executed and will remain the same.
+           
 v 2.2.4d - Extended the [F]...[/F] inline formatting code to allow a font to be specified. You can now use [F:fontname:fontsize]...[/F]
            which will create a span (instead of a div) changing the font name and size for that span. Technically the size can be left
            out, but the results may then be browser dependant on what happens when blank font size is used. The [F##]...[/F] structure

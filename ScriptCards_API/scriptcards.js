@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.2.4d";
+	const APIVERSION = "2.2.5";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -531,12 +531,17 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						var sendingPlayer = getObj("player", msg.playerid);
 						if (sendingPlayer) {
 							stringVariables["SendingPlayerID"] = msg.playerid;
+							stringVariables["OriginalSendingPlayerID"] = msg.playerid;
 							lastExecutedByID = msg.playerid;
 							stringVariables["SendingPlayerName"] = sendingPlayer.get("_displayname");
+							stringVariables["OriginalSendingPlayerName"] = sendingPlayer.get("_displayname");
 							lastExecutedDisplayName = sendingPlayer.get("_displayname");
 							stringVariables["SendingPlayerColor"] = sendingPlayer.get("color");
+							stringVariables["OriginalSendingPlayerColor"] = sendingPlayer.get("color");
 							stringVariables["SendingPlayerSpeakingAs"] = sendingPlayer.get("speakingas");
+							stringVariables["OriginalSendingPlayerSpeakingAs"] = sendingPlayer.get("speakingas");
 							stringVariables["SendingPlayerIsGM"] = playerIsGM(msg.playerid) ? "1" : "0";
+							stringVariables["OriginalSendingPlayerIsGM"] = playerIsGM(msg.playerid) ? "1" : "0";
 						}
 					}
 
@@ -605,6 +610,20 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 						if (!isReentrant && scriptCardsStashedScripts[resumeArgs[0]]) { delete scriptCardsStashedScripts[resumeArgs[0]]; }
+
+						if (msg.playerid) {
+							var sendingPlayer = getObj("player", msg.playerid);
+							if (sendingPlayer) {
+								stringVariables["SendingPlayerID"] = msg.playerid;
+								lastExecutedByID = msg.playerid;
+								stringVariables["SendingPlayerName"] = sendingPlayer.get("_displayname");
+								lastExecutedDisplayName = sendingPlayer.get("_displayname");
+								stringVariables["SendingPlayerColor"] = sendingPlayer.get("color");
+								stringVariables["SendingPlayerSpeakingAs"] = sendingPlayer.get("speakingas");
+								stringVariables["SendingPlayerIsGM"] = playerIsGM(msg.playerid) ? "1" : "0";
+							}
+						}
+
 					} else {
 						// Strip out all newlines in the input text
 						cardContent = msg.content.replace(/(\r\n|\n|\r)/gm, " ");
