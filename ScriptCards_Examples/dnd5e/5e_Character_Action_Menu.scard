@@ -1,7 +1,7 @@
 !script {{
   --/|Script Name : 5E Action Menu
   --/|Version     : 2.3.0
-  --/|Requires SC : 2.1.7
+  --/|Requires SC : 2.2.4
   --/|Author      : Kurt Jaegers
 
   --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
@@ -160,14 +160,14 @@
   
   --/|Determine if a token is selected or if we need to (and can based on config) automatically find a token for this player.
   --?"[@SC_SelectedTokens()]" -eq "undefined array" -and [&DetectPlayersToken] -ne 1|REPORT_NEED_SELECTED_TOKEN
-  --?"[@SC_SelectedTokens()]" -ne "undefined array" -and "X[@SC_SelectedTokens()]" -eq "X1"|BEGIN_WITH_SC_SELECTED_TOKENS
+  --?"[@SC_SelectedTokens()]" -ne "undefined array" -and "[@SC_SelectedTokens()]" -eq "1"|BEGIN_WITH_SC_SELECTED_TOKENS
   --?"[@SC_SelectedTokens()]" -gt 1|REPORT_MULTIPLE_SELECTED_TOKEN
-  --?[&DetectPlayersToken] -ne 1 -and "X[@SC_SelectedTokens()]" -ne "X1"|REPORT_NEED_SELECTED_TOKEN
-  --?[&DetectPlayersToken] -ne 1 -and "X[@SC_SelectedTokens()]" -eq "X1"|BEGIN_WITH_SC_SELECTED_TOKENS
-  --?[&SendingPlayerIsGM] -eq 1 -and "X[@SC_SelectedTokens()]" -ne "X1"|REPORT_NEED_SELECTED_TOKEN
+  --?[&DetectPlayersToken] -ne 1 -and "[@SC_SelectedTokens()]" -ne "1"|REPORT_NEED_SELECTED_TOKEN
+  --?[&DetectPlayersToken] -ne 1 -and "[@SC_SelectedTokens()]" -eq "1"|BEGIN_WITH_SC_SELECTED_TOKENS
+  --?[&SendingPlayerIsGM] -eq 1 -and "[@SC_SelectedTokens()]" -ne "1"|REPORT_NEED_SELECTED_TOKEN
 
   -->GET_CONTROLLED_TOKENS_FROM_PAGETOKENS|saveTokenID
-  --?"X[&saveTokenID]" -eq "X"|REPORT_NO_TOKENS_ON_PAGE
+  --?"[&saveTokenID]" -eq ""|REPORT_NO_TOKENS_ON_PAGE
   --?"[&saveTokenID]" -inc ","|REPORT_MULTIPLE_POSSIBLE_TOKENS
   --^SKIP_SELECTED_TOKENS|
 
@@ -258,7 +258,7 @@
   --:SKIP_NPC_SUMMARY|
   
   --?[&selfHandleAdvantageMode] -eq 1|[
-    --?"X[&currentAdvantageMode]" -eq "X"|&currentAdvantageMode;[&defaultAdvantageMode]
+    --?"[&currentAdvantageMode]" -eq ""|&currentAdvantageMode;[&defaultAdvantageMode]
     --&mode|
     --?[&showAdvantageModeText] -eq 0|SKIP_NPC_SET_MODE
     --C[&currentAdvantageMode]|0:&mode; Normal|1:&mode; Advantage|2:&mode; Disadvantage
@@ -273,14 +273,9 @@
   --]|
 
   --/|Skill Checks and Saving Throws
-  --?[&showNPCSkillsAndSaves] -ne 1 -or "[&perCharacterOptions]" -inc "$SSAS0$"|SKIP_NPC_SAVES
-  --&advantageMenu|[&QB]Roll Type?|Normal|Advantage|Disadvantage[&QE]
-  --&skillMenu|[&QB]Skill to roll?|Acrobatics|Animal Handling,animal_handling|Arcana|Athletics|Deception|History|Insight|Intimidation|Investigation|Medicine|Nature|Perception|Persuasion|Religion|Sleight of Hand,sleight_of_hand|Stealth|Survival[&QE]
-  --&saveMenu|[&QB]Saving Throw Type?|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma[&QE]
-  --+|[c]- - - - -[/c]
-  --+|[c][rbutton:8px]Skill Check::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton]     [rbutton:8px]Saving Throw::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton][/c]
-  --:SKIP_NPC_SAVES|
+  --?[&showNPCSkillsAndSaves] -eq 1 -or "[&perCharacterOptions]" -inc "$SSAS1$"|>BUILD_SAVES_AND_SKILLS_BUTTONS
 
+  --/|5E Sheet Specific BEGIN
   -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcaction;name;EXEC_NPC_ACTION;Actions;[&sharedmacromulename];0
   -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcbonusaction;name;EXEC_NPC_BONUS_ACTION;Bonus Actions;[&sharedmacromulename];0
   -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcreaction;name;EXEC_NPC_REACTION;Reactions;[&sharedmacromulename];0
@@ -289,13 +284,15 @@
   --%levelCounter|1;9
     -->BUILD_SPELL_BUTTON_LIST|[*S:character_id];repeating_spell-[&levelCounter];spellname;EXEC_PC_SPELL;Level [&levelCounter] Spells;[&spellmulename];[&levelCounter]    
   --%|
+  --/|5E Sheet Specific END
 
   --#buttonpadding|[&smallButtonPadding]
   --X|
 
   --/|=========================================================================================================
   --/|Reentrant points for NPCs. Most of the reentry points set up variables and jump back into the "NPCA_NOT_ATTACK" portion
-  --/|of the EXEC_NPC_ACTION code
+  --/|of the EXEC_NPC_ACTION code. Note this this code is 5E specific, so you will likely need to replace the entire
+  --/|"EXEC_*" sections to carry out specific actions if building for a different sheet
 
   --:EXEC_NPC_ACTION|action_name
   --?[&AllNPCActionsToSender] -eq 1|[
@@ -323,11 +320,11 @@
     --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 0|&rollType;1d20
     --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
     --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1
-    --?"X[&ANPC_ROLLMODE]" -ne "X" -and "X[&TNPC_ATTACKAGAINSTMODE]" -eq "X"|SKIP_NPC_ATTACK_ROLLMODE_CALC
-    --?"X[&ANPC_ROLLMODE]" -ne "X" -and "X[&TNPC_ATTACKAGAINSTMODE]" -eq "X"|&rollType;[&ANPC_ROLLMODE]
-    --?"X[&ANPC_ROLLMODE]" -ne "X" -and "X[&TNPC_ATTACKAGAINSTMODE]" -eq "X"|SKIP_NPC_ATTACK_ROLLMODE_CALC
-    --?"X[&ANPC_ROLLMODE]" -eq "X" -and "X[&TNPC_ATTACKAGAINSTMODE]" -ne "X"|&rollType;[&TNPC_ATTACKAGAINSTMODE]
-    --?"X[&ANPC_ROLLMODE]" -eq "X" -and "X[&TNPC_ATTACKAGAINSTMODE]" -ne "X"|SKIP_NPC_ATTACK_ROLLMODE_CALC
+    --?"[&ANPC_ROLLMODE]" -ne "" -and "[&TNPC_ATTACKAGAINSTMODE]" -eq ""|SKIP_NPC_ATTACK_ROLLMODE_CALC
+    --?"[&ANPC_ROLLMODE]" -ne "" -and "[&TNPC_ATTACKAGAINSTMODE]" -eq ""|&rollType;[&ANPC_ROLLMODE]
+    --?"[&ANPC_ROLLMODE]" -ne "" -and "[&TNPC_ATTACKAGAINSTMODE]" -eq ""|SKIP_NPC_ATTACK_ROLLMODE_CALC
+    --?"[&ANPC_ROLLMODE]" -eq "" -and "[&TNPC_ATTACKAGAINSTMODE]" -ne ""|&rollType;[&TNPC_ATTACKAGAINSTMODE]
+    --?"[&ANPC_ROLLMODE]" -eq "" -and "[&TNPC_ATTACKAGAINSTMODE]" -ne ""|SKIP_NPC_ATTACK_ROLLMODE_CALC
     --?"[&ANPC_ROLLMODE] -e "1d20" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;1d20
     --?"[&ANPC_ROLLMODE] -e "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kh1
     --?"[&ANPC_ROLLMODE] -e "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kl1
@@ -339,12 +336,12 @@
     --=ToHit|[&rollType] + [*R:attack_tohit] [&ANPC_ATKMOD]
     --&dmgModType1|
     --&dmgModType2|
-    --?"X[*T:npc]" -ne "X1" -or [&UseResistances] -eq 0|SKIP_NPC_DMG_MODS
+    --?"[*T:npc]" -ne "1" -or [&UseResistances] -eq 0|SKIP_NPC_DMG_MODS
     -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:attack_damagetype];0;0;0;T
     -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:attack_damagetype2];0;0;0;T
     --:SKIP_NPC_DMG_MODS|
     --=AC|[*T:ac]
-    --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
+    --?"[*T:npc_ac]" -ne ""|=AC;[*T:npc_ac]
     --?[&sendGmInfo] -eq 1|[
       --+[*R:atkname] Attack|rolled [$ToHit] vs the target's AC[br][br]
       --*[*R:atkname] Attack|rolled [$ToHit] vs AC [b][$AC.Raw][/b]
@@ -354,7 +351,7 @@
     --?[$ToHit.Base] -eq 20|NPCA_CRIT
     --?[$ToHit.Base] -eq 1|NPCA_MISS
     --?[$ToHit.Total] -lt [$AC]|NPCA_MISS
-    --?"X[*R:attack_damage2]" -ne X|NPCA_HIT_TWODAMAGE
+    --?"[*R:attack_damage2]" -ne ""|NPCA_HIT_TWODAMAGE
     --=Damage|[*R:attack_damage] [&ANPC_DMGMOD] [&dmgModType1]
     --+Hit|[$Damage] [*R:attack_damagetype]
     --+|[*R:description]
@@ -370,7 +367,7 @@
     --^NPCA_DONE|
 
     --:NPCA_CRIT|
-    --?"X[*R:attack_damage2]" -ne X|NPCA_CRIT_TWODAMAGE
+    --?"[*R:attack_damage2]" -ne ""|NPCA_CRIT_TWODAMAGE
     --=Damage|[*R:attack_damage] + [*R:attack_crit] [&ANPC_DMGMOD] [&dmgModType1]
     -->[&damageRoutine]|[&action_target];[&hitPointsBar];-[$Damage.Raw]
     --+Critical|[$Damage] [*R:attack_damagetype]
@@ -450,7 +447,7 @@
   --X|  
 
   --/|=========================================================================================================
-  --/|Handle action menu creation for PCs
+  --/|Handle action menu creation for PCs. 
 
   --:proc_pc|
   --/+|[hr #58180d]
@@ -464,7 +461,7 @@
   --:SKIP_PC_SUMMARY|
 
   --?[&selfHandleAdvantageMode] -eq 1|[
-    --?"X[&currentAdvantageMode]" -eq "X"|&currentAdvantageMode;[&defaultAdvantageMode]
+    --?"[&currentAdvantageMode]" -eq ""|&currentAdvantageMode;[&defaultAdvantageMode]
     --&mode|
     --?[&showAdvantageModeText] -eq 0|SKIP_PC_SET_MODE
     --C[&currentAdvantageMode]|0:&mode; Normal|1:&mode; Advantage|2:&mode; Disadvantage
@@ -487,27 +484,27 @@
     --#buttonpadding|[&smallButtonPadding]
     --&GDEnd|
     --?[&compactGlobalModDisplay] -eq 0|&GDEnd;[/c]
-    --?"X[&gambuttons]" -eq "X" -or "[&perCharacterOptions]" -inc "$SGAM0$"|skip_gam_display
+    --?"[&gambuttons]" -eq "" -or "[&perCharacterOptions]" -inc "$SGAM0$"|skip_gam_display
     --&GAMDisplay|[c][b]Global Attack Mods[/b][br]
     --?[&compactGlobalModDisplay] -eq 1|&GAMDisplay;[b]Atk Mods[/b] 
     --+|[&GAMDisplay] [&gambuttons] [&GDEnd]
     --:skip_gam_display|
-    --?"X[&gacmbuttons]" -eq "X" -or "[&perCharacterOptions]" -inc "$SGCM0$"|skip_gacm_display
+    --?"[&gacmbuttons]" -eq "" -or "[&perCharacterOptions]" -inc "$SGCM0$"|skip_gacm_display
     --&GACMDisplay|[c][b]Global AC Mods[/b][br]
     --?[&compactGlobalModDisplay] -eq 1|&GACMDisplay;[b]AC Mods[/b] 
     --+|[&GACMDisplay] [&gacmbuttons] [&GDEnd]
     --:skip_gacm_display|
-    --?"X[&gdmbuttons]" -eq "X" -or "[&perCharacterOptions]" -inc "$SGDM0$"|skip_gdm_display
+    --?"[&gdmbuttons]" -eq "" -or "[&perCharacterOptions]" -inc "$SGDM0$"|skip_gdm_display
     --&GDMDisplay|[c][b]Global Damage Mods[/b][br]
     --?[&compactGlobalModDisplay] -eq 1|&GDMDisplay;[b]Dmg Mods[/b] 
     --+|[&GDMDisplay] [&gdmbuttons] [&GDEnd]
     --:skip_gdm_display|
-    --?"X[&gsmbuttons]" -eq "X" -or "[&perCharacterOptions]" -inc "$SGSM0$"|skip_gsm_display
+    --?"[&gsmbuttons]" -eq "" -or "[&perCharacterOptions]" -inc "$SGSM0$"|skip_gsm_display
     --&GSMDisplay|[c][b]Global Save Mods[/b][br]
     --?[&compactGlobalModDisplay] -eq 1|&GSMDisplay;[b]Save Mods[/b] 
     --+|[&GSMDisplay] [&gsmbuttons] [&GDEnd]
     --:skip_gsm_display|
-    --?"X[&gskmbuttons]" -eq "X" -or "[&perCharacterOptions]" -inc "$SGKM0$"|skip_gskm_display
+    --?"[&gskmbuttons]" -eq "" -or "[&perCharacterOptions]" -inc "$SGKM0$"|skip_gskm_display
     --&GSKMDisplay|[c][b]Global Skill Mods[/b][br]
     --?[&compactGlobalModDisplay] -eq 1|&GSKMDisplay;[b]Skill Mods[/b] 
     --+|[&GSKMDisplay] [&gskmbuttons] [&GDEnd]
@@ -516,18 +513,12 @@
   --]| 
 
   --/|Skill Checks and Saving Throws
-  --?[&showPCSkillsAndSaves] -ne 1 -or "[&perCharacterOptions]" -inc "$SSAS0$"|SKIP_PC_SAVES
-  --&advantageMenu|[&QB]Roll Type?|Normal|Advantage|Disadvantage[&QE]
-  --&skillMenu|[&QB]Skill to roll?|Acrobatics|Animal Handling,animal_handling|Arcana|Athletics|Deception|History|Insight|Intimidation|Investigation|Medicine|Nature|Perception|Persuasion|Religion|Sleight of Hand,sleight_of_hand|Stealth|Survival[&QE]
-  --&saveMenu|[&QB]Saving Throw Type?|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma[&QE]
-  --+|[c]- - - - - - - - - - - - - - - - -[/c]
-  --+|[c][rbutton:8px]Skill Check::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton]     [rbutton:8px]Saving Throw::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton][/c]
-  --:SKIP_PC_SAVES|
+  --?[&showPCSkillsAndSaves] -eq 1 -and "[&perCharacterOptions]" -ninc "$SSAS0$"|>BUILD_SAVES_AND_SKILLS_BUTTONS
 
   -->BUILD_BUTTON_LIST|[*S:character_id];repeating_attack;atkname;EXEC_PC_ATTACK;Attacks and Actions;[&pcabilitymulename];0;1
   -->BUILD_SPELL_BUTTON_LIST|[*S:character_id];repeating_spell-cantrip;spellname;EXEC_PC_CANTRIP;Cantrips;[&spellmulename];0
 
-  --/|The PC's level 1 thru 9 spells
+  --/|Display a grid of the available spell slots for this character
   --&HighestSlot|9
   --?[&trackPCSpellSlots] -eq 1|[
     -->GET_HIGHEST_LEVEL_SPELL_SLOT|HighestSlot
@@ -573,7 +564,7 @@
   --Rfind|[*S:character_id];[&attack_name];repeating_attack;atkname
   --?[*R:attack_flag] -ne 1|
   --?[&requireAmmo] -eq 0|NoAmmoNeededPC_Attack
-  --?"X[*R:ammo]" -eq "X"|NoAmmoNeededPC_Attack
+  --?"[*R:ammo]" -eq ""|NoAmmoNeededPC_Attack
   --~ResourceUsed|string;before;|;[*R:ammo]
   -->FIND_REPEATING_RESOURCE|[*S:character_id];[&ResourceUsed];AmmoAttrName;AmmoAttributeID;AmmoCount
   --?[&AmmoCount] -lt 1|_NO_AMMO_AVAILABLE
@@ -589,7 +580,7 @@
   --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 0|&rollType;1d20
   --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
   --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1  
-  --?"X[&TNPC_ATTACKAGAINSTMODE]" -eq "X"|SKIP_PC_ATTACK_NPC_ROLL_MODE_CALC
+  --?"[&TNPC_ATTACKAGAINSTMODE]" -eq ""|SKIP_PC_ATTACK_NPC_ROLL_MODE_CALC
   --?"[&rollType] -e "1d20" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;1d20
   --?"[&rollType] -e "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kh1
   --?"[&rollType] -e "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kl1
@@ -615,7 +606,7 @@
   --?[*R:atkmod] -gt 0|&arString;+ + [*R:atkmod] [Special]
   --?[*R:atkmod] -lt 0|&arString;+ [*R:atkmod] [Special]
   --?[*R:atkprofflag] -ne 0|&arString;+ + [*S:pb] [Prof]
-  --?"X[*R:atkprofflag]" -eq "X"|&arString;+ + [*S:pb] [Prof]
+  --?"[*R:atkprofflag]" -eq ""|&arString;+ + [*S:pb] [Prof]
   --?[*R:atkmagic] -gt 0|&arString;+ + [*R:atkmagic] [Magic]
   --?[*R:atkmagic] -lt 0|&arString;+ [*R:atkmagic] [Magic]
   --=attackRoll|[&arString] [&PC_GAM]
@@ -634,7 +625,7 @@
   --?[*R:atkmagic] -gt 0|&dmgroll2;+ + [*R:atkmagic] [Magic]
   --?[*R:atkmagic] -lt 0|&dmgroll2;+ [*R:atkmagic] [Magic]
   --=AC|[*T:ac]
-  --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac] [&NPC_ACMOD]
+  --?"[*T:npc_ac]" -ne ""|=AC;[*T:npc_ac] [&NPC_ACMOD]
   --?[&sendGmInfo] -eq 1|[
     --+[*R:atkname] Attack|rolled [$attackRoll] vs the target's AC[br][br]
     --*[*R:atkname] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b]
@@ -642,13 +633,13 @@
     --+[*R:atkname] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b][br][br]
   --]|
   --=CritNum|20
-  --?"X[*R:atkcritrange]" -ne "X"|=CritNum;[*R:atkcritrange]
+  --?"[*R:atkcritrange]" -ne ""|=CritNum;[*R:atkcritrange]
   --&critRoll|[*R:dmgbase]
   --&critRoll2|[*R:dmg2base]
-  --?"X[*R:dmgcustcrit]" -eq "X"|DONE_ATK_CRIT
+  --?"[*R:dmgcustcrit]" -eq ""|DONE_ATK_CRIT
   --&critRoll|[*R:dmgcustcrit]
   --:DONE_ATK_CRIT|
-  --?"X[*R:dmg2custcrit]" -eq "X"|DONE_ATK_CRIT2
+  --?"[*R:dmg2custcrit]" -eq ""|DONE_ATK_CRIT2
   --&critRoll2|[*R:dmg2custcrit]
   --:DONE_ATK_CRIT2|
   --?[$attackRoll.Base] -ge [$CritNum.Raw]|=attack_crit;1|=attack_crit;0
@@ -662,20 +653,20 @@
   --&dmgModType1|
   --&dmgModType2|
   --&isMagical|0
-  --?"X[*R:atkmagic]" -ne "X" -and "X[*R:atkmagic]" -ne "X0"|&isMagical;1
+  --?"[*R:atkmagic]" -ne "" -and "[*R:atkmagic]" -ne "0"|&isMagical;1
   --&isSilver|0
-  --?"X[*R:atkname]" -inc "Silver"|&isSilver;1
+  --?"[*R:atkname]" -inc "Silver"|&isSilver;1
   --&isAdamant|0
-  --?"X[*R:atkname]" -inc "Adamantine"|&isAdamant;1
+  --?"[*R:atkname]" -inc "Adamantine"|&isAdamant;1
   --/+|Magic: [&isMagical], Silver: [&isSilver], Ad: [&isAdamant]
-  --?"X[*T:npc]" -ne "X1" -or [&UseResistances] -eq 0|SKIP_CALC_DMG_MODS
+  --?"[*T:npc]" -ne "1" -or [&UseResistances] -eq 0|SKIP_CALC_DMG_MODS
   -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:dmgtype];[&isMagical];[&isSilver];[&isAdamant]
   -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:dmg2type];[&isMagical];[&isSilver];[&isAdamant]
   --:SKIP_CALC_DMG_MODS|
   --=attackDamage|[&dmgroll] [&dmgModType1]
   --=attackDamage2|[&dmgroll2] [&dmgModType2]
-  --?"X[*R:dmg2flag]" -eq "X0"|ATTACK_ONE_DAMAGE
-  --?"X[*R:dmg2flag]" -eq "X"|ATTACK_ONE_DAMAGE
+  --?"[*R:dmg2flag]" -eq "0"|ATTACK_ONE_DAMAGE
+  --?"[*R:dmg2flag]" -eq ""|ATTACK_ONE_DAMAGE
   --^ATTACK_TWO_DAMAGE|
 
   --:ATTACK_ONE_DAMAGE|
@@ -694,7 +685,7 @@
 
   --:ATTACK_DONE|
   --?[&requireAmmo] -eq 0|NO_AMMO_USED
-  --?"X[&AmmoAttrName]" -eq "X"|NO_AMMO_USED
+  --?"[&AmmoAttrName]" -eq ""|NO_AMMO_USED
   --!a:[*S:character_id]|[&AmmoAttributeID]:-=1
 
   --:NO_AMMO_USED|
@@ -722,7 +713,7 @@
   --?"[*R:spelloutput]" -eq ATTACK|PC_ATTACK_CANTRIP|PC_CARD_CANTRIP
   --=cantrip_crit|0
   --:PC_ATTACK_CANTRIP|
-  --?"X[*R:spellattack]" -eq "XRanged" -or "X[*R:spellattack]" -eq "XMelee"|CANTRIP_ATTACK_ROLL|CANTRIP_DONE_ATTACK_ROLL
+  --?"[*R:spellattack]" -eq "Ranged" -or "[*R:spellattack]" -eq "Melee"|CANTRIP_ATTACK_ROLL|CANTRIP_DONE_ATTACK_ROLL
   --:CANTRIP_ATTACK_ROLL|
   --&rollType|1d20
   --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
@@ -732,7 +723,7 @@
   --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1  
   --=attackRoll|[&rollType] + [*S:spell_attack_bonus] [Spell Atk Bonus] [&PC_GAM]
   --=AC|[*T:ac]
-  --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
+  --?"[*T:npc_ac]" -ne ""|=AC;[*T:npc_ac]
   --?[&sendGmInfo] -eq 1|[
     --+[*R:spellattack] Attack|rolled [$attackRoll] vs the target's AC[br][br]
     --*[*R:spellattack] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b]
@@ -750,11 +741,11 @@
   --?[$cantrip_crit] -eq 1|&damageRoll;+ + [&damageRoll]
   --?[$cantrip_crit] -eq 1|&damageRoll;+ [&PC_GDM_CRIT]|&damageRoll;+ [&PC_GDM]
   --&dmgModType1|
-  --?"X[*T:npc]" -ne "X1" -or [&UseResistances] -eq 0|SKIP_PC_CANTRIP_RESIST
+  --?"[*T:npc]" -ne "1" -or [&UseResistances] -eq 0|SKIP_PC_CANTRIP_RESIST
   -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:spelldamagetype];1;0;0
   --:SKIP_PC_CANTRIP_RESIST|
   --=cantripDamage|[&damageRoll] [&dmgModType1]
-  --?"X[*R:spellsave]" -ne "X"|CANTRIP_SAVE|CANTRIP_NO_SAVE
+  --?"[*R:spellsave]" -ne ""|CANTRIP_SAVE|CANTRIP_NO_SAVE
   --:CANTRIP_NO_SAVE|
   --?[$cantrip_crit] -eq 1|&hittag;Critical Hit!|&hittag;Hit!
   --?[$cantrip_crit] -eq 1|&hitdesc;critically hits|&hitdesc;hits
@@ -764,7 +755,7 @@
   --:CANTRIP_SAVE|
   --+|The target needs to make a DC [*S:spell_save_dc] [*R:spellsave] saving throw or take [$cantripDamage] [*R:spelldamagetype] damage.[br][br]
   --/&output|The [b][i][*R:spellname][/i][/b] deals [$cantripDamage] [*R:spelldamagetype] damage. 
-  --/?"X[*R:spellsave]" -ne "X"|&output;+ The target can make a [*R:spellsave] save vs DC [*S:spell_save_dc] to negate the damage.
+  --/?"[*R:spellsave]" -ne ""|&output;+ The target can make a [*R:spellsave] save vs DC [*S:spell_save_dc] to negate the damage.
   --^PC_CARD_CANTRIP|
   --:CANTRIP_ATTACK_MISS|
   --+The [*R:spellname] attack missed!|[br][br]
@@ -815,7 +806,7 @@
 
   --:PC_ATTACK_SPELL|
   --&spell_crit|0
-  --?"X[*R:spellattack]" -eq "XRanged" -or "X[*R:spellattack]" -eq "XMelee"|SPELL_ATTACK_ROLL|SPELL_DONE_ATTACK_ROLL
+  --?"[*R:spellattack]" -eq "Ranged" -or "[*R:spellattack]" -eq "Melee"|SPELL_ATTACK_ROLL|SPELL_DONE_ATTACK_ROLL
 
   --:SPELL_ATTACK_ROLL|
   --&rollType|1d20
@@ -826,7 +817,7 @@
   --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1  
   --=attackRoll|[&rollType] + [*S:spell_attack_bonus] [Spell Atk Bonus] [&PC_GAM]
   --=AC|[*T:ac]
-  --?"X[*T:npc_ac]" -ne "X"|=AC;[*T:npc_ac]
+  --?"[*T:npc_ac]" -ne ""|=AC;[*T:npc_ac]
     --?[&sendGmInfo] -eq 1|[
     --+[*R:spellattack] Attack|rolled [$attackRoll] vs the target's AC[br][br]
     --*[*R:spellattack] Attack|rolled [$attackRoll] vs AC [b][$AC.Raw][/b]
@@ -837,7 +828,7 @@
   --?[$attackRoll.Total] -lt [$AC]|SPELL_ATTACK_MISS
 
   --:SPELL_DONE_ATTACK_ROLL|
-  --?"X[*T:npc]" -ne "X1" -or [&UseResistances] -eq 0|SKIP_PC_SPELL_RESIST
+  --?"[*T:npc]" -ne "1" -or [&UseResistances] -eq 0|SKIP_PC_SPELL_RESIST
   --&dmgModType1|
   --&dmgModType2|
   -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:spelldamagetype];1;0;0
@@ -849,7 +840,7 @@
   --&damageRoll2|[*R:spelldamage2]
 
   --&ability_bonus|
-    --?"X[*R:spell_ability]" -eq "Xspell"|[
+    --?"[*R:spell_ability]" -eq "spell"|[
       --~ability|string;before;};[*S:spellcasting_ability]
       --~ability|string;after;{;[&ability]
       --?[&ability] -eq strength_mod|&ability_bonus; + [*S:strength_mod] [Spellcasting Ability]
@@ -860,8 +851,8 @@
       --?[&ability] -eq charisma_mod|&ability_bonus; + [*S:charisma_mod] [Spellcasting Ability]
   --]|
   --&spell_heal|0
-  --?"X[*R:spellhealing]" -ne "X"|&spell_heal;1
-  --?"X[*R:spellhealing]" -ne "X"|&damageRoll;[*R:spellhealing]
+  --?"[*R:spellhealing]" -ne ""|&spell_heal;1
+  --?"[*R:spellhealing]" -ne ""|&damageRoll;[*R:spellhealing]
   --&damageToApply|-
   --?[$UpCast] -eq 0|NO_UPCAST
   --=upcastDice|[$UpCast.Raw] * [*R:spellhldie]
@@ -882,7 +873,7 @@
   --=spellDamage2|[&damageRoll2] [&dmgModType2]
   --=TotalDamage|[$spellDamage.Raw] + [$spellDamage2.Raw]
 
-  --?"X[*R:spelldamage2]" -ne "X"|TWO_DAMAGE
+  --?"[*R:spelldamage2]" -ne ""|TWO_DAMAGE
   --+[&hittag]|The [*R:spellname] [&hitdesc] [$spellDamage] [*R:spelldamagetype] damage.[br][br]
   --&damageToApply|+[$spellDamage.Raw]
   -->[&damageRoutine]|[&action_target];[&hitPointsBar];[&damageToApply]
@@ -894,7 +885,7 @@
   -->[&damageRoutine]|[&action_target];[&hitPointsBar];[&damageToApply]
 
   --:DONE_SPELL_DAMAGE|
-  --?"X[*R:spellsave]" -eq "X"|PC_CARD_SPELL
+  --?"[*R:spellsave]" -eq ""|PC_CARD_SPELL
   --+|The target can make a [*R:spellsave] save vs DC [*S:spell_save_dc] to modify the damage as described below.[br][br]
   --^PC_CARD_SPELL|
 
@@ -914,21 +905,24 @@
   --#whisper|
   --]|
   -->Find_Active_Global_Save_Modifiers|[*S:character_id];GSM_VALUES
+  --\|[&GSM_VALUES]
   --~saveInfo|string;split;|;[&reentryval]
   --~saveType|string;tolowercase;[&saveInfo1]_save_bonus
+  --&saveBonus|[*S:[&saveType]]
   --&rollType|[&saveInfo2]
   --&rollEquation|1d20
   --?[&rollType] -eq "Advantage"|&rollEquation;2d20kh1
   --?[&rollType] -eq "Disadvantage"|&rollEquation;2d20kl1
-  --=SavingThrow|[&rollEquation] + [*S:[&saveType]] [ [&saveInfo1]] [&GSM_VALUES]
+  -->Get_Ability_Modifier|[&saveInfo1(tolowercase)]_mod;attrMod;attrName
+  --=SavingThrow|[&rollEquation] + [&saveBonus] [&attrName] [&GSM_VALUES]
   --#title|[&saveInfo1] Save
   --#leftsub|[*S:character_name]
   --#rightsub|
-  --+Result|[$SavingThrow]
+  --+|Saving throw ([&attrName]) result: [$SavingThrow]
   --X|
 
   --:SKILL_CHECK|
-  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender]||[
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1|[
   --#whisper|self
   --]|[
   --#whisper|
@@ -942,11 +936,11 @@
   --&rollEquation|1d20
   --?[&rollType] -eq "Advantage"|&rollEquation;2d20kh1
   --?[&rollType] -eq "Disadvantage"|&rollEquation;2d20kl1
-  --=SkillCheck|[&rollEquation] + [*S:[&skillType]] [ [&skillInfo1]]
+  --=SkillCheck|[&rollEquation] + [*S:[&skillType]] [&obrac][&skillInfo1][&cbrac]
   --#title|[&skillDisplayName] Check
   --#leftsub|[*S:character_name]
   --#rightsub|
-  --+Result|[$SkillCheck]
+  --+|[&skillDisplayName] check result: [$SkillCheck]
   --X|
 
   --/|=========================================================================================================
@@ -972,7 +966,7 @@
   --<|
   
   --:_AddGAM| 
-  --&_GAM_Temp|+ + [%2%]# [ [%1%] ] 
+  --&_GAM_Temp|+ + [%2%]# [&obrac][%1%][&cbrac] 
   --<|
 
     --:Find_Active_Global_Damage_Modifiers|character_id;StringVariableToSet;isCrit(1=true)
@@ -986,8 +980,8 @@
   --<|
   
   --:_AddGDM| 
-  --&_GDM_Temp|+ + [%2%]# [ [%1%] ] 
-  --?"X[%3%]" -eq "X1"|&_GDM_Temp;+ + [%4%]  [ CRIT [%1%] ]
+  --&_GDM_Temp|+ + [%2%]# [&obrac][%1%][&cbrac] 
+  --?"[%3%]" -eq "1"|&_GDM_Temp;+ + [%4%]  [ CRIT [%1%] ]
   --<|
 
   --:Find_Active_Global_Save_Modifiers|character_id;StringVariableToSet
@@ -1001,7 +995,7 @@
   --<|
 
     --:_AddGSM| 
-  --&_GSM_Temp|+ + [%2%]# [ [%1%] ] 
+  --&_GSM_Temp|+ + [%2%]# [&obrac][%1%][&cbrac] 
   --<|
 
   --:Create_Global_Attack_Modifier_Buttons|character_id;StringVariableToSet
@@ -1285,34 +1279,34 @@
   --#parameterdelimiter|;
   --%VulnLoop|1;[$VulnsCount]
     --&hasModifier|0
-    --?"X[&Vulns[&VulnLoop]]" -inc "silver" -or "X[&Vulns[&VulnLoop]]" -inc "adamantine" -or "X[&Vulns[&VulnLoop]]" -inc "magical"|&hasModifier;1
-    --?"X[&Vulns[&VulnLoop]]" -inc "[%3%]" -and "X[&Vulns[&VulnLoop]]" -inc "adamantine" -and [%6%] -eq 1|>IsVulnerable;[%2%]
-    --?"X[&Vulns[&VulnLoop]]" -inc "[%3%]" -and "X[&Vulns[&VulnLoop]]" -inc "silver" -and [%5%] -eq 1|>IsVulnerable;[%2%]
-    --?"X[&Vulns[&VulnLoop]]" -inc "[%3%]" -and "X[&Vulns[&VulnLoop]]" -inc "magical" -and [%4%] -eq 1|>IsVulnerable;[%2%]
-    --?"X[&Vulns[&VulnLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|>IsVulnerable;[%2%]
+    --?"[&Vulns[&VulnLoop]]" -inc "silver" -or "[&Vulns[&VulnLoop]]" -inc "adamantine" -or "[&Vulns[&VulnLoop]]" -inc "magical"|&hasModifier;1
+    --?"[&Vulns[&VulnLoop]]" -inc "[%3%]" -and "[&Vulns[&VulnLoop]]" -inc "adamantine" -and [%6%] -eq 1|>IsVulnerable;[%2%]
+    --?"[&Vulns[&VulnLoop]]" -inc "[%3%]" -and "[&Vulns[&VulnLoop]]" -inc "silver" -and [%5%] -eq 1|>IsVulnerable;[%2%]
+    --?"[&Vulns[&VulnLoop]]" -inc "[%3%]" -and "[&Vulns[&VulnLoop]]" -inc "magical" -and [%4%] -eq 1|>IsVulnerable;[%2%]
+    --?"[&Vulns[&VulnLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|>IsVulnerable;[%2%]
   --%|
   --:SKIP_VULN_CHECK|
   --%ResistLoop|1;[$ResistsCount]
     --&hasModifier|0
-    --?"X[&Resists[&ResistLoop]]" -inc "silver" -or "X[&Resists[&ResistLoop]]" -inc "adamantine" -or "X[&Resists[&ResistLoop]]" -inc "magical"|&hasModifier;1
-    --?"X[&Resists[&ResistLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|>IsResistant;[%2%]
-    --?"X[&Resists[&ResistLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|FINISH_RESIST_CHECK   
-    --?"X[&Resists[&ResistLoop]]" -inc "[%3%]" -and "X[&Resists[&ResistLoop]]" -inc "adamantine" -and [%6%] -eq 1|FINISH_RESIST_CHECK
-    --?"X[&Resists[&ResistLoop]]" -inc "[%3%]" -and "X[&Resists[&ResistLoop]]" -inc "silver" -and [%5%] -eq 1|FINISH_RESIST_CHECK
-    --?"X[&Resists[&ResistLoop]]" -inc "[%3%]" -and "X[&Resists[&ResistLoop]]" -inc "magical" -and [%4%] -eq 1|FINISH_RESIST_CHECK
-    --?"X[&Resists[&ResistLoop]]" -inc "[%3%]"|>IsResistant;[%2%]
+    --?"[&Resists[&ResistLoop]]" -inc "silver" -or "[&Resists[&ResistLoop]]" -inc "adamantine" -or "[&Resists[&ResistLoop]]" -inc "magical"|&hasModifier;1
+    --?"[&Resists[&ResistLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|>IsResistant;[%2%]
+    --?"[&Resists[&ResistLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|FINISH_RESIST_CHECK   
+    --?"[&Resists[&ResistLoop]]" -inc "[%3%]" -and "[&Resists[&ResistLoop]]" -inc "adamantine" -and [%6%] -eq 1|FINISH_RESIST_CHECK
+    --?"[&Resists[&ResistLoop]]" -inc "[%3%]" -and "[&Resists[&ResistLoop]]" -inc "silver" -and [%5%] -eq 1|FINISH_RESIST_CHECK
+    --?"[&Resists[&ResistLoop]]" -inc "[%3%]" -and "[&Resists[&ResistLoop]]" -inc "magical" -and [%4%] -eq 1|FINISH_RESIST_CHECK
+    --?"[&Resists[&ResistLoop]]" -inc "[%3%]"|>IsResistant;[%2%]
     --:FINISH_RESIST_CHECK|
   --%|
   --:SKIP_RESIST_CHECK|
   --%ImmuneLoop|1;[$ImmunesCount]
     --&hasModifier|0
-    --?"X[&Immunes[&ImmuneLoop]]" -inc "silver" -or "X[&Immunes[&ImmuneLoop]]" -inc "adamantine" -or "X[&Immunes[&ImmuneLoop]]" -inc "magical"|&hasModifier;1
-    --?"X[&Immunes[&ImmuneLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|>IsImmune;[%2%]
-    --?"X[&Immunes[&ImmuneLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|FINISH_IMMUNE_CHECK
-    --?"X[&Immunes[&ImmuneLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 1 -and "X[&Immunes[&ImmuneLoop]]" -inc "adamantine" -and [%6%] -eq 1|FINISH_IMMUNE_CHECK
-    --?"X[&Immunes[&ImmuneLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 1 -and "X[&Immunes[&ImmuneLoop]]" -inc "silver" -and [%5%] -eq 1|>FINISH_IMMUNE_CHECK;[%2%]
-    --?"X[&Immunes[&ImmuneLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 1 -and "X[&Immunes[&ImmuneLoop]]" -inc "magical" -and [%4%] -eq 1|>FINISH_IMMUNE_CHECK;[%2%]
-    --?"X[&Immunes[&ImmuneLoop]]" -inc "[%3%]"|>IsImmune;[%2%]
+    --?"[&Immunes[&ImmuneLoop]]" -inc "silver" -or "[&Immunes[&ImmuneLoop]]" -inc "adamantine" -or "[&Immunes[&ImmuneLoop]]" -inc "magical"|&hasModifier;1
+    --?"[&Immunes[&ImmuneLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|>IsImmune;[%2%]
+    --?"[&Immunes[&ImmuneLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 0|FINISH_IMMUNE_CHECK
+    --?"[&Immunes[&ImmuneLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 1 -and "[&Immunes[&ImmuneLoop]]" -inc "adamantine" -and [%6%] -eq 1|FINISH_IMMUNE_CHECK
+    --?"[&Immunes[&ImmuneLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 1 -and "[&Immunes[&ImmuneLoop]]" -inc "silver" -and [%5%] -eq 1|>FINISH_IMMUNE_CHECK;[%2%]
+    --?"[&Immunes[&ImmuneLoop]]" -inc "[%3%]" -and [&hasModifier] -eq 1 -and "[&Immunes[&ImmuneLoop]]" -inc "magical" -and [%4%] -eq 1|>FINISH_IMMUNE_CHECK;[%2%]
+    --?"[&Immunes[&ImmuneLoop]]" -inc "[%3%]"|>IsImmune;[%2%]
     --:FINISH_IMMUNE_CHECK|
   --%|
   --:SKIP_IMMUNE_CHECK|
@@ -1350,12 +1344,12 @@
 
   --:GET_PER_CHARACTER_SETTING|CharID;SettingCode;Return String Var Name
   --&[%3%]|0
-  --?"X[*[%1%]:5ECAM_SETTINGS]" -inc "[%2%]1"|&[%3%];1
+  --?"[*[%1%]:5ECAM_SETTINGS]" -inc "[%2%]1"|&[%3%];1
   --<|
 
   --:LOAD_PER_CHARACTER_CONFIG_OPTIONS|characterID
-  --?"X[*[%1%]:5ECAM_SETTINGS]" -eq "X"|>SET_DEFAULT_PER_CHARACTER_SETTINGS;[%1%]
-  --?"X[*[%1%]:5ECAM_SETTINGS]" -eq "Xundefined"|>SET_DEFAULT_PER_CHARACTER_SETTINGS;[%1%]
+  --?"[*[%1%]:5ECAM_SETTINGS]" -eq ""|>SET_DEFAULT_PER_CHARACTER_SETTINGS;[%1%]
+  --?"[*[%1%]:5ECAM_SETTINGS]" -eq "undefined"|>SET_DEFAULT_PER_CHARACTER_SETTINGS;[%1%]
   --&perCharacterOptions|[*[%1%]:5ECAM_SETTINGS]
   --<|
 
@@ -1374,8 +1368,8 @@
   --~oldSetting|string;substring;[$beforeLength];7;[*[&TOG_CHAR_ID]:5ECAM_SETTINGS]
   --~oldValue|string;substring;6;1;[&oldSetting]
   --~newSetting|string;left;5;[&oldSetting]
-  --?"X[&oldValue]" -eq "X1"|&newSetting;+0$
-  --?"X[&oldValue]" -ne "X1"|&newSetting;+1$
+  --?"[&oldValue]" -eq "1"|&newSetting;+0$
+  --?"[&oldValue]" -ne "1"|&newSetting;+1$
   --~replacement|string;replace;[&oldSetting];[&newSetting];[*[&TOG_CHAR_ID]:5ECAM_SETTINGS]
   --!a:[&TOG_CHAR_ID]|5ECAM_SETTINGS:[&replacement]
   --^DISPLAY_CHARACTER_CONFIG_MENU|
@@ -1388,7 +1382,7 @@
   -->REMOVE_STATUS_MARKER|[%1%];[%2%]
   --~|array;statusmarkers;Conditions;[%1%]
   --&toAdd|[%2%]
-  --?"X[%3%]" -ne "X" -and "X[%3%]" -ne "X0"|&toAdd;[%2%]@[%3%]
+  --?"[%3%]" -ne "" -and "[%3%]" -ne "0"|&toAdd;[%2%]@[%3%]
   --~|array;add;Conditions;[&toAdd]
   --~newConditions|array;stringify;Conditions
   --#parameterdelimiter|$
@@ -1436,8 +1430,8 @@
   --%_loop|0;[@_FCT_Tokens(maxindex)]
     --&_FCT_TID|[@_FCT_Tokens([&_loop])]
     --&_FCT_CHAR|[*[&_FCT_TID]:t-represents]
-    --?"X[*O:[&_FCT_CHAR]:character:controlledby]" -ninc [&SendingPlayerID]|%
-    --?"X[&[%1%]]" -eq "X"|&[%1%];+[&_FCT_TID]|&[%1%];+,[&_FCT_TID]]
+    --?"[*O:[&_FCT_CHAR]:character:controlledby]" -ninc [&SendingPlayerID]|%
+    --?"[&[%1%]]" -eq ""|&[%1%];+[&_FCT_TID]|&[%1%];+,[&_FCT_TID]]
   --%|
   --<|
 
@@ -1473,7 +1467,7 @@
   --+Current Hit Points|[*S:hp]
   --+Max Hit Points|[*S:hp^]
   --+Hit Dice Available|[*S:hit_dice]
-  --?"X[&hitDieRolls]" -eq "X"|SKIP_SHOW_HD_ROLLS
+  --?"[&hitDieRolls]" -eq ""|SKIP_SHOW_HD_ROLLS
   --+Hit Die Roll(s)|[&hitDieRolls]
   --:SKIP_SHOW_HD_ROLLS|
   --?[*S:hit_dice] -lt 1|SKIP_SHOW_HITDIE_BUTTON
@@ -1558,9 +1552,9 @@
   --:GET_WARLOCK_LEVEL|LevelVariable
   --&[%1%]|0
   --?[*S:class] -eq "Warlock"|&[%1%];[*S:base_level]
-  --?"X[*S:multiclass1_flag]" -eq "X1" -and [*S:multiclass1] -eq "Warlock"|&[%1%];[*S:multiclass1_lvl]
-  --?"X[*S:multiclass2_flag]" -eq "X1" -and [*S:multiclass2] -eq "Warlock"|&[%1%];[*S:multiclass2_lvl]
-  --?"X[*S:multiclass3_flag]" -eq "X1" -and [*S:multiclass3] -eq "Warlock"|&[%1%];[*S:multiclass2_lvl]
+  --?"[*S:multiclass1_flag]" -eq "1" -and [*S:multiclass1] -eq "Warlock"|&[%1%];[*S:multiclass1_lvl]
+  --?"[*S:multiclass2_flag]" -eq "1" -and [*S:multiclass2] -eq "Warlock"|&[%1%];[*S:multiclass2_lvl]
+  --?"[*S:multiclass3_flag]" -eq "1" -and [*S:multiclass3] -eq "Warlock"|&[%1%];[*S:multiclass2_lvl]
   --<|
 
   --:CHECK_SPELLS_TO_KEEP|AttackName; Return variable;suffix
@@ -1576,11 +1570,11 @@
   --&[%2%]NPC_SAVEMODE_int| --&[%2%]NPC_SAVEMODE_wis| --&[%2%]NPC_SAVEMODE_cha| --&[%2%]NPC_RESISTS| --&[%2%]NPC_VULNS| --&[%2%]NPC_IMMUNES|
   --&[%2%]NPC_ATTACKAGAINSTMODE|
   --?[&useTokenMarkersForNPCModifiers] -eq "0"|<
-  --?"X[*[%1%]:t-statusmarkers]" -eq "X"|<
+  --?"[*[%1%]:t-statusmarkers]" -eq ""|<
   --~|array;fromstring;tokenMarkers;,;[*[%1%]:t-statusmarkers]
   --%loop|foreach;tokenMarkers
     --~markerName|string;before;@;[&loop]
-    --?"X[&statusmod_[&markerName]]" -eq "X"|%
+    --?"[&statusmod_[&markerName]]" -eq ""|%
     --~param|string;split;:;[&statusmod_[&markerName]]
     --?[&param1] -eq "attack"|&[%2%]NPC_ATKMOD;+ [&param2]
     --?[&param1] -eq "damage"|&[%2%]NPC_DMGMOD;+ [&param2]
@@ -1639,7 +1633,7 @@
     --&DACA_NAME|[&DACA_PARTS1(3)]
     --&DACA_BUTTONS|+[button][&DACA_NAME(replaceall,-, )]::~[%1%]|[&DACA_PARTS1][/button]
   --%|
-  --?"X[&DACA_BUTTONS]" -eq "X"|<
+  --?"[&DACA_BUTTONS]" -eq ""|<
 
   --+Custom Actions|
   --+|[&DACA_BUTTONS]
@@ -1666,7 +1660,7 @@
       --&keepSpell|N
       --&spellSuffix|
       -->CHECK_SPELLS_TO_KEEP|[*R:atkname];keepSpell;spellSuffix
-      --?"X[*R:spelldesc_link]" -ne "X" -and [&keepSpell] -eq N|AM_LIST_CONTINUE
+      --?"[*R:spelldesc_link]" -ne "" -and [&keepSpell] -eq N|AM_LIST_CONTINUE
       --:SKIP_BUTTON_LIST_SPELL_CHECK|
       --/|5E SPECIFIC END
 
@@ -1694,13 +1688,13 @@
       --&targetString|[&TB]target|token_id}
       --&DisplayName|[*R:[%3%]]
       --&DisplayName|[&DisplayName(totitlecase)]
-      --?"X[*R:spellritual]" -eq "XYes"|&DisplayName;+ [R]
+      --?"[*R:spellritual]" -eq "Yes"|&DisplayName;+ [R]
       --&LevelString|[%7%]|
       --?"[%7%]" -eq 0|&LevelString; 
       --?"[%7%]" -gt 0|>BUILD_SLOT_LIST;[%7%];slotString;[*R:spellritual]
       --?[&trackPCSpellSlots] -eq 0|AM_SPELL_BUTTON_SKIP_SLOT_INFO
       --?[&HighestSlot] -ge [%7%]|AM_SPELL_BUTTON_SKIP_SLOT_INFO
-      --?"X[*R:spellritual]" -eq "XYes"|AM_SPELL_BUTTON_SKIP_SLOT_INFO
+      --?"[*R:spellritual]" -eq "Yes"|AM_SPELL_BUTTON_SKIP_SLOT_INFO
       --/|We are tracking spells and the caster doesn't have a high enough slot, and it isn't a ritual spell.
       --^SPELL_BUTTON_END_GENERATE|
       --:AM_SPELL_BUTTON_SKIP_SLOT_INFO|
@@ -1719,8 +1713,8 @@
       --Rnext|
       --?"[*R:[%3%]]" -ne "NoRepeatingAttributeLoaded"|AM_SPELL_BUTTON_LIST_LOOP
       --/|If the list is empty, skip the output|
-      --?"X[&AM_BUTTON_LIST]" -eq "X"|AM_EMPTY_LIST_SKIP
-      --?"X[&AM_BUTTON_LIST]" -eq "X[br]"|AM_EMPTY_LIST_SKIP
+      --?"[&AM_BUTTON_LIST]" -eq ""|AM_EMPTY_LIST_SKIP
+      --?"[&AM_BUTTON_LIST]" -eq "[br]"|AM_EMPTY_LIST_SKIP
       --+[%5%]|[&AM_BUTTON_LIST]
       --:AM_EMPTY_LIST_SKIP|
   --]|
@@ -1732,10 +1726,10 @@
 
   --:BUILD_SLOT_LIST|Spell Level;return string;is ritual (Yes for true)
   --&slotString|
-  --?[%1%] -eq 9 -and "X[%3%]" -eq "X"|SKIP_BUILD_SLOT_LIST
+  --?[%1%] -eq 9 -and "[%3%]" -eq ""|SKIP_BUILD_SLOT_LIST
   --&slotString||&#
   --&slotString|+63;{Slot Level|
-  --?"X[%3%]" -ne "XYes"|SLOT_LIST_NOT_RITUAL
+  --?"[%3%]" -ne "Yes"|SLOT_LIST_NOT_RITUAL
   --&slotString|+As Ritual|
   --:SLOT_LIST_NOT_RITUAL|
   --%slotcounter|[%1%];9
@@ -1754,5 +1748,13 @@
 
   --:BUILD_TARGET_STRING|
   --&[%1%]|[&TB]target|token_id}
+  --<|
+
+  --:BUILD_SAVES_AND_SKILLS_BUTTONS|
+  --&advantageMenu|[&QB]Roll Type?|Normal|Advantage|Disadvantage[&QE]
+  --&skillMenu|[&QB]Skill to roll?|Acrobatics|Animal Handling,animal_handling|Arcana|Athletics|Deception|History|Insight|Intimidation|Investigation|Medicine|Nature|Perception|Persuasion|Religion|Sleight of Hand,sleight_of_hand|Stealth|Survival[&QE]
+  --&saveMenu|[&QB]Saving Throw Type?|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma[&QE]
+  --+|[c]- - - - -[/c]
+  --+|[c][rbutton:8px]Skill Check::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton]     [rbutton:8px]Saving Throw::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton][/c]
   --<|
 }}

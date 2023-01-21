@@ -2,15 +2,18 @@ Change Log for items in the ScriptExamples/dnd5e Folder:
 
 2022-12-31 - 5E Character Action Menu 2.3.0
              - Extensive changes to the implementation of the script, including the emilination of redundant code by refactoring reusable code
-               into subroutines for displaying button lists. This will make updating the script to work with other character sheets AM_LIST_SKIP_MULE_CHECK
+               into subroutines for displaying button lists. This will make updating the script to work with other character sheets 
                simpler, as the code that calls the button generator can be updated with the names of the repeating sections to parse. Implemention
-               sections (EXEC_NPC_ACTION, etc. will likely still need to be rewritten for each sheet, however)
+               sections (EXEC_NPC_ACTION, etc. will likely still need to be rewritten for each sheet, however) it should also be noted that
+               there is still quite a bit of work underway to restructure the Action Menu, and testing is needed to verify that these changes
+               have not negatively impacted existing functionality.
              - Ritual spells will now have "As Ritual" as the default choice for spell level when cast, and will appear on the spell list and
                are castable even if the character has no spell slots available. Casting a spell as a ritual does not consume a spell slot if
                tracking player spell slots
              - Added NPC and PC Abilities Mule support, which works just like the Spell Mule. This is potentially less useful, however, as the variation
                in NPC/PC abilities is quite high. There may be some cases where it is helpful, however.
              - Cleaned up the Custom Actions code to prevent "false" being displayed under custom actions for characters that didn't have any.
+             - Cleaned up instances where a space was displayed after an opening bracket in a roll notation (ie, [ INT] instead of [INT])
 
 2022-11-29 - 5E Character Action Menu 2.2.2
              - Added support for additional ability buttons defined on a per-character basis. If you create abilities on character sheets
