@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.2.5";
+	const APIVERSION = "2.2.6";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1024,7 +1024,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													var info = thisContent.split("|");
 													if (theCharacter != null) {
 														for (var x = 0; x < info.length; x++) {
-															var subInfo = info[x].split(":");
+															var subInfo = info[x].replace(":::").split(":");
 															subInfo.push("");
 															subInfo.push("");
 															subInfo.push("");
@@ -1036,10 +1036,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 																		_characterid: theCharacter.id,
 																		//current: subInfo[1].trim(),
 																		current: "",
-																		max: subInfo[2].trim()
+																		max: subInfo[2].replace(/%3A/gi,":").trim()
 																	}
 																)
-																newAttribute.setWithWorker({ current: subInfo[1].trim() });
+																newAttribute.setWithWorker({ current: subInfo[1].replace(/%3A/gi,":").trim() });
 															} catch {
 																log(`ScriptCards: Error creating repeating section values on character ${theCharacter}, section ${theSection}`)
 															}
@@ -1256,6 +1256,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 															}
 														} else {
 															if (createAttribute) {
+																if (settingValue.startsWith("+=")) {
+																	settingValue = settingValue.substring(2);
+																	if (isNumber(settingValue)) { settingValue = Number(settingValue) }
+																}
+																if (settingValue.startsWith("-=")) {
+																	settingValue = "-" + settingValue.substring(2);
+																	if (isNumber(settingValue)) { settingValue = Number(settingValue) }
+																}
 																theAttribute = createObj('attribute', {
 																	characterid: characterObj.id,
 																	name: settingName,
@@ -3890,7 +3898,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 						rollResult.Aces += subrolls.length - 1;
 					}
-					if (thisRollHandled.rollSet[i] == thisRollHandled.sides) {
+					if (thisRollHandled.rollSet[i] >= thisRollHandled.sides) {
 						rollResult.Aces++;
 						if (!thisRollHandled.dontHilight) { hadAce = true; }
 					}

@@ -1,5 +1,18 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.2.6  - When using attribute modification (--!a) and creating an attribute if it doesn't exist, += and -= will now properly set the
+           newly created attribute the the expected value instead of the text string including += or -=. Thanks to Cindurion on the 
+           Roll20 forum for catching this bug.
+
+           Roll crit hilighting (green background) would not trigger on exploding dice because they could never technically be equal
+           to the max value on the die. Green highlighting will now be triggered if the value of any die is greater than or equal to
+           the number of sides on the dice, so an exploding die that explodes at least once will always be colored green.
+
+           When using --!or commands to create repeating row sections, passing "%3A" as part of the value in replacement of a colon (:)
+           will translate %3A to a colon in the stored result. Normally you can use a : to separate the current/max values and this
+           prevented you from having a : in your attribute value. Simply replace acutal colons in your value strings with %3A before
+           calling --!or and the value will be translated.
+
 v 2.2.5  - &SendingPlayer... preset strings now get updated when resuming reentrant script with the ID of the player that caused the script 
            to resume. A new set of strings &OriginalSendingPlayer... are set when the script is initially executed and will remain the same.
            
