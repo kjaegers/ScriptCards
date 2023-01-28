@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.3.0
+  --/|Version     : 2.3.1
   --/|Requires SC : 2.2.4
   --/|Author      : Kurt Jaegers
 
@@ -596,11 +596,11 @@
   --/|Assume the damage attribute is the same unless it is set to something else
   --=dmgMod|[$attrMod.Raw]
   --&dmgAttrName|[&attrName]
-  -->Get_Ability_Modifier|[*R:dmgattr_base];dmgMod;dmgAttrName
+  -->Get_Ability_Modifier|[*R:dmgattr];dmgMod;dmgAttrName
   --/|Assume the damage attribute is the same unless it is set to something else
   --=dmg2Mod|[$attrMod.Raw]
   --&dmg2AttrName|[&attrName]
-  -->Get_Ability_Modifier|[*R:dmg2attr_base];dmg2Mod;dmg2AttrName  
+  -->Get_Ability_Modifier|[*R:dmg2attr];dmg2Mod;dmg2AttrName  
   --?[$attrMod.Raw] -gt 0|&arString;+ + [$attrMod.Raw] [&attrName]
   --?[$attrMod.Raw] -lt 0|&arString;+ [$attrMod.Raw] [&attrName]
   --?[*R:atkmod] -gt 0|&arString;+ + [*R:atkmod] [Special]
@@ -1084,6 +1084,8 @@
   --<|  
 
   --:Get_Ability_Modifier|attribute_string;returnnumericvalue;returnnamestring
+  --=[%2%]|
+  --&[%3%]|
   --?"[%1%]" -eq "strength_mod"|=[%2%];[*S:strength_mod]
   --?"[%1%]" -eq "strength_mod"|&[%3%];[STR]
   --?"[%1%]" -eq "intelligence_mod"|=[%2%];[*S:intelligence_mod]

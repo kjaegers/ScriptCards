@@ -1,5 +1,10 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2023-01-28 - 5E Character Action menu 2.3.1
+             - Bug fix for determining the attribute modifier for damage rolls. I normally would not impact anything, since the damage attribute
+               is almost always the same as the attack attribute, but if you had set it differently (or, as Will M. pointed out, have it blank
+               for an off-hand attack) it was trying to use a non-existent repeating field for the lookup.
+
 2022-12-31 - 5E Character Action Menu 2.3.0
              - Extensive changes to the implementation of the script, including the emilination of redundant code by refactoring reusable code
                into subroutines for displaying button lists. This will make updating the script to work with other character sheets 
