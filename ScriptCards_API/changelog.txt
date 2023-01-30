@@ -1,5 +1,9 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.2.7  - Added 2 string functions: onlynumbers and nonumbers. string;onlynumbers;stringvalue will extract the numeric characters
+           from a string and return the value (a leading - sign will be preserved). nonumbers will remove all numeric characters
+           from the string and return the resulting value.
+
 v 2.2.6  - When using attribute modification (--!a) and creating an attribute if it doesn't exist, += and -= will now properly set the
            newly created attribute the the expected value instead of the text string including += or -=. Thanks to Cindurion on the 
            Roll20 forum for catching this bug.

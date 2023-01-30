@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.2.6";
+	const APIVERSION = "2.2.7";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2035,6 +2035,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											case "trim":
 												setStringOrArrayElement(variableName, params[2].trim(), cardParameters)
 												break;
+
+											case "onlynumerics":
+												setStringOrArrayElement(variableName, params[2].replace(/\D/g,''), cardParameters)
+												break;
+
+											case "nonumbers":
+												setStringOrArrayElement(variableName, params[2].replace(/^[\d\s]+/g,''), cardParameters)
+												break;
+	
 
 											case "totitlecase":
 												setStringOrArrayElement(variableName,
