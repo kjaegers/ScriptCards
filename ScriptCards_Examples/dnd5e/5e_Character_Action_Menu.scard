@@ -581,13 +581,13 @@
   --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 1|&rollType;2d20kh1
   --?[&selfHandleAdvantageMode] -eq 1 -and [&currentAdvantageMode] -eq 2|&rollType;2d20kl1  
   --?"[&TNPC_ATTACKAGAINSTMODE]" -eq ""|SKIP_PC_ATTACK_NPC_ROLL_MODE_CALC
-  --?"[&rollType] -e "1d20" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;1d20
-  --?"[&rollType] -e "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kh1
-  --?"[&rollType] -e "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kl1
-  --?"[&rollType] -e "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "2d20kh1"|&rollType;2d20kh1
-  --?"[&rollType] -e "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "2d20kl1"|&rollType;2d20kl1
-  --?"[&rollType] -e "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "2d20kl1"|&rollType;1d20
-  --?"[&rollType] -e "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "2d20kh1"|&rollType;1d20
+  --?"[&rollType]" -eq "1d20" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;1d20
+  --?"[&rollType]" -eq "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kh1
+  --?"[&rollType]" -eq "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kl1
+  --?"[&rollType]" -eq "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "2d20kh1"|&rollType;2d20kh1
+  --?"[&rollType]" -eq "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "2d20kl1"|&rollType;2d20kl1
+  --?"[&rollType]" -eq "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "2d20kl1"|&rollType;1d20
+  --?"[&rollType]" -eq "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "2d20kh1"|&rollType;1d20
   --:SKIP_PC_ATTACK_NPC_ROLL_MODE_CALC|
   --&arString|[&rollType]
   --=attrMod|0
