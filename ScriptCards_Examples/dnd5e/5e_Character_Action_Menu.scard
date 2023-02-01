@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.3.1
+  --/|Version     : 2.3.2
   --/|Requires SC : 2.2.4
   --/|Author      : Kurt Jaegers
 
@@ -325,13 +325,13 @@
     --?"[&ANPC_ROLLMODE]" -ne "" -and "[&TNPC_ATTACKAGAINSTMODE]" -eq ""|SKIP_NPC_ATTACK_ROLLMODE_CALC
     --?"[&ANPC_ROLLMODE]" -eq "" -and "[&TNPC_ATTACKAGAINSTMODE]" -ne ""|&rollType;[&TNPC_ATTACKAGAINSTMODE]
     --?"[&ANPC_ROLLMODE]" -eq "" -and "[&TNPC_ATTACKAGAINSTMODE]" -ne ""|SKIP_NPC_ATTACK_ROLLMODE_CALC
-    --?"[&ANPC_ROLLMODE] -e "1d20" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;1d20
-    --?"[&ANPC_ROLLMODE] -e "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kh1
-    --?"[&ANPC_ROLLMODE] -e "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kl1
-    --?"[&ANPC_ROLLMODE] -e "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "2d20kh1"|&rollType;2d20kh1
-    --?"[&ANPC_ROLLMODE] -e "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "2d20kl1"|&rollType;2d20kl1
-    --?"[&ANPC_ROLLMODE] -e "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "2d20kl1"|&rollType;1d20
-    --?"[&ANPC_ROLLMODE] -e "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "2d20kh1"|&rollType;1d20
+    --?"[&ANPC_ROLLMODE]" -eq "1d20" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;1d20
+    --?"[&ANPC_ROLLMODE]" -eq "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kh1
+    --?"[&ANPC_ROLLMODE]" -eq "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "1d20"|&rollType;2d20kl1
+    --?"[&ANPC_ROLLMODE]" -eq "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "2d20kh1"|&rollType;2d20kh1
+    --?"[&ANPC_ROLLMODE]" -eq "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "2d20kl1"|&rollType;2d20kl1
+    --?"[&ANPC_ROLLMODE]" -eq "2d20kh1" -and "[&TNPC_ROLLMODE]" -eq "2d20kl1"|&rollType;1d20
+    --?"[&ANPC_ROLLMODE]" -eq "2d20kl1" -and "[&TNPC_ROLLMODE]" -eq "2d20kh1"|&rollType;1d20
     --:SKIP_NPC_ATTACK_ROLLMODE_CALC|
     --=ToHit|[&rollType] + [*R:attack_tohit] [&ANPC_ATKMOD]
     --&dmgModType1|
