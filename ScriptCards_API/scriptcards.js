@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.2.7";
+	const APIVERSION = "2.2.7a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1167,7 +1167,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												}
 											}
 											var settings = thisContent.split("|");
-											var theCharacter = getObj("graphic", charID);
+											var theCharacter = getObj("character", charID);
 											if (theCharacter) {
 												for (var i = 0; i < settings.length; i++) {
 													var thisSetting = settings[i].split(":");
@@ -2036,12 +2036,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												setStringOrArrayElement(variableName, params[2].trim(), cardParameters)
 												break;
 
-											case "onlynumerics":
-												setStringOrArrayElement(variableName, params[2].replace(/\D/g,''), cardParameters)
+											case "onlynumbers":
+												var tempvalue = params[2].trim().startsWith("-") ? "-" : "";
+												tempvalue += params[2].replace(/\D/g,'')
+												setStringOrArrayElement(variableName, tempvalue, cardParameters)
 												break;
 
 											case "nonumbers":
-												setStringOrArrayElement(variableName, params[2].replace(/^[\d\s]+/g,''), cardParameters)
+												setStringOrArrayElement(variableName, params[2].replace(/\d/g,''), cardParameters)
 												break;
 	
 
