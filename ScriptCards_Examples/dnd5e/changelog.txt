@@ -1,5 +1,14 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2023-02-01 - 5E Character Action Menu 2.3.3
+             - Bug fixes for some advantage/disadvantage conflict resolution
+             - New spell tags (after the name in the button) : [RA] = Reaciont, [BA] = Bonus Action, [C] = Concentration. Multiple modifiers
+               will be appended together as applicable.
+             - Toned down the default colors to be less bright
+             - Added Character Race and Speed to the character summary, and split it across two lines
+             - New config parameter: "UseEmojisToReplaceText" if set to 1 will replace "AC", "HP", and "SPEED" in the character summary with
+               emojis to represent the attributes
+
 2023-01-28 - 5E Character Action menu 2.3.1
              - Bug fix for determining the attribute modifier for damage rolls. I normally would not impact anything, since the damage attribute
                is almost always the same as the attack attribute, but if you had set it differently (or, as Will M. pointed out, have it blank

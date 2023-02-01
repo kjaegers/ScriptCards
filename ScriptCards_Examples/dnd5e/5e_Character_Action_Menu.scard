@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.3.2
+  --/|Version     : 2.3.3
   --/|Requires SC : 2.2.4
   --/|Author      : Kurt Jaegers
 
@@ -129,6 +129,9 @@
   --/|If set to 1, the menu will include custom buttons defined on characters that include the "AM-" prefix in their names.
   --&DisplayButtonsForAMAbilities|1
   
+  --/|If set to 1, emojis will be used in place of text in some places
+  --&UseEmojisToReplaceText|0
+
   --/|List spells here, separated by semicolons, that should be kept in the PC Attacks display with "[After Cast]" appended to them
   --~|array;define;SpellsToKeepWithSuffix;Spiritual Weapon;Scorching Ray
 
@@ -185,7 +188,12 @@
   --&SPACE|X X --&SPACE|[&SPACE(1,1)]
   --&obrac|[ --&cbrac|]
   --&vbar||
-  
+
+  --/|Useful Emoticons
+  --&emoSpeed|& --&emoSpeed|+# --&emoSpeed|+9193;
+  --&emoShield|& --&emoShield|+# --&emoShield|+129355;
+  --&emoHeart|& --&emoHeart|+# --&emoHeart|+129505;
+    
   --/|Set up some style information for the action menu and subsequent cards. These attempt to somewhat
   --/|simulate the 5E style
   --#bodyfontface|Helvetica
@@ -194,18 +202,24 @@
   --#bodyfontsize|[&bodyFontSize]px
   --#buttonfontsize|10px
   --#buttonbackground|#930c10
+  --#buttonbackground|#672223
   --#buttonfontface|Tahoma
   --#titlecardbackgroundcolor|#930c10
+  --#titlecardbackgroundcolor|#672223
   --#titlefontcolor|#fffebd
   --#titlefontsize|1.5em
   --#titlefontshadow|0
   --#oddrowbackground|#f7ce65
   --#evenrowbackground|#f7ce65
+  --#oddrowbackground|#b3ab96
+  --#evenrowbackground|#b3ab96
   --#subtitlefontcolor|#fffebd
   --#tablebgcolor|#fffebd
   --#lineheight|9pt
   --#buttonpadding|[&defaultButtonPadding]
   --#overridetemplate|[&Template]
+  --&GAM_Button_Active_Color|009900
+  --&GAM_Button_Inactive_Color|672223
 
   --/|The menu is whispered to the player executing the macro. #whisper will be set again later for the
   --/|actual output to be public.
@@ -263,10 +277,10 @@
     --?[&showAdvantageModeText] -eq 0|SKIP_NPC_SET_MODE
     --C[&currentAdvantageMode]|0:&mode; Normal|1:&mode; Advantage|2:&mode; Disadvantage
     --:SKIP_NPC_SET_MODE|
-    --&nbuttoncolor|#AA0000
-    --&abuttoncolor|#AA0000
-    --&dbuttoncolor|#AA0000
-    --C[&currentAdvantageMode]|0:&nbuttoncolor;#00AA00|1:&abuttoncolor;#00AA00|2:&dbuttoncolor;#00AA00
+    --&nbuttoncolor|#[&GAM_Button_Inactive_Color]
+    --&abuttoncolor|#[&GAM_Button_Inactive_Color]
+    --&dbuttoncolor|#[&GAM_Button_Inactive_Color]
+    --C[&currentAdvantageMode]|0:&nbuttoncolor;#[&GAM_Button_Active_Color]|1:&abuttoncolor;#[&GAM_Button_Active_Color]|2:&dbuttoncolor;#[&GAM_Button_Active_Color]
     --#buttonpadding|[&smallButtonPadding]
     --+|[r]Attack Roll Mode [&mode]| [rbutton:#FFFFFF:[&nbuttoncolor]]N::SET_ADV_MODE;0[/rbutton][rbutton:#FFFFFF:[&abuttoncolor]]A::SET_ADV_MODE;1[/rbutton][rbutton:#FFFFFF:[&dbuttoncolor]]D::SET_ADV_MODE;2[/rbutton][/r]    --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
     --#buttonpadding|[&defaultButtonPadding]
@@ -466,10 +480,10 @@
     --?[&showAdvantageModeText] -eq 0|SKIP_PC_SET_MODE
     --C[&currentAdvantageMode]|0:&mode; Normal|1:&mode; Advantage|2:&mode; Disadvantage
     --:SKIP_PC_SET_MODE|
-    --&nbuttoncolor|#AA0000
-    --&abuttoncolor|#AA0000
-    --&dbuttoncolor|#AA0000
-    --C[&currentAdvantageMode]|0:&nbuttoncolor;#00AA00|1:&abuttoncolor;#00AA00|2:&dbuttoncolor;#00AA00
+    --&nbuttoncolor|#[&GAM_Button_Inactive_Color]
+    --&abuttoncolor|#[&GAM_Button_Inactive_Color]
+    --&dbuttoncolor|#[&GAM_Button_Inactive_Color]
+    --C[&currentAdvantageMode]|0:&nbuttoncolor;#[&GAM_Button_Active_Color]|1:&abuttoncolor;#[&GAM_Button_Active_Color]|2:&dbuttoncolor;#[&GAM_Button_Active_Color]
     --#buttonpadding|[&smallButtonPadding]
     --+|[r]Attack Roll Mode [&mode]| [rbutton:#FFFFFF:[&nbuttoncolor]]N::SET_ADV_MODE;0[/rbutton][rbutton:#FFFFFF:[&abuttoncolor]]A::SET_ADV_MODE;1[/rbutton][rbutton:#FFFFFF:[&dbuttoncolor]]D::SET_ADV_MODE;2[/rbutton][/r]    --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
     --#buttonpadding|[&defaultButtonPadding]
@@ -1003,8 +1017,8 @@
   --Rfirst|[%1%];repeating_tohitmod
   --:_GAMB_Loop|
   --?"[*R:global_attack_name]" -eq "NoRepeatingAttributeLoaded"|_GAMB_DONE
-  --?"[*R:global_attack_active_flag]" -eq "1"|>_AddGAMB;[*R:global_attack_name];00AA00
-  --?"[*R:global_attack_active_flag]" -ne "1"|>_AddGAMB;[*R:global_attack_name];AA0000
+  --?"[*R:global_attack_active_flag]" -eq "1"|>_AddGAMB;[*R:global_attack_name];[&GAM_Button_Active_Color]
+  --?"[*R:global_attack_active_flag]" -ne "1"|>_AddGAMB;[*R:global_attack_name];[&GAM_Button_Inactive_Color]
   --Rnext| 
   --?"[*R:global_attack_name]" -ne "NoRepeatingAttributeLoaded"|_GAMB_Loop
   --:_GAMB_DONE|
@@ -1020,8 +1034,8 @@
   --Rfirst|[%1%];repeating_damagemod
   --:_GDMB_Loop|
   --?"[*R:global_damage_name]" -eq "NoRepeatingAttributeLoaded"|_GDMB_DONE
-  --?"[*R:global_damage_active_flag]" -eq "1"|>_AddGDMB;[*R:global_damage_name];00AA00
-  --?"[*R:global_damage_active_flag]" -ne "1"|>_AddGDMB;[*R:global_damage_name];AA0000  
+  --?"[*R:global_damage_active_flag]" -eq "1"|>_AddGDMB;[*R:global_damage_name];[&GAM_Button_Active_Color]
+  --?"[*R:global_damage_active_flag]" -ne "1"|>_AddGDMB;[*R:global_damage_name];[&GAM_Button_Inactive_Color]  
   --Rnext| 
   --?"[*R:global_damage_name]" -ne "NoRepeatingAttributeLoaded"|_GDMB_Loop
   --:_GDMB_DONE|
@@ -1037,8 +1051,8 @@
   --Rfirst|[%1%];repeating_savemod
   --:_GSMB_Loop|
   --?"[*R:global_save_name]" -eq "NoRepeatingAttributeLoaded"|_GSMB_DONE
-  --?"[*R:global_save_active_flag]" -eq "1"|>_AddGSMB;[*R:global_save_name];00AA00
-  --?"[*R:global_save_active_flag]" -ne "1"|>_AddGSMB;[*R:global_save_name];AA0000  
+  --?"[*R:global_save_active_flag]" -eq "1"|>_AddGSMB;[*R:global_save_name];[&GAM_Button_Active_Color]
+  --?"[*R:global_save_active_flag]" -ne "1"|>_AddGSMB;[*R:global_save_name];[&GAM_Button_Inactive_Color]  
   --Rnext| 
   --?"[*R:global_save_name]" -ne "NoRepeatingAttributeLoaded"|_GSMB_Loop
   --:_GSMB_DONE|
@@ -1050,8 +1064,8 @@
   --Rfirst|[%1%];repeating_acmod
   --:_GACMB_Loop|
   --?"[*R:global_ac_name]" -eq "NoRepeatingAttributeLoaded"|_GACMB_DONE
-  --?"[*R:global_ac_active_flag]" -eq "1"|>_AddGACMB;[*R:global_ac_name];00AA00
-  --?"[*R:global_ac_active_flag]" -ne "1"|>_AddGACMB;[*R:global_ac_name];AA0000  
+  --?"[*R:global_ac_active_flag]" -eq "1"|>_AddGACMB;[*R:global_ac_name];[&GAM_Button_Active_Color]
+  --?"[*R:global_ac_active_flag]" -ne "1"|>_AddGACMB;[*R:global_ac_name];[&GAM_Button_Inactive_Color]  
   --Rnext| 
   --?"[*R:global_ac_name]" -ne "NoRepeatingAttributeLoaded"|_GACMB_Loop
   --:_GACMB_DONE|
@@ -1063,8 +1077,8 @@
   --Rfirst|[%1%];repeating_skillmod
   --:_GSKMB_Loop|
   --?"[*R:global_skill_name]" -eq "NoRepeatingAttributeLoaded"|_GACMB_DONE
-  --?"[*R:global_skill_active_flag]" -eq "1"|>_AddGSKMB;[*R:global_skill_name];00AA00
-  --?"[*R:global_skill_active_flag]" -ne "1"|>_AddGSKMB;[*R:global_skill_name];AA0000  
+  --?"[*R:global_skill_active_flag]" -eq "1"|>_AddGSKMB;[*R:global_skill_name];[&GAM_Button_Active_Color]
+  --?"[*R:global_skill_active_flag]" -ne "1"|>_AddGSKMB;[*R:global_skill_name];[&GAM_Button_Inactive_Color]  
   --Rnext| 
   --?"[*R:global_skill_name]" -ne "NoRepeatingAttributeLoaded"|_GSKMB_Loop
   --:_GSKMB_DONE|
@@ -1266,10 +1280,12 @@
 
   --:BuildCharacterSummary|charid;Return variable;ac attribute (either ac or npc_ac)
   --?[%3%] -eq "npc_ac"|BuildNPCSummary
-  --&[%2%]|[*[%1%]:class_display], AC [*[%1%]:[%3%]], HP [*[%1%]:hp]/[*[%1%]:hp^]
+  --&[%2%]|[*[%1%]:race] [*[%1%]:class_display][br]AC [*[%1%]:[%3%]], HP [*[%1%]:hp]/[*[%1%]:hp^], SPEED [*[%1%]:speed]
+  -->REPLACE_WORDS_WITH_EMOJIS|[%2%]
   --<||
   --:BuildNPCSummary|
-  --&[%2%]|CR[*[%1%]:npc_challenge] [*[%1%]:npc_type], AC [*[%1%]:[%3%]], HP [*[%1%]:t-bar[&hitPointsBar]_value]/[*[%1%]:hp^]
+  --&[%2%]|CR[*[%1%]:npc_challenge][br][*[%1%]:npc_type], AC [*[%1%]:[%3%]], HP [*[%1%]:t-bar[&hitPointsBar]_value]/[*[%1%]:hp^], SPEED [*[%1%]:speed]
+  -->REPLACE_WORDS_WITH_EMOJIS|[%2%]
   --<||
  
   --:CheckDamageModifiersNPC|characterid;damageVariableName;damageType;isMagical(0 or 1);IsSilver (0 or 1);IsAdamantine (0 or 1);NPCType(A or T)
@@ -1339,8 +1355,8 @@
 
   --:CREATE_SETTINGS_TOGGLE_BUTTON|character_id;SettingName;SettingCode;ReturnStringVar
   -->GET_PER_CHARACTER_SETTING|[%1%];[%3%];_THIS_SETTING
-  --&_BUTTON_COLOR|AA0000
-  --?[&_THIS_SETTING] -eq 1|&_BUTTON_COLOR;00AA00
+  --&_BUTTON_COLOR|[&GAM_Button_Inactive_Color]
+  --?[&_THIS_SETTING] -eq 1|&_BUTTON_COLOR;[&GAM_Button_Active_Color]
   --&[%4%]|[rbutton:#ffffff:#[&_BUTTON_COLOR]:8px][%2%]::TOGGLE_PER_CHARACTER_SETTING;[%1%]|[%3%][/rbutton]
   --<|
 
@@ -1691,6 +1707,9 @@
       --&DisplayName|[*R:[%3%]]
       --&DisplayName|[&DisplayName(totitlecase)]
       --?"[*R:spellritual]" -eq "Yes"|&DisplayName;+ [R]
+      --?"[*R:spellcastingtime]" -inc "reaction"|&DisplayName;+ [RA]
+      --?"[*R:spellcastingtime]" -inc "bonus"|&DisplayName;+ [BA]
+      --?"[*R:spellconcentration]" -inc "concentration=1"|&DisplayName;+ [C]
       --&LevelString|[%7%]|
       --?"[%7%]" -eq 0|&LevelString; 
       --?"[%7%]" -gt 0|>BUILD_SLOT_LIST;[%7%];slotString;[*R:spellritual]
@@ -1759,4 +1778,14 @@
   --+|[c]- - - - -[/c]
   --+|[c][rbutton:8px]Skill Check::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton]     [rbutton:8px]Saving Throw::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton][/c]
   --<|
+
+  --:REPLACE_WORDS_WITH_EMOJIS|Input variable NAME (not the variable refernce). Will be updated in place
+  --?[&UseEmojisToReplaceText] -ne 1|<
+  --&work|[&[%1%]]
+  --&work|[&work(replaceall,AC,[&emoShield])]
+  --&work|[&work(replaceall,HP,[&emoHeart])]
+  --&work|[&work(replaceall,SPEED,[&emoSpeed])]
+  --&[%1%]|[&work]
+  --<|
+
 }}
