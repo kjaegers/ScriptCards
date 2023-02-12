@@ -71,6 +71,12 @@
 --/|          be removed when decrementing for a marker without a counter. If not specified, the
 --/|          marker will not be removed when the counter would go below 1 or 0.
 --/|
+--/|  LibSN_INCREMENT_STATUS_MARKER - TokenID;MarkerToIncrement;Blank, 0 or 1 (OPTIONAL)
+--/|          If (MarkerToDecrement) exists on the on token (TokenID), the counter number will be
+--/|          increased by 1. If a third parameter is added and set to 0 or 1, the status marker will
+--/|          be added to the token if it does not exist. If the parameter is 0, no counter number
+--/|          will be added to the token. If the value is 1, the counter number will be set to 1
+--/|
 --/|  LibSN_CLEAR_STATUS_MARKERS - TokenID
 --/|          Removes all status markers from the indicated token.
 --/|
