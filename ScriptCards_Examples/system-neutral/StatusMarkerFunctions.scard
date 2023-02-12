@@ -20,12 +20,19 @@
   --/|                ADD_STATUS_MARKER - TokenID;MarkerToAdd;Count
   --/|                     Will add (MarkerToAdd) to the given token (TokenID). If count is specified with a number
   --/|                     betweeen 1 and 9, the number will be placed on top of the status marker.
+  --/|
   --/|                DECREMENT_STATUS_MARKER - TokenID;MarkerToDecrement;Blank, 0 or 1 (OPTIONAL)
   --/|                     If (MarkerToDecrement) exists on the on token (TokenID), the counter number will be
   --/|                     decreased by 1. If a third parameter is added and set to 1, the status marker will
   --/|                     be removed when decrementing from 1 to no counter. If set to 0, the marker will be
   --/|                     be removed when decrementing for a marker without a counter. If not specified, the
   --/|                     marker will not be removed when the counter would go below 1 or 0.
+  --/|
+  --/|                INCREMENT_STATUS_MARKER - TokenID;MarkerToIncrement;Blank, 0 or 1 (OPTIONAL)
+  --/|                     If (MarkerToDecrement) exists on the on token (TokenID), the counter number will be
+  --/|                     increased by 1. If a third parameter is added and set to 0 or 1, the status marker will
+  --/|                     be added to the token if it does not exist. If the parameter is 0, no counter number
+  --/|                     will be added to the token. If the value is 1, the counter number will be set to 1
   --/|
   --/|                CLEAR_STATUS_MARKERS - TokenID
   --/|                     Removes all status markers from the indicated token.
@@ -40,6 +47,10 @@
 
   --/|Decrement the counter on the "snail" status marker on the selected token, removing it if the number goes below 1
   --/>DECREMENT_STATUS_MARKER|@{selected|token_id};snail;1
+
+  --/|Increment the counter on the "snail" status marker on the selected token, adding it if it doesn't exist with a value of 1
+  --/>INCREMENT_STATUS_MARKER|@{selected|token_id};snail
+
 
   --X|
 
@@ -85,6 +96,15 @@
   --?[&_DEC_COUNT] -gt 1|>ADD_STATUS_MARKER;[%1%];[%2%];[=[&_DEC_COUNT]-1]
   --?[&_DEC_COUNT] -eq 1|>ADD_STATUS_MARKER;[%1%];[%2%]
   --:DONE_DECREMENT_STATUS_MARKER|
+  --<|
+
+  --:INCREMENT_STATUS_MARKER|Token_ID;Status Marker;Optional:0=remove marker if decrementing from 0 or 1=Remove marker if decrementing TO 0.
+  -->CHECK_STATUS_MARKER|[%1%];[%2%];_INC_EXIST;_INC_COUNT
+  --?[&_INC_EXIST] -eq 0 -and "X[%3%]" -eq "X"|DONE_INCREMENT_STATUS_MARKER
+  -->REMOVE_STATUS_MARKER|[%1%];[%2%]
+  --?[&_INC_COUNT] -lt 9|>ADD_STATUS_MARKER;[%1%];[%2%];[=[&_INC_COUNT]+1]
+  --?[&_INC_COUNT] -eq 9|>ADD_STATUS_MARKER;[%1%];[%2%];9
+  --:DONE_INCREMENT_STATUS_MARKER|
   --<|
   
   --:CHECK_STATUS_MARKER|TokenID;MarkerToFind;Exists;Counter
