@@ -11,21 +11,21 @@
 --/| ###################################################################################################
 --/| Functions related to the BUMP Api/Mod Script
 --/| ###################################################################################################
---/|  LibSN_FIND_BUMP_MASTER_TOKEN|TokenID of Slave Token;Return var
---/|          Pass a Token ID for the "ghost" bump token and a string variable name for the
+--/|  LibSN_FIND_BUMP_MASTER_TOKEN|TokenID of Shadow Token;Return var name for Master Token ID (string)
+--/|          Pass a Token ID for the "shadow" bump token and a string variable name for the
 --/|          return value. The function will return the token id of the real token it is 
 --/|          standing in for. If the passed token ID is already the real token, the same ID will 
 --/|          be returned. If the token ID isn't registered with bump, the return value will 
 --/|          be empty.
 --/|
---/|  LibSN_FIND_BUMP_SHADOW_TOKEN|TokenID of Master Token;Return var
+--/|  LibSN_FIND_BUMP_SHADOW_TOKEN|TokenID of Master Token;Return var name for Shadow Token ID (string)
 --/|          Pass a Token ID for the real token and a string variable name for the
---/|          return value. The function will return the token id of the ghost token it is 
---/|          associated with. If the passed token ID is already the ghost token, the same ID will 
+--/|          return value. The function will return the token id of the shadow token it is 
+--/|          associated with. If the passed token ID is already the shadow token, the same ID will 
 --/|          be returned. If the token ID isn't registered with bump, the return value will 
 --/|          be empty.
 --/|
---/|  LibSN_FIND_BUMP_TOKEN_PAIR|TokenID of Slave Token;Maste Token Var;Shadow Token Var
+--/|  LibSN_FIND_BUMP_TOKEN_PAIR|TokenID of Shadow or Master Token;Master Token Var Name;Shadow Token Var Name
 --/|          Takes a token ID as parameter 1 and two string variable names as parameters 2 and 3.
 --/|          Acts as a combination of the two previous functions, returning the real token (param 2)
 --/|          and the shadow token (param 3) given either of the tokens as the first parameter
@@ -34,55 +34,57 @@
 --/| ###################################################################################################
 --/| Functions related controlled and/or selected tokens
 --/| ###################################################################################################
---/|  LibSN_CHECK_FOR_SELECTED_TOKEN|Result String Var
+--/|  LibSN_CHECK_FOR_SELECTED_TOKEN|Result Var Name (string)
 --/|          Returns a "1" if there is a selected token passed to the script, otherwise returns "0"
 --/|
---/|  LibSN_GET_CONTROLLED_CHARACTER_LIST|Result String Var
+--/|  LibSN_GET_CONTROLLED_CHARACTER_LIST|Result Var Name (string)
 --/|          Returns a comma seprated list of all of the characters controlled by the player that
 --/|          executed the script. (ie, ControlledBy contains their player ID)
 --/|
---/|  LibSN_GET_TOKENS_REPRESENTING|CharacterID;PageID;ReturnTokenIDVariable
+--/|  LibSN_GET_TOKENS_REPRESENTING|CharacterID;PageID;ReturnTokenIDVariable (string)
 --/|          Returns a comma separated list of tokens on the PageID page that represent the character
 --/|          specified by CharacterID
 --/|
---/|  LibSN_GET_CONTROLLED_TOKENS_FROM_PAGETOKENS|Return String Var
+--/|  LibSN_GET_CONTROLLED_TOKENS_FROM_PAGETOKENS|Return Var Name (string)
 --/|          Returns a comma separated list of all of the tokens on the current player (ribbon) page
 --/|          that are controlled by the player executing the script.
---/|
+
 --/| ###################################################################################################
 --/| Functions related to the Token Status Markers
 --/| ###################################################################################################
---/|  LibSN_CHECK_STATUS_MARKER - TokenID;MarkerToFind;ExistsVariable;CountVariable
+--/|  LibSN_CHECK_STATUS_MARKER|TokenID;MarkerToFind;ExistsVariable (string);CountVariable (string)
 --/|          Will check the given token (TokenID) for the status marker (MarkerToFind) and set two return
 --/|          string variables: (ExistsVariable) will be 1 if the token has the marker, and (CountVariable)
 --/|          will contain the counter number on the marker (default 0 for no number)
 --/|
---/|  LibSN_REMOVE_STATUS_MARKER - TokenID;MarkerToRemove
+--/|  LibSN_REMOVE_STATUS_MARKER|TokenID;MarkerToRemove
 --/|          Will remove any variation of (MarkerToRemove from the given token (TokenID)
 --/|
---/|  LibSN_ADD_STATUS_MARKER - TokenID;MarkerToAdd;Count
+--/|  LibSN_ADD_STATUS_MARKER|TokenID;MarkerToAdd;Count
 --/|          Will add (MarkerToAdd) to the given token (TokenID). If count is specified with a number
 --/|          betweeen 1 and 9, the number will be placed on top of the status marker.
 --/|
---/|  LibSN_DECREMENT_STATUS_MARKER - TokenID;MarkerToDecrement;Blank, 0 or 1 (OPTIONAL)
+--/|  LibSN_DECREMENT_STATUS_MARKER|TokenID;MarkerToDecrement;Blank, 0 or 1 (OPTIONAL)
 --/|          If (MarkerToDecrement) exists on the on token (TokenID), the counter number will be
 --/|          decreased by 1. If a third parameter is added and set to 1, the status marker will
 --/|          be removed when decrementing from 1 to no counter. If set to 0, the marker will be
 --/|          be removed when decrementing for a marker without a counter. If not specified, the
 --/|          marker will not be removed when the counter would go below 1 or 0.
 --/|
---/|  LibSN_INCREMENT_STATUS_MARKER - TokenID;MarkerToIncrement;Blank, 0 or 1 (OPTIONAL)
+--/|  LibSN_INCREMENT_STATUS_MARKER|TokenID;MarkerToIncrement;Blank, 0 or 1 (OPTIONAL)
 --/|          If (MarkerToDecrement) exists on the on token (TokenID), the counter number will be
 --/|          increased by 1. If a third parameter is added and set to 0 or 1, the status marker will
 --/|          be added to the token if it does not exist. If the parameter is 0, no counter number
 --/|          will be added to the token. If the value is 1, the counter number will be set to 1
 --/|
---/|  LibSN_CLEAR_STATUS_MARKERS - TokenID
+--/|  LibSN_CLEAR_STATUS_MARKERS|TokenID
 --/|          Removes all status markers from the indicated token.
---/|
+
 --/| ###################################################################################################
 --/| Functions related to the Roll20 Turn Order/Initiative Tracker
 --/| ###################################################################################################
+--/|  NOTE: see the list below for the parameters for these functions. They all take the same parameter set
+--/|
 --/|  LibSN_GET_CURRENT_TURN_INFO   - Returns information for the current entry in the turn tracker
 --/|  LibSN_GET_NEXT_TURN_INFO      - Returns information for the next upcoming entry in the turn tracker
 --/|  LibSN_GET_LAST_TURN_INFO      - Returns information for the final entry in the turn tracker
@@ -102,14 +104,14 @@
 --/|          number of the turn to examine (in sequence) from the top of the turn tracker list (starting at 1)
 --/|          (ie, GET_NUMBERED_TURN_INFO|TID;INIT;CUSTOM;FORMULA;PAGE;NAME;TURNNUMBER)|
 --/|
---/|  LibSN_GET_TURNORDER_LENGTH|Return Roll Var
+--/|  LibSN_GET_TURNORDER_LENGTH|Return Var (Roll)
 --/|          This function returns the number of turns in the turn tracker
 --/|
---/|  LibSN_REFRESH_TURNORDER_CACHE
+--/|  LibSN_REFRESH_TURNORDER_CACHE|
 --/|          The turnorder functions check when called to see if the turn order has been parsed. If you modify the
 --/|          turn order in your script, you should call REFRESH_TURNORDER_CACHE to make sure the turnorder functions
 --/|          are working with the updated information.  
---/|
+
 --/| ###################################################################################################
 --/| General/Uncategorized functions
 --/| ###################################################################################################
