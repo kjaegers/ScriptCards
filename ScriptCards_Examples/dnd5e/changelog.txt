@@ -1,5 +1,17 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2023-02-18 - 5E Character Action Menu 2.3.4
+             - You can use the description field of a weapon attack (center column of the character sheet) to specify audio and video
+               effects to play along with the attack. The format for this is a single line that contains the effect specifiers with either
+               "vfx:" for visual effects or "sfx:" for sound effects. One of each can be specified by separating the values with a $
+               Example:
+                  vfx:burst-blood$sfx:ArrowHit
+               The order of the specifiers doesn't matter. VFX are point-based only at this time, and default to playing on the target. 
+               If you add "s " in front of the specifier (like "vfx:s burst-magic") the effect will play on the source token instead of 
+               the target. This is an experimental feature, and I'll likely add this same option to NPCs and potentially spells if I can 
+               find appropriate places to put the text that isn't too difficult to edit. This may also potentially be moved off to A
+               mule that can hold this information by attack/action/spell name depending on how this works out.
+
 2023-02-01 - 5E Character Action Menu 2.3.3
              - Bug fixes for some advantage/disadvantage conflict resolution
              - New spell tags (after the name in the button) : [RA] = Reaciont, [BA] = Bonus Action, [C] = Concentration. Multiple modifiers

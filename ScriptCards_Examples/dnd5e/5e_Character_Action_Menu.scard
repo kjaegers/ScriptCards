@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.3.3
+  --/|Version     : 2.3.4
   --/|Requires SC : 2.2.4
   --/|Author      : Kurt Jaegers
 
@@ -130,7 +130,7 @@
   --&DisplayButtonsForAMAbilities|1
   
   --/|If set to 1, emojis will be used in place of text in some places
-  --&UseEmojisToReplaceText|0
+  --&UseEmojisToReplaceText|1
 
   --/|List spells here, separated by semicolons, that should be kept in the PC Attacks display with "[After Cast]" appended to them
   --~|array;define;SpellsToKeepWithSuffix;Spiritual Weapon;Scorching Ray
@@ -193,6 +193,8 @@
   --&emoSpeed|& --&emoSpeed|+# --&emoSpeed|+9193;
   --&emoShield|& --&emoShield|+# --&emoShield|+129355;
   --&emoHeart|& --&emoHeart|+# --&emoHeart|+129505;
+  
+  --&emoShield|[img width=25 height=25]https://s3.amazonaws.com/files.d20.io/images/30/JAFfatM7Ius91Eg4uPBY6w/icon.png?1575370642[/img]
     
   --/|Set up some style information for the action menu and subsequent cards. These attempt to somewhat
   --/|simulate the 5E style
@@ -567,6 +569,8 @@
   --/+|[hr #58180d]
   --#whisper|
   --#emotestate|visible
+  --&vfx|
+  --&sfx|
   --~attack_name|string;before;|;[&reentryval]
   --~attack_target|string;after;|;[&reentryval]
   --#targettoken|[&attack_target]
@@ -587,6 +591,21 @@
   --#title|[*R:atkname]
   --#leftsub|[*S:character_name]
   --#rightsub|
+  --~|array;fromstring;fx;$;[*R:atk_desc]
+  --%loop|foreach;fx
+    --\|[&loop]
+    --?"[&loop]" -inc "sfx:"|&sfx;[&loop(after,:)]
+    --?"[&loop]" -inc "vfx:"|&vfx;[&loop(after,:)]
+  --%|
+  --\|[&sfx], [&vfx]
+  --?"[&sfx]" -ne ""|[
+    --a|[&sfx]
+  --]|
+  --?"[&vfx]" -ne ""|[
+    --&vfxAt|[&attack_target]
+    --?"[&vfx]" -inc "s "|&vfxAt;[*S:t-id]
+    --vtoken|[&vfxAt] [&vfx(after, )]
+  --]|
   --&attack_crit|0
   --&rollType|1d20
   --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
