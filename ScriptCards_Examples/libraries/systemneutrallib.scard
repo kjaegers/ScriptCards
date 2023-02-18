@@ -1,4 +1,4 @@
---/|ScriptCards Library: systemneutrallib (snlib) version 0.0.1
+--/|ScriptCards Library: systemneutrallib (snlib) version 0.0.2
 --/|Provides various utility procedures for general Roll20 stuff
 
 --/|This library consolidates functions from a number of the sample scripts on the ScriptCards github into a single library
@@ -127,7 +127,11 @@
 --/|          Applies (amount) damage [negative number] or healing [positie number] to all tokens (bar#) token bar with ids
 --/|          contained as elements in (ArrayName)
 --/|          If (display) is specified as 1, an output line will be genereated for each token damaged/healed.
-  
+--/|
+--/|  LibSN_BUILD_DROPDOWN_FROM_ARRAY|ReturnVar (string);Prompt;arrayName  
+--/|          Fills (ReturnVar) with a Roll20 query prompt string created by supplying the value of (Prompt) and the
+--/|          content of the array (arrayName) that can then be used in a i command or rbutton
+
 --:LibSN_FIND_BUMP_MASTER_TOKEN|TokenID of Slave Token;Return var
   --~work|string;replaceall;",";"&&&";[*G:Bump:mirrored]
   --~work|string;stripchars;{}";[&work]
@@ -357,6 +361,15 @@
 
 --:LibSN_DISPLAY_LIBRARY_INFO|
   --+Library Loaded|systemneutral
+--<|
+
+--:LibSN_BUILD_DROPDOWN_FROM_ARRAY|ReturnVar;Prompt;arrayName
+--&_DDOWN|? --&_DDOWN|+{ --&_DDOWN|+[%2%]
+--%_LibLoop|foreach;[%3%]
+  --&_DDOWN|+|[&_LibLoop]
+--%|
+--&_DDOWN|+}
+--&[%1%]|[&_DDOWN]
 --<|
 
 --X|
