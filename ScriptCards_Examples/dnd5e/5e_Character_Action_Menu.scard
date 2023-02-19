@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.3.5
+  --/|Version     : 2.3.6
   --/|Requires SC : 2.2.4
   --/|Author      : Kurt Jaegers
 
@@ -43,7 +43,7 @@
 
   --/|If this value is set to 1, prepared spells checks will be skipped
   --&skipPreppedSpellsCheck|0
-
+  
   --/|If this value is set to 1, prepared spell checks for NPCs will be skipped
   --&skipNPCPrepCheck|1
 
@@ -593,11 +593,9 @@
   --#rightsub|
   --~|array;fromstring;fx;$;[*R:atk_desc]
   --%loop|foreach;fx
-    --\|[&loop]
     --?"[&loop]" -inc "sfx:"|&sfx;[&loop(after,:)]
     --?"[&loop]" -inc "vfx:"|&vfx;[&loop(after,:)]
   --%|
-  --\|[&sfx], [&vfx]
   --?"[&sfx]" -ne ""|[
     --a|[&sfx]
   --]|
@@ -938,7 +936,6 @@
   --#whisper|
   --]|
   -->Find_Active_Global_Save_Modifiers|[*S:character_id];GSM_VALUES
-  --\|[&GSM_VALUES]
   --~saveInfo|string;split;|;[&reentryval]
   --~saveType|string;tolowercase;[&saveInfo1]_save_bonus
   --&saveBonus|[*S:[&saveType]]
@@ -1227,7 +1224,6 @@
   --?"[*S:multiclass1]" -eq "[%1%]"|&[%2%];[*S:multiclass1_lvl]
   --?"[*S:multiclass2]" -eq "[%1%]"|&[%2%];[*S:multiclass2_lvl]
   --?"[*S:multiclass3]" -eq "[%1%]"|&[%2%];[*S:multiclass3_lvl]
-  --?"[*S:multiclass4]" -eq "[%1%]"|&[%2%];[*S:multiclass4_lvl]
   --<|
 
   --:GET_AVAILABLE_SPELL_SLOTS|slotlevel;variableToSet
@@ -1655,8 +1651,6 @@
   --?[&MacroMuleID] -eq 0|DONE_SHARED_MULE_BUTTONS
   --~|array;objects:ability;MuleButtonList;AM_SHARED_LIST;[%1%]
   --?"[@MuleButtonList(length)]" -eq 0|DONE_SHARED_MULE_BUTTONS
-  --\|[@MuleButtonList(0)]
-  --\|[*O:[@MuleButtonList(0)]:ability:name] [*O:[@MuleButtonList(0)]:ability:action]
   --?[&muleButtonList] -eq "AbilityNotFound"|DONE_SHARED_MULE_BUTTONS
   --~|array;objects:character;macro_mule;[&sharedmacromulename]
   --?[@macro_mule(maxindex)] -lt 0|DONE_SHARED_MULE_BUTTONS
@@ -1721,6 +1715,17 @@
     --&AM_BUTTON_LIST|[br]
     --?"[*R:[%3%]]" -ne "NoRepeatingAttributeLoaded"|[
     --:AM_SPELL_BUTTON_LIST_LOOP|
+      --?[&skipPreppedSpellsCheck] -eq 1|SKIP_PREP_CHECK
+      --?[%7%] -eq 0|SKIP_PREP_CHECK
+      -->FIND_CLASS_LEVEL|Sorcerer;SorcLevel
+      -->FIND_CLASS_LEVEL|Warlock;LockLevel
+      -->FIND_CLASS_LEVEL|Wizard;WizLevel
+      --?[&SorcLevel] -gt 0|SKIP_PREP_CHECK
+      --?[&LockLevel] -gt 0|SKIP_PREP_CHECK
+      --?"[*R:spellprepared]" -eq "1"|SKIP_PREP_CHECK
+      --?"[*R:spellritual]" -eq "Yes"|SKIP_PREP_CHECK
+      --^SPELL_BUTTON_END_GENERATE|
+      --:SKIP_PREP_CHECK|      
       --&slotString|
       --&targetString|[&TB]target|token_id}
       --&DisplayName|[*R:[%3%]]
@@ -1731,6 +1736,7 @@
       --?"[*R:spellconcentration]" -inc "concentration=1"|&DisplayName;+ [C]
       --&LevelString|[%7%]|
       --?"[%7%]" -eq 0|&LevelString; 
+      --?"[%7%]" -eq 0|AM_SPELL_BUTTON_SKIP_SLOT_INFO
       --?"[%7%]" -gt 0|>BUILD_SLOT_LIST;[%7%];slotString;[*R:spellritual]
       --?[&trackPCSpellSlots] -eq 0|AM_SPELL_BUTTON_SKIP_SLOT_INFO
       --?[&HighestSlot] -ge [%7%]|AM_SPELL_BUTTON_SKIP_SLOT_INFO
