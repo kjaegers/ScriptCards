@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.3.4
+  --/|Version     : 2.3.5
   --/|Requires SC : 2.2.4
   --/|Author      : Kurt Jaegers
 
@@ -130,7 +130,7 @@
   --&DisplayButtonsForAMAbilities|1
   
   --/|If set to 1, emojis will be used in place of text in some places
-  --&UseEmojisToReplaceText|1
+  --&UseEmojisToReplaceText|0
 
   --/|List spells here, separated by semicolons, that should be kept in the PC Attacks display with "[After Cast]" appended to them
   --~|array;define;SpellsToKeepWithSuffix;Spiritual Weapon;Scorching Ray

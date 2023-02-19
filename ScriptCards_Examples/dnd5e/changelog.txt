@@ -1,5 +1,8 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2023-02-19 - 5E Character Action Menu 2.3.5
+             - Bug fix to remove default setting to use emojis in the character summary area
+
 2023-02-18 - 5E Character Action Menu 2.3.4
              - You can use the description field of a weapon attack (center column of the character sheet) to specify audio and video
                effects to play along with the attack. The format for this is a single line that contains the effect specifiers with either
