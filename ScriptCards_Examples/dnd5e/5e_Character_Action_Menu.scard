@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.3.7
+  --/|Version     : 2.3.8
   --/|Requires SC : 2.2.4
   --/|Author      : Kurt Jaegers
 
@@ -42,7 +42,7 @@
   --&UseNamedCharacterSettings|0
 
   --/|If this value is set to 1, prepared spells checks will be skipped
-  --&skipPreppedSpellsCheck|1
+  --&skipPreppedSpellsCheck|0
   
   --/|If this value is set to 1, prepared spell checks for NPCs will be skipped
   --&skipNPCPrepCheck|1
@@ -298,7 +298,7 @@
   -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcaction-l;name;EXEC_NPC_LEGENDARY_ACTION;Legendary Actions;[&sharedmacromulename];0
   -->BUILD_SPELL_BUTTON_LIST|[*S:character_id];repeating_spell-cantrip;spellname;EXEC_PC_CANTRIP;Cantrips;[&sharedmacromulename];0
   --%levelCounter|1;9
-    -->BUILD_SPELL_BUTTON_LIST|[*S:character_id];repeating_spell-[&levelCounter];spellname;EXEC_PC_SPELL;Level [&levelCounter] Spells;[&spellmulename];[&levelCounter]    
+    -->BUILD_SPELL_BUTTON_LIST|[*S:character_id];repeating_spell-[&levelCounter];spellname;EXEC_PC_SPELL;Level [&levelCounter] Spells;[&spellmulename];[&levelCounter]
   --%|
   --/|5E Sheet Specific END
 
@@ -533,7 +533,7 @@
 
   -->BUILD_BUTTON_LIST|[*S:character_id];repeating_attack;atkname;EXEC_PC_ATTACK;Attacks and Actions;[&pcabilitymulename];0;1
   -->BUILD_SPELL_BUTTON_LIST|[*S:character_id];repeating_spell-cantrip;spellname;EXEC_PC_CANTRIP;Cantrips;[&spellmulename];0
-
+  
   --/|Display a grid of the available spell slots for this character
   --&HighestSlot|9
   --?[&trackPCSpellSlots] -eq 1|[
@@ -1727,11 +1727,11 @@
     --?"[*R:[%3%]]" -ne "NoRepeatingAttributeLoaded"|[
     --:AM_SPELL_BUTTON_LIST_LOOP|
       --?[&skipPreppedSpellsCheck] -eq 1|SKIP_PREP_CHECK
-      --?[%7%] -eq 0|SKIP_PREP_CHECK
+      --?"[%7%]" -eq 0|SKIP_PREP_CHECK   
       --?[&SorcLevel] -gt 0 -or [&LockLevel] -gt 0|SKIP_PREP_CHECK
       --?"[*R:spellprepared]" -eq "1" -or "[*R:spellritual]" -eq "Yes"|SKIP_PREP_CHECK
       --^SPELL_BUTTON_END_GENERATE|
-      --:SKIP_PREP_CHECK|      
+      --:SKIP_PREP_CHECK|
       --&targetString|[&TB]target|token_id}
       --&DisplayName|[*R:[%3%]]
       --&DisplayName|[&DisplayName(totitlecase)]
@@ -1743,6 +1743,7 @@
       --?"[*R:spellcastingtime]" -inc "reaction"|&DisplayName;+ [RA]
       --?"[*R:spellcastingtime]" -inc "bonus"|&DisplayName;+ [BA]
       --?"[*R:spellconcentration]" -inc "concentration=1"|&DisplayName;+ [C]
+      --?"[%7%]" -eq 0|AM_SPELL_BUTTON_SKIP_SLOT_INFO 
       --?[&trackPCSpellSlots] -eq 0|AM_SPELL_BUTTON_SKIP_SLOT_INFO
       --?[&HighestSlot] -ge [%7%]|AM_SPELL_BUTTON_SKIP_SLOT_INFO
       --?"[*R:spellritual]" -eq "Yes"|AM_SPELL_BUTTON_SKIP_SLOT_INFO

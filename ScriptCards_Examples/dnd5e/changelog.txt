@@ -1,5 +1,8 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2023-02-20 - 5E Character Action Menu 2.3.8
+             - Cantrips should be fixed. Really this time.
+
 2023-02-20 - 5E Character Action Menu 2.3.7
              - Performance enhancement for characters with large spellbooks. Generating buttons for spells while performing spell
                prepared checks is now MUCH faster (my test character with over 100 spells creates the action menu in 20 seconds in
