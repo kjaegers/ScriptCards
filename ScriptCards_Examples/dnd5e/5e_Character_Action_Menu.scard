@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.3.6
+  --/|Version     : 2.3.7
   --/|Requires SC : 2.2.4
   --/|Author      : Kurt Jaegers
 
@@ -42,7 +42,7 @@
   --&UseNamedCharacterSettings|0
 
   --/|If this value is set to 1, prepared spells checks will be skipped
-  --&skipPreppedSpellsCheck|0
+  --&skipPreppedSpellsCheck|1
   
   --/|If this value is set to 1, prepared spell checks for NPCs will be skipped
   --&skipNPCPrepCheck|1
@@ -1711,33 +1711,38 @@
   --<|
 
   --:BUILD_SPELL_BUTTON_LIST|Character ID;Repeating_section_name;repeating field for name;reentrant point;section header;mule char name/id;spell level
+    -->FIND_CLASS_LEVEL|Sorcerer;SorcLevel
+    -->FIND_CLASS_LEVEL|Warlock;LockLevel
+    -->FIND_CLASS_LEVEL|Wizard;WizLevel
+    --&slotString|
+    --&RitualslotString|
+    --&LevelString|[%7%]|
+    --?"[%7%]" -eq 0|&LevelString; 
+    --?"[%7%]" -eq 0|BEGIN_BUILDING_SPELL_BUTTONS
+    --?"[%7%]" -gt 0|>BUILD_SLOT_LIST;[%7%];slotString;
+    --?"[%7%]" -gt 0|>BUILD_SLOT_LIST;[%7%];RitualslotString;Yes
+    --:BEGIN_BUILDING_SPELL_BUTTONS|
     --Rfirst|[%1%];[%2%]
     --&AM_BUTTON_LIST|[br]
     --?"[*R:[%3%]]" -ne "NoRepeatingAttributeLoaded"|[
     --:AM_SPELL_BUTTON_LIST_LOOP|
       --?[&skipPreppedSpellsCheck] -eq 1|SKIP_PREP_CHECK
       --?[%7%] -eq 0|SKIP_PREP_CHECK
-      -->FIND_CLASS_LEVEL|Sorcerer;SorcLevel
-      -->FIND_CLASS_LEVEL|Warlock;LockLevel
-      -->FIND_CLASS_LEVEL|Wizard;WizLevel
-      --?[&SorcLevel] -gt 0|SKIP_PREP_CHECK
-      --?[&LockLevel] -gt 0|SKIP_PREP_CHECK
-      --?"[*R:spellprepared]" -eq "1"|SKIP_PREP_CHECK
-      --?"[*R:spellritual]" -eq "Yes"|SKIP_PREP_CHECK
+      --?[&SorcLevel] -gt 0 -or [&LockLevel] -gt 0|SKIP_PREP_CHECK
+      --?"[*R:spellprepared]" -eq "1" -or "[*R:spellritual]" -eq "Yes"|SKIP_PREP_CHECK
       --^SPELL_BUTTON_END_GENERATE|
       --:SKIP_PREP_CHECK|      
-      --&slotString|
       --&targetString|[&TB]target|token_id}
       --&DisplayName|[*R:[%3%]]
       --&DisplayName|[&DisplayName(totitlecase)]
-      --?"[*R:spellritual]" -eq "Yes"|&DisplayName;+ [R]
+      --&thisSlotString|[&slotString]
+      --?"[*R:spellritual]" -ne "Yes"|SPELL_BUTTON_LIST_NOT_RITUAL
+      --&thisSlotString|[&RitualslotString]
+      --&DisplayName|+ [R]
+      --:SPELL_BUTTON_LIST_NOT_RITUAL|
       --?"[*R:spellcastingtime]" -inc "reaction"|&DisplayName;+ [RA]
       --?"[*R:spellcastingtime]" -inc "bonus"|&DisplayName;+ [BA]
       --?"[*R:spellconcentration]" -inc "concentration=1"|&DisplayName;+ [C]
-      --&LevelString|[%7%]|
-      --?"[%7%]" -eq 0|&LevelString; 
-      --?"[%7%]" -eq 0|AM_SPELL_BUTTON_SKIP_SLOT_INFO
-      --?"[%7%]" -gt 0|>BUILD_SLOT_LIST;[%7%];slotString;[*R:spellritual]
       --?[&trackPCSpellSlots] -eq 0|AM_SPELL_BUTTON_SKIP_SLOT_INFO
       --?[&HighestSlot] -ge [%7%]|AM_SPELL_BUTTON_SKIP_SLOT_INFO
       --?"[*R:spellritual]" -eq "Yes"|AM_SPELL_BUTTON_SKIP_SLOT_INFO
@@ -1748,10 +1753,10 @@
       --~testMule|system;findability;[&spellmulename];[&testName]
       --?[&testMule] -ne "AbilityNotFound"|SPELL_BUTTON_MULE
       --?"[*R:spelloutput]" -eq ATTACK|SPELL_BUTTON_GENERATE_WITH_TARGET
-      --&AM_BUTTON_LIST|+[rbutton][&DisplayName]::[%4%];[&LevelString][*R:[%3%]]|NONE[&slotString][/rbutton][&SPACE]
+      --&AM_BUTTON_LIST|+[rbutton][&DisplayName]::[%4%];[&LevelString][*R:[%3%]]|NONE[&thisSlotString][/rbutton][&SPACE]
       --^SPELL_BUTTON_END_GENERATE|
       --:SPELL_BUTTON_GENERATE_WITH_TARGET|
-      --&AM_BUTTON_LIST|+[rbutton][&DisplayName]::[%4%];[&LevelString][*R:[%3%]]|[&targetString][&slotString][/rbutton][&SPACE]
+      --&AM_BUTTON_LIST|+[rbutton][&DisplayName]::[%4%];[&LevelString][*R:[%3%]]|[&targetString][&thisSlotString][/rbutton][&SPACE]
       --^SPELL_BUTTON_END_GENERATE|
       --:SPELL_BUTTON_MULE|
       --&AM_BUTTON_LIST|+[button][&DisplayName]::~[&spellmulename]|[&testName][/button][&SPACE]
@@ -1771,25 +1776,25 @@
   --<|
 
   --:BUILD_SLOT_LIST|Spell Level;return string;is ritual (Yes for true)
-  --&slotString|
+  --&buildslotString|
   --?[%1%] -eq 9 -and "[%3%]" -eq ""|SKIP_BUILD_SLOT_LIST
-  --&slotString||&#
-  --&slotString|+63;{Slot Level|
+  --&buildslotString||&#
+  --&buildslotString|+63;{Slot Level|
   --?"[%3%]" -ne "Yes"|SLOT_LIST_NOT_RITUAL
-  --&slotString|+As Ritual|
+  --&buildslotString|+As Ritual|
   --:SLOT_LIST_NOT_RITUAL|
   --%slotcounter|[%1%];9
-    --&slotString|+[&slotcounter]
+    --&buildslotString|+[&slotcounter]
     --?[&slotcounter] -eq 9|SKIP_SLOT_LIST_VERTICAL_BAR
-    --&slotString|+|
+    --&buildslotString|+|
     --:SKIP_SLOT_LIST_VERTICAL_BAR|
   --%|
-  --&slotString|+}
+  --&buildslotString|+}
   --^BUILD_SLOT_LIST_DONE|
   --:SKIP_BUILD_SLOT_LIST|
-  --&slotString||9
+  --&buildslotString||9
   --:BUILD_SLOT_LIST_DONE|
-  --&[%2%]|[&slotString]
+  --&[%2%]|[&buildslotString]
   --<|
 
   --:BUILD_TARGET_STRING|

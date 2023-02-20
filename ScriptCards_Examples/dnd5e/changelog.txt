@@ -1,5 +1,10 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2023-02-20 - 5E Character Action Menu 2.3.7
+             - Performance enhancement for characters with large spellbooks. Generating buttons for spells while performing spell
+               prepared checks is now MUCH faster (my test character with over 100 spells creates the action menu in 20 seconds in
+               v 2.3.6 and in under 5 in 2.3.7)
+
 2023-02-19 - 5E Character Action Menu 2.3.6
              - Bug fixes for missing cantrips output and for prepared spells check not working properly.
 
