@@ -42,7 +42,7 @@
   --&UseNamedCharacterSettings|0
 
   --/|If this value is set to 1, prepared spells checks will be skipped
-  --&skipPreppedSpellsCheck|0
+  --&skipPreppedSpellsCheck|1
   
   --/|If this value is set to 1, prepared spell checks for NPCs will be skipped
   --&skipNPCPrepCheck|1
