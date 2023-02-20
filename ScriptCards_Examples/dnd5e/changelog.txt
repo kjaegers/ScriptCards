@@ -1,5 +1,10 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2023-02-20 - 5E Character Action Menu 2.4.0
+             - Incorporated Will M.'s code to add Bonus Actions and Reactions to the action menu. Default to on, set with 
+               showBonusActionsAndReactions to 0 to disable
+             - Did a little reorganization of the options area to group options that enable/diable parts of the menu together
+
 2023-02-20 - 5E Character Action Menu 2.3.8
              - Cantrips should be fixed. Really this time.
 
