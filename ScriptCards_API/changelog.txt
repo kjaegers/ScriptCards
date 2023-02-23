@@ -1,5 +1,11 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.2.9  - [p]...[/p] now support specifying style information in the opening [p] tag.
+           Ex: [p style='font-size:smaller;']Hello World[/p]
+
+v 2.2.8  - It is now possible to use images in button captions by using the [img]...[/img] formatting structure. It is wise to
+           set the width and height properties in the [img...] opener.
+
 v 2.2.7a - Fix for --!c not finding the character because it was looking for a "graphic" instead of a "character"
 
 v 2.2.7  - Added 2 string functions: onlynumbers and nonumbers. string;onlynumbers;stringvalue will extract the numeric characters

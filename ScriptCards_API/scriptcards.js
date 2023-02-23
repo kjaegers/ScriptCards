@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.2.7a";
+	const APIVERSION = "2.2.9";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -248,6 +248,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (state[APINAME].storedStrings == undefined) { state[APINAME].storedStrings = {}; }
 		if (state[APINAME].storedSnippets == undefined) { state[APINAME].storedSnippets = {}; }
 		if (state[APINAME].triggersenabled == undefined) { state[APINAME].triggersenabled = true; }
+		if (state[APINAME].playerscandelete == undefined) { state[APINAME].playerscandelete = false; }
 
 		reload_template_mule();
 
@@ -747,6 +748,24 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									}
 									setTimeout(delayFunction("", `!script {{ ${hideInfo} --${replaceVariableContent(delayCommand, cardParameters)}|${replaceVariableContent(thisContent, cardParameters)} }}`), parseFloat(delayLength) * 1000)
 								}
+							}
+						}
+
+						
+						//Handle "_" (persistant config settings)
+						if (thisTag.charAt(0).toLowerCase() == "_") {
+
+							if (playerIsGM(msg.playerid)) {
+								switch (thisTag.toLowerCase().substring(1)) {
+									case "playerscandelete": 
+										var result = false
+										if (thisContent.toLowerCase() == "true" || thisContent == "1") { result = true; }
+										state[APINAME].playerscandelete = result
+										log(`PlayersCanDelete has been set to ${state[APINAME].playerscandelete}`)
+										break;
+								}
+							} else {
+								log(`Player ${stringVariables["SendingPlayerName"]} tried to set a persistent script setting and is not a GM`)
 							}
 						}
 
@@ -4339,7 +4358,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		outputLine = outputLine.replace(/\[\/h5\]/gi, `</h5>`);
 		outputLine = outputLine.replace(/\[t(.*?)\]/gi, "<table $1>");
 		outputLine = outputLine.replace(/\[\/t\]/gi, "</table>");
-		outputLine = outputLine.replace(/\[p\]/gi, "<p>");
+		outputLine = outputLine.replace(/\[p(.*?)\]/gi, "<p $1>");
 		outputLine = outputLine.replace(/\[\/p\]/gi, "</p>");
 		outputLine = outputLine.replace(/\[[Ff](\d+)\](.*?)\[\/F\]/gi, "<div style='font-size:$1px;'>$2</div>"); // [F8] for font size 8
 		outputLine = outputLine.replace(/\[[Ff]\:([a-zA-Z\s]*)\:?(\d+)?\](.*?)\[\/[Ff]\]/gi, "<span style='font-family:$1; font-size:$2px'>$3</span>"); // [F8] for font size 8
@@ -4504,12 +4523,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (customTextColor) { thisButtonStyle = thisButtonStyle.replace("!{buttontextcolor}", customTextColor) }
 		if (customBackgroundColor) { thisButtonStyle = thisButtonStyle.replace("!{buttonbackground}", customBackgroundColor) }
 		if (customfontsize) { thisButtonStyle = thisButtonStyle.replace("!{buttonfontsize}", customfontsize) }
-		return `<a style="${replaceStyleInformation(thisButtonStyle, parameters)}" href="${removeTags(removeBRs(url))}">${removeTags(removeBRs(title))}</a>`;
+		return `<a style="${replaceStyleInformation(thisButtonStyle, parameters)}" href="${removeTags(removeBRs(url))}">${removeBRs(title)}</a>`;
 	}
 
 	function makeTemplateButton(title, url, parameters) {
 		if (parameters.overridetemplate !== "none") {
-			return `<a ${templates[parameters.overridetemplate].buttonstyle} href="${removeTags(removeBRs(url))}">${removeTags(removeBRs(title))}</a>`;
+			return `<a ${templates[parameters.overridetemplate].buttonstyle} href="${removeTags(removeBRs(url))}">${removeBRs(title)}</a>`;
 		} else {
 			return "Template button without Template"
 		}
@@ -4843,7 +4862,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var re_value = /(?!\s*$)\s*(?:'([^'\\]*(?:\\[\S\s][^'\\]*)*)'|"([^"\\]*(?:\\[\S\s][^"\\]*)*)"|([^;'"\s]*(?:\s+[^;'"\s\\]+)*))\s*(?:;|$)/g;
 		// Return NULL if input string is not well formed CSV string.
 		if (!re_valid.test(text)) {
-			log("ScriptCards Error: Parameter content is not valid. Do you have unescaped quotes or qoutes not surrounding escaped values?")
+			log(`ScriptCards Error: Parameter content is not valid. Do you have unescaped quotes or qoutes not surrounding escaped values? (${text})`)
 			return null;
 		}
 

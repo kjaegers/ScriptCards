@@ -1,7 +1,7 @@
 !script {{
   --/|Script Name : 5E Action Menu
   --/|Version     : 2.4.0
-  --/|Requires SC : 2.2.4
+  --/|Requires SC : 2.2.9+
   --/|Author      : Kurt Jaegers
 
   --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
@@ -69,7 +69,6 @@
   --/|Default:1 - A line of summary information will be displayed at the top of the Action Menu. Set to 0 to disable
   --&showCharacterSummary|1
 
-
   --/|Default:1 - Show global attack, damage, save, skill modifiers with toggle buttons. NOTE: due to roll20's strangeness in handling 
   --/|            some attributes, if a global modifier has never been turned on from the character sheet, the buttons here may not be 
   --/|            able to set the active state. Opening the character sheet and toggling the modifier on and back off will
@@ -78,6 +77,16 @@
   
   --/|Default:1 - Show Bonus Actions and Reactions for characters. Set to 1 to disable
   --&showBonusActionsAndReactions|1
+  
+  --/|Defaults: 1 for title buttons, 0 for icongraphic and "white-on-black" for icon set. These control how and if some text/images
+  --/|            on the Action Menu are replaced with icons from game-icons.net, hosted on my github. In particular, the 
+  --/|            TitleButtons setting replaces the emoji's previously used in the title area for settings, short rest, and long rest.
+  --/|            the IconsGraphics setting (if 1) replaces "AC", "HP", and "Speed" in the character summary with icons.
+  --/|            The type of icons used outside the title area are determiend by the IconsSet - white (white on transparent), 
+  --/|            black (black on transparent), or white-on-black.
+  --&useGameIconsGraphicsForTitleButtons|1
+  --&useGameIconsGraphics|0
+  --&gameIconsSet|white-on-black
 
   --/|=========================================================================================================
   --/| More generalized settings. You may not need to change these.
@@ -104,10 +113,10 @@
   --&compactGlobalModDisplay|1
   --/|Adjusting these values will allow you to customize the padding around the action buttons. The default for Roll20 is 5px. The Action
   --/|menu uses slightly smaller buttons (4px) for actions and very small (2px) padding for global modifier and advantage mode toggle buttons.
-  --&defaultButtonPadding|4px
+  --&defaultButtonPadding|3px
   --&smallButtonPadding|2px
   --&bodyFontSize|12
-  --&smallFontSize|10
+  --&smallFontSize|11
   
   --/|If set to 1, the Action Menu will create attributes on the character sheet the first time it is executed for a character. It will then
   --/|use these attributes to generate a configuration menu to allow players to enable/disable some features
@@ -132,7 +141,7 @@
   
   --/|If set to 1, emojis will be used in place of text in some places
   --&UseEmojisToReplaceText|0
-
+  
   --/|List spells here, separated by semicolons, that should be kept in the PC Attacks display with "[After Cast]" appended to them
   --~|array;define;SpellsToKeepWithSuffix;Spiritual Weapon;Scorching Ray
 
@@ -160,7 +169,6 @@
 
   --/|End Settings Area
   --/|=========================================================================================================
-
   
   --/|Determine if a token is selected or if we need to (and can based on config) automatically find a token for this player.
   --?"[@SC_SelectedTokens()]" -eq "undefined array" -and [&DetectPlayersToken] -ne 1|REPORT_NEED_SELECTED_TOKEN
@@ -186,17 +194,40 @@
   --&TB|& --&TB|+# --&TB|+64 --&TB|+; --&TB|+{
   --&BED|& --&BED|+# --&BED|+128719;
   --&CLOCK|& --&CLOCK|+# --&CLOCK|+128336;
+  --&GEAR|& --&GEAR|+# --&GEAR|+x2699;
   --&SPACE|X X --&SPACE|[&SPACE(1,1)]
+  --&NB|& --&NB|+nbsp --&NB|+;
   --&obrac|[ --&cbrac|]
   --&vbar||
+
+  --&ShortRestImage|[&CLOCK]
+  --&LongRestImage|[&BED]
+  --&SettingsImage|[&GEAR]
+  --&ACImage|[b]AC:[&NB][/b]
+  --&HPImage|[b]HP:[&NB][/b]
+  --&SpeedImage|[b]Speed:[&NB][/b]
+  --&SkillCheckImage|Skill Check
+  --&SavingThrowImage|Saving Throw
 
   --/|Useful Emoticons
   --&emoSpeed|& --&emoSpeed|+# --&emoSpeed|+9193;
   --&emoShield|& --&emoShield|+# --&emoShield|+129355;
   --&emoHeart|& --&emoHeart|+# --&emoHeart|+129505;
-  
   --&emoShield|[img width=25 height=25]https://s3.amazonaws.com/files.d20.io/images/30/JAFfatM7Ius91Eg4uPBY6w/icon.png?1575370642[/img]
-    
+  --?[&useGameIconsGraphicsForTitleButtons] -eq 0|SKIP_GAME_ICONS_FOR_TITLES
+  --&gameIconsBasePath|https://raw.githubusercontent.com/kjaegers/game-icons/master/transparent/
+  --&ShortRestImage|[img width=15 height=15][&gameIconsBasePath]white/meditation.png[/img]
+  --&LongRestImage|[img width=15 height=15][&gameIconsBasePath]white/night-sleep.png[/img]
+  --&SettingsImage|[img width=15 height=15][&gameIconsBasePath]white/cog.png[/img]
+  --:SKIP_GAME_ICONS_FOR_TITLES|
+  --?[&useGameIconsGraphics] -eq 0|SKIP_GAME_ICONS
+  --/&SkillCheckImage|[img width=15 height=15][&gameIconsBasePath]white/skills.png[/img]
+  --/&SavingThrowImage|[img width=15 height=15][&gameIconsBasePath]white/dodging.png[/img]
+  --&ACImage|[img width=20 height=20][&gameIconsBasePath][&gameIconsSet]/shield.png[/img][&NB]
+  --&HPImage|[img width=20 height=20][&gameIconsBasePath][&gameIconsSet]/health-normal.png[/img][&NB]
+  --&SpeedImage|[img width=20 height=20][&gameIconsBasePath][&gameIconsSet]/walk.png[/img][&NB]
+  --:SKIP_GAME_ICONS|
+
   --/|Set up some style information for the action menu and subsequent cards. These attempt to somewhat
   --/|simulate the 5E style
   --#bodyfontface|Helvetica
@@ -206,6 +237,10 @@
   --#buttonfontsize|10px
   --#buttonbackground|#930c10
   --#buttonbackground|#672223
+  --#buttonbackground|rgba(103,34,35,1); display:inline-block;
+  --/#buttonbordercolor|rgba(0,0,0,0)
+  --/#buttonbackground|rgba(0,0,0,0); display:inline-block; border:none
+  --/#buttontextcolor|#930c10
   --#buttonfontface|Tahoma
   --#titlecardbackgroundcolor|#930c10
   --#titlecardbackgroundcolor|#672223
@@ -218,7 +253,7 @@
   --#evenrowbackground|#b3ab96
   --#subtitlefontcolor|#fffebd
   --#tablebgcolor|#fffebd
-  --#lineheight|9pt
+  --#lineheight|10pt
   --#buttonpadding|[&defaultButtonPadding]
   --#overridetemplate|[&Template]
   --&GAM_Button_Active_Color|009900
@@ -250,13 +285,13 @@
   --#leftsub|Action Menu
 
   --?[&EnablePerCharacterConfiguration] -eq 0|SKIP_PER_CHAR_SETTINGS
-  --#leftsub|Action Menu [rbutton]&#x2699;::DISPLAY_CHARACTER_CONFIG_MENU[/rbutton]
+  --#leftsub|Action Menu [rbutton][&SettingsImage]::DISPLAY_CHARACTER_CONFIG_MENU[/rbutton]
   -->LOAD_PER_CHARACTER_CONFIG_OPTIONS|[*S:character_id]
   --:SKIP_PER_CHAR_SETTINGS|
   
   --?[*S:npc] -eq 1 -or [&ShowRestButtons] -ne 1|SKIP_REST_BUTTONS
   --?"[&perCharacterOptions]" -inc "$SHRB0$"|SKIP_REST_BUTTONS
-  --#rightsub|Rest: [rbutton][&CLOCK]::DO_SHORT_REST[/rbutton][rbutton][&BED]::DO_LONG_REST[/rbutton]
+  --#rightsub|Rest: [rbutton][&ShortRestImage]::DO_SHORT_REST[/rbutton][rbutton][&LongRestImage]::DO_LONG_REST[/rbutton]
   --:SKIP_REST_BUTTONS|
 
   --/|Determine if the selected character is a PC or NPC and process appropriately
@@ -268,12 +303,15 @@
   --:proc_npc|
   --/+|[hr #58180d]
 
-  -->BuildCharacterSummary|[*S:character_id];CharSummaryText;npc_ac
+  -->BuildCharacterSummary|[*S:t-id];CharSummaryText;npc_ac
   
   --?[&showCharacterSummary] -ne 1 -or "[&perCharacterOptions]" -inc "$SCS0$" |SKIP_NPC_SUMMARY
-  --+|[c][F[&smallFontSize]][&CharSummaryText][/F][/c]
+  --/+|[c][F[&smallFontSize]][&CharSummaryText][/F][/c]
+  --+|[&CharSummaryText]
   --:SKIP_NPC_SUMMARY|
   
+  --&AdvModeText|
+
   --?[&selfHandleAdvantageMode] -eq 1|[
     --?"[&currentAdvantageMode]" -eq ""|&currentAdvantageMode;[&defaultAdvantageMode]
     --&mode|
@@ -285,12 +323,15 @@
     --&dbuttoncolor|#[&GAM_Button_Inactive_Color]
     --C[&currentAdvantageMode]|0:&nbuttoncolor;#[&GAM_Button_Active_Color]|1:&abuttoncolor;#[&GAM_Button_Active_Color]|2:&dbuttoncolor;#[&GAM_Button_Active_Color]
     --#buttonpadding|[&smallButtonPadding]
-    --+|[r]Attack Roll Mode [&mode]| [rbutton:#FFFFFF:[&nbuttoncolor]]N::SET_ADV_MODE;0[/rbutton][rbutton:#FFFFFF:[&abuttoncolor]]A::SET_ADV_MODE;1[/rbutton][rbutton:#FFFFFF:[&dbuttoncolor]]D::SET_ADV_MODE;2[/rbutton][/r]    --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
+    --&AdvModeText|[r][b]Attack Mode:[/b] [&mode][rbutton:#FFFFFF:[&nbuttoncolor]]N::SET_ADV_MODE;0[/rbutton][rbutton:#FFFFFF:[&abuttoncolor]]A::SET_ADV_MODE;1[/rbutton][rbutton:#FFFFFF:[&dbuttoncolor]]D::SET_ADV_MODE;2[/rbutton][/r]    --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
     --#buttonpadding|[&defaultButtonPadding]
   --]|
 
   --/|Skill Checks and Saving Throws
-  --?[&showNPCSkillsAndSaves] -eq 1 -or "[&perCharacterOptions]" -inc "$SSAS1$"|>BUILD_SAVES_AND_SKILLS_BUTTONS
+  --&savesAndSkills|
+  --?[&showNPCSkillsAndSaves] -eq 1 -or "[&perCharacterOptions]" -inc "$SSAS1$"|>BUILD_SAVES_AND_SKILLS_BUTTONS;savesAndSkills
+  --/+|[t width='100%'][tr][td align=left][&savesAndSkills][/td][td align=right][&AdvModeText][/td][/tr][tr][td][&NB][/td][td][/td][tr][/t]
+  --+|[t width='100%'][tr][td align=left][&savesAndSkills][/td][td align=right][&AdvModeText][/td][/tr][/t][F5][BR][/F]
 
   --/|5E Sheet Specific BEGIN
   -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcaction;name;EXEC_NPC_ACTION;Actions;[&sharedmacromulename];0
@@ -477,6 +518,7 @@
   --+|[c][F[&smallFontSize]][&CharSummaryText][/F][/c]
   --:SKIP_PC_SUMMARY|
 
+   --&AdvModeText|
   --?[&selfHandleAdvantageMode] -eq 1|[
     --?"[&currentAdvantageMode]" -eq ""|&currentAdvantageMode;[&defaultAdvantageMode]
     --&mode|
@@ -488,9 +530,18 @@
     --&dbuttoncolor|#[&GAM_Button_Inactive_Color]
     --C[&currentAdvantageMode]|0:&nbuttoncolor;#[&GAM_Button_Active_Color]|1:&abuttoncolor;#[&GAM_Button_Active_Color]|2:&dbuttoncolor;#[&GAM_Button_Active_Color]
     --#buttonpadding|[&smallButtonPadding]
-    --+|[r]Attack Roll Mode [&mode]| [rbutton:#FFFFFF:[&nbuttoncolor]]N::SET_ADV_MODE;0[/rbutton][rbutton:#FFFFFF:[&abuttoncolor]]A::SET_ADV_MODE;1[/rbutton][rbutton:#FFFFFF:[&dbuttoncolor]]D::SET_ADV_MODE;2[/rbutton][/r]    --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
+    --&AdvModeText|[r][b]Attack Mode:[/b] [&mode][rbutton:#FFFFFF:[&nbuttoncolor]]N::SET_ADV_MODE;0[/rbutton][rbutton:#FFFFFF:[&abuttoncolor]]A::SET_ADV_MODE;1[/rbutton][rbutton:#FFFFFF:[&dbuttoncolor]]D::SET_ADV_MODE;2[/rbutton][/r]    --C[&currentAdvantageMode]|0:&mode;Normal|1:&mode;Advantage|2:&mode;Disadvantage
     --#buttonpadding|[&defaultButtonPadding]
   --]|
+
+  --/|Skill Checks and Saving Throws
+  --&savesAndSkills|
+  --?[&showPCSkillsAndSaves] -eq 1 -and "[&perCharacterOptions]" -ninc "$SSAS0$"|>BUILD_SAVES_AND_SKILLS_BUTTONS;savesAndSkills
+
+  --#buttonpadding|[&smallButtonPadding]
+  --/+|[t width='100%'][tr][td align=left][&savesAndSkills][/td][td align=right][&AdvModeText][/td][/tr][tr][td][&NB][/td][td][/td][tr][/t]
+  --+|[t width='100%'][tr][td align=left][&savesAndSkills][/td][td align=right][&AdvModeText][/td][/tr][/t][p style='font-size:smaller; margin-top:0px; margin-bottom:0px; line-height:6px;'][&NB][/p]
+  --#buttonpadding|[&defaultButtonPadding]
 
   --?[&showGlobalModifierButtons] -eq 1 -and "[&perCharacterOptions]" -ninc "$SGMB0$" |[
     -->Create_Global_Attack_Modifier_Buttons|[*S:character_id];gambuttons
@@ -499,38 +550,9 @@
     -->Create_Global_AC_Modifier_Buttons|[*S:character_id];gacmbuttons
     -->Create_Global_Skill_Modifier_Buttons|[*S:character_id];gskmbuttons
     --#buttonpadding|[&smallButtonPadding]
-    --&GDEnd|
-    --?[&compactGlobalModDisplay] -eq 0|&GDEnd;[/c]
-    --?"[&gambuttons]" -eq "" -or "[&perCharacterOptions]" -inc "$SGAM0$"|skip_gam_display
-    --&GAMDisplay|[c][b]Global Attack Mods[/b][br]
-    --?[&compactGlobalModDisplay] -eq 1|&GAMDisplay;[b]Atk Mods[/b] 
-    --+|[&GAMDisplay] [&gambuttons] [&GDEnd]
-    --:skip_gam_display|
-    --?"[&gacmbuttons]" -eq "" -or "[&perCharacterOptions]" -inc "$SGCM0$"|skip_gacm_display
-    --&GACMDisplay|[c][b]Global AC Mods[/b][br]
-    --?[&compactGlobalModDisplay] -eq 1|&GACMDisplay;[b]AC Mods[/b] 
-    --+|[&GACMDisplay] [&gacmbuttons] [&GDEnd]
-    --:skip_gacm_display|
-    --?"[&gdmbuttons]" -eq "" -or "[&perCharacterOptions]" -inc "$SGDM0$"|skip_gdm_display
-    --&GDMDisplay|[c][b]Global Damage Mods[/b][br]
-    --?[&compactGlobalModDisplay] -eq 1|&GDMDisplay;[b]Dmg Mods[/b] 
-    --+|[&GDMDisplay] [&gdmbuttons] [&GDEnd]
-    --:skip_gdm_display|
-    --?"[&gsmbuttons]" -eq "" -or "[&perCharacterOptions]" -inc "$SGSM0$"|skip_gsm_display
-    --&GSMDisplay|[c][b]Global Save Mods[/b][br]
-    --?[&compactGlobalModDisplay] -eq 1|&GSMDisplay;[b]Save Mods[/b] 
-    --+|[&GSMDisplay] [&gsmbuttons] [&GDEnd]
-    --:skip_gsm_display|
-    --?"[&gskmbuttons]" -eq "" -or "[&perCharacterOptions]" -inc "$SGKM0$"|skip_gskm_display
-    --&GSKMDisplay|[c][b]Global Skill Mods[/b][br]
-    --?[&compactGlobalModDisplay] -eq 1|&GSKMDisplay;[b]Skill Mods[/b] 
-    --+|[&GSKMDisplay] [&gskmbuttons] [&GDEnd]
-    --:skip_gskm_display|
-    --#buttonpadding|[&defaultButtonPadding]
+    --+|[p style='text-align:center; font-weight:bold; margin-bottom:0px;']- - - - G L O B A L [&NB][&NB] M O D S - - - -[/p]
+    --+|[t width='100%'][tr][td width='25%' align='center'][b]ATK[/b][/td][td width='25%' align='center'][b]DMG[/b][/td][td width='25%' align='center'][b]AC[/b][/td][td width='25%' align='center'][b]SAVE[/b][/td][/tr][tr][td width='25%' align='center'][&gambuttons][/td][td width='25%' align='center'][&gdmbuttons][/td][td width='25%' align='center'][&gacbuttons][/td][td width='25%' align='center'][&gsmbuttons][/td][/tr][/t]
   --]| 
-
-  --/|Skill Checks and Saving Throws
-  --?[&showPCSkillsAndSaves] -eq 1 -and "[&perCharacterOptions]" -ninc "$SSAS0$"|>BUILD_SAVES_AND_SKILLS_BUTTONS
 
   -->BUILD_BUTTON_LIST|[*S:character_id];repeating_attack;atkname;EXEC_PC_ATTACK;Attacks and Actions;[&pcabilitymulename];0;1
   --?"[&showBonusActionsAndReactions]" -eq 1|>DISPLAY_PC_OTHER_ACTIONS
@@ -1297,13 +1319,13 @@
 
   --:BuildCharacterSummary|charid;Return variable;ac attribute (either ac or npc_ac)
   --?[%3%] -eq "npc_ac"|BuildNPCSummary
-  --&[%2%]|[*[%1%]:race] [*[%1%]:class_display][br]AC [*[%1%]:[%3%]], HP [*[%1%]:hp]/[*[%1%]:hp^], SPEED [*[%1%]:speed]
+  --&[%2%]|[t width='100%' align='left'][tr][td valign='top' align='left'][p style='font-size:8pt; margin-top:2px; margin-left:3px; margin-bottom:3px; line-height:1.05em;'][*[%1%]:race] [*[%1%]:class_display][/p][/td][td valign='top' align='right' width='60%'][p style='font-size:8pt; margin-top:2px; margin-right:3px; margin-bottom:3px; line-height:1.05em;'][&ACImage][*[%1%]:[%3%]], [&HPImage][*[%1%]:hp]/[*[%1%]:hp^], [&SpeedImage][*[%1%]:speed][/p][/td][/tr]
   -->REPLACE_WORDS_WITH_EMOJIS|[%2%]
-  --<||
+  --<|
   --:BuildNPCSummary|
-  --&[%2%]|CR[*[%1%]:npc_challenge][br][*[%1%]:npc_type], AC [*[%1%]:[%3%]], HP [*[%1%]:t-bar[&hitPointsBar]_value]/[*[%1%]:hp^], SPEED [*[%1%]:speed]
+  --&[%2%]|[t width='100%' align='left'][tr][td valign='top' align='left'][p style='font-size:8pt; margin-top:2px; margin-left:3px; margin-bottom:3px; line-height:1.05em;']CR[*[%1%]:npc_challenge] [*[%1%]:npc_type][/p][/td][td valign='top' align='right' width='60%'][p style='font-size:8pt; margin-top:2px; margin-right:3px; margin-bottom:3px; line-height:1.05em;'][&ACImage][*[%1%]:[%3%]], [&HPImage][*[%1%]:t-bar[&hitPointsBar]_value]/[*[%1%]:t-bar[&hitPointsBar]_max], [&SpeedImage][*[%1%]:npc_speed][/p][/td][/tr][/t]
   -->REPLACE_WORDS_WITH_EMOJIS|[%2%]
-  --<||
+  --<|
  
   --:CheckDamageModifiersNPC|characterid;damageVariableName;damageType;isMagical(0 or 1);IsSilver (0 or 1);IsAdamantine (0 or 1);NPCType(A or T)
   --&[%2%]|
@@ -1804,12 +1826,13 @@
   --&[%1%]|[&TB]target|token_id}
   --<|
 
-  --:BUILD_SAVES_AND_SKILLS_BUTTONS|
+  --:BUILD_SAVES_AND_SKILLS_BUTTONS|[%1%]
   --&advantageMenu|[&QB]Roll Type?|Normal|Advantage|Disadvantage[&QE]
   --&skillMenu|[&QB]Skill to roll?|Acrobatics|Animal Handling,animal_handling|Arcana|Athletics|Deception|History|Insight|Intimidation|Investigation|Medicine|Nature|Perception|Persuasion|Religion|Sleight of Hand,sleight_of_hand|Stealth|Survival[&QE]
   --&saveMenu|[&QB]Saving Throw Type?|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma[&QE]
-  --+|[c]- - - - -[/c]
-  --+|[c][rbutton:8px]Skill Check::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton]     [rbutton:8px]Saving Throw::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton][/c]
+  --/+|[c]- - - - -[/c]
+  --/&[%1%]|[c][rbutton:8px][&SkillCheckImage]::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton]     [rbutton:8px][&SavingThrowImage]::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton][/c]
+  --&[%1%]|[rbutton][&SkillCheckImage]::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton] [&NB] [rbutton][&SavingThrowImage]::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton]
   --<|
 
   --:REPLACE_WORDS_WITH_EMOJIS|Input variable NAME (not the variable refernce). Will be updated in place

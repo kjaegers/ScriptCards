@@ -1,6 +1,16 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
 2023-02-20 - 5E Character Action Menu 2.4.0
+             - The title area now uses icons from game-icons.net for settings, short rest and long rest buttons set 
+               useGameIconsGraphicsForTitleButtons to 0 to disable
+             - Table-ized the character summary area and improved the look. There is a new setting (useGameIconsGraphics)
+               that can be used to replace "AC", "HP", and "SPEED" with game-icons.net icons if set to 1 (off by default)
+             - Combined the Skill/Save and the Advantage Mode into a single line to save space
+             - Table-ized the Global Modifiers to take up less space and to make them more visually appealing.
+             - Proper HP detection for NPCs in the character summary
+             - Uses the new [p] features of SC 2.2.9, so upgrade for best results
+
+2023-02-20 - 5E Character Action Menu 2.4.0
              - Incorporated Will M.'s code to add Bonus Actions and Reactions to the action menu. Default to on, set with 
                showBonusActionsAndReactions to 0 to disable
              - Did a little reorganization of the options area to group options that enable/diable parts of the menu together
