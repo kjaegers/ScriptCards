@@ -1,5 +1,9 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2023-02-20 - 5E Character Action Menu 2.4.1
+             - New array defined in settings: NonScalingCantrips. By default this contains Eldritch Blast, which will prevent
+               the cantrip from automatically scaling damage, since each bolt of an Eldritch Blast is a separate attack/damage roll.
+
 2023-02-20 - 5E Character Action Menu 2.4.0
              - The title area now uses icons from game-icons.net for settings, short rest and long rest buttons set 
                useGameIconsGraphicsForTitleButtons to 0 to disable

@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.4.0
+  --/|Version     : 2.4.1
   --/|Requires SC : 2.2.9+
   --/|Author      : Kurt Jaegers
 
@@ -144,6 +144,8 @@
   
   --/|List spells here, separated by semicolons, that should be kept in the PC Attacks display with "[After Cast]" appended to them
   --~|array;define;SpellsToKeepWithSuffix;Spiritual Weapon;Scorching Ray
+  
+  --~|array;define;NonScalingCantrips;Eldritch Blast
 
   --/|List spells here, separated by semicolons, that should be kept in the PC Attacks display with no suffix appended to them
   --~|array;define;SpellsToKeepNoSuffix;
@@ -790,9 +792,12 @@
   --?[$attackRoll.Base] -eq 1|CANTRIP_ATTACK_MISS
   --:CANTRIP_DONE_ATTACK_ROLL|
   --&damageRoll|[*R:spelldamage]
+  --~nonScale|array;indexof;NonScalingCantrips;[&cantrip_name]
+  --?[&nonScale] -ne "ArrayError"|SKIP_CANTRIP_SCALE
   --?[*S:level] -ge 5|&damageRoll;+ + [*R:spelldamage]
   --?[*S:level] -ge 11|&damageRoll;+ + [*R:spelldamage]
   --?[*S:level] -ge 17|&damageRoll;+ + [*R:spelldamage]
+  --:SKIP_CANTRIP_SCALE|
   --?[$cantrip_crit] -eq 1|&damageRoll;+ + [&damageRoll]
   --?[$cantrip_crit] -eq 1|&damageRoll;+ [&PC_GDM_CRIT]|&damageRoll;+ [&PC_GDM]
   --&dmgModType1|
