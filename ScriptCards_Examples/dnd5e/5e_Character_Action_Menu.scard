@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.4.1
+  --/|Version     : 2.4.2
   --/|Requires SC : 2.2.9+
   --/|Author      : Kurt Jaegers
 
@@ -210,6 +210,7 @@
   --&SpeedImage|[b]Speed:[&NB][/b]
   --&SkillCheckImage|Skill Check
   --&SavingThrowImage|Saving Throw
+  --&RepeatImage|Repeat
 
   --/|Useful Emoticons
   --&emoSpeed|& --&emoSpeed|+# --&emoSpeed|+9193;
@@ -221,6 +222,7 @@
   --&ShortRestImage|[img width=15 height=15][&gameIconsBasePath]white/meditation.png[/img]
   --&LongRestImage|[img width=15 height=15][&gameIconsBasePath]white/night-sleep.png[/img]
   --&SettingsImage|[img width=15 height=15][&gameIconsBasePath]white/cog.png[/img]
+  --&RepeatImage|[img width=20 height=20][&gameIconsBasePath]white/anticlockwise-rotation.png[/img]
   --:SKIP_GAME_ICONS_FOR_TITLES|
   --?[&useGameIconsGraphics] -eq 0|SKIP_GAME_ICONS
   --/&SkillCheckImage|[img width=15 height=15][&gameIconsBasePath]white/skills.png[/img]
@@ -823,6 +825,9 @@
   --#title|[&cantrip_name]
   --#leftsub|[*S:character_name]
   --#rightsub|
+  --?[&nonScale] -eq "ArrayError"|SKIP_CANTRIP_REPEAT
+  --#rightsub|[rbutton][&RepeatImage]::EXEC_PC_CANTRIP;[&cantrip_name]|[&TB]target|token_id}[/rbutton]
+  --:SKIP_CANTRIP_REPEAT|
   --+|[*R:spelldescription]
   --:PC_DONE_CANTRIP|
   --X|

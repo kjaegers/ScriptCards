@@ -1,5 +1,9 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2023-02-20 - 5E Character Action Menu 2.4.2
+             - Non-scaling cantrips will now have a "repeat" button added to the title box, to allow them to easily be cast in
+               quick succession. A new target will be prompted each time.
+
 2023-02-20 - 5E Character Action Menu 2.4.1
              - New array defined in settings: NonScalingCantrips. By default this contains Eldritch Blast, which will prevent
                the cantrip from automatically scaling damage, since each bolt of an Eldritch Blast is a separate attack/damage roll.
