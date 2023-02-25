@@ -1,5 +1,10 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2023-02-20 - 5E Character Action Menu 2.4.3
+             - NPC Actions that are attacks, and PC Attacks now also get a repeat button in the title area.
+             - If any player besides the original script runner tries to use the repeat button, they will be told they
+               can't do that.6
+
 2023-02-20 - 5E Character Action Menu 2.4.2
              - Non-scaling cantrips will now have a "repeat" button added to the title box, to allow them to easily be cast in
                quick succession. A new target will be prompted each time.

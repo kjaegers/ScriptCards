@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.4.2
+  --/|Version     : 2.4.3
   --/|Requires SC : 2.2.9+
   --/|Author      : Kurt Jaegers
 
@@ -222,7 +222,7 @@
   --&ShortRestImage|[img width=15 height=15][&gameIconsBasePath]white/meditation.png[/img]
   --&LongRestImage|[img width=15 height=15][&gameIconsBasePath]white/night-sleep.png[/img]
   --&SettingsImage|[img width=15 height=15][&gameIconsBasePath]white/cog.png[/img]
-  --&RepeatImage|[img width=20 height=20][&gameIconsBasePath]white/anticlockwise-rotation.png[/img]
+  --&RepeatImage|[img width=15 height=15][&gameIconsBasePath]white/anticlockwise-rotation.png[/img]
   --:SKIP_GAME_ICONS_FOR_TITLES|
   --?[&useGameIconsGraphics] -eq 0|SKIP_GAME_ICONS
   --/&SkillCheckImage|[img width=15 height=15][&gameIconsBasePath]white/skills.png[/img]
@@ -262,6 +262,8 @@
   --#overridetemplate|[&Template]
   --&GAM_Button_Active_Color|009900
   --&GAM_Button_Inactive_Color|672223
+  
+  --&AMOriginalSendingPlayer|[&SendingPlayerID]
 
   --/|The menu is whispered to the player executing the macro. #whisper will be set again later for the
   --/|actual output to be public.
@@ -357,6 +359,7 @@
   --/|"EXEC_*" sections to carry out specific actions if building for a different sheet
 
   --:EXEC_NPC_ACTION|action_name
+  --?[&AMOriginalSendingPlayer] -ne [&SendingPlayerID]|YOU_CANNOT_DO_THAT
   --?[&AllNPCActionsToSender] -eq 1|[
   --#whisper|self
   --]|[
@@ -374,6 +377,7 @@
     --#leftsub|[*R:name]
     --?"[*R:attack_flag]" -ne on|NPCA_NOT_ATTACK
     --:NPCA_MAKE_AN_ATTACK|
+    --#rightsub|[rbutton][&RepeatImage]::EXEC_NPC_ACTION;[&action_name]|[&TB]target|token_id}[/rbutton]
     --&rollType|1d20
     --?"[*S:advantagetoggle]" -inc advantage|&rollType;2d20kh1
     --?"[*S:advantagetoggle]" -inc disadvantage|&rollType;2d20kl1
@@ -594,6 +598,7 @@
   --/|Reentrant points for PC actions
 
   --:EXEC_PC_ATTACK|
+  --?[&AMOriginalSendingPlayer] -ne [&SendingPlayerID]|YOU_CANNOT_DO_THAT
   --/+|[hr #58180d]
   --#whisper|
   --#emotestate|visible
@@ -618,7 +623,7 @@
   --/Rdump|
   --#title|[*R:atkname]
   --#leftsub|[*S:character_name]
-  --#rightsub|
+  --#rightsub|[rbutton][&RepeatImage]::EXEC_PC_ATTACK;[&attack_name]|[&TB]target|token_id}[/rbutton]
   --~|array;fromstring;fx;$;[*R:atk_desc]
   --%loop|foreach;fx
     --?"[&loop]" -inc "sfx:"|&sfx;[&loop(after,:)]
@@ -752,6 +757,7 @@
   --X|
 
   --:EXEC_PC_CANTRIP|
+  --?[&AMOriginalSendingPlayer] -ne [&SendingPlayerID]|YOU_CANNOT_DO_THAT
   --/+|[hr #58180d]
   --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender]||[
   --#whisper|self
@@ -1853,6 +1859,15 @@
   --&work|[&work(replaceall,SPEED,[&emoSpeed])]
   --&[%1%]|[&work]
   --<|
+
+  --:YOU_CANNOT_DO_THAT| Used when someone other than the original sender tries to use the repeat button
+  --#whisper|self
+  --#title|You Can't Do That!
+  --#emotetext|
+  --#leftsub|
+  --#rightsub|
+  --+|You aren't the original sender of this action, so you can't use the repeat button
+  --X|
 
   --:DISPLAY_PC_OTHER_ACTIONS|
     --/| Traits 
