@@ -1,4 +1,4 @@
---/|ScriptCards Library: systemneutrallib (snlib) version 0.0.2
+--/|ScriptCards Library: systemneutrallib (snlib) version 0.0.3
 --/|Provides various utility procedures for general Roll20 stuff
 
 --/|This library consolidates functions from a number of the sample scripts on the ScriptCards github into a single library
@@ -199,7 +199,7 @@
     --&_FCT_TID|[@_FCT_Tokens([&_loop])]
     --&_FCT_CHAR|[*[&_FCT_TID]:t-represents]
     --?"X[*O:[&_FCT_CHAR]:character:controlledby]" -ninc [&SendingPlayerID]|%
-    --?"X[&[%1%]]" -eq "X"|&[%1%];+[&_FCT_TID]|&[%1%];+,[&_FCT_TID]]
+    --?"X[&[%1%]]" -eq "X"|&[%1%];+[&_FCT_TID]|&[%1%];+,[&_FCT_TID]
   --%|
 --<|
 
