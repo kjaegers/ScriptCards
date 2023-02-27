@@ -1,4 +1,4 @@
---/|ScriptCards Library: systemneutrallib (snlib) version 0.0.3
+--/|ScriptCards Library: systemneutrallib (snlib) version 0.0.4
 --/|Provides various utility procedures for general Roll20 stuff
 
 --/|This library consolidates functions from a number of the sample scripts on the ScriptCards github into a single library
