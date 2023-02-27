@@ -104,6 +104,10 @@
 --/|          number of the turn to examine (in sequence) from the top of the turn tracker list (starting at 1)
 --/|          (ie, GET_NUMBERED_TURN_INFO|TID;INIT;CUSTOM;FORMULA;PAGE;NAME;TURNNUMBER)|
 --/|
+--/|  LibSN_GET_TOKEN_TURN_INFO|TokenID, InitCounter, CustomName, Formula, page
+--/|          Returns the InitCounter,CustomName, Formula, and PageID for the token matching (TokenID). If there
+--/|          is no matching turn order entry, empty strings will be returned.
+--/|
 --/|  LibSN_GET_TURNORDER_LENGTH|Return Var (Roll)
 --/|          This function returns the number of turns in the turn tracker
 --/|
@@ -299,6 +303,27 @@
   --?"X[$_toCount.Raw]" -eq "X"|>LibSN__to_PARSE_TURN_ORDER
   --?[$_toCount] -lt [%7%]|LibSN__to_CLEAR_AND_RETURN
   -->LibSN__to_GET_TURN_INFO|[%1%];[%2%];[%3%];[%4%];[%5%];[%6%];[&_to[%7%](replaceall,;,!!!)]
+--<|
+
+--:LibSN_GET_TOKEN_TURN_INFO|TokenID, InitCounter, CustomName, Formula, page
+  --?"X[$_toCount.Raw]" -eq "X"|>LibSN__to_PARSE_TURN_ORDER
+  --&_toID| --&_toPR| --&_toCustom| --&_toFormula| --&_toPageID|
+  --%_to_outer_loop|1;[$_toCount]
+    --&_work_turn|[&_to[&_to_outer_loop]]
+    --&_work_turn|[&_work_turn(replaceall,{,)] --&_work_turn|[&_work_turn(replaceall,},)]     
+    --~_to_ThisTurn|string;split;,;[&_work_turn]
+    --%_toLoop|1;[$_to_ThisTurnCount]
+      --?"[&_to_ThisTurn[&_toLoop](0,2)]" -eq "id"|&_toID;[&_to_ThisTurn[&_toLoop](replace,id:,)]
+      --?"[&_to_ThisTurn[&_toLoop](0,2)]" -eq "pr"|&_toPR;[&_to_ThisTurn[&_toLoop](replace,pr:,)]
+      --?"[&_to_ThisTurn[&_toLoop](0,2)]" -eq "cu"|&_toCustom;[&_to_ThisTurn[&_toLoop](replace,custom:,)]
+      --?"[&_to_ThisTurn[&_toLoop](0,2)]" -eq "fo"|&_toFormula;[&_to_ThisTurn[&_toLoop](replace,formula:,)]
+      --?"[&_to_ThisTurn[&_toLoop](0,2)]" -eq "_p"|&_toPageID;[&_to_ThisTurn[&_toLoop](replace,_pageid:,)]
+    --%|
+    --?"[&_toID]" -eq "[%1%]"|&[%2%];[&_toPR]
+    --?"[&_toID]" -eq "[%1%]"|&[%3%];[&_toCustom]
+    --?"[&_toID]" -eq "[%1%]"|&[%4%];[&_toFormula]
+    --?"[&_toID]" -eq "[%1%]"|&[%5%];[&_toPageID]
+  --%|
 --<|
 
 --:LibSN_GET_TURNORDER_LENGTH|ReturnValue
