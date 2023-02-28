@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.4.3
+  --/|Version     : 2.4.4
   --/|Requires SC : 2.2.9+
   --/|Author      : Kurt Jaegers
 
@@ -32,7 +32,7 @@
 
   --/|If you create a mule character and put its name here, you can define macros to be used for NPC Actions, Reactions,
   --/|Bonus Actions and Legendary Actions. The name matching rules are the same as those for the Spell Mule
-  --&sharedmacromulename|NPCAbility_Mule
+  --&sharednpcmacromulename|NPCAbility_Mule
   
   --/|If you create a mule character and put its name here, you can define macros to be used for PC Actions listed in
   --/|"Abilities and Spellcasting" section on the character sheet.
@@ -340,11 +340,11 @@
   --+|[t width='100%'][tr][td align=left][&savesAndSkills][/td][td align=right][&AdvModeText][/td][/tr][/t][F5][BR][/F]
 
   --/|5E Sheet Specific BEGIN
-  -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcaction;name;EXEC_NPC_ACTION;Actions;[&sharedmacromulename];0
-  -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcbonusaction;name;EXEC_NPC_BONUS_ACTION;Bonus Actions;[&sharedmacromulename];0
-  -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcreaction;name;EXEC_NPC_REACTION;Reactions;[&sharedmacromulename];0
-  -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcaction-l;name;EXEC_NPC_LEGENDARY_ACTION;Legendary Actions;[&sharedmacromulename];0
-  -->BUILD_SPELL_BUTTON_LIST|[*S:character_id];repeating_spell-cantrip;spellname;EXEC_PC_CANTRIP;Cantrips;[&sharedmacromulename];0
+  -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcaction;name;EXEC_NPC_ACTION;Actions;[&sharednpcmacromulename];0
+  -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcbonusaction;name;EXEC_NPC_BONUS_ACTION;Bonus Actions;[&sharednpcmacromulename];0
+  -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcreaction;name;EXEC_NPC_REACTION;Reactions;[&sharednpcmacromulename];0
+  -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcaction-l;name;EXEC_NPC_LEGENDARY_ACTION;Legendary Actions;[&sharednpcmacromulename];0
+  -->BUILD_SPELL_BUTTON_LIST|[*S:character_id];repeating_spell-cantrip;spellname;EXEC_PC_CANTRIP;Cantrips;[&sharednpcmacromulename];0
   --%levelCounter|1;9
     -->BUILD_SPELL_BUTTON_LIST|[*S:character_id];repeating_spell-[&levelCounter];spellname;EXEC_PC_SPELL;Level [&levelCounter] Spells;[&spellmulename];[&levelCounter]
   --%|
