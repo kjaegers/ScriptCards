@@ -1,5 +1,10 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.2.9a - turnorder;addtoken and turnorder;replace token now accept optional parameters for custom and formula values. If you want
+           to specify a formula, you must specify a custom value, but it can be blank.
+
+           Ex: --~|turnorder;addtoken;@{selected|token_id};5;MyCustom;-1
+
 v 2.2.9  - [p]...[/p] now support specifying style information in the opening [p] tag.
            Ex: [p style='font-size:smaller;']Hello World[/p]
 
