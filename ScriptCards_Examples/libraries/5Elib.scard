@@ -1,0 +1,109 @@
+--/|ScriptCards Library: 5ELib version 0.0.1
+--/|Provides various utility procedures for D&D 5E games
+--/|
+--/| Special Note: This is a "new" library for D&D 5E. The existing "dnd5elib" has been left unchanged to avoid breaking scripts that
+--/| rely on it, but it is not coded the my current standards for library code, so I've decided to begin work on a brand new library.
+--/| This library and the original dnd5elib should be able to live together in the same script without conflict - if issues arise I can
+--/| update this library to address them.
+--/|
+--/| Functions from the original dnd5elib may end up being reimplemented in this library over time (like Lib5E_FIND_RESOURCE and
+--/| Lib5E_CHECK_DAMAGE_MODS) have been already, but they have different names from the old library to preven a label clash.
+--/|
+--/|   Lib5E_FIND_CLASS_LEVEL|characterid;class;Return String Var
+--/|      Given a (class) name (ie, wizard, warlock, fighter, etc.) will return (Return String Var) with the class level for the 
+--/|      character indicated by (characterid). If the character has no levels in that class, the return value will be 0
+--/|
+--/|   Lib5E_GET_GLOBAL_MOD_STATUS|characterid; Category; name; returnstring (0=off, 1=on)
+--/|      Given a (category) which can be one of attack,damage,ac,skill,save and a (name) which corresponds to the global modifier name
+--/|      this function will search (characterid) for a matching global modifier and return in (returnstring) a 0 if it is off or a 1 if
+--/|      it is on. An error will be output to the GM ("*") and the API console if the modifier can't be found, and a 0 will be returned
+--/|
+--/|   Lib5E_SET_GLOBAL_MOD_STATUS|characterid; Category; name; 0=off,1=on,2=toggle
+--/|      Given a (category) which can be one of attack,damage,ac,skill,save and a (name) which corresponds to the global modifier name
+--/|      this function will search (characterid) for a matching global modifier. If the fourth parameter is 0 (off) or 1 (on), the global
+--/|      mod will be set to that value. If the fourth parameter is a 2, the current value (on/off) will be flipped.
+--/|      An error will be output to the GM ("*") and the API console if the modifier can't be found.
+--/|
+--/|   Lib5E_FIND_RESOURCE|characterid;resourceName;resourceReturnNameStringVariable;ResourceReturnValueStringVariable
+--/|      Examing the repeating resource section of character (characterid) looking for a given value (resourceName).
+--/|
+--/|   Lib5E_CHECK_DAMAGE_MODS|characterid;damageType;damageVariableName
+--/|      Checks npc (characterid) and looks for resistant, vulnerable, or immue on (damagetype) damage and returns the result in
+--/|      (damageVariableName), which is a string that can be added to the end of a roll assignment to modify the damage as appropriate
+
+
+--:Lib5E_CHECK_DAMAGE_MODS|characterid;damageType;damageVariableName
+--&[%2%]|
+--?"[*[%1%]:npc_vulnerabilities]" -inc "[%2%]"|>L_Lib5E_Is_Vulnerable;[%3%]
+--?"[*[%1%]:npc_resistances]" -inc "[%2%]"|>_Lib5E_Is_Resistant;[%3%]
+--?"[*[%1%]:npc_immunities]" -inc "[%2%]"|>_Lib5E_Is_Immune;[%3%]
+--<|
+--:L_Lib5E_Is_Vulnerable| --&[%3%]| * 2 [Vulnerable] --<|
+--:_Lib5E_Is_Resistant| --&[%3%]| \ 2 [Resistant] --<|
+--:_Lib5E_Is_Immune| --&[%3%]| * 0 [Immune] --<|
+
+--:Lib5E_FIND_RESOURCE|character_id;resourceName;resourceReturnNameStringVariable;ResourceReturnValueStringVariable
+--C[%2%]|[*[%1%]:class_resource_name]:_Lib5E_IsResourceClass|[*[%1%]:other_resource_name]:_Lib5E_IsResourceOther
+--?"[%2%]" -eq "[*[%1%]:class_resource_name]"|_Lib5E_Is_ResourceClass
+--?"[%2%]" -eq "[*[%1%]:other_resource_name]"|_Lib5E_Is_ResourceOther
+--Rfirst|[%1%];repeating_resource
+--:_Lib5E_Resource_Loop|
+--?"[*R:resource_left_name]" -eq "[%2%]"|_Lib5E_Is_ResourceLeft
+--?"[*R:resource_right_name]" -eq "[%2%]"|_Lib5E_Is_ResourceRight
+--Rnext|
+--?"[*R:resource_left_name]" -ne "NoRepeatingAttributeLoaded"|_Lib5E_Resource_Loop
+--&[%3%]|NotFound --&[%4%]|NotFound --$[%4%]|0 
+--<|
+--:_Lib5E_Is_ResourceClass| --&[%3%]|class_resource_name --&[%4%]|class_resource --=[%4%]|[*[%1%]:class_resource] --<|
+--:_Lib5E_Is_ResourceOther| --&[%3%]|other_resource_name --&[%4%]|other_resource --=[%4%]|[*[%1%]:other_resource] --<|
+--:_Lib5E_Is_ResourceLeft| --&[%3%]|[*R>resource_left_name] --&[%4%]|[*R>resource_left] --=[%4%]|[*R:resource_left] --<|
+--:_Lib5E_Is_ResourceRight| --&[%3%]|[*R>resource_right_name] --&[%4%]|[*R>resource_right] --=[%4%]|[*R:resource_right] --<|
+--<|
+
+--:Lib5E_FIND_CLASS_LEVEL|characetrid;class;Return String Var
+--&[%3%]|0
+--&_Lib5E_TEMP_CLASS|[%2%]
+--?"[*[%1%]:class]" -eq "[&_Lib5E_TEMP_CLASS(totitlecase)]"|&[%3%];[*[%1%]:base_level]
+--?"[*[%1%]:multiclass1]" -eq "[&_Lib5E_TEMP_CLASS(totitlecase)]"|&[%3%];[*[%1%]:multiclass1_lvl]
+--?"[*[%1%]:multiclass2]" -eq "[&_Lib5E_TEMP_CLASS(totitlecase)]"|&[%3%];[*[%1%]:multiclass2_lvl]
+--?"[*[%1%]:multiclass3]" -eq "[&_Lib5E_TEMP_CLASS(totitlecase)]"|&[%3%];[*[%1%]:multiclass3_lvl]
+--?"[*[%1%]:multiclass4]" -eq "[&_Lib5E_TEMP_CLASS(totitlecase)]"|&[%3%];[*[%1%]:multiclass4_lvl]
+--<|
+
+--:Lib5E_GET_GLOBAL_MOD_STATUS|characterid; Category; name; returnstring (0=off, 1=on)
+--&[%1%]|0
+--&_Lib5E_WHICH_GM|
+--&_Lib5E_Search_Field|
+--&_Lib5E_Temp|[%2%]
+--C[&_Lib5E_Temp(tolowercase)]|attack:&_Lib5E_WHICH_GM;tohitmod|tohit:&_Lib5E_WHICH_GM;tohitmod|ac:&_Lib5E_WHICH_GM;acmod|save:&_Lib5E_WHICH_GM;savemod|damage:&_Lib5E_WHICH_GM;damagemod|skill:&_Lib5E_WHICH_GM;skillmod
+--C[&_Lib5E_Temp(tolowercase)]|attack:&_Lib5E_Search_Field;attack|tohit:&_Lib5E_Search_Field;attack|ac:&_Lib5E_Search_Field;ac|save:&_Lib5E_Search_Field;save|damage:&_Lib5E_Search_Field;damage|skill:&_Lib5E_Search_Field;skill
+--?"[&_Lib5E_WHICH_GM]" -eq ""|>_Lib5E_THROW_ERROR;Global Modifier type [%2%] not recognized
+--Rfind|[*[%1%]:character_id];[%3%];repeating_[&_Lib5E_WHICH_GM];global_[&_Lib5E_Search_Field]_name
+--?"[*R:global_attack_name]" -eq "NoRepeatingAttributeLoaded"|>_Lib5E_THROW_ERROR;Global [%2%] Modifier [%3%] not found on character [%1%]
+--?"[*R:global_attack_active_flag]" -eq "1"|&[%4%];1|&[%4%];0
+--<|
+
+--:Lib5E_SET_GLOBAL_MOD_STATUS|characterid; Category; name; 0=off,1=on,2=toggle
+--&_Lib5E_WHICH_GM|
+--&_Lib5E_Search_Field|
+--&_Lib5E_Temp|[%2%]
+--C[&_Lib5E_Temp(tolowercase)]|attack:&_Lib5E_WHICH_GM;tohitmod|tohit:&_Lib5E_WHICH_GM;tohitmod|ac:&_Lib5E_WHICH_GM;acmod|save:&_Lib5E_WHICH_GM;savemod|damage:&_Lib5E_WHICH_GM;damagemod|skill:&_Lib5E_WHICH_GM;skillmod
+--C[&_Lib5E_Temp(tolowercase)]|attack:&_Lib5E_Search_Field;attack|tohit:&_Lib5E_Search_Field;attack|ac:&_Lib5E_Search_Field;ac|save:&_Lib5E_Search_Field;save|damage:&_Lib5E_Search_Field;damage|skill:&_Lib5E_Search_Field;skill
+--?"[&_Lib5E_WHICH_GM]" -eq ""|>_Lib5E_THROW_ERROR;Global Modifier type [%2%] not recognized
+--Rfind|[*[%1%]:character_id];[%3%];repeating_[&_Lib5E_WHICH_GM];global_[&_Lib5E_Search_Field]_name
+--?"[*R:global_attack_name]" -eq "NoRepeatingAttributeLoaded"|>_Lib5E_THROW_ERROR;Global [%2%] Modifier [%3%] not found on character [%1%]
+--?"[%4%]" -eq 2|_Lib5E_GLOBAL_MOD_TOGGLE
+-->_Lib5E_SET_GLOBAL_MOD_VALUE|[%1%];[*R>global_[&_Lib5E_Search_Field]_active_flag];[%4%]
+--<|
+--:_Lib5E_GLOBAL_MOD_TOGGLE|
+--?"[*R:global_attack_active_flag]" -eq "1"|>_Lib5E_SET_GLOBAL_MOD_VALUE;[%1%];[*R>global_[&_Lib5E_Search_Field]_active_flag];0|>_Lib5E_SET_GLOBAL_MOD_VALUE;[%1%];[*R>global_[&_Lib5E_Search_Field]_active_flag];1
+--<|
+
+--:_Lib5E_SET_GLOBAL_MOD_VALUE|
+--!a:[%1%]|[%2%]:[%3%]  
+--<|
+
+--:_Lib5E_THROW_ERROR|
+--\|[%1%]
+--*ScriptCards Lib5E Error|[%1%]
+--<|
