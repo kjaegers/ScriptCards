@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.2.9a";
+	const APIVERSION = "2.3.0";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1201,7 +1201,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 															settingValue = currentValue + delta;
 														}
 													}
-													theCharacter.set(settingName, settingValue);
+													if (settingName.toLowerCase() == "defaulttoken") {
+														var theToken = getObj("graphic", settingValue)
+														if (theToken) {
+															setDefaultTokenForCharacter(theCharacter, theToken)
+														}
+													} else {
+														theCharacter.set(settingName, settingValue);
+													}
 												}
 											} else {
 												log(`ScriptCards Error: Modify character called without valid characterID`)
@@ -3736,6 +3743,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									attribute = character.get(attrName);
 								}
 							} else {
+								// Add URL Decoding?
 								character.get(attrName, function (a) {
 									attribute = a;
 								});

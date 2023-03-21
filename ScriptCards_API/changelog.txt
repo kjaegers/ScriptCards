@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.3.0  - --! now supports setting "defaulttoken" property on a character.
+           ex: --!c:[&MyCharID]|defaulttoken:[&MyTokenId]
+
 v 2.2.9a - turnorder;addtoken and turnorder;replace token now accept optional parameters for custom and formula values. If you want
            to specify a formula, you must specify a custom value, but it can be blank.
 
