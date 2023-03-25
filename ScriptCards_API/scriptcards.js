@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.3.0";
+	const APIVERSION = "2.3.1";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -3790,12 +3790,20 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (thisMatch.charAt(2).toLowerCase() == "p") {
 						// page attributes
 						var attrName = thisMatch.substring(4, thisMatch.length - 1);
-						replacement = cardParameters.activepageobject.get(attrName) || "";
+						if (cardParameters.activepageobject) {
+							replacement = cardParameters.activepageobject.get(attrName) || "";
+						} else {
+							const thisPage = getObj("page", Campaign().get("playerpageid"));
+							if (thisPage) {
+								replacement = thisPage.get(attrName) || "";
+							}
+						}
 					}
 
 					if (thisMatch.charAt(2).toLowerCase() == "c") {
 						// campaign attributes
-						var attrName = thisMatch.substring(4, thisMatch.length - 1);
+						let attrName = thisMatch.substring(4, thisMatch.length - 1);
+						if (attrName == "playerpage") { attrName = "playerpageid" }
 						replacement = Campaign().get(attrName) || "";
 					}
 

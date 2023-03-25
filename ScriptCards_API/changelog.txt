@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.3.1  - Corrected a bug in the [*p:...] referencing when an active page has not been set.
+
 v 2.3.0  - --! now supports setting "defaulttoken" property on a character.
            ex: --!c:[&MyCharID]|defaulttoken:[&MyTokenId]
 
