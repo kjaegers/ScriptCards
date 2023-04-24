@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.3.3";
+	const APIVERSION = "2.3.3a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -4422,12 +4422,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var work = statusmarkers[sm].replace("[sm", "<img ").replace("[/sm]", "></img>").replace("]", " src=" + tokenMarkerURLs[markername]);
 			outputLine = outputLine.replace(statusmarkers[sm], work);
 		}
-		var buttons = outputLine.match(/\[button(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)\:\:(.*?)\[\/button\]/gi);
+		var buttons = outputLine.match(/\[button(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:)?(.+)?\](.*?)\:\:(.*?)\[\/button\]/gi);
 		for (var button in buttons) {
 			var customTextColor = undefined;
 			var customBackgroundColor = undefined;
 			var customfontsize = undefined;
-			var basebutton = buttons[button].replace(/\[button(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)/gi, "[button]");
+			let customHoverText = undefined;
+			var basebutton = buttons[button].replace(/\[button(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:.+?)?\]/gi, "[button]");
+			log(basebutton);
 			if (basebutton.toLowerCase() !== buttons[button].toLowerCase()) {
 				var tempbutton = buttons[button].replace("[button:", "").replace("[Button:", "").replace("[BUTTON:", "").split("]")[0];
 				var customs = tempbutton.split(":");
@@ -4438,6 +4440,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					} else {
 						if (customs[c].toLowerCase().endsWith("px")) {
 							customfontsize = customs[c];
+						} else {
+							if (customs[c] !== "[rbutton") customHoverText = customs[c];
 						}
 					}
 				}
@@ -4450,16 +4454,17 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			if (raw == true) {
 				outputLine = outputLine.replace(buttons[button], makeTemplateButton(title, action, cardParameters));
 			} else {
-				outputLine = outputLine.replace(buttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor, customfontsize));
+				outputLine = outputLine.replace(buttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor, customfontsize, customHoverText));
 			}
 		}
 
-		var sheetbuttons = outputLine.match(/\[sheetbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)\:\:(.*?)\:\:(.*?)\[\/sheetbutton\]/gi);
+		var sheetbuttons = outputLine.match(/\[sheetbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:)?(.+)?\](.*?)\:\:(.*?)\:\:(.*?)\[\/sheetbutton\]/gi);
 		for (var button in sheetbuttons) {
 			var customTextColor = undefined;
 			var customBackgroundColor = undefined;
 			var customfontsize = undefined;
-			var basebutton = sheetbuttons[button].replace(/\[sheetbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)/gi, "[sheetbutton]");
+			let customHoverText = undefined;
+			var basebutton = sheetbuttons[button].replace(/\[sheetbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:.+?)?\]/gi, "[sheetbutton]");
 			if (basebutton.toLowerCase() !== sheetbuttons[button].toLowerCase()) {
 				var tempbutton = sheetbuttons[button].replace("[sheetbutton:", "").replace("[Sheetbutton:", "").replace("[SHEETBUTTON:", "").split("]")[0];
 				var customs = tempbutton.split(":");
@@ -4470,6 +4475,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					} else {
 						if (customs[c].toLowerCase().endsWith("px")) {
 							customfontsize = customs[c];
+						} else {
+							if (customs[c] !== "[rbutton") customHoverText = customs[c];
 						}
 					}
 				}
@@ -4501,7 +4508,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				if (raw == true) {
 					outputLine = outputLine.replace(sheetbuttons[button], makeTemplateButton(title, action, cardParameters));
 				} else {
-					outputLine = outputLine.replace(sheetbuttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor, customfontsize));
+					outputLine = outputLine.replace(sheetbuttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor, customfontsize, customHoverText));
 				}
 			}
 		}
@@ -4514,7 +4521,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var customfontsize = undefined;
 			var customHoverText = undefined;
 			//var basebutton = reentrantbuttons[button].replace(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)/gi, "[rbutton]");
-			var basebutton = reentrantbuttons[button].replace(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:)(.+?)\]/gi, "[rbutton]");
+			var basebutton = reentrantbuttons[button].replace(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:.+?)?\]/gi, "[rbutton]");
 			if (basebutton.toLowerCase() !== reentrantbuttons[button].toLowerCase()) {
 				var tempbutton = reentrantbuttons[button].replace("[rbutton:", "").replace("[Rbutton:", "").replace("[RBUTTON:", "").split("]")[0];
 				var customs = tempbutton.split(":");
