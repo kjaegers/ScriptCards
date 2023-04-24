@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.3.2";
+	const APIVERSION = "2.3.3";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -836,6 +836,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													break;
 												case "foreach":
 													try {
+														var beforeLoopEnded = stringVariables[currentLoop]
 														stringVariables[currentLoop] = arrayVariables[loopControl[currentLoop].arrayName][loopControl[currentLoop].current]
 													} catch {
 														stringVariables[currentLoop] = "ArrayError"
@@ -858,6 +859,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											if ((loopControl[currentLoop].step > 0 && loopControl[currentLoop].current > loopControl[currentLoop].end) ||
 												(loopControl[currentLoop].step < 0 && loopControl[currentLoop].current < loopControl[currentLoop].end) ||
 												loopCounter == "!") {
+											    stringVariables[currentLoop] = beforeLoopEnded;
 												loopStack.pop();
 												delete loopControl[currentLoop];
 												if (cardParameters.debug == 1) { log(`ScriptCards: Info - End of loop ${currentLoop}`) }
@@ -1496,8 +1498,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 																			} catch {
 																				stringVariables[currentLoop] = "ArrayError"
 																			}
-																		} else {
-																			breakLoop = true;
 																		}
 																		break;
 																	case "while":
@@ -2884,10 +2884,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 															stringVariables[currentLoop] = loopControl[currentLoop].current.toString();
 															break;
 														case "foreach":
-															try {
-																stringVariables[currentLoop] = arrayVariables[loopControl[currentLoop].arrayName][loopControl[currentLoop].current]
-															} catch {
-																stringVariables[currentLoop] = "ArrayError"
+															if (jumpDest.charAt(1) !== "!") {
+																try {
+																	stringVariables[currentLoop] = arrayVariables[loopControl[currentLoop].arrayName][loopControl[currentLoop].current]
+																} catch {
+																	stringVariables[currentLoop] = "ArrayError"
+																}
 															}
 															break;
 														case "while":
@@ -4504,12 +4506,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			}
 		}
 
-		var reentrantbuttons = outputLine.match(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)\:\:(.*?)\[\/rbutton\]/gi);
+		//var reentrantbuttons = outputLine.match(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)\:\:(.*?)\[\/rbutton\]/gi); 
+		var reentrantbuttons = outputLine.match(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:)?(.+)?\](.*?)\:\:(.*?)\[\/rbutton\]/gi); 
 		for (var button in reentrantbuttons) {
 			var customTextColor = undefined;
 			var customBackgroundColor = undefined;
 			var customfontsize = undefined;
-			var basebutton = reentrantbuttons[button].replace(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)/gi, "[rbutton]");
+			var customHoverText = undefined;
+			//var basebutton = reentrantbuttons[button].replace(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)/gi, "[rbutton]");
+			var basebutton = reentrantbuttons[button].replace(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:)(.+?)\]/gi, "[rbutton]");
 			if (basebutton.toLowerCase() !== reentrantbuttons[button].toLowerCase()) {
 				var tempbutton = reentrantbuttons[button].replace("[rbutton:", "").replace("[Rbutton:", "").replace("[RBUTTON:", "").split("]")[0];
 				var customs = tempbutton.split(":");
@@ -4520,6 +4525,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					} else {
 						if (customs[c].toLowerCase().endsWith("px")) {
 							customfontsize = customs[c];
+						} else {
+							if (customs[c] !== "[rbutton") customHoverText = customs[c];
 						}
 					}
 				}
@@ -4530,7 +4537,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			if (raw == true) {
 				outputLine = outputLine.replace(reentrantbuttons[button], makeTemplateButton(title, action, cardParameters));
 			} else {
-				outputLine = outputLine.replace(reentrantbuttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor, customfontsize));
+				outputLine = outputLine.replace(reentrantbuttons[button], makeButton(title, action, cardParameters, customTextColor, customBackgroundColor, customfontsize, customHoverText));
 			}
 		}
 
@@ -4549,12 +4556,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return outputLine;
 	}
 
-	function makeButton(title, url, parameters, customTextColor, customBackgroundColor, customfontsize) {
+	function makeButton(title, url, parameters, customTextColor, customBackgroundColor, customfontsize, customHoverText) {
 		var thisButtonStyle = buttonStyle;
+		let thisHoverText = "";
 		if (customTextColor) { thisButtonStyle = thisButtonStyle.replace("!{buttontextcolor}", customTextColor) }
 		if (customBackgroundColor) { thisButtonStyle = thisButtonStyle.replace("!{buttonbackground}", customBackgroundColor) }
 		if (customfontsize) { thisButtonStyle = thisButtonStyle.replace("!{buttonfontsize}", customfontsize) }
-		return `<a style="${replaceStyleInformation(thisButtonStyle, parameters)}" href="${removeTags(removeBRs(url))}">${removeBRs(title)}</a>`;
+		if (customHoverText) { thisHoverText = ` title="${customHoverText}" `}
+		return `<a style="${replaceStyleInformation(thisButtonStyle, parameters)}" ${thisHoverText}" href="${removeTags(removeBRs(url))}">${removeBRs(title)}</a>`;
 	}
 
 	function makeTemplateButton(title, url, parameters) {

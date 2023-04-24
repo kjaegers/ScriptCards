@@ -1,5 +1,13 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.3.3  - [button], [sheetbutton], and [rbutton] objects now support optional tool-tip text. Include it in the opening tag after a colon:
+
+           [rbutton:Perform a Skill Check]Skill Check::SKILL_CHECK[/rbutton]
+
+           In this case, "Perform a Skill Check" will be the tool tip text if the user hovers over the button. This is compatible with the
+           existing modifiers for button elements such as inline colors and font size. (As a side effect of the way the regex is written,
+           the hover text can't end ing "px" since it will take that as a pixel size)
+
 v 2.3.2  - Exiting a foreach loop as the result of a conditional will now preserve the control variable instead of incrementing it to
            the next value in the loop. Additionally, for consistency's sake, a foreach loop that exits normally will leave the control
            variable set to the last element of the array.
