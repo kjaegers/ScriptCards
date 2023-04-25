@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.3.3a";
+	const APIVERSION = "2.3.4";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -859,7 +859,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											if ((loopControl[currentLoop].step > 0 && loopControl[currentLoop].current > loopControl[currentLoop].end) ||
 												(loopControl[currentLoop].step < 0 && loopControl[currentLoop].current < loopControl[currentLoop].end) ||
 												loopCounter == "!") {
-											    stringVariables[currentLoop] = beforeLoopEnded;
+												stringVariables[currentLoop] = beforeLoopEnded;
 												loopStack.pop();
 												delete loopControl[currentLoop];
 												if (cardParameters.debug == 1) { log(`ScriptCards: Info - End of loop ${currentLoop}`) }
@@ -3929,7 +3929,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var text = rollComponents[x];
 			var componentHandled = false;
 
-			if (text.match(/^(\d+[dDuUmM][fF\d]+)([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(\#)?$/)) {
+			if (text.match(/^(\d+[dDuUmM][fF\d]+)([eE])?([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(\#)?$/)) {
 				var thisRollHandled = handleDiceFormats(text);
 				componentHandled = true;
 
@@ -4995,7 +4995,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	// eslint-disable-next-line no-unused-vars
 	function handleDiceFormats(text, rollResult, hadOne, hadAce, currentOperator) {
 		// Split the dice roll into components
-		var matches = text.toLowerCase().match(/^(\d+[dDuUmM][fF\d]+)([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(\#)?$/);
+		var matches = text.toLowerCase().match(/^(\d+[dDuUmM][fF\d]+)([eE])?([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(\#)?$/);
 
 		var resultSet = {
 			rollSet: [],
@@ -5065,6 +5065,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (matches[x].match(/^[kK][lLhH]\d+$/)) {
 						keeptype = matches[x].charAt(1);
 						keepcount = Number(matches[x].substring(2));
+					}
+
+					// Handle keep furthest from center (rolling with emphasis)
+					if (matches[x].match(/^[eE]$/)) {
+						keeptype = "e";
+						keepcount = 1;
 					}
 
 					// Handle reroll thresholds (r>Z, r<Z)
@@ -5165,6 +5171,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				for (var x = 0; x < removeCount; x++) {
 					if (keeptype == "h") { removeLowestRoll(resultSet.rollSet, resultSet.rollTextSet, resultSet.droppedRollSet) }
 					if (keeptype == "l") { removeHighestRoll(resultSet.rollSet, resultSet.rollTextSet, resultSet.droppedRollSet) }
+					if (keeptype == "e") { removeClosestRolls(resultSet.rollSet, resultSet.rollTextSet, resultSet.droppedRollSet, sides / 2) }
 				}
 				for (var x = 0; x < count; x++) {
 					if (!resultSet.rollTextSet[x].startsWith("[x")) {
@@ -5263,6 +5270,29 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			rollSetText[lowestIndex] = "[x" + rollSetText[lowestIndex] + "x]"
 		}
 	}
+
+	function removeClosestRolls(rollSet, rollSetText, droppedRollSet, centerValue) {
+		var difference = 0;
+		var emphasisIndex = -1;
+		for (var x = 0; x < rollSet.length; x++) {
+			if ((Math.abs(centerValue - rollSet[x]) < difference && rollSet[x] > 0) 
+				|| (emphasisIndex == -1) 
+				|| (Math.abs(centerValue - rollSet[x] && rollSet[x] > rollSet[emphasisIndex])
+				)) {
+				difference = Math.abs(centerValue - rollSet[x]);
+				emphasisIndex = x;
+			}
+		}
+		if (emphasisIndex > -1) {
+			for (let x=0; x < rollSet.length; x++) {
+				if (x !== emphasisIndex) {
+					droppedRollSet.push(rollSet[rollSet[x]])
+				}
+			}
+			rollSet[emphasisIndex] = 0;
+			rollSetText[emphasisIndex] = "[x" + rollSetText[emphasisIndex] + "x]"
+		}
+	}	
 
 	function StripAndSplit(content, delimeter) {
 		log(content)
