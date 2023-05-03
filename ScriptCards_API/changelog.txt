@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.3.5  - Fix for multiple buttons on the same output line that was broken in 2.3.3/2.3.4
+
 v 2.3.4  - ScriptCards now supports "rolling with emphasis" with the XdYe formula. Rolling with emphasis returns the value furthest
            from the middle number on the dice, so rolling 2d20e and getting 5 and 12 will return 5, since it is further from 10 than
            12. If the rolls are equally distant from the center number, the higher roll is returned.

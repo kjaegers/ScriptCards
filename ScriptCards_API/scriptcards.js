@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.3.4";
+	const APIVERSION = "2.3.5";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -4422,7 +4422,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var work = statusmarkers[sm].replace("[sm", "<img ").replace("[/sm]", "></img>").replace("]", " src=" + tokenMarkerURLs[markername]);
 			outputLine = outputLine.replace(statusmarkers[sm], work);
 		}
-		var buttons = outputLine.match(/\[button(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:)?(.+)?\](.*?)\:\:(.*?)\[\/button\]/gi);
+		var buttons = outputLine.match(/\[button(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:(.*?))?\](.*?)\:\:(.*?)\[\/button\]/gi);
 		for (var button in buttons) {
 			var customTextColor = undefined;
 			var customBackgroundColor = undefined;
@@ -4458,7 +4458,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			}
 		}
 
-		var sheetbuttons = outputLine.match(/\[sheetbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:)?(.+)?\](.*?)\:\:(.*?)\:\:(.*?)\[\/sheetbutton\]/gi);
+		var sheetbuttons = outputLine.match(/\[sheetbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:(.*?))?\](.*?)\:\:(.*?)\:\:(.*?)\[\/sheetbutton\]/gi);
 		for (var button in sheetbuttons) {
 			var customTextColor = undefined;
 			var customBackgroundColor = undefined;
@@ -4514,7 +4514,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 
 		//var reentrantbuttons = outputLine.match(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)\:\:(.*?)\[\/rbutton\]/gi); 
-		var reentrantbuttons = outputLine.match(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:)?(.+)?\](.*?)\:\:(.*?)\[\/rbutton\]/gi); 
+		var reentrantbuttons = outputLine.match(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:(.*?))?\](.*?)\:\:(.*?)\[\/rbutton\]/gi); 
 		for (var button in reentrantbuttons) {
 			var customTextColor = undefined;
 			var customBackgroundColor = undefined;
