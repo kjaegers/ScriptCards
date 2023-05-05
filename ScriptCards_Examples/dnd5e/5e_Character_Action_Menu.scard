@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.4.4
+  --/|Version     : 2.4.5
   --/|Requires SC : 2.2.9+
   --/|Author      : Kurt Jaegers
 
@@ -367,12 +367,16 @@
   --]|
   --#emotestate|visible
   --~action_name|string;before;|;[&reentryval]
+  --&action_name|[&action_name(replace,-!-!-,;)]
+  --\|[&action_name]
   --~action_target|string;after;|;[&reentryval]
   --#targettoken|[&action_target]
   --#leftsub|[*S:character_name]
   --#rightsub|
   --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]
-  --Rfind|[*S:character_id];[&action_name];repeating_npcaction;name
+  --#parameterdelimiter|$$$
+  --Rfind|[*S:character_id]$$$[&action_name]$$$repeating_npcaction$$$name
+  --#parameterdelimiter|;
   --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
     --#leftsub|[*R:name]
     --?"[*R:attack_flag]" -ne on|NPCA_NOT_ATTACK
@@ -1723,8 +1727,9 @@
   --?"[*R:[%3%]]" -ne "NoRepeatingAttributeLoaded"|[
     --:AM_BUTTON_LIST_LOOP|   
       --&DisplayName|[*R:[%3%]]
+      --&ActionName|[&DisplayName(replace,;,-!-!-)]
 
-      --/|5E SPECIFIC START
+      --/|5E SPECIFIC START 
       --?"[&DisplayName(contains,Multiattack)]" -eq 1|>SHOW_MULTIATTACK
       --?"[&DisplayName(contains,Multiattack)]" -eq 1|AM_LIST_CONTINUE
       --?[%8%] -eq 0|SKIP_BUTTON_LIST_SPELL_CHECK
@@ -1742,7 +1747,7 @@
       --&AM_BUTTON_LIST|+[button][&DisplayName(totitlecase)]::~[%6%]|[&testName][/button][&SPACE]
       --^AM_LIST_CONTINUE|
       --:AM_LIST_SKIP_MULE_CHECK|
-      --&AM_BUTTON_LIST|+[rbutton][&DisplayName(totitlecase)]::[%4%];[*R:[%3%]]|[&TB]target|token_id}[/rbutton][&SPACE]
+      --&AM_BUTTON_LIST|+[rbutton][&DisplayName(totitlecase)]::[%4%];[&ActionName]|[&TB]target|token_id}[/rbutton][&SPACE]
       --:AM_LIST_CONTINUE|
       --Rnext|
       --?"[*R:[%3%]]" -ne "NoRepeatingAttributeLoaded"|AM_BUTTON_LIST_LOOP
@@ -1848,7 +1853,7 @@
   --&saveMenu|[&QB]Saving Throw Type?|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma[&QE]
   --/+|[c]- - - - -[/c]
   --/&[%1%]|[c][rbutton:8px][&SkillCheckImage]::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton]     [rbutton:8px][&SavingThrowImage]::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton][/c]
-  --&[%1%]|[rbutton][&SkillCheckImage]::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton] [&NB] [rbutton][&SavingThrowImage]::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton]
+  --&[%1%]|[rbutton:Execute a Skill Check][&SkillCheckImage]::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton] [&NB] [rbutton][&SavingThrowImage]::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton]
   --<|
 
   --:REPLACE_WORDS_WITH_EMOJIS|Input variable NAME (not the variable refernce). Will be updated in place
