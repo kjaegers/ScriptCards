@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.3.5";
+	const APIVERSION = "2.3.6";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -3929,7 +3929,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var text = rollComponents[x];
 			var componentHandled = false;
 
-			if (text.match(/^(\d+[dDuUmM][fF\d]+)([eE])?([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(\#)?$/)) {
+			if (text.match(/^(\d+[dDuUmM][fF\d]+)([eE])?([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(f\<\d+)?(\#)?$/)) {
 				var thisRollHandled = handleDiceFormats(text);
 				componentHandled = true;
 
@@ -4995,7 +4995,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	// eslint-disable-next-line no-unused-vars
 	function handleDiceFormats(text, rollResult, hadOne, hadAce, currentOperator) {
 		// Split the dice roll into components
-		var matches = text.toLowerCase().match(/^(\d+[dDuUmM][fF\d]+)([eE])?([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(\#)?$/);
+		var matches = text.toLowerCase().match(/^(\d+[dDuUmM][fF\d]+)([eE])?([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(f\<\d+)?(\#)?$/);
 
 		var resultSet = {
 			rollSet: [],
@@ -5117,8 +5117,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 
 					// Handle failure counting
-					if (matches[x].match(/^[\><]\d+/)) {
-						failureThreshold = Number(matches[x].substring(1));
+					if (matches[x].match(/^f[\><]\d+/)) {
+						failureThreshold = Number(matches[x].substring(2));
 					}
 
 					// Handle Wild Dice
@@ -5225,7 +5225,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				if (resultSet.rollSet[x] > successThreshold) {
 					thisResult += 1
 				}
-				if (resultSet.rollSet[x] < failureThreshold) {
+				if (failureThreshold > 0 && resultSet.rollSet[x] < failureThreshold) {
 					thisResult -= 1
 				}
 				thisResultText += resultSet.rollTextSet[x] + (x == resultSet.rollSet.length - 1 ? "" : ",");
