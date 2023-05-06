@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.3.6";
+	const APIVERSION = "2.3.6a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -3934,6 +3934,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				componentHandled = true;
 
 				if (thisRollHandled.wasWild) { hadOne = thisRollHandled.hadOne; hadAce = thisRollHandled.hadAce; }
+				if (thisRollHandled.highlightasfailure) { hadOne = true }
 
 				var dieCount = thisRollHandled.rollSet.length;
 				rollResult.RollCount += dieCount;
@@ -3970,7 +3971,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					} else {
 						rollResult.Odds++;
 					}
-				}
+				}				
 
 				switch (currentOperator) {
 					case "+": rollResult.Total += thisRollHandled.rollTotal; if (!thisRollHandled.dontBase) { rollResult.Base += thisRollHandled.rollTotal; } break;
@@ -5005,6 +5006,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			hadOne: false,
 			hadAce: false,
 			dontHilight: false,
+			highlightasfailure: false,
 			dontBase: false,
 			sides: 6,
 			rawRollSet: [],
@@ -5227,6 +5229,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				}
 				if (failureThreshold > 0 && resultSet.rollSet[x] < failureThreshold) {
 					thisResult -= 1
+					resultSet.highlightasfailure = true
 				}
 				thisResultText += resultSet.rollTextSet[x] + (x == resultSet.rollSet.length - 1 ? "" : ",");
 			}
