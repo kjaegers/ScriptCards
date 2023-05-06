@@ -5029,6 +5029,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var wildDieDropSelf = false;
 		var wildDieDropHighest = false;
 		var successThreshold = 0;
+		var failureThreshold = 0;
 
 		if (matches) {
 			for (var x = 1; x < matches.length; x++) {
@@ -5113,6 +5114,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					// Handle counting successes
 					if (matches[x].match(/^[\><]\d+/)) {
 						successThreshold = Number(matches[x].substring(1));
+					}
+
+					// Handle failure counting
+					if (matches[x].match(/^[\><]\d+/)) {
+						failureThreshold = Number(matches[x].substring(1));
 					}
 
 					// Handle Wild Dice
@@ -5218,6 +5224,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			for (var x = 0; x < resultSet.rollSet.length; x++) {
 				if (resultSet.rollSet[x] > successThreshold) {
 					thisResult += 1
+				}
+				if (resultSet.rollSet[x] < failureThreshold) {
+					thisResult -= 1
 				}
 				thisResultText += resultSet.rollTextSet[x] + (x == resultSet.rollSet.length - 1 ? "" : ",");
 			}
