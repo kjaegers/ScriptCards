@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.3.6a";
+	const APIVERSION = "2.3.7";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -92,6 +92,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		emotefontsize: "14px",
 		emotestate: "visible",
 		emotefontcolor: "",
+		emotesourcetokensize: "50",
+		emotetargettokensize: "50",
 		rollfontface: "helvetica",
 		leftsub: "",
 		rightsub: "",
@@ -176,6 +178,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		"buttonbordercolor",
 		"dicefontcolor"
 	];
+
+	const SettingsThatAreNumbers = [
+		"emotesourcetokensize",
+		"emotetargettokensize"
+	]
 
 	//---------------------------------------------------------------------------------------
 	// Handles registering token change events for other api scripts
@@ -984,6 +991,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (thisContent.trim() == "") {
 										cardParameters[paramName] = "#00000000"
 									}
+								}
+								if (SettingsThatAreNumbers.includes(paramName)) {
+									cardParameters[paramName] = thisContent.match(/\d+/)[0]
 								}
 
 							}
@@ -3258,13 +3268,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						if (cardParameters.sourcetoken !== "") {
 							var thisToken = getObj("graphic", cardParameters.sourcetoken.trim());
 							if (thisToken != null && thisToken.get("imgsrc") !== "") {
-								emoteLeft = `<img src=${thisToken.get("imgsrc")} style='height: 50px; min-width: 50px; float: left;'></img>`;
+								emoteLeft = `<img src=${thisToken.get("imgsrc")} style='height: ${cardParameters.emotesourcetokensize}px; min-width: ${cardParameters.emotesourcetokensize}px; float: left;'></img>`;
 							}
 						}
 						if (cardParameters.targettoken !== "") {
 							var thisToken = getObj("graphic", cardParameters.targettoken.trim());
 							if (thisToken != null && thisToken.get("imgsrc") !== "") {
-								emoteRight = `<img src=${thisToken.get("imgsrc")} style='height: 50px; min-width: 50px; float: left;'></img>`;
+								emoteRight = `<img src=${thisToken.get("imgsrc")} style='height: ${cardParameters.emotetargettokensize}px; min-width: ${cardParameters.emotetargettokensize}px; float: left;'></img>`;
 							}
 						}
 						if (cardParameters.emotetext !== "" || emoteLeft !== "" || emoteRight !== "") {

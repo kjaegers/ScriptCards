@@ -1,5 +1,9 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.3.7  - New settings:  emotesourcetokensize and emotetargetokensize. Default for both is 50. Numeric only ("px" gets appended to the value)
+
+           Internal chances to allow for validation of numeric-only settings. The two settings above are the only ones added at this point.
+
 v 2.3.6  - How handles XdY>Zf<Q (roll XdY, count successes greater than Z, subtract failures less than Q)
 
 v 2.3.5  - Fix for multiple buttons on the same output line that was broken in 2.3.3/2.3.4
