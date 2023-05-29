@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.3.7";
+	const APIVERSION = "2.3.8";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -3251,7 +3251,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						gmoutput += gmonlyLines[x];
 					}
 
-
 					cardOutput += htmlTemplateEnd;
 					cardOutput = replaceStyleInformation(cardOutput, cardParameters);
 
@@ -3281,7 +3280,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (emoteLeft == "") { emoteLeft = "&nbsp;" }
 							if (emoteRight == "") { emoteRight = "&nbsp;" }
 							emote = "<div style='display: table; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal; background: " + cardParameters.emotebackground + "'>" + emoteLeft + "<div style='display: table-cell; width: 100%; " + " font-size: " + cardParameters.emotefontsize + "; font-weight: " + cardParameters.emotefontweight + "; color: " + cardParameters.emotefontcolor + "; font-family: " + cardParameters.emotefont + "; " + "vertical-align: middle; text-align: center; padding: 0px 2px;'>" + cardParameters.emotetext + "</div><div style='display: table-cell; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal;'>" + emoteRight + "</div></div>"
-							//emote = inlineReplaceRollVariables(emote, cardParameters);
 							emote = replaceVariableContent(emote, cardParameters, false);
 						}
 					}
@@ -3312,7 +3310,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							cardOutput += bareoutputLines[x];
 						}
 						cardOutput += templates[cardParameters.overridetemplate].buttonwrapper
-						//templates[cardParameters.overridetemplate].buttondivider + " " 
 						cardOutput += '</div></div></div>' + templates[cardParameters.overridetemplate].footer + "</div>"
 						cardOutput = replaceStyleInformation(cardOutput, cardParameters);
 						cardOutput = removeInlineRolls(cardOutput, cardParameters);
@@ -3325,13 +3322,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							} else {
 								var whispers = cardParameters.whisper.split(",");
 								for (var w in whispers) {
-									//var WhisperTarget = (whispers[w].trim() == 'self' ? msg.playerid : whispers[w].trim());
 									var WhisperTarget = whispers[w].trim();
 									if (WhisperTarget == "self") {
 										WhisperTarget = getObj("player", msg.playerid).get("displayname");
 									}
 									sendChat(msg.who, `/w "${WhisperTarget}" ${emote} ${cardOutput}`);
-									//sendChat(msg.who, "/w \"" + WhisperTarget + "\" " + cardOutput );
 								}
 							}
 						} else {
@@ -3340,13 +3335,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							} else {
 								var whispers = cardParameters.whisper.split(",");
 								for (var w in whispers) {
-									//var WhisperTarget = (whispers[w].trim() == 'self' ? msg.playerid : whispers[w].trim());
 									var WhisperTarget = whispers[w].trim();
 									if (WhisperTarget == "self") {
 										WhisperTarget = getObj("player", msg.playerid).get("displayname");
 									}
 									sendChat(msg.who, `/w "${WhisperTarget}" ${cardOutput}`);
-									//sendChat(msg.who, "/w " + WhisperTarget + " " + cardOutput );
 								}
 							}
 						}
@@ -3391,16 +3384,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function replaceVariableContent(content, cardParameters, rollHilighting) {
-		//var matchCount = 0;
 		var failCount = 0;
 		const failLimit = 1000;
-		//var contentIn = content;
-		//var charId = "";
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
 		content = content.replace(/\[&zwnj;/g, "[")
-		//while (content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\,|\_|\>|\^|\-\+|\)]*?(?!\w+[\[])(\])/g) != null) {
-		//	var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\,|\_|\>|\^|\-\+|\)]*?(?!\w+[\[])(\])/g)[0];
 		while (content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
 			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[^\[\]]*?(?!\.+[\[])(\])/g)[0];
 			var replacement = "";
@@ -3413,7 +3401,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						if (stringVariables[vName] != null) {
 							try {
 								var TestMatch = thisMatch.match(/(?<=\().*?(?=[)]])/g)[0].toString();
-								var substringInfo = TestMatch.split(",");
+								var substringInfo = TestMatch.split(/(?<!\\),/);
+								for (let x=0; x<substringInfo.length; x++) {
+									substringInfo[x] = substringInfo[x].replace("\\","")
+								}
+								log(substringInfo)
 								//var substringInfo = TestMatch.match(/("[^"]*")|[^,]+/g)
 								if (isNaN(substringInfo[0])) {
 									switch (substringInfo[0].toLowerCase()) {
@@ -3553,6 +3545,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											}
 											break;
 
+										case "split":
+											if (substringInfo.length == 3)
+												replacement = stringVariables[vName].split(substringInfo[1])[substringInfo[2]]
+											else
+												replacment = stringVariables[vName]
+											break;
+
 									}
 								} else {
 									if (substringInfo.length == 1) {
@@ -3603,7 +3602,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 				case "$":
 					// Replace a roll variable
-					//var vName = thisMatch.match(/(?<=\[\$|\#).*?(?=[\.|\]])/g)[0];
 					var vName = thisMatch.match(/(?<=\[\$).*?(?=[\.|\]])/g)[0];
 					var vSuffix = "Total";
 					if (thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g) != null) {
@@ -3743,7 +3741,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 						if (character != null) {
-							//charId = character.get("_id");
 							var opType = "current";
 							if (attrName.endsWith("^")) {
 								attrName = attrName.substring(0, attrName.length - 1);
@@ -3872,7 +3869,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					break;
 			}
 
-			//replacement = replaceSubattributeReferences(replacement, charId);
 			content = content.replace(thisMatch, replacement);
 
 			failCount++;

@@ -1,8 +1,12 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.3.8  - New enhanced string referencing function: split. Takes a delimiter and a zero-based index (ie, [&MyString(split,!,1)))
+           Enhanced string reference methods can now use the "," (comma) character as part of the method by prefixing it with a \ (backslash):
+           ex: [&MyString(split,\,,3)] will split MyString on the comma charcter (\,) and return the 4th item.
+
 v 2.3.7  - New settings:  emotesourcetokensize and emotetargetokensize. Default for both is 50. Numeric only ("px" gets appended to the value)
 
-           Internal chances to allow for validation of numeric-only settings. The two settings above are the only ones added at this point.
+           Internal changes to allow for validation of numeric-only settings. The two settings above are the only ones added at this point.
 
 v 2.3.6  - How handles XdY>Zf<Q (roll XdY, count successes greater than Z, subtract failures less than Q)
 
