@@ -3405,7 +3405,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								for (let x=0; x<substringInfo.length; x++) {
 									substringInfo[x] = substringInfo[x].replace("\\","")
 								}
-								log(substringInfo)
+								//log(substringInfo)
 								//var substringInfo = TestMatch.match(/("[^"]*")|[^,]+/g)
 								if (isNaN(substringInfo[0])) {
 									switch (substringInfo[0].toLowerCase()) {
