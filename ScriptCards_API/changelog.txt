@@ -1,5 +1,11 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.3.9  - Two new settings: #emotesourcetokenoverride and #emotetargettokenoverride. If one or both of these is set to a url, the token
+           images in the emote area will be replaced with that image (source=left, target=right)
+
+           New inline formatting tag: [roll]...[/roll] will format whatever is between the tags to look like a roll (hilighting around)
+           the text. You can use [roll:c] and [roll:f] to colorize the box as a (c)rit or a (f)umble
+
 v 2.3.8  - New enhanced string referencing function: split. Takes a delimiter and a zero-based index (ie, [&MyString(split,!,1)))
            Enhanced string reference methods can now use the "," (comma) character as part of the method by prefixing it with a \ (backslash):
            ex: [&MyString(split,\,,3)] will split MyString on the comma charcter (\,) and return the 4th item.

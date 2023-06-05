@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.3.8";
+	const APIVERSION = "2.3.9";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -94,6 +94,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		emotefontcolor: "",
 		emotesourcetokensize: "50",
 		emotetargettokensize: "50",
+		emotesourcetokenoverride: "0",
+		emotetargettokenoverride: "0",
 		rollfontface: "helvetica",
 		leftsub: "",
 		rightsub: "",
@@ -3276,12 +3278,21 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								emoteRight = `<img src=${thisToken.get("imgsrc")} style='height: ${cardParameters.emotetargettokensize}px; min-width: ${cardParameters.emotetargettokensize}px; float: left;'></img>`;
 							}
 						}
-						if (cardParameters.emotetext !== "" || emoteLeft !== "" || emoteRight !== "") {
-							if (emoteLeft == "") { emoteLeft = "&nbsp;" }
-							if (emoteRight == "") { emoteRight = "&nbsp;" }
-							emote = "<div style='display: table; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal; background: " + cardParameters.emotebackground + "'>" + emoteLeft + "<div style='display: table-cell; width: 100%; " + " font-size: " + cardParameters.emotefontsize + "; font-weight: " + cardParameters.emotefontweight + "; color: " + cardParameters.emotefontcolor + "; font-family: " + cardParameters.emotefont + "; " + "vertical-align: middle; text-align: center; padding: 0px 2px;'>" + cardParameters.emotetext + "</div><div style='display: table-cell; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal;'>" + emoteRight + "</div></div>"
-							emote = replaceVariableContent(emote, cardParameters, false);
-						}
+					}
+
+					if (cardParameters.emotesourcetokenoverride !== "0") {
+						emoteLeft = `<img src=${cardParameters.emotesourcetokenoverride} style='height: ${cardParameters.emotesourcetokensize}px; min-width: ${cardParameters.emotesourcetokensize}px; float: left;'></img>`;
+					}
+
+					if (cardParameters.emotetargettokenoverride !== "0") {
+						emoteRight = `<img src=${cardParameters.emotetargettokenoverride} style='height: ${cardParameters.emotesourcetokensize}px; min-width: ${cardParameters.emotesourcetokensize}px; float: left;'></img>`;
+					}
+
+					if (cardParameters.emotetext !== "" || emoteLeft !== "" || emoteRight !== "") {
+						if (emoteLeft == "") { emoteLeft = "&nbsp;" }
+						if (emoteRight == "") { emoteRight = "&nbsp;" }
+						emote = "<div style='display: table; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal; background: " + cardParameters.emotebackground + "'>" + emoteLeft + "<div style='display: table-cell; width: 100%; " + " font-size: " + cardParameters.emotefontsize + "; font-weight: " + cardParameters.emotefontweight + "; color: " + cardParameters.emotefontcolor + "; font-family: " + cardParameters.emotefont + "; " + "vertical-align: middle; text-align: center; padding: 0px 2px;'>" + cardParameters.emotetext + "</div><div style='display: table-cell; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal;'>" + emoteRight + "</div></div>"
+						emote = replaceVariableContent(emote, cardParameters, false);
 					}
 
 					var from = cardParameters.showfromfornonwhispers !== "0" ? msg.who : "";
@@ -3402,8 +3413,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							try {
 								var TestMatch = thisMatch.match(/(?<=\().*?(?=[)]])/g)[0].toString();
 								var substringInfo = TestMatch.split(/(?<!\\),/);
-								for (let x=0; x<substringInfo.length; x++) {
-									substringInfo[x] = substringInfo[x].replace("\\","")
+								for (let x = 0; x < substringInfo.length; x++) {
+									substringInfo[x] = substringInfo[x].replace("\\", "")
 								}
 								//log(substringInfo)
 								//var substringInfo = TestMatch.match(/("[^"]*")|[^,]+/g)
@@ -3977,7 +3988,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					} else {
 						rollResult.Odds++;
 					}
-				}				
+				}
 
 				switch (currentOperator) {
 					case "+": rollResult.Total += thisRollHandled.rollTotal; if (!thisRollHandled.dontBase) { rollResult.Base += thisRollHandled.rollTotal; } break;
@@ -4411,6 +4422,21 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		outputLine = outputLine.replace(/\[[Ll]\](.*?)\[\/[Ll]\]/g, "<div style='text-align: left;'>$1</div>"); // [L]..[/L] for left
 		outputLine = outputLine.replace(/\[[Rr]\](.*?)\[\/[Rr]\]/g, "<div style='text-align: right; float: right;'>$1</div><div style='clear: both;'></div>"); // [R]..[/R] for right
 		outputLine = outputLine.replace(/\[[Jj]\](.*?)\[\/[Jj]\]/g, "<div style='text-align: justify; display:block;'>$1</div>"); // [J]..[/J] for justify
+
+		var fakerolls = outputLine.match(/(\[roll(.*?)\](.*?)\[\/roll\])/gi)
+		for (let fakeroll in fakerolls) {
+			var base = fakerolls[fakeroll].replace(/\[roll(.*?)\]/, "").replace(/\[\/roll(.*?)\]/, "")
+			let style = cardParameters.stylenormal
+			if (fakerolls[fakeroll].substring(5, 7).toLowerCase() == ":c") {
+				style = cardParameters.stylecrit
+			}
+			if (fakerolls[fakeroll].substring(5, 7).toLowerCase() == ":f") {
+				style = cardParameters.stylefumble
+			}
+			var work = buildTooltip(base, "Roll: " + base + "<br /><br />Result: " + base, style)
+			outputLine = outputLine.replace(fakerolls[fakeroll], work)
+		}
+
 		var images = outputLine.match(/(\[img(.*?)\](.*?)\[\/img\])/gi);
 		for (var image in images) {
 			var work = images[image].replace("[img", "<img").replace("[/img]", "></img>").replace("]", " src=");
@@ -4521,7 +4547,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 
 		//var reentrantbuttons = outputLine.match(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?\](.*?)\:\:(.*?)\[\/rbutton\]/gi); 
-		var reentrantbuttons = outputLine.match(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:(.*?))?\](.*?)\:\:(.*?)\[\/rbutton\]/gi); 
+		var reentrantbuttons = outputLine.match(/\[rbutton(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:(.*?))?\](.*?)\:\:(.*?)\[\/rbutton\]/gi);
 		for (var button in reentrantbuttons) {
 			var customTextColor = undefined;
 			var customBackgroundColor = undefined;
@@ -4576,7 +4602,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (customTextColor) { thisButtonStyle = thisButtonStyle.replace("!{buttontextcolor}", customTextColor) }
 		if (customBackgroundColor) { thisButtonStyle = thisButtonStyle.replace("!{buttonbackground}", customBackgroundColor) }
 		if (customfontsize) { thisButtonStyle = thisButtonStyle.replace("!{buttonfontsize}", customfontsize) }
-		if (customHoverText) { thisHoverText = ` title="${customHoverText}" `}
+		if (customHoverText) { thisHoverText = ` title="${customHoverText}" ` }
 		return `<a style="${replaceStyleInformation(thisButtonStyle, parameters)}" ${thisHoverText}" href="${removeTags(removeBRs(url))}">${removeBRs(title)}</a>`;
 	}
 
@@ -5293,8 +5319,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var difference = 0;
 		var emphasisIndex = -1;
 		for (var x = 0; x < rollSet.length; x++) {
-			if ((Math.abs(centerValue - rollSet[x]) < difference && rollSet[x] > 0) 
-				|| (emphasisIndex == -1) 
+			if ((Math.abs(centerValue - rollSet[x]) < difference && rollSet[x] > 0)
+				|| (emphasisIndex == -1)
 				|| (Math.abs(centerValue - rollSet[x] && rollSet[x] > rollSet[emphasisIndex])
 				)) {
 				difference = Math.abs(centerValue - rollSet[x]);
@@ -5302,7 +5328,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			}
 		}
 		if (emphasisIndex > -1) {
-			for (let x=0; x < rollSet.length; x++) {
+			for (let x = 0; x < rollSet.length; x++) {
 				if (x !== emphasisIndex) {
 					droppedRollSet.push(rollSet[rollSet[x]])
 				}
@@ -5310,7 +5336,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			rollSet[emphasisIndex] = 0;
 			rollSetText[emphasisIndex] = "[x" + rollSetText[emphasisIndex] + "x]"
 		}
-	}	
+	}
 
 	function StripAndSplit(content, delimeter) {
 		log(content)
