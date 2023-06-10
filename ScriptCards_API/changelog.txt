@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.3.9a - Bug fix for attribute creation trying to .startsWith a numeric value.
+
 v 2.3.9  - Two new settings: #emotesourcetokenoverride and #emotetargettokenoverride. If one or both of these is set to a url, the token
            images in the emote area will be replaced with that image (source=left, target=right)
 
