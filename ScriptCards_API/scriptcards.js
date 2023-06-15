@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.4.0";
+	const APIVERSION = "2.4.0a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2743,11 +2743,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 							// Handle direct output lines
 							if (thisTag.charAt(0) === "+") {
-								log(thisContent)
 								var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent.replace(/\[&zwnj;/g, "["), cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
 								var rawRowData = buildRawRowOutput(thisTag.substring(1), replaceVariableContent(thisContent.replace(/\[&zwnj;/g, "["), cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
-
-								log(rowData)
 
 								tableLineCounter += 1;
 								if (tableLineCounter % 2 == 0) {
@@ -4279,15 +4276,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (cardParameters.nominmaxhighlight !== "0") { rollResult.Style = cardParameters.stylenormal; }
 		if (cardParameters.norollhighlight !== "0") { rollResult.Style = cardParameters.stylenone; }
 
-		//log(`cardParams: ${cardParameters.rollhilightcolornormal}`)
-		//log(`Style before: ${rollResult.Style}`)
 		rollResult.Style = replaceStyleInformation(rollResult.Style, cardParameters);
-		//log(`Style after: ${rollResult.Style}`)
 
 		rollResult.Text = rollResult.Text.replace(/\+ \+/g, " + ");
 		rollResult.Text = rollResult.Text.replace(/\- \-/g, " - ");
-
-		//log(rollResult)
 
 		return rollResult;
 	}
@@ -4357,16 +4349,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function evaluateConditional(conditional, cardParameters) {
-		//var newComponents = conditional.split(/-\w+/);
-		//log(newComponents);
 		var components = conditional.match(/(?:[^\s"]+|"[^"]*")+/g);
 		if (!components) { return false; }
 		if (components.length !== 3) {
 			return false;
 		}
-		//var left = inlineReplaceRollVariables(components[0]).replace(/\"/g,"", cardParameters);
 		var left = replaceVariableContent(components[0]).replace(/\"/g, "", cardParameters, false);
-		//var right = inlineReplaceRollVariables(components[2]).replace(/\"/g,"", cardParameters);;
 		var right = replaceVariableContent(components[2]).replace(/\"/g, "", cardParameters, false);
 		if (!isNaN(left) && left !== "") { left = parseFloat(left); }
 		if (!isNaN(right) && right !== "") { right = parseFloat(right); }
@@ -4403,7 +4391,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function processInlineFormatting(outputLine, cardParameters, raw) {
 		if (cardParameters.disableinlineformatting !== "0") { return outputLine; }
-		//log(outputLine)
 		outputLine = outputLine.replace(/\[\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})\](.*?)\[\/[\#]\]/g, "<span style='color: #$1;'>$2</span>"); // [#xxx] or [#xxxx]...[/#] for color codes. xxx is a 3-digit hex code
 		outputLine = outputLine.replace(/\[hr(.*?)\]/gi, '<hr style="width:95%; align:center; margin:0px 0px 5px 5px; border-top:2px solid $1;">');
 		outputLine = outputLine.replace(/\[br\]/gi, "<br />");
@@ -4480,7 +4467,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var customfontsize = undefined;
 			let customHoverText = undefined;
 			var basebutton = buttons[button].replace(/\[button(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6}))?(\:([0-9]{1,})PX)?(\:.+?)?\]/gi, "[button]");
-			log(basebutton);
+			//log(basebutton);
 			if (basebutton.toLowerCase() !== buttons[button].toLowerCase()) {
 				var tempbutton = buttons[button].replace("[button:", "").replace("[Button:", "").replace("[BUTTON:", "").split("]")[0];
 				var customs = tempbutton.split(":");
@@ -5360,8 +5347,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		log(content)
 		//var work = content.replace("[","").replace(")","").replace("(","").replace(")","")
 		var work = content.replace(/[^a-z0-9áéíóúñü:; \,_-]/gim, "");
-		log(work);
-		log(work.split(delimeter));
 		return work.split(delimeter);
 	}
 
@@ -5453,7 +5438,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				varValue = (stringVariables[varName] || "") + varValue.substring(1);
 			}
 
-			//log(`Setting [${varName}] to [${varValue}]`)
 			stringVariables[varName] = replaceVariableContent(varValue, cardParameters, true);
 		}
 	}
