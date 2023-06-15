@@ -3402,7 +3402,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		const failLimit = 1000;
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
-		//content = content.replace(/\[&zwnj;/g, "[")
+		content = content.replace(/\[&zwnj;/g, "[")
 		while (content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
 			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[^\[\]]*?(?!\.+[\[])(\])/g)[0];
 			var replacement = "";
