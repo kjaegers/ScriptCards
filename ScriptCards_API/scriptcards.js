@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.3.9a";
+	const APIVERSION = "2.4.0";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2743,8 +2743,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 							// Handle direct output lines
 							if (thisTag.charAt(0) === "+") {
+								log(thisContent)
 								var rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent.replace(/\[&zwnj;/g, "["), cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
 								var rawRowData = buildRawRowOutput(thisTag.substring(1), replaceVariableContent(thisContent.replace(/\[&zwnj;/g, "["), cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
+
+								log(rowData)
 
 								tableLineCounter += 1;
 								if (tableLineCounter % 2 == 0) {
@@ -3399,7 +3402,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		const failLimit = 1000;
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
-		content = content.replace(/\[&zwnj;/g, "[")
+		//content = content.replace(/\[&zwnj;/g, "[")
 		while (content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
 			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[^\[\]]*?(?!\.+[\[])(\])/g)[0];
 			var replacement = "";
@@ -3742,7 +3745,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						var workString = thisMatch;
 						if (workString.indexOf(":") !== workString.lastIndexOf(":")) {
 							// Format to access a repeating value: [*S:r-section:index:attribute]
-							let op = workString.split(":");
+							//let op = workString.split(":");
 
 
 						} else {
@@ -3952,6 +3955,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 		for (var x = 0; x < rollComponents.length; x++) {
 			var text = rollComponents[x];
+			//log(text)
 			var componentHandled = false;
 
 			if (text.match(/^(\d+[dDuUmM][fF\d]+)([eE])?([kK][lLhH]\d+)?([rR][<\>]\d+)?([rR][oO][<\>]\d+)?(![HhLl])?(![<\>]\d+)?(!)?([Ww][Ss][Xx])?([Ww][Ss])?([Ww][Xx])?([Ww])?([\><]\d+)?(f\<\d+)?(\#)?$/)) {
@@ -4242,6 +4246,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			// Flavor Text
 			if (!componentHandled) {
 				if (text.match(/^\[.+\]$/)) {
+					//log(`Flavor Text: ${text}`)
 					componentHandled = true;
 					if ((text.charAt(1) !== "$") && (text.charAt(1) !== "=")) {
 						if (text.charAt(1) == "t" || text.charAt(1) == "T") {
@@ -4281,6 +4286,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 		rollResult.Text = rollResult.Text.replace(/\+ \+/g, " + ");
 		rollResult.Text = rollResult.Text.replace(/\- \-/g, " - ");
+
+		//log(rollResult)
 
 		return rollResult;
 	}
@@ -4396,6 +4403,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function processInlineFormatting(outputLine, cardParameters, raw) {
 		if (cardParameters.disableinlineformatting !== "0") { return outputLine; }
+		//log(outputLine)
 		outputLine = outputLine.replace(/\[\#([A-Fa-f0-9]{3}|[A-Fa-f0-9]{6})\](.*?)\[\/[\#]\]/g, "<span style='color: #$1;'>$2</span>"); // [#xxx] or [#xxxx]...[/#] for color codes. xxx is a 3-digit hex code
 		outputLine = outputLine.replace(/\[hr(.*?)\]/gi, '<hr style="width:95%; align:center; margin:0px 0px 5px 5px; border-top:2px solid $1;">');
 		outputLine = outputLine.replace(/\[br\]/gi, "<br />");
@@ -4415,9 +4423,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		outputLine = outputLine.replace(/\[\/h4\]/gi, `</h4>`);
 		outputLine = outputLine.replace(/\[h5(.*?)\]/gi, `<h5 ${FillTemplateStyle("h5style", cardParameters, raw)} $1>`);
 		outputLine = outputLine.replace(/\[\/h5\]/gi, `</h5>`);
-		outputLine = outputLine.replace(/\[t(.*?)\]/gi, "<table $1>");
+		outputLine = outputLine.replace(/\[t\s+?(.*?)\]/gi, "<table $1>");
 		outputLine = outputLine.replace(/\[\/t\]/gi, "</table>");
-		outputLine = outputLine.replace(/\[p(.*?)\]/gi, "<p $1>");
+		//outputLine = outputLine.replace(/\[p(.*?)\]/gi, "<p $1>");
+		outputLine = outputLine.replace(/\[p\s+?(.+?)\]/gi, "<p $1>");
+		outputLine = outputLine.replace(/\[p\]/gi, "<p $1>");
 		outputLine = outputLine.replace(/\[\/p\]/gi, "</p>");
 		outputLine = outputLine.replace(/\[[Ff](\d+)\](.*?)\[\/F\]/gi, "<div style='font-size:$1px;'>$2</div>"); // [F8] for font size 8
 		outputLine = outputLine.replace(/\[[Ff]\:([a-zA-Z\s]*)\:?(\d+)?\](.*?)\[\/[Ff]\]/gi, "<span style='font-family:$1; font-size:$2px'>$3</span>"); // [F8] for font size 8
