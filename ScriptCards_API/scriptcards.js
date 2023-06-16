@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.4.0a";
+	const APIVERSION = "2.4.1";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -890,7 +890,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											}
 										}
 									} else {
-										log(`ScriptCards: Error - Loop end statement without and active loop on line ${lineCounter}`);
+										log(`ScriptCards: Error - Loop end statement without an active loop on line ${lineCounter}`);
 									}
 								}
 							}
@@ -2226,18 +2226,31 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 											if (params[1].toLowerCase() == "fromtable") {
 												arrayVariables[params[2]] = [];
-												if (params[1].toLowerCase() == "fromtable") {
-													arrayVariables[params[2]] = [];
-													var theTable = findObjs({ type: "rollabletable", name: params[3] })[0];
-													if (theTable != null) {
-														var tableItems = findObjs({ type: "tableitem", _rollabletableid: theTable.id });
-														if (tableItems != null) {
-															tableItems.forEach(function (item) {
-																arrayVariables[params[2]].push(item.get("name"))
-															})
-														}
-														if (variableName) { stringVariables[variableName] = arrayVariables[params[2]].length; }
+												var theTable = findObjs({ type: "rollabletable", name: params[3] })[0];
+												if (theTable != null) {
+													var tableItems = findObjs({ type: "tableitem", _rollabletableid: theTable.id });
+													if (tableItems != null) {
+														tableItems.forEach(function (item) {
+															arrayVariables[params[2]].push(item.get("name"))
+														})
 													}
+													if (variableName) { stringVariables[variableName] = arrayVariables[params[2]].length; }
+												}
+											}
+
+											if (params[1].toLowerCase() == "fromtableweighted") {
+												arrayVariables[params[2]] = [];
+												var theTable = findObjs({ type: "rollabletable", name: params[3] })[0];
+												if (theTable != null) {
+													var tableItems = findObjs({ type: "tableitem", _rollabletableid: theTable.id });
+													if (tableItems != null) {
+														tableItems.forEach(function (item) {
+															for (let w = 0; w < Number(item.get("weight")); w++) {
+																arrayVariables[params[2]].push(item.get("name"))
+															}
+														})
+													}
+													if (variableName) { stringVariables[variableName] = arrayVariables[params[2]].length; }
 												}
 											}
 

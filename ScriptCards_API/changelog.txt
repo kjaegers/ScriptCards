@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.4.1  - New array function: fromtableweighted, which will create repeated array items equal to the weight number for intems on a roll table
+
 v 2.4.0  - Bug fix for roll flavor text starting with P or T being treated as paragraph/table formatting. 
 
 v 2.3.9a - Bug fix for attribute creation trying to .startsWith a numeric value.
