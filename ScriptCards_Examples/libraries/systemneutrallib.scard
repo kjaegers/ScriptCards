@@ -366,7 +366,6 @@
 
 --:LibSN_APPLY_DAMAGE_OR_HEALING_TO_SELECTED|bar#;amount;display (0 or 1)
   -->LibSN_APPLY_DAMAGE_OR_HEALING_TO_ARRAY|SC_SelectedTokens;[%1%];[%2%];[%3%]
-  --%|
 --<|
 
 --:LibSN_APPLY_DAMAGE_OR_HEALING|tokenid;bar#;amount;display (0 or 1)
