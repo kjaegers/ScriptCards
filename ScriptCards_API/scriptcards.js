@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.4.1";
+	const APIVERSION = "2.4.2";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -184,6 +184,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	const SettingsThatAreNumbers = [
 		"emotesourcetokensize",
 		"emotetargettokensize"
+	]
+
+	const TokenAttrsThatAreNumbers = [
+		"left", "top", "width", "height", "rotation"
 	]
 
 	//---------------------------------------------------------------------------------------
@@ -1180,6 +1184,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 														//if (settingName && settingValue) { 
 														if (settingName) {
+															if (TokenAttrsThatAreNumbers.includes(settingName)) {
+																settingValue = Number(settingValue)
+															}
 															theToken.set(settingName, settingValue);
 															notifyObservers('tokenChange', theToken, prevTok);
 														}
