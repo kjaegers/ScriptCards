@@ -1,5 +1,42 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.4.3  - New referencing options for repeating section information. You can now use the following formats:
+
+           [*R:character_id:sectionname:rowindex:attribute]
+           [*R>character_id:sectionname:rowindex:attribute]
+           [*R:character_id:sectioname:rowcount]
+
+           The first structure will look up the "sectionname" repeating section (ie, repeating_npcattacks) on the character_id character,
+           go to repeating row index "rowindex" and return the value of the attribute named "attribute", for example:
+
+             [*R:@{selected|character_id}:repeating_npcaction:0:name]
+
+           The second structure returns the full attribute name of the indicated row/attribute, allowing it to be used with --! commands:
+             
+             --!a:@{selected|character_id}|[*R>@{selected|character_id}:repeating_npcaction:0:name]:New Multiattack
+
+           The third structure will return the row count for the given section and character id:
+
+             [*R:@{selected|character_id}:repeating_npcaction:rowcount]
+
+           Using either of these structures *WILL* modify the internally tracked repeating section information (from rfirst, rnext, etc), which
+           means further [*R:] references can omit the character, section, and rowindex if you want to refer to the same char, section, and index
+
+           Here is a sample script that will take the selected character and display all of the repeating_npcaction items (5E Sheet) and change
+           anything called "Multiattack" to "New Multiattack":
+
+           !script {{
+             --=rows|[*R:@{selected|character_id}:repeating_npcaction:rowcount]
+             --%loop|1;[$rows]
+               --?"[*R:@{selected|character_id}:repeating_npcaction:[=[&loop]-1]:name]" -eq "Multiattack"|[
+                 --!a:@{selected|character_id}|[*R>@{selected|character_id}:repeating_npcaction:[=[&loop]-1]:name]:New Multiattack
+               --]|
+               --&output|[*R:@{selected|character_id}:repeating_npcaction:[=[&loop]-1]:name]
+               --?"[*R:attack_type]" -ne ""|&output;+ ([*R:attack_type], [*R:attack_damage])
+              --+Action|[&output]
+             --%|
+           }}
+
 v 2.4.2  - Fix for setting numeric token attributes with --!
 
 v 2.4.1  - New array function: fromtableweighted, which will create repeated array items equal to the weight number for intems on a roll table

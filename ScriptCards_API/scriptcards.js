@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.4.2";
+	const APIVERSION = "2.4.3";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -3881,28 +3881,77 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 					if (thisMatch.charAt(2).toLowerCase() == "r") {
 						// Repeating section attributes
-
 						var opType = "";
+						var repSectionHandled = false;
 						var attrName = thisMatch.substring(4, thisMatch.length - 1);
-						if (attrName.endsWith("^")) {
-							attrName = attrName.substring(0, attrName.length - 1);
-							opType = "_max";
-						}
-						var searchText = attrName + opType + "|";
-						if (thisMatch.charAt(3) == ":") {
-							if (repeatingSectionIDs) {
-								for (var i in repeatingSection) {
-									if (repeatingSection[i].startsWith(searchText)) {
-										replacement = repeatingSection[i].split("|").slice(1, 999).join("|");
-										//charId = repeatingCharID;
-									}
+						if (attrName.toLowerCase() == "$fieldlist$") {
+							replacement = "";
+							if (repeatingSection) {
+								for (var x = 0; x < repeatingSection.length; x++) {
+									replacement += repeatingSection[x].split("|")[0] + "|";
 								}
 							}
-						} else {
-							replacement = repeatingSectionName + "_" + repeatingSectionIDs[repeatingIndex] + "_" + attrName + opType;
+							replacement.slice(0, -1)
+							repSectionHandled = true
 						}
-						if (!repeatingSection) { replacement = "NoRepeatingAttributeLoaded" }
-						if (repeatingSection && repeatingSection.length <= 1) { replacement = "NoRepeatingAttributeLoaded" }
+						if (attrName.match(/(\-.*)\:(.*)\:(\d*)\:(.*)/) && !repSectionHandled) {
+							replacement = ""
+							var values = attrName.match(/(\-.*)\:(.*)\:(\d*)\:(.*)/)
+							values.shift();
+							repeatingSectionIDs = getRepeatingSectionIDs(values[0], values[1])
+							if (values[3].endsWith("^")) { values[3] = values[3].substring(0, values[3].length - 1) + "_max" }
+							if (repeatingSectionIDs) {
+								if (thisMatch.charAt(3) == ":") {
+									let repeatingIndex = Number(values[2]);
+									let repeatingCharID = values[0];
+									let repeatingSectionName = values[1];
+									fillCharAttrs(findObjs({ _type: 'attribute', _characterid: repeatingCharID }));
+									repeatingSection = getSectionAttrsByID(repeatingCharID, repeatingSectionName, repeatingSectionIDs[repeatingIndex]);
+									parseRepeatingSection();
+									repeatingIndex = Number(values[2]);
+									if (repeatingSectionIDs) {
+										for (let i in repeatingSection) {
+											if (repeatingSection[i].split("|")[0] == values[3]) {
+												replacement = repeatingSection[i].split("|").slice(1, 999).join("|");
+											}
+										}
+									}
+								} else {
+									replacement = values[1] + "_" + repeatingSectionIDs[Number(values[2])] + "_" + values[3]
+								}
+							}
+							repSectionHandled = true
+						}
+						if (attrName.match(/(\-.*)\:(.*)\:rowcount/) && !repSectionHandled) {
+							replacement = ""
+							let values = attrName.match(/(\-.*)\:(.*)\:rowcount/)
+							values.shift();
+							repeatingSectionIDs = getRepeatingSectionIDs(values[0], values[1])
+							replacement = repeatingSectionIDs.length;
+							repSectionHandled = true
+						}
+						if (!repSectionHandled) {
+							if (attrName.endsWith("^")) {
+								attrName = attrName.substring(0, attrName.length - 1);
+								opType = "_max";
+							}
+							var searchText = attrName + opType + "|";
+							if (thisMatch.charAt(3) == ":") {
+								if (repeatingSectionIDs) {
+									for (var i in repeatingSection) {
+										if (repeatingSection[i].startsWith(searchText)) {
+											replacement = repeatingSection[i].split("|").slice(1, 999).join("|");
+											//charId = repeatingCharID;
+										}
+									}
+								}
+							} else {
+								replacement = repeatingSectionName + "_" + repeatingSectionIDs[repeatingIndex] + "_" + attrName + opType;
+							}
+							if (!repeatingSection) { replacement = "NoRepeatingAttributeLoaded" }
+							if (repeatingSection && repeatingSection.length <= 1) { replacement = "NoRepeatingAttributeLoaded" }
+						}
+
 					}
 
 					break;
