@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.4.3";
+	const APIVERSION = "2.4.3a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -188,6 +188,33 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	const TokenAttrsThatAreNumbers = [
 		"left", "top", "width", "height", "rotation"
+	]
+
+	const EncodingReplaements = [
+		"%5B:[",
+		"%5D:]",
+		"%7B:{",
+		"%7C:|",
+		"%7D:}",
+		"%20: ",
+		"%21:!",
+		'%22:"',
+		"%23:#",
+		"%24:$",
+		"%25:%",
+		"%26:&",
+		"%27:'",
+		"%28,(",
+		"%29,)",
+		"%2A:*",
+		"%2B:+",
+		"%2C:,",
+		"%2D:-",
+		"%2E:.",
+		"%2F:/",
+		"%3C:<",
+		"%3D:=",
+		"%3E:>",
 	]
 
 	//---------------------------------------------------------------------------------------
@@ -2089,6 +2116,17 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 												case "striphtml":
 													setStringOrArrayElement(variableName, params[2].replace(/<[^>]*>?/gm, ''), cardParameters)
+													break;
+
+												case "replaceencoding":
+													var tempString = stringVariables[variableName]
+													for (let zz = 0; zz < EncodingReplaements.length; zz++) {
+														let f = EncodingReplaements[zz].split(":")[0]
+														let r = EncodingReplaements[zz].split(":")[1]
+														tempString = tempString.replaceAll(f.toUpperCase(), r);
+														tempString = tempString.replaceAll(f.toLowerCase(), r);
+													}
+													setStringOrArrayElement(variableName, tempString, cardParameters);
 													break;
 
 												case "trim":
