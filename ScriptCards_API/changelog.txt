@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.4.4  - Fix for the fix for [t] and [p] in 2.4.0 :)
+
 v 2.4.3a - New string subfunction: replaceencoding will replace %xx codes in strings with their actual character equivalents. Currently supports
            angle, square, curly brackets, quotes, commas, percent, ampersand, parens, plus, minus, divide, and equals. Potentially additional codes
            could be added in the future.

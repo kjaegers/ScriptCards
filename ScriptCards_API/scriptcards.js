@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.4.3a";
+	const APIVERSION = "2.4.4";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -4518,10 +4518,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		outputLine = outputLine.replace(/\[h5(.*?)\]/gi, `<h5 ${FillTemplateStyle("h5style", cardParameters, raw)} $1>`);
 		outputLine = outputLine.replace(/\[\/h5\]/gi, `</h5>`);
 		outputLine = outputLine.replace(/\[t\s+?(.*?)\]/gi, "<table $1>");
+		outputLine = outputLine.replace(/\[t\]/gi, "<table>");
 		outputLine = outputLine.replace(/\[\/t\]/gi, "</table>");
 		//outputLine = outputLine.replace(/\[p(.*?)\]/gi, "<p $1>");
 		outputLine = outputLine.replace(/\[p\s+?(.+?)\]/gi, "<p $1>");
-		outputLine = outputLine.replace(/\[p\]/gi, "<p $1>");
+		outputLine = outputLine.replace(/\[p\]/gi, "<p>");
 		outputLine = outputLine.replace(/\[\/p\]/gi, "</p>");
 		outputLine = outputLine.replace(/\[[Ff](\d+)\](.*?)\[\/F\]/gi, "<div style='font-size:$1px;'>$2</div>"); // [F8] for font size 8
 		outputLine = outputLine.replace(/\[[Ff]\:([a-zA-Z\s]*)\:?(\d+)?\](.*?)\[\/[Ff]\]/gi, "<span style='font-family:$1; font-size:$2px'>$3</span>"); // [F8] for font size 8
