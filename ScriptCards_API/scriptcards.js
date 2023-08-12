@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.4.4";
+	const APIVERSION = "2.4.4a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -3798,10 +3798,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					if (activeCharacter !== "") {
 						var workString = thisMatch;
-						if (workString.indexOf(":") !== workString.lastIndexOf(":")) {
+						if (workString == "this should never happen") {
+						//if (workString.indexOf(":") !== workString.lastIndexOf(":")) {
 							// Format to access a repeating value: [*S:r-section:index:attribute]
 							//let op = workString.split(":");
-
 
 						} else {
 							if (cardParameters.enableattributesubstitution !== "0") { workString = resolveAttributeSubstitution(activeCharacter, thisMatch); }
