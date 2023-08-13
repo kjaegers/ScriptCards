@@ -3,7 +3,7 @@
 /* eslint-disable no-redeclare *//*
 EcounterHelper.js
 Script Author : Kurt Jaegers
-Version       : 1.0.13
+Version       : 1.0.13a
 Last Update   : 2023-08-13
 
 Purpose       :	Provides a set of chat commands to manage "Encounters", or groups of tokens on a single
@@ -121,7 +121,7 @@ const EncounterHelper = (() => {
 
     // Configuration schema version. This represents the last time changes were made to the configuration values
     // saved between sessions, and is not necessarially the same as the API version number.
-    const APIVERSION = "1.0.13";
+    const APIVERSION = "1.0.13a";
 
     // Currently available languages are "english", "french", "spanish", and "german"
     var APILANGUAGE = "english";
@@ -699,7 +699,9 @@ const EncounterHelper = (() => {
 
                                 var objtype;
                                 mobs.forEach(function (mobid) {
-                                    theToken = getObj("graphic", mobid);
+                                    let theToken = getObj("graphic", mobid);
+                                    log(theToken);
+                                    let theChar = undefined;
                                     objtype = "t";
                                     if (theToken === undefined) {
                                         theToken = getObj("path", mobid);
@@ -707,10 +709,12 @@ const EncounterHelper = (() => {
                                     }
                                     if (theToken !== undefined) {
                                         var tokenName = theToken.get("name");
-                                        var theChar = undefined;
                                         if (objtype == "t") {
-                                            var theChar = getObj("character", theToken.get("represents"));
+                                            if (theToken.get("represents")) {
+                                                theChar = getObj("character", theToken.get("represents"));
+                                            }
                                         }
+                                        log(theChar);
                                         if (theToken !== undefined) {
                                             if (theChar !== undefined) {
                                                 var charName = theChar.get("name");
@@ -719,7 +723,7 @@ const EncounterHelper = (() => {
                                                 }
                                             }
                                             var columnDisplay = "";
-                                            if (objtype == "t") {
+                                            if (objtype == "t" && (theChar !== undefined)) {
                                                 columns.forEach(function (colInfo) {
                                                     var colDetails = colInfo.split("|");
                                                     if (colDetails[0] == "bar") {
@@ -738,6 +742,7 @@ const EncounterHelper = (() => {
                                                         } else {
                                                             columnDisplay += `<td style='${tableCellStyle}'>??</td>`;
                                                         }
+                                                        log(`after get`)
                                                     }
                                                 });
                                             } else {
