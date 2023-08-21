@@ -3,8 +3,8 @@
 /* eslint-disable no-redeclare *//*
 EcounterHelper.js
 Script Author : Kurt Jaegers
-Version       : 1.0.13a
-Last Update   : 2023-08-13
+Version       : 1.1.0
+Last Update   : 2023-08-21
 
 Purpose       :	Provides a set of chat commands to manage "Encounters", or groups of tokens on a single
                 map page. A single command can be used to bring all of the tokens associated with an
@@ -15,9 +15,13 @@ Requirements  :	On any map page that you wish to define and use encounters, you 
                 The "gmnotes" attribute on the token will be used to store information about encounters on 
                 this map.
             	
-Updates		  : 1.0.13 - When an encounter is created, the layer the objects were on at the time is saved with the encounter, meaning that
-                    it is now possible to create encounters containing map objects, dynamic walls/doors, and lighting objects. Any given
-                    encounter only supports objects from a single map layer. As a side effect, the "include_graphics" setting is no longer used.
+Updates		  : 1.0.0 - Objects from any layer can now be used to create encounters. The layer the object was on when the encounter was created will
+                    be saved with the encounter information so it can be placed back on the same layer when the encounter is shown.
+
+                    It is now possible to add tokens/walls/lights/mapobjects to existing encounters. Simply select the items that should be added to
+                    the encounter and user the new "!eh add <encountername>" command. This also now has a button (a "+") in the encounter list.
+
+                    The colors have been changed to prevent eye damage from the bright orange :)
 
                 1.0.12b - Added the "include_graphics" config setting and adjusted encounter creation and update routines to work with Paths as well as tokens. 
                     This setting matters when an encounter is created - resetting, showing, and hiding will act on everything in the encounter regardless of this setting.
@@ -58,6 +62,12 @@ Commands      : Note: Encounter Names are case sensitive.
         on the current page with the selected tokens and name.
 
         example: !eh create A05 - Ghouls in the West Wing
+
+    !eh add <Encounter Name>
+        Requires one or more tokens to be selected. Will add the selected tokens to the named encounter.
+        If the encounter doesn't exist, it will be created.
+
+        example: !eh add A05 - Ghouls in the West Wing
 
     !eh show <Encounter Name>
         Moves all tokens associated with an encounter to the Object/Token layer. Note that you would
@@ -139,7 +149,7 @@ const EncounterHelper = (() => {
     var activeEncounterPage = undefined;
 
     // You can customize the look of the tables/output produced by EncounterHelper by changing these css entries.
-    const buttonStyle = 'background-color:#000; color: #fff; min-width:20px; padding: 2px; text-align: center; text-decoration:none; display:inline-block; vertical-align:middle; padding:1px 0px; border: 1px solid goldenrod; font-size:x-small;';
+    const buttonStyle = 'background-color:#000; color: #fff; min-width:15px; padding: 1px; text-align: center; text-decoration:none; display:inline-block; vertical-align:middle; padding:1px 0px; border: 1px solid goldenrod; font-size:xx-small;';
     //const buttonStyle = 'background-color:#000; color: #fff; text-align: center; vertical-align:middle; border-radius: 5px; border-color:goldenrod; font-size:x-small;';
     const tableStyle = 'width:100%; border: 2px solid #000; margin: 0; padding:1px; font-size:x-small; color:black; background-color:#ddd; table-layout:fixed;';
     const tableStyleFixed = 'table-layout:fixed; width:100%; border: 2px solid #000; margin: 0; padding:1px; font-size:x-small; color:black; background-color:#ddd';
@@ -157,7 +167,8 @@ const EncounterHelper = (() => {
         rollinit: "&#127922;",
         groupinit: "Group-Init",
         resetbutton: "&#x21A9;",
-        renamebutton: "&#127380;"
+        renamebutton: "&#127380;",
+        addbutton: "&#10133;"
     };
 
     // Configuration settings and their on-screen equivalents. The idea of doing it this way is to potentially support localization
@@ -238,6 +249,12 @@ const EncounterHelper = (() => {
             spanish: "Encuentro creado [0] con [1] fichas.",
             german: "Begegnung [0] mit [1] Token erstellt."
         },
+        "added_to_encounter": {
+            english: "Updated encounter [0], now containing [1] tokens.",
+            french: "Cr&#233;ation de la rencontre [0] avec [1] jetons.",
+            spanish: "Encuentro creado [0] con [1] fichas.",
+            german: "Begegnung [0] mit [1] Token erstellt."
+        },        
         "select_tokens": {
             english: "Please select one or more tokens to be part of the encounter.",
             french: "Veuillez s&#233;lectionner un ou plusieurs jetons pour faire partie de la rencontre.",
@@ -251,7 +268,7 @@ const EncounterHelper = (() => {
             german: "Begegnung l&#246;schen [0]"
         },
         "encounter_shown": {
-            english: "Encounter [0] moved to active/shown layer.",
+            english: "Encounter [0] moved to active/shown layer(s).",
             french: "La rencontre [0] a &#233;t&#233; d&#233;plac&#233;e vers la couche de jetons.",
             spanish: "El encuentro [0] se movi&#243; a la capa de fichas.",
             german: "Begegnung [0] wurde zur Token-Ebene verschoben."
@@ -405,6 +422,12 @@ const EncounterHelper = (() => {
             french: "Jetons de liste",
             spanish: "Tokens de lista",
             german: "Token auflisten"
+        },
+        "add_tokens": {
+            english: "Add Tokens",
+            french: "ajouter des jetons",
+            spanish: "añadir fichas",
+            german: "Token hinzufügen"
         },
         "remove_encounter": {
             english: "Remove Encounter",
@@ -621,13 +644,24 @@ const EncounterHelper = (() => {
                                 }
                                 break;
 
+                            case "add":
+                            case "a":
+                                if (msg.selected !== undefined) {
+                                    addToEncounter(encounterPageID, args.join(" "), msg.selected);
+                                    var theEncounter = getEncounterMobs(encounterPageID, args.join(" "));
+                                    sendChat(translate(APINAME), "/w gm " + translate("added_to_encounter").replace("[0]", args.join(" ")).replace("[1]", theEncounter.length));
+                                } else {
+                                    sendChat(translate(APINAME), "/w gm " + translate("select_tokens"));
+                                }                                
+                                break;
+
                             case "list":
                             case "l":
                                 var encounters = getEncounterList(encounterPageID);
                                 var page = getObj("page", encounterPageID);
-                                var colspan = 6;
-                                if (typeof GroupInitiative !== 'undefined') { colspan = 7; }
-                                var chatMessage = "<br /><strong>" + translate("active_page") + " " + page.get("name") + "</strong><br /><table style='" + tableStyle + "'><tr><td width='30%' style='" + tableHeaderCellStyle + "'>" + translate("encounter") + "</td><td  style='" + tableHeaderCellStyle + "' colspan=" + colspan + ">" + translate("options") + "</td></tr>";
+                                var colspan = 7;
+                                if (typeof GroupInitiative !== 'undefined') { colspan = 8; }
+                                var chatMessage = "<br /><strong>" + translate("active_page") + " " + page.get("name") + "</strong><br /><table style='" + tableStyle + "'><tr><td width='40%' style='" + tableHeaderCellStyle + "'>" + translate("encounter") + "</td><td  style='" + tableHeaderCellStyle + "' colspan=" + colspan + ">" + translate("options") + "</td></tr>";
                                 var endChatMessage = "</table>";
                                 var helpLine = "";
 
@@ -639,6 +673,7 @@ const EncounterHelper = (() => {
                                         var displayLink = `!enchelp display ${encounterName}`;
                                         var removeLink = `!enchelp remove ${encounterName}`;
                                         var resetLink = `!enchelp promptreset ${encounterName}`;
+                                        var addLink = `!enchelp add ${encounterName}`;
                                         var renamelink = HE(HE("!enchelp rename [0]|[1]".replace("[0]", encounterName).replace("[1]", `?{Rename "${encounterName}" to|${encounterName}}`)));
                                         var groupInitButton = "";
                                         if (typeof GroupInitiative !== 'undefined') {
@@ -652,7 +687,7 @@ const EncounterHelper = (() => {
                                             groupInitButton += "</td>";
                                         }
 
-                                        chatMessage += `<tr><td style='${tableCellStyle}'>${encounterName}</td><td style='${tableCellStyle}'>${makeButton(buttonText.show, showLink)}</td><td style='${tableCellStyle}'>${makeButton(buttonText.hide, hideLink)}</td><td style='${tableCellStyle}'>${makeButton(buttonText.renamebutton, renamelink)}</td><td style='${tableCellStyle}'>${makeButton(buttonText.display, displayLink)}</td>${groupInitButton}<td style='${tableCellStyle}'>${makeButton(buttonText.remove, removeLink)}</td><td style='${tableCellStyle}'>${makeButton(buttonText.resetbutton, resetLink)}</td></tr>`;
+                                        chatMessage += `<tr><td style='${tableCellStyle}'>${encounterName}</td><td style='${tableCellStyle}'>${makeButton(buttonText.show, showLink)}</td><td style='${tableCellStyle}'>${makeButton(buttonText.hide, hideLink)}</td><td style='${tableCellStyle}'>${makeButton(buttonText.renamebutton, renamelink)}</td><td style='${tableCellStyle}'>${makeButton(buttonText.display, displayLink)}</td><td style='${tableCellStyle}'>${makeButton(buttonText.addbutton, addLink)}</td>${groupInitButton}<td style='${tableCellStyle}'>${makeButton(buttonText.remove, removeLink)}</td><td style='${tableCellStyle}'>${makeButton(buttonText.resetbutton, resetLink)}</td></tr>`;
                                     }
                                 });
 
@@ -661,7 +696,7 @@ const EncounterHelper = (() => {
                                     helpLine += `${buttonText.show}=${translate("show_tokens")} | ${buttonText.hide}=${translate("hide_tokens")} <br />`;
                                     helpLine += `${buttonText.display}=${translate("list_tokens")} | ${buttonText.remove}=${translate("remove_encounter")} <br />`;
                                     helpLine += `${buttonText.rollinit}=${translate("group_init")} | ${buttonText.resetbutton}=${translate("reset_tokens")}<br />`;
-                                    helpLine += `${buttonText.renamebutton}=${translate("rename_encounter")}`;
+                                    helpLine += `${buttonText.renamebutton}=${translate("rename_encounter")} | ${buttonText.addbutton}=${translate("add_tokens")}<br />`;
                                     helpLine += `</center></td></tr>`;
                                 }
 
@@ -700,7 +735,7 @@ const EncounterHelper = (() => {
                                 var objtype;
                                 mobs.forEach(function (mobid) {
                                     let theToken = getObj("graphic", mobid);
-                                    log(theToken);
+                                    //log(theToken);
                                     let theChar = undefined;
                                     objtype = "t";
                                     if (theToken === undefined) {
@@ -714,7 +749,7 @@ const EncounterHelper = (() => {
                                                 theChar = getObj("character", theToken.get("represents"));
                                             }
                                         }
-                                        log(theChar);
+                                        //log(theChar);
                                         if (theToken !== undefined) {
                                             if (theChar !== undefined) {
                                                 var charName = theChar.get("name");
@@ -742,7 +777,7 @@ const EncounterHelper = (() => {
                                                         } else {
                                                             columnDisplay += `<td style='${tableCellStyle}'>??</td>`;
                                                         }
-                                                        log(`after get`)
+                                                        //log(`after get`)
                                                     }
                                                 });
                                             } else {
@@ -919,10 +954,11 @@ const EncounterHelper = (() => {
         var fullInfo = getEncounterMobsFullInfo(pageid, encounterName)
         var layer="gmlayer";
         if (mobs.length > 0) {
-            if (showing) {
-                layer = getSavedLayer(fullInfo[0]);
-            }
+            var index=0;
             mobs.forEach(function (mobid) {
+                if (showing) {
+                    layer = getSavedLayer(fullInfo[index++]);
+                }
                 var thisObj = getObj("graphic", mobid);
                 if (thisObj === undefined) {
                     thisObj = getObj("path", mobid);
@@ -989,6 +1025,36 @@ const EncounterHelper = (() => {
 
     function createEncounter(pageid, encounterName, selected) {
         var ids = [];
+        selected.forEach(function (entity) {
+            var extInfo = entity._id;
+            var token = undefined;
+            if (entity._type === "path") {
+                token = getObj("path", extInfo);
+            } else {
+                token = getObj("graphic", extInfo);
+            }
+
+            if (token !== undefined) {
+                resetValues.forEach(function (valName) {
+                    var thisValue = token.get(valName);
+                    if (thisValue !== undefined) {
+                        extInfo += `#${valName}=${thisValue}`;
+                    } else {
+                        extInfo += `#${valName}=`;
+                    }
+                });
+                extInfo += `#layer=${token.get('layer')}`;
+                ids.push(extInfo);
+            }
+        });
+
+        if (ids.length > 0) {
+            addEncounter(pageid, encounterName, ids);
+        }
+    }
+
+    function addToEncounter(pageid, encounterName, selected) {
+        var ids = getEncounterMobs(pageid, encounterName);
         selected.forEach(function (entity) {
             var extInfo = entity._id;
             var token = undefined;
