@@ -896,6 +896,7 @@ const EncounterHelper = (() => {
                                 break;
 
                             case "configmenu":
+                            caes "config":
                                 displayConfigMenu();
                                 break;
 
