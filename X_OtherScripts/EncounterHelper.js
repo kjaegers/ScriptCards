@@ -1055,7 +1055,12 @@ Commands      : Note: Encounter Names are case sensitive.
             }
         
             function addToEncounter(pageid, encounterName, selected) {
-                var ids = getEncounterMobs(pageid, encounterName);
+                var ids = []
+                var existingInfo = getEncounterMobsFullInfo(pageid, encounterName);
+                existingInfo.forEach(function (entity) {
+                    ids.push(entity);
+                });
+
                 selected.forEach(function (entity) {
                     var extInfo = entity._id;
                     var token = undefined;
