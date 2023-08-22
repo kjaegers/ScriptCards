@@ -896,7 +896,7 @@ const EncounterHelper = (() => {
                                 break;
 
                             case "configmenu":
-                            caes "config":
+                            case "config":
                                 displayConfigMenu();
                                 break;
 
@@ -959,6 +959,9 @@ const EncounterHelper = (() => {
             mobs.forEach(function (mobid) {
                 if (showing) {
                     layer = getSavedLayer(fullInfo[index++]);
+                }
+                if (layer =="gmlayer" && showing) {
+                    layer="objects"
                 }
                 var thisObj = getObj("graphic", mobid);
                 if (thisObj === undefined) {
@@ -1044,7 +1047,9 @@ const EncounterHelper = (() => {
                         extInfo += `#${valName}=`;
                     }
                 });
-                extInfo += `#layer=${token.get('layer')}`;
+                if (token.get('layer') !== "gmlayer") {
+                    extInfo += `#layer=${token.get('layer')}`;
+                }
                 ids.push(extInfo);
             }
         });
