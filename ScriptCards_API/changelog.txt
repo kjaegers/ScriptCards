@@ -1,5 +1,32 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.4.5  - Added the ability to create rollable tables and rollable table entries:
+
+           --!o#:returnid|TableName;ShowToPlayers
+           
+           A table named TableName will be created. If ShowToPlayers is left out, the default will be no. You can use "true", "yes", or "1" to set
+           this value to 1.
+
+           --!oe:returnid|tableID;EntryName;Weight;Avatar
+           
+           An entry in table tableID will be created with EntryName as the text value. If weight is not specified, it will be 1. Weight MUST be
+           specified if adding an Avatar image url, which must follow the Roll20 image rules.
+
+           Example:
+
+           !script {{
+            --!o#:tableid|MySCTable
+            --+Result|[&tableid]
+            --!oe:entryid|[&tableid];Entry 1
+            --!oe:entryid|[&tableid];Entry 2
+            --!oe:entryid|[&tableid];Entry 3;2
+            --!oe:entryid|[&tableid];Entry 4;6
+            --!oe:entryid|[&tableid];Entry 5;10
+          }}
+
+          Will create a table called "MySCTable" and use the returned ID to add five entries into the table. The last three entries have weights
+          of 2, 6, an 10.
+ 
 v 2.4.4a - Another bug fix, this time related to [*...] referencing when an attribute name contains a colon
 
 v 2.4.4  - Fix for the fix for [t] and [p] in 2.4.0 :)

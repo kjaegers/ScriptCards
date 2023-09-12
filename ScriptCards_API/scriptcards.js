@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.4.4a";
+	const APIVERSION = "2.4.5";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1047,10 +1047,47 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												if (objtype == "c") {
 													var returnVarName = thisTag.substring(4);
 													var settings = thisContent.split(cardParameters.parameterdelimiter);
+
+													var newChar = createObj("character", { name: settings[0] });
+													if (newChar) {
+														stringVariables[returnVarName] = newChar.id
+													} else {
+														stringVariables[returnVarName] = "OBJECT_CREATION_ERROR";
+													}
+												}
+												// New rollable table. Settings are tablename, showplayers
+												if (objtype == "#") {
+													var returnVarName = thisTag.substring(4);
+													var settings = thisContent.split(cardParameters.parameterdelimiter);
 													if (returnVarName && settings[0]) {
-														var newChar = createObj("character", { name: settings[0] });
-														if (newChar) {
-															stringVariables[returnVarName] = newChar.id
+														let showPlayers = false;
+														if (settings[1] && (settings[1].toLowerCase() == "true" || settings[1].toLowerCase() == "yes" || settings[1] == "1")) {
+															showPlayers = true;
+														}
+														var newTable = createObj("rollabletable", { name: settings[0], showplayers: showPlayers })
+														if (newTable) {
+															stringVariables[returnVarName] = newTable.id
+														} else {
+															stringVariables[returnVarName] = "OBJECT_CREATION_ERROR";
+														}
+													}
+												}
+												// New rollable table entry. Settings are tableid, name, weight, avatar
+												if (objtype == "e") {
+													var returnVarName = thisTag.substring(4);
+													var settings = thisContent.split(cardParameters.parameterdelimiter);
+													if (returnVarName && settings[0] && settings[1]) {
+														let weight = 1;
+														let avatar = "";
+														if (settings[2]) {
+															weight = parseInt(settings[2]) || 1;
+														}
+														if (settings[3]) {
+															avatar = getCleanImgsrc(settings[3]);
+														}
+														var newTableEntry = createObj("tableitem", { _rollabletableid: settings[0], name: settings[1], weight: weight, avatar: avatar })
+														if (newTableEntry) {
+															stringVariables[returnVarName] = newTableEntry.id
 														} else {
 															stringVariables[returnVarName] = "OBJECT_CREATION_ERROR";
 														}
@@ -1114,28 +1151,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 													}
 												}
-												/*
-												if (objtype == "p") {
-													var tagInfo = thisTag.split(":");
-													var returnVarName = tagInfo[1];
-													var info = thisContent.split("|");
-													for (var x = 0; x < info.length; x++) {
-														var subInfo = info[x].split(":")
-														var thisInfo = `"${subInfo[0]}":"${subInfo[1]}"`;
-														info[x] = thisInfo
-														log(info[x])
-													}
-													log(`{${info.join(',')}}`);
-													var parsedJSON = JSON.parse(`{${info.join(',')}}`);
-													var newPath = createObj("path", parsedJSON);
-													if (newPath != null) {
-														stringVariables[returnVarName] = newPath.id;
-													} else {
-														stringVariables[returnVarName] = "OBJECT_CREATION_ERROR";
-													}
-	
-												}
-												*/
 												break;
 
 											case "t":
@@ -3799,7 +3814,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (activeCharacter !== "") {
 						var workString = thisMatch;
 						if (workString == "this should never happen") {
-						//if (workString.indexOf(":") !== workString.lastIndexOf(":")) {
+							//if (workString.indexOf(":") !== workString.lastIndexOf(":")) {
 							// Format to access a repeating value: [*S:r-section:index:attribute]
 							//let op = workString.split(":");
 
