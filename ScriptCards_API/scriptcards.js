@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.4.5";
+	const APIVERSION = "2.4.6";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -347,20 +347,17 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						sendChat("API", metacard);
 					}
 				})
-				/*
-				on('change:token', function (obj, prev) {
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:token` });
+				on('change:door', function (obj, prev) {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:door` });
 					if (ability != null && ability !== [] && ability[0] != null) {
 						var replacement = "";
 						for (const property in prev) {
-							replacement += ` --&TokenOld${property}|${prev[property]} --&TokenNew${property}|${obj.get(property)}`
+							replacement += ` --&DoorOld${property}|${prev[property]} --&DoorNew${property}|${obj.get(property)}`
 						}
-						log(replacement);
 						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 						sendChat("API", metacard);
 					}
-				})
-				*/
+				})				
 				on('change:page', function (obj, prev) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:page` });
 					if (ability != null && ability !== [] && ability[0] != null) {
@@ -402,7 +399,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				on('destroy:graphic', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:graphic" });
 					if (ability != null && ability !== [] && ability[0] != null) {
-						log("running this for some reason")
 						var replacement = "";
 						for (const property in obj) {
 							replacement += ` --&GraphicRemoved${property}|${obj[property]} `
@@ -411,6 +407,25 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						sendChat("API", metacard);
 					}
 				})
+				on('add:door', function (obj) {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:door" });
+					if (ability != null && ability !== [] && ability[0] != null) {
+						var replacement = ` --&DoorAdded|${obj.id}} `;
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})
+				on('destroy:door', function (obj) {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:door" });
+					if (ability != null && ability !== [] && ability[0] != null) {
+						var replacement = "";
+						for (const property in obj) {
+							replacement += ` --&DoorRemoved${property}|${obj[property]} `
+						}
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})				
 			} else {
 				log(`ScriptCards Triggers could not find character named "ScriptCards_Triggers"`);
 			}

@@ -1,0 +1,4 @@
+System Neutral Library - 0.0.5
+
+- Added LibSN_RANDOMIZE_ARRAY, LibSN_COPY_ARRAY, LibSN_SWAP_ARRAY_ITEMS, and LibSN_RANDOM_ARRAY_FROM_ARRAY to perform some more complicated array tasks.
+

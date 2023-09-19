@@ -1,5 +1,12 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.4.6  - change:door, add:door, and destroy:door are now supported as events for Triggers. The variables supplied are:
+           change:door - &OldDoor[property] and &NewDoor[property] (ie, &NewDoorisOpen, &OldDoor_id, etc.)
+           add:door - &DoorAdded, which will be the _id of the door that was added
+           destroy:door - &DoorRemoved[property] for each of the door object properties as it existed before destruction
+
+           The various properties are listed here: https://wiki.roll20.net/API:Objects#Door
+
 v 2.4.5  - Added the ability to create rollable tables and rollable table entries:
 
            --!o#:returnid|TableName;ShowToPlayers

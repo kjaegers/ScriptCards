@@ -3,7 +3,7 @@
 /* eslint-disable no-redeclare *//*
 EcounterHelper.js
 Script Author : Kurt Jaegers
-Version       : 1.1.0
+Version       : 1.2.0
 Last Update   : 2023-08-21
 
 Purpose       :	Provides a set of chat commands to manage "Encounters", or groups of tokens on a single
@@ -15,36 +15,6 @@ Requirements  :	On any map page that you wish to define and use encounters, you 
                 The "gmnotes" attribute on the token will be used to store information about encounters on 
                 this map.
             	
-Updates		  : 1.0.0 - Objects from any layer can now be used to create encounters. The layer the object was on when the encounter was created will
-                    be saved with the encounter information so it can be placed back on the same layer when the encounter is shown.
-
-                    It is now possible to add tokens/walls/lights/mapobjects to existing encounters. Simply select the items that should be added to
-                    the encounter and user the new "!eh add <encountername>" command. This also now has a button (a "+") in the encounter list.
-
-                    The colors have been changed to prevent eye damage from the bright orange :)
-
-                1.0.12b - Added the "include_graphics" config setting and adjusted encounter creation and update routines to work with Paths as well as tokens. 
-                    This setting matters when an encounter is created - resetting, showing, and hiding will act on everything in the encounter regardless of this setting.
-
-                1.0.12a - Added "Show Button Help on Encounter List" configuration setting.
-                    Updated config code to add any missing settings to State if they don't exist.
-                    Enabled OneClick options for Columns and Reset Values
-                    Added "Override OneClick Settings" config option - Columns & Reset values can be set/red from the config menu if this toggle is on.
-                    Added ability to set Columns and ResetValues from the config menu. Currently you need to set the entire string. Probably a better way to do this in the future, but this enables the functionality for now.
-                         
-                1.0.12 - Description and Emoji button fixes
-
-                1.0.11 - Initial release to OneClick
-
-                1.0.10 - Added the ability to rename encounters with !eh rename (or via the list)
-
-                1.0.9 - Added !eh update_reset_info command to refresh the saved values for token resets.
-            	
-                1.0.8 - Added a series of attributes for tokens that are saved along with the encounter. These
-                are configurable by updating the "resetValues" constant below. By default, EH will store the
-                position and size of each token, the value/max of Bar 3, and the Status Markers applied to
-                each token.
-
 Commands      : Note: Encounter Names are case sensitive.
 
     !eh list
@@ -131,7 +101,7 @@ Commands      : Note: Encounter Names are case sensitive.
         
             // Configuration schema version. This represents the last time changes were made to the configuration values
             // saved between sessions, and is not necessarially the same as the API version number.
-            const APIVERSION = "1.0.13a";
+            const APIVERSION = "1.2";
         
             // Currently available languages are "english", "french", "spanish", and "german"
             var APILANGUAGE = "english";
@@ -964,6 +934,9 @@ Commands      : Note: Encounter Names are case sensitive.
                         if (thisObj === undefined) {
                             thisObj = getObj("path", mobid);
                         }
+                        if (thisObj === undefined) {
+                            thisObj = getObj("text", mobid);
+                        }                        
                         if (thisObj !== undefined) {
                             thisObj.set("layer", layer);
                         }
@@ -981,6 +954,9 @@ Commands      : Note: Encounter Names are case sensitive.
                     if (theToken == undefined) {
                         theToken = getObj("path", mobid);
                     }
+                    if (thisObj === undefined) {
+                        thisObj = getObj("text", mobid);
+                    }                        
                     if (theToken !== undefined) {
                         mobinfo.forEach(function (info) {
                             var infoData = info.split("=");
@@ -1000,6 +976,9 @@ Commands      : Note: Encounter Names are case sensitive.
                 var theToken = getObj("graphic", mobid);
                 if (theToken == undefined) {
                     theToken = getObj("path", mobid);
+                }
+                if (theToken == undefined) {
+                    theToken = getObj("text", mobid);
                 }
                 if (theToken !== undefined) {
                     mobinfo.forEach(function (info) {
@@ -1031,7 +1010,11 @@ Commands      : Note: Encounter Names are case sensitive.
                     var token = undefined;
                     if (entity._type === "path") {
                         token = getObj("path", extInfo);
-                    } else {
+                    } 
+                    if (entity._type === "text") {
+                        token = getObj("text", extInfo);
+                    }
+                    if (entity._type === "graphic") {
                         token = getObj("graphic", extInfo);
                     }
         
@@ -1066,7 +1049,11 @@ Commands      : Note: Encounter Names are case sensitive.
                     var token = undefined;
                     if (entity._type === "path") {
                         token = getObj("path", extInfo);
-                    } else {
+                    } 
+                    if (entity._type === "text") {
+                        token = getObj("text", extInfo);
+                    }
+                    if (entity._type === "graphic") {
                         token = getObj("graphic", extInfo);
                     }
         

@@ -1,0 +1,42 @@
+1.2.0
+
+- Text objects are now supported in encounters.
+
+1.1.0 
+
+- Objects from any layer can now be used to create encounters. The layer the object was on when the encounter was created will be saved with the encounter information so it can be placed back on the same layer when the encounter is shown.
+
+- It is now possible to add tokens/walls/lights/mapobjects to existing encounters. Simply select the items that should be added to the encounter and user the new "!eh add <encountername>" command. This also now has a button (a "+") in the encounter list.
+
+- The colors have been changed to prevent eye damage from the bright orange :)
+
+1.0.12b
+
+- Added the "include_graphics" config setting and adjusted encounter creation and update routines to work with Paths as well as tokens. This setting matters when an encounter is created - resetting, showing, and hiding will act on everything in the encounter regardless of this setting.
+
+1.0.12a
+
+- Added "Show Button Help on Encounter List" configuration setting.
+- Updated config code to add any missing settings to State if they don't exist.
+- Enabled OneClick options for Columns and Reset Values
+- Added "Override OneClick Settings" config option - Columns & Reset values can be set/red from the config menu if this toggle is on.
+- Added ability to set Columns and ResetValues from the config menu. Currently you need to set the entire string. Probably a better way to do this in the future, but this enables the functionality for now.
+                         
+1.0.12
+
+- Description and Emoji button fixes
+
+1.0.11 
+
+- Initial release to OneClick
+
+1.0.10 
+
+- Added the ability to rename encounters with !eh rename (or via the list)
+
+1.0.9 
+
+- Added !eh update_reset_info command to refresh the saved values for token resets.
+            	
+1.0.8 
+- Added a series of attributes for tokens that are saved along with the encounter. These are configurable by updating the "resetValues" constant below. By default, EH will store the position and size of each token, the value/max of Bar 3, and the Status Markers applied to each token.
