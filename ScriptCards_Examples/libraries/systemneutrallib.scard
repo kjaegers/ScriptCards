@@ -165,7 +165,9 @@
 --/|  LibSN_CHECK_TOKEN_OVERLAP_CIRCLE|Token1ID;Token2ID;ReturnStringVar
 --/|          Returns a 1 if the two passed token graphics overlap using a center/radius (circular) check. Otherwise 0
 --/|
-
+--/|  LibSN_GET_TOKEN_COORDS|TokenID;LeftX;LeftY;RightX;RightY;shrink by pixels
+--/|          Returns the actual left, top, right, and bottom locations of a token. optionally, a padding of (shrink by pixels) can be
+--/|          specified (adds the value to hte left/top and subtracts it form right/bottom)
 
 --:LibSN_FIND_BUMP_MASTER_TOKEN|TokenID of Slave Token;Return var
   --~work|string;replaceall;",";"&&&";[*G:Bump:mirrored]
