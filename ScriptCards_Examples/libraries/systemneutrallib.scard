@@ -1,4 +1,4 @@
---/|ScriptCards Library: systemneutrallib (snlib) version 0.0.5
+--/|ScriptCards Library: systemneutrallib (snlib) version 0.0.6
 --/|Provides various utility procedures for general Roll20 stuff
 
 --/|This library consolidates functions from a number of the sample scripts on the ScriptCards github into a single library
@@ -157,6 +157,15 @@
 --/|  LibSN_BUILD_DROPDOWN_FROM_ARRAY|ReturnVar (string);Prompt;arrayName  
 --/|          Fills (ReturnVar) with a Roll20 query prompt string created by supplying the value of (Prompt) and the
 --/|          content of the array (arrayName) that can then be used in a i command or rbutton
+--/|
+--/|  LibSN_CHECK_TOKEN_OVERLAP|Token1ID;Token2ID;ReturnStringVar
+--/|          Returns a 1 if the two passed token graphics overlap using a bounding-box check (squares/rectangles). Otherwise 0
+--/|          NOTE: Tokens next to each other (sharing a side or corner) will not return a 1
+--/|
+--/|  LibSN_CHECK_TOKEN_OVERLAP_CIRCLE|Token1ID;Token2ID;ReturnStringVar
+--/|          Returns a 1 if the two passed token graphics overlap using a center/radius (circular) check. Otherwise 0
+--/|
+
 
 --:LibSN_FIND_BUMP_MASTER_TOKEN|TokenID of Slave Token;Return var
   --~work|string;replaceall;",";"&&&";[*G:Bump:mirrored]
@@ -455,6 +464,35 @@
   --=_THISROLL|[$_PICKROLL.RolledDice([&_loop])] - 1
   --&[%2%](99999)|[@[%1%]([$_THISROLL.Raw])]
 --%|
+--<|
+
+--:LibSN_CHECK_TOKEN_OVERLAP|Token1ID;Token2ID;ReturnStringVar
+-->LibSN_GET_TOKEN_COORDS|[%1%];_lib_L1X;_lib_L1Y;_lib_R1X;_lib_R1Y;1
+-->LibSN_GET_TOKEN_COORDS|[%2%];_lib_L2X;_lib_L2Y;_lib_R2X;_lib_R2Y;1
+--?[$_lib_L1X] -gt [$_lib_R2X] -or [$_lib_L2X] -gt [$_lib_R1X]|&[%3%];0
+--?[&[%3%]] -eq 0|<
+--?[$_lib_L1Y] -gt [$_lib_R2Y] -or [$_lib_L2Y] -gt [$_lib_R1Y]|&[%3%];0
+--?[&[%3%]] -eq 0|<
+--&[%3%]|1
+--<|
+
+--:LibSN_CHECK_TOKEN_OVERLAP_CIRCLE|Token1ID;Token2ID;ReturnStringVar
+--=_lib_dist|[=[*[%1%]:t-left] - [*[%2%]:t-left] {SQUARE}] + [=[*[%1%]:t-top] - [*[%2%]:t-top] {SQUARE}] {SQRT}
+--=_lib_r1|[*[%1%]:t-width] / 2
+--=_lib_r2|[*[%2%]:t-width] / 2
+--&_lib_overlap|0
+--?[$_lib_dist] -le [=[$_lib_r1] - [$_lib_r2]]|&_lib_overlap;1
+--?[$_lib_dist] -le [=[$_lib_r2] - [$_lib_r1]]|&_lib_overlap;1
+--?[$_lib_dist] -lt [=[$_lib_r1] + [$_lib_r2]]|&_lib_overlap;1
+--/?[$_lib_dist] -eq [=[$_lib_r1] + [$_lib_r2]|&_lib_overlap;1
+--&[%3%]|[&_lib_overlap]
+--<|
+
+--:LibSN_GET_TOKEN_COORDS|TokenID;LeftX;LeftY;RightX;RightY;shrink by pixels
+--=[%2%]|[*[%1%]:t-left] - [=[*[%1%]:t-width]  / 2] + [%6%] {FLOOR}
+--=[%3%]|[*[%1%]:t-top]  - [=[*[%1%]:t-height] / 2] + [%6%] {FLOOR}
+--=[%4%]|[$[%2%]] + [*[%1%]:t-width] - [%6%] - [%6%] {FLOOR}
+--=[%5%]|[$[%3%]] + [*[%1%]:t-height] - [%6%] - [%6%] {FLOOR}
 --<|
 
 --X|
