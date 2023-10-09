@@ -3,7 +3,7 @@
 /* eslint-disable no-redeclare *//*
 EcounterHelper.js
 Script Author : Kurt Jaegers
-Version       : 1.2.0
+Version       : 1.2.1
 Last Update   : 2023-08-21
 
 Purpose       :	Provides a set of chat commands to manage "Encounters", or groups of tokens on a single
@@ -1115,7 +1115,11 @@ Commands      : Note: Encounter Names are case sensitive.
                     var encounterToken = getEncounterToken(pageid);
                     if (encounterToken !== undefined) {
                         var encNotes = encounterToken.get("gmnotes");
-                        var notes = decodeUrlEncoding(encNotes).replace(/\<p\>/g, "").replace(/\<\/p\>/g, "<br>").split("<br>");
+                        try {
+                            var notes = decodeUrlEncoding(encNotes).replace(/\<p\>/g, "").replace(/\<\/p\>/g, "<br>").split("<br>");
+                        } catch {
+                            sendChat("EncounterHelper", "Encountered an error when trying to parse the encounter list. Please verify that you have an Encounter Token and that the gmnotes field does not contain manual changes.")
+                        }
                         ret = notes;
                     }
                 }
