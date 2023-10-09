@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.4.6";
+	const APIVERSION = "2.4.7";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -357,7 +357,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 						sendChat("API", metacard);
 					}
-				})				
+				})
 				on('change:page', function (obj, prev) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:page` });
 					if (ability != null && ability !== [] && ability[0] != null) {
@@ -425,7 +425,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 						sendChat("API", metacard);
 					}
-				})				
+				})
 			} else {
 				log(`ScriptCards Triggers could not find character named "ScriptCards_Triggers"`);
 			}
@@ -485,7 +485,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						metaCard += "--#leftsub|Settings List "
 						var stored = state[APINAME].storedSettings;
 						for (const key in stored) {
-							metaCard += `--+${key}|[button]Show::!sc-liststoredsettings ${key}[/button] [button]Delete::!sc-deletestoredsettings ${key}[/button]`;
+							metaCard += `--+${key}|[r][button]Show::!sc-liststoredsettings ${key}[/button] [button]Delete::!sc-deletestoredsettings ${key}[/button][/r]`;
 						}
 					} else {
 						var settingName = msg.content.substring(msg.content.indexOf(" ")).trim();
@@ -494,9 +494,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							var stored = state[APINAME].storedSettings[settingName];
 							for (const key in stored) {
 								if (stored[key] !== defaultParameters[key]) {
-									metaCard += `--+${key}|${stored[key]}`;
+									metaCard += `--+${key}|${stored[key]} [r][button]Edit::!sc-editstoredsetting ${settingName}|${key}|?{New Value|${stored[key]}}[/button] [button]Delete::!sc-deleteindividualstoredsetting ${settingName}|${key}[/button][/r]`;
 								}
 							}
+							metaCard += `--+|[c][button]Add Setting::!sc-addstoredsetting ${settingName}|?{Setting Name?}|?{Setting Value?}[/button][/c]`
 						}
 					}
 					metaCard += " }};"
@@ -514,7 +515,65 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						delete state[APINAME].storedSettings[settingName];
 						metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingName} --+|The setting group ${settingName} has been deleted. }} `;
 						sendChat("API", metaCard);
+					} else {
+						metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingName} --+|No stored settings group named ${settingName} was found. }} `;
+						sendChat("API", metaCard);
 					}
+				}
+
+				if (apiCmdText.startsWith("!sc-deleteindividualstoredsetting ")) {
+					try {
+						var settingSet = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[0];
+						var settingName = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[1];
+
+						if (state[APINAME].storedSettings[settingSet] && state[APINAME].storedSettings[settingSet][settingName]) {
+							delete state[APINAME].storedSettings[settingSet][settingName];
+							metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingSet} --#rightsub|${settingName} --+|The setting ${settingName} has been deleted from the stored setting set ${settingSet}. }} `;
+							sendChat("API", metaCard);
+						} else {
+							metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingName} --#rightsub|${settingName} --+|No stored setting named ${settingName} found in group ${settingSet}. }} `;
+							sendChat("API", metaCard);
+						}
+					} catch { log(`An error occured processing deleteindividualstoredsetting request for ${msg.content}`) }
+				}
+
+				if (apiCmdText.startsWith("!sc-editstoredsetting ")) {
+					try {
+						var settingSet = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[0];
+						var settingName = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[1];
+						var newValue = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[2];
+
+						if (state[APINAME].storedSettings[settingSet] && state[APINAME].storedSettings[settingSet][settingName]) {
+							state[APINAME].storedSettings[settingSet][settingName] = newValue;
+							metaCard = `!scriptcard {{ --#title|Edit Stored Setting --#leftsub|${settingSet} --#rightsub|${settingName} --+|The setting ${settingName} in set ${settingSet} has been updated to ${newValue}. }} `;
+							sendChat("API", metaCard);
+						} else {
+							metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingName} --#rightsub|${settingName} --+|No stored setting named ${settingName} found in group ${settingSet}. }} `;
+							sendChat("API", metaCard);
+						}
+					} catch { log(`An error occured processing editstoredsetting request for ${msg.content}`)}
+				}
+
+				if (apiCmdText.startsWith("!sc-addstoredsetting ")) {
+					try {
+						var settingSet = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[0];
+						var settingName = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[1];
+						var newValue = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[2];
+
+						if (state[APINAME].storedSettings[settingSet] && !(state[APINAME].storedSettings[settingSet][settingName])) {
+							state[APINAME].storedSettings[settingSet][settingName] = newValue;
+							metaCard = `!scriptcard {{ --#title|Add Stored Setting --#leftsub|${settingSet} --#rightsub|${settingName} --+|The setting ${settingName} in set ${settingSet} has been updated to ${newValue}. }} `;
+							sendChat("API", metaCard);
+						} else {
+							metaCard = `!scriptcard {{ --#title|Add Stored Setting --#leftsub|${settingName} --#rightsub|${settingName} --+|Either ${settingSet} group does not exist, or a setting named ${settingName} is already defined in the group. }} `;
+							sendChat("API", metaCard);
+						}
+					} catch { log(`An error occured processing addstoredsetting request for ${msg.content}`)}
+				}
+
+				if (apiCmdText.startsWith("!sc-purgestoredsettings")) {
+					delete state[APINAME].storedSettings
+					state[APINAME].storedSettings = {}
 				}
 
 				if (apiCmdText.startsWith("!sc-resume ")) {
@@ -3234,6 +3293,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												for (var key in newSettings) {
 													cardParameters[key] = newSettings[key];
 												}
+											} else {
+												log(`Attempt to load stored settings ${thisContent.Trim()}, but setting list not found.`)
 											}
 										}
 										break;
