@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.4.7";
+	const APIVERSION = "2.4.8";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -369,6 +369,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						sendChat("API", metacard);
 					}
 				})
+				on('add:attribute', function (obj) {
+					var ability = findObjs({ type: "attribute", _characterid: triggerCharID, name: "add:attribute" });
+					if (ability != null && ability !== [] && ability[0] != null) {
+						var replacement = ` --&AttributeAdded|${obj.id}} `;
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})
 				on('add:page', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:page" });
 					if (ability != null && ability !== [] && ability[0] != null) {
@@ -551,7 +559,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingName} --#rightsub|${settingName} --+|No stored setting named ${settingName} found in group ${settingSet}. }} `;
 							sendChat("API", metaCard);
 						}
-					} catch { log(`An error occured processing editstoredsetting request for ${msg.content}`)}
+					} catch { log(`An error occured processing editstoredsetting request for ${msg.content}`) }
 				}
 
 				if (apiCmdText.startsWith("!sc-addstoredsetting ")) {
@@ -568,7 +576,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							metaCard = `!scriptcard {{ --#title|Add Stored Setting --#leftsub|${settingName} --#rightsub|${settingName} --+|Either ${settingSet} group does not exist, or a setting named ${settingName} is already defined in the group. }} `;
 							sendChat("API", metaCard);
 						}
-					} catch { log(`An error occured processing addstoredsetting request for ${msg.content}`)}
+					} catch { log(`An error occured processing addstoredsetting request for ${msg.content}`) }
 				}
 
 				if (apiCmdText.startsWith("!sc-purgestoredsettings")) {
@@ -2848,6 +2856,29 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											repeatingSection = undefined;
 										}
 										break;
+									case "bysectionid":
+										if (param[0] && param[1] && param[2]) {
+											repeatingSectionIDs = getRepeatingSectionIDs(param[0], param[1]);
+											if (repeatingSectionIDs) {
+												repeatingIndex = undefined;
+												for (let x = 0; x < repeatingSectionIDs.length; x++) {
+													if (repeatingSectionIDs[x].trim() == param[2].trim()) {
+														repeatingIndex = x;
+													}
+												}
+												repeatingCharID = param[0];
+												repeatingSectionName = param[1];
+												fillCharAttrs(findObjs({ _type: 'attribute', _characterid: repeatingCharID }));
+												repeatingSection = getSectionAttrsByID(repeatingCharID, repeatingSectionName, repeatingSectionIDs[repeatingIndex]);
+												parseRepeatingSection();
+												repeatingIndex = Number(param[2]);
+											} else {
+												repeatingSection = undefined;
+											}
+										} else {
+											repeatingSection = undefined;
+										}
+										break;
 									case "next":
 										if (repeatingSectionIDs) {
 											if (repeatingSectionIDs[repeatingIndex + 1]) {
@@ -2869,6 +2900,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												log(repeatingSection[x]);
 											}
 										}
+										break;
 								}
 							}
 
@@ -3575,6 +3607,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										case "lower":
 										case "tolower":
 										case "lowercase": replacement = stringVariables[vName].toLowerCase(); break;
+
+										case "reverse":
+											replacement = stringVariables[vName].split("").reverse().join("");
+											break;
 
 										case "touppercase":
 										case "upper":

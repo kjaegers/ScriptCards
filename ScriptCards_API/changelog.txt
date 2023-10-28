@@ -1,5 +1,22 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.4.8  - Added a reverse function for string referencing (ex: [&MyString(reverse)] which will return the string reversed front to back, so "Hello"
+           will become "olleH")
+
+           Added "bysectionid" to the --R repeating section command set. This will search a given repeating section for an ID set specified, which allows
+           you to find repeating section entries that might be referenced elsewhere. Here is an example from the 5E sheet, which uses the itemid property
+           of the repeating_attack setion to find the corresponding item in repeating_inventory:
+
+           !script {{
+             --Rfirst|@{selected|character_id};repeating_attack
+             --&ItemID|[*R:itemid]
+             --+ItemID|[&ItemID]
+             --Rbysectionid|@{selected|character_id};repeating_inventory;[&ItemID]
+             --+Item Name|[*R:itemname]
+             --+Properties|[*R:itemproperties]
+           }}
+
+
 v 2.4.7  - Enhancements to stored settings management (!sc-liststoredsettings) 
 
 v 2.4.6  - change:door, add:door, and destroy:door are now supported as events for Triggers. The variables supplied are:
