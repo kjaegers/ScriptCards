@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.4.9  - Bug fix for nested loops when the internal loop is a while/until loop.
+
 v 2.4.8  - Added a reverse function for string referencing (ex: [&MyString(reverse)] which will return the string reversed front to back, so "Hello"
            will become "olleH")
 

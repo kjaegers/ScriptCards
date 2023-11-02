@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.4.8";
+	const APIVERSION = "2.4.9";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -967,13 +967,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												case "while":
 													var isTrue = processFullConditional(replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
 													if (!isTrue) {
-														loopCounter = "!"
+														loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
+														loopControl[currentLoop].step = 1;
 													}
 													break;
 												case "until":
 													var isTrue = processFullConditional(replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
 													if (isTrue) {
-														loopCounter = "!"
+														loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
+														loopControl[currentLoop].step = 1;
 													}
 													break;
 
