@@ -1,4 +1,6 @@
-System Neutral Library - 0.0.5
+System Neutral Library - 0.0.7
+
+- Added LibSN_REPEATING_RBUTTONS, LibSN_REPEATING_RBUTTONS_AS_ARRAY, LibSN_REPEATING_SHEETBUTTONS, and LibSN_REPEATING_SHEETBUTTONS_AS_ARRAY which will take a character id and repeating section and generate rbuttons or buttons for each item. Can be filtered if desired. See the comments in the snlib for parameter information.
 
 - Added LibSN_RANDOMIZE_ARRAY, LibSN_COPY_ARRAY, LibSN_SWAP_ARRAY_ITEMS, and LibSN_RANDOM_ARRAY_FROM_ARRAY to perform some more complicated array tasks.
 
