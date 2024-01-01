@@ -1,5 +1,8 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2024-01-01 - 5E Character Action Menu 2.4.6
+             - Bug fixes for NPC spellcasting when tracking spell slots, and fixed a bad forumla to calculate available slots
+
 2023-05-04 - 5E Character Action Menu 2.4.5
              - Fix for NPC action names that include a semicolon
 

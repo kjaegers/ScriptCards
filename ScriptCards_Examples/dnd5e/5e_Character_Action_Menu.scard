@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.4.5
+  --/|Version     : 2.4.6
   --/|Requires SC : 2.2.9+
   --/|Author      : Kurt Jaegers
 
@@ -340,6 +340,11 @@
   --+|[t width='100%'][tr][td align=left][&savesAndSkills][/td][td align=right][&AdvModeText][/td][/tr][/t][F5][BR][/F]
 
   --/|5E Sheet Specific BEGIN
+
+  --&HighestSlot|9
+  --?[&trackPCSpellSlots] -eq 1|[
+    -->GET_HIGHEST_LEVEL_SPELL_SLOT|HighestSlot
+  --]|
   -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcaction;name;EXEC_NPC_ACTION;Actions;[&sharednpcmacromulename];0
   -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcbonusaction;name;EXEC_NPC_BONUS_ACTION;Bonus Actions;[&sharednpcmacromulename];0
   -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcreaction;name;EXEC_NPC_REACTION;Reactions;[&sharednpcmacromulename];0
@@ -368,7 +373,6 @@
   --#emotestate|visible
   --~action_name|string;before;|;[&reentryval]
   --&action_name|[&action_name(replace,-!-!-,;)]
-  --\|[&action_name]
   --~action_target|string;after;|;[&reentryval]
   --#targettoken|[&action_target]
   --#leftsub|[*S:character_name]
@@ -1272,7 +1276,8 @@
 
   --:GET_AVAILABLE_SPELL_SLOTS|slotlevel;variableToSet
   --&_maxSlots|[*S:lvl[%1%]_slots_total]
-  --&[%2%]|[*S:lvl[%1%]_slots_expended]
+  --=_availSlots|[&_maxSlots] - [*S:lvl[%1%]_slots_expended]
+  --&[%2%]|[$_availSlots.Raw]
   --<|
 
   --:DEDUCT_SPELL_SLOT|slotlevel
