@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.4.6
+  --/|Version     : 2.4.6a
   --/|Requires SC : 2.2.9+
   --/|Author      : Kurt Jaegers
 
@@ -1277,7 +1277,7 @@
   --:GET_AVAILABLE_SPELL_SLOTS|slotlevel;variableToSet
   --&_maxSlots|[*S:lvl[%1%]_slots_total]
   --=_availSlots|[&_maxSlots] - [*S:lvl[%1%]_slots_expended]
-  --&[%2%]|[$_availSlots.Raw]
+  --&[%2%]|[*S:lvl[%1%]_slots_expended]
   --<|
 
   --:DEDUCT_SPELL_SLOT|slotlevel
