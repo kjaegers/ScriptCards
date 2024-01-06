@@ -1,5 +1,100 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.6.0  - Note: This update should be considered EXPERIMENTAL for now. While I have tested the nw features and looked for anything that might
+           have impacted existing scripts, there is always the possiblity that I missed something. It will be a couple of weeks before this update
+           heads for OneClick in order to provide time to find and fix bugs.
+
+           Added support for Hash Tables (sometimes called Associative Arrays). You can define hashtable elements with the --h command like this:
+
+              --h:HashTableName("Key")|Values
+
+           so:
+              --h:FruitCost("Mango")|2sp
+
+           Will set the "Mango" entry for the "FruitCost" hashtable to 2sp (creating the hashtable if necessary).
+
+           You can reference the value of a hashtable item with [:HashTableName("Key")]. In both cases, Key can be a variable:
+
+             --&Fruit|Apple
+             --+[&Fruit]|costs [:FruitCost("[&Fruit]")]
+          
+           The double-quotes around the Key are required.
+
+           Here is an example of using delimiters to store multiple pieces of information about an item in a hash table:
+
+           !script {{
+             --h:Fruits("Mango-Cost")|2sp
+             --h:Fruits("Mango-Size")|Medium
+             --h:Fruits("Mango-Shape")|Oblong
+           
+             --h:Fruits("Apple-Cost")|2cp
+             --h:Fruits("Apple-Size")|Medium
+             --h:Fruits("Apple-Shape")|Round
+           
+             --h:Fruits("Watermelon-Cost")|1gp
+             --h:Fruits("Watermelon-Size")|Large
+             --h:Fruits("Watermelon-Shape")|Oblong
+           
+             --h:Fruits("Grape-Cost")|1cp
+             --h:Fruits("Grape-Size")|Small
+             --h:Fruits("Grape-Shape")|Round
+           
+             --~|array;define;fruits;Apple;Mango;Watermelon;Grape
+             --~|array;define;fields;Cost;Size;Shape
+
+             --%fruit|foreach;fruits
+               --%field|foreach;fields
+                 --+[&fruit]-[&field]|[:Fruits("[&fruit]-[&field]")]
+               --%|
+             --%|
+           }}           
+
+           The --s and --l commands have been updated to allow for the storage of data types on a special character named "ScriptCards_Storage". After
+           creating this character, you must restart the sandbox to use it. The new variations of --s and --l take an identifier character to determine
+           what type of item(s) are being stored:
+
+           --s$optionalprefix|  <-- Stores Roll Variables
+           --s&optionalprefix  <-- Stores String Variables
+           --s@optionalprefix|  <-- Stores Arrays
+           --s:optionalprefix|  <-- Stores Hash Tables
+           --s#optionalprefix|  <-- Stores ScriptCards Settings
+
+           --l$optionalprefix|  <-- Loads Roll Variables
+           --l&optionalprefix|  <-- Loads String Variables
+           --l@optionalprefix|  <-- Loads Arrays
+           --l:optionalprefix|  <-- Loads Hash Tables
+           --l#optionalprefix|  <-- Loads ScriptCards Settings
+          
+          You can store/load multiple variables of the same type at the same time:
+
+          --s$|MyFirstString;MySecondString;Number3
+          
+          This will store three separate string variables. Note that the normal variable referencing IS NOT USED (ie, [$MyFirstString] as this will
+          be replaced with the actual value of MyFirstString. We need to refer to the variable name itself)
+
+          Items stored in this way are stored in attribute on the Storage character. You can transmog this character into other games as needed
+          and all of your stored data will be preserved.
+
+          The optional prefix can be used to store multiple variables with the same name - perhaps for different characters, scripts, etc.
+
+          --s&fred|charactername
+          
+          Would store the variable on the character sheet in an attribute named "SCS_fred-charactername", while leaving the prefix off would store
+          the variable as "SCS_-charactername". The various variable types have their own "SC" prefix, so different variable types with the same name
+          won't collide. Ex. "SCS_-attack" is a string variable called attack, while "SCR_-attack" is a roll variable. The types are:
+
+          SCR_ - Roll Variable
+          SCS_ - String Variable
+          SCA_ - Array
+          SCH_ - Hash Table
+          SCT_ - ScriptCards Setting
+
+v 2.5.1  - Added the ability to specify default values for [*...] lookups for S, T, and IDs by including the desired default after a ::.
+           For example: [*S:Height::50] will return the value of the Height attribute on the sourcetoken. If it can't find Height, it will
+           return 50.
+
+v 2.5.0  - You can now set "speakingas" with object modification by substituting a ^ charater for the pipe (|) normally used.
+
 v 2.4.9a - Bug fix for .Trim vs .trim typo in the load settings code
 
 v 2.4.9  - Bug fix for nested loops when the internal loop is a while/until loop.

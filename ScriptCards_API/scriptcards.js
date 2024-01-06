@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.4.9a";
+	const APIVERSION = "2.6.0";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -256,6 +256,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	var rollVariables = {};
 	var arrayVariables = {};
 	var arrayIndexes = {};
+	var hashTables = {};
 	var tokenMarkerURLs = [];
 	var templates = {};
 
@@ -267,6 +268,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	var repeatingCharAttrs = undefined;
 	var repeatingSectionName = undefined;
 	var triggerCharID = undefined;
+	var storageCharID = undefined;
 	var repeatScriptCard = false;
 
 	// Storage for any Library handouts found in the game
@@ -438,6 +440,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				log(`ScriptCards Triggers could not find character named "ScriptCards_Triggers"`);
 			}
 		}
+
+		var findStorageChar = findObjs({ _type: "character", name: "ScriptCards_Storage" })[0];
+		if (findStorageChar) { storageCharID = findStorageChar.id; log(`ScriptCards Storage character: ${storageCharID} `) }
 
 		// Retrieve the list of token/status markers from the Campaign and create an associative
 		// array that links the marker name to the URL of the marker image for use in the
@@ -685,6 +690,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						if (scriptCardsStashedScripts[stashIndex].rollVariables) { rollVariables = JSON.parse(scriptCardsStashedScripts[stashIndex].rollVariables); }
 						if (scriptCardsStashedScripts[stashIndex].arrayVariables) { arrayVariables = JSON.parse(scriptCardsStashedScripts[stashIndex].arrayVariables); }
 						if (scriptCardsStashedScripts[stashIndex].arrayIndexes) { arrayIndexes = JSON.parse(scriptCardsStashedScripts[stashIndex].arrayIndexes); }
+						if (scriptCardsStashedScripts[stashIndex].hashTables) { hashTables = JSON.parse(scriptCardsStashedScripts[stashIndex].hashTables); }
 						if (scriptCardsStashedScripts[stashIndex].returnStack) { returnStack = JSON.parse(scriptCardsStashedScripts[stashIndex].returnStack); }
 						if (scriptCardsStashedScripts[stashIndex].parameterStack) { parameterStack = JSON.parse(scriptCardsStashedScripts[stashIndex].parameterStack); }
 						if (scriptCardsStashedScripts[stashIndex].outputLines) { outputLines = JSON.parse(scriptCardsStashedScripts[stashIndex].outputLines); }
@@ -1120,6 +1126,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								log(thisContent);
 							}
 
+							// Handle setting hash table value
+							if (thisTag.charAt(0).toLowerCase() == "h") {
+								let hashparams = thisTag.substring(2)
+								let tableName = hashparams.split('("')[0];
+								let tableKey = hashparams.split('("')[1];
+								tableKey = tableKey.substring(0, tableKey.indexOf('")'))
+								if (hashTables[tableName] === undefined) {
+									hashTables[tableName] = {};
+								}
+								hashTables[tableName][tableKey] = thisContent;
+							}
+
 							// Handle setting object values
 							if (thisTag.charAt(0) === "!") {
 								if (thisTag.length > 1) {
@@ -1481,6 +1499,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 															case "true": settingValue = true; break;
 															case "false": settingValue = false; break;
 														}
+													}
+
+													if (settingName.toLowerCase() == "speakingas") {
+														settingValue = settingValue.replace("^", "|")
 													}
 
 													if (settingName != null) {
@@ -2217,17 +2239,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													setStringOrArrayElement(variableName, params[2].replace(/<[^>]*>?/gm, ''), cardParameters)
 													break;
 
-												case "replaceencoding":
-													var tempString = stringVariables[variableName]
-													for (let zz = 0; zz < EncodingReplaements.length; zz++) {
-														let f = EncodingReplaements[zz].split(":")[0]
-														let r = EncodingReplaements[zz].split(":")[1]
-														tempString = tempString.replaceAll(f.toUpperCase(), r);
-														tempString = tempString.replaceAll(f.toLowerCase(), r);
-													}
-													setStringOrArrayElement(variableName, tempString, cardParameters);
-													break;
-
 												case "trim":
 													setStringOrArrayElement(variableName, params[2].trim(), cardParameters)
 													break;
@@ -2336,6 +2347,26 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													break;
 											}
 										}
+
+										if (params.length > 2) {
+											switch (params[1].toLowerCase()) {
+												case "replaceencoding":
+													var tempparams = Object.assign(params);
+													tempparams.shift(); 
+													tempparams.shift();
+													var tempString = tempparams.join();
+													for (let zz = 0; zz < EncodingReplaements.length; zz++) {
+														let f = EncodingReplaements[zz].split(":")[0]
+														let r = EncodingReplaements[zz].split(":")[1]
+														if (f && tempString && r) {
+															tempString = tempString.replaceAll(f.toUpperCase(), r);
+															tempString = tempString.replaceAll(f.toLowerCase(), r);
+														}
+													}
+													if (variableName) { setStringOrArrayElement(variableName, tempString, cardParameters) }
+													break;
+											}
+										}
 										break;
 
 									case "array":
@@ -2381,6 +2412,26 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													if (variableName) { stringVariables[variableName] = arrayVariables[params[2]].length; }
 												}
 											}
+
+											if (params[1].toLowerCase() == "fromhashtablekeys") {
+												arrayVariables[params[2]] = [];
+												if (hashTables[params[3]]) {
+													Object.keys(hashTables[params[3]]).forEach(function (key) {
+														arrayVariables[params[2]].push(key);
+													});
+												}
+												var theTable = findObjs({ type: "rollabletable", name: params[3] })[0];
+												if (theTable != null) {
+													var tableItems = findObjs({ type: "tableitem", _rollabletableid: theTable.id });
+													if (tableItems != null) {
+														tableItems.forEach(function (item) {
+															arrayVariables[params[2]].push(item.get("name"))
+														})
+													}
+													if (variableName) { stringVariables[variableName] = arrayVariables[params[2]].length; }
+												}
+											}
+
 
 											if (params[1].toLowerCase() == "fromtableweighted") {
 												arrayVariables[params[2]] = [];
@@ -3297,6 +3348,34 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 										break;
 								}
+
+								// Handle variable storage and recall
+								if ("$&@#:".includes(thisTag.charAt(1))) {
+									let varType = thisTag.charAt(1)
+									let prefix = ""
+									if (thisTag.length > 2) {
+										prefix = thisTag.substring(2)
+									}
+									let varList = thisContent.split(cardParameters.parameterdelimiter)
+									//log(`Storing: ${varType}, Prefix: ${prefix}, varList: ${varList}`)
+									if (storageCharID && varList) {
+										if (varType == "$") {
+											varList.forEach((element) => storeRollVar(storageCharID, prefix, element));
+										}
+										if (varType == "&") {
+											varList.forEach((element) => storeStringVar(storageCharID, prefix, element));
+										}
+										if (varType == "@") {
+											varList.forEach((element) => storeArray(storageCharID, prefix, element));
+										}
+										if (varType == ":") {
+											varList.forEach((element) => storeHashTable(storageCharID, prefix, element));
+										}
+										if (varType == "#") {
+											varList.forEach((element) => storeSetting(storageCharID, prefix, element.toLowerCase(), cardParameters));
+										}										
+									}
+								}
 							}
 
 							// Handle L (Load) statements
@@ -3333,6 +3412,33 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 										break;
 								}
+								if ("$&@#:".includes(thisTag.charAt(1))) {
+									let varType = thisTag.charAt(1)
+									let prefix = ""
+									if (thisTag.length > 2) {
+										prefix = thisTag.substring(2)
+									}
+									let varList = thisContent.split(cardParameters.parameterdelimiter)
+									//log(`Loading: ${varType}, Prefix: ${prefix}, varList: ${varList}`)
+									if (storageCharID && varList) {
+										if (varType == "$") {
+											varList.forEach((element) => loadRollVar(storageCharID, prefix, element));
+										}
+										if (varType == "&") {
+											varList.forEach((element) => loadStringVar(storageCharID, prefix, element));
+										}
+										if (varType == "@") {
+											varList.forEach((element) => loadArray(storageCharID, prefix, element));
+										}
+										if (varType == ":") {
+											varList.forEach((element) => loadHashTable(storageCharID, prefix, element));
+										}
+										if (varType == "#") {
+											varList.forEach((element) => loadSetting(storageCharID, prefix, element.toLowerCase(), cardParameters));
+										}										
+									}
+								}
+
 							}
 
 							// Handle branch lines
@@ -3583,8 +3689,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
 		content = content.replace(/\[&zwnj;/g, "[")
-		while (content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
-			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*\~\=])[^\[\]]*?(?!\.+[\[])(\])/g)[0];
+		//		while (content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
+		//			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:])[^\[\]]*?(?!\.+[\[])(\])/g)[0];
+		while (content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
+			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:])[^\[\]]*?(?!\.+[\[])(\])/g)[0];
 			var replacement = "";
 			switch (thisMatch.charAt(1)) {
 				case "&":
@@ -3798,46 +3906,71 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					break;
 
+				case ":":
+					try {
+						var hashparams = thisMatch.substring(2, thisMatch.length - 1);
+						var hashName = hashparams.split('("')[0];
+						var hashKey = hashparams.split('("')[1];
+
+						if (hashName != null && hashKey != null) {
+							hashKey = hashKey.substring(0, hashKey.indexOf('")'))
+						}
+
+						if (hashName && hashKey) {
+							replacement = hashTables[hashName][hashKey]
+						} else {
+							replacement = "";
+						}
+					} catch (e) {
+						replacement = "";
+					}
+
+					break;
+
 				case "$":
 					// Replace a roll variable
-					var vName = thisMatch.match(/(?<=\[\$).*?(?=[\.|\]])/g)[0];
-					var vSuffix = "Total";
-					if (thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g) != null) {
-						vSuffix = thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g)[0];
-					}
-					if (rollVariables[vName] != null) {
-						var rawValue = rollVariables[vName]["Total"].toString();
-						if (rollVariables[vName].PaddingDigits > rawValue.length) {
-							rawValue = rawValue.padStart(rollVariables[vName].PaddingDigits, '0');
+					try {
+						var vName = thisMatch.match(/(?<=\[\$).*?(?=[\.|\]])/g)[0];
+						var vSuffix = "Total";
+						if (thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g) != null) {
+							vSuffix = thisMatch.match(/(?<=\.).*?(?=[\.|\]])/g)[0];
 						}
-						switch (vSuffix.toLocaleLowerCase()) {
-							case "raw":
-							case "total":
-								replacement = rawValue;
-								break;
+						if (rollVariables[vName] != null) {
+							var rawValue = rollVariables[vName]["Total"].toString();
+							if (rollVariables[vName].PaddingDigits > rawValue.length) {
+								rawValue = rawValue.padStart(rollVariables[vName].PaddingDigits, '0');
+							}
+							switch (vSuffix.toLocaleLowerCase()) {
+								case "raw":
+								case "total":
+									replacement = rawValue;
+									break;
 
-							default:
-								replacement = rollVariables[vName][vSuffix];
-						}
-						if (vSuffix.startsWith("RolledDice") || vSuffix.startsWith("KeptDice") || vSuffix.startsWith("DroppedDice")) {
-							if (thisMatch.match(/(?<=\().*?(?=[)]])/g)) {
-								var vIndex = thisMatch.match(/(?<=\().*?(?=[)]])/g)[0];
-								if (vIndex) {
-									vIndex -= 1;
-									var suffixName = vSuffix.substring(0, vSuffix.indexOf("("));
-									replacement = rollVariables[vName][suffixName][vIndex];
-								} else {
-									replacement = "0";
+								default:
+									replacement = rollVariables[vName][vSuffix];
+							}
+							if (vSuffix.startsWith("RolledDice") || vSuffix.startsWith("KeptDice") || vSuffix.startsWith("DroppedDice")) {
+								if (thisMatch.match(/(?<=\().*?(?=[)]])/g)) {
+									var vIndex = thisMatch.match(/(?<=\().*?(?=[)]])/g)[0];
+									if (vIndex) {
+										vIndex -= 1;
+										var suffixName = vSuffix.substring(0, vSuffix.indexOf("("));
+										replacement = rollVariables[vName][suffixName][vIndex];
+									} else {
+										replacement = "0";
+									}
 								}
 							}
 						}
-					}
-					debugOutput(`RollHilighting: ${rollHilighting}, Suffix: ${vSuffix}`);
-					if (rollHilighting == true && vSuffix == "Total" && rollVariables[vName] != null) {
-						replacement = buildTooltip(replacement, "Roll: " + rollVariables[vName].RollText.replace("<", "L").replace(">", "G") + "<br /><br />Result: " + rollVariables[vName].Text, rollVariables[vName].Style);
-					}
-					if (cardParameters.debug !== "0") {
-						log(`ContentIn: ${content} Match: ${thisMatch}, vName: ${vName}, vSuffix: ${vSuffix}, replacement ${replacement}`)
+						debugOutput(`RollHilighting: ${rollHilighting}, Suffix: ${vSuffix}`);
+						if (rollHilighting == true && vSuffix == "Total" && rollVariables[vName] != null) {
+							replacement = buildTooltip(replacement, "Roll: " + rollVariables[vName].RollText.replace("<", "L").replace(">", "G") + "<br /><br />Result: " + rollVariables[vName].Text, rollVariables[vName].Style);
+						}
+						if (cardParameters.debug !== "0") {
+							log(`ContentIn: ${content} Match: ${thisMatch}, vName: ${vName}, vSuffix: ${vSuffix}, replacement ${replacement}`)
+						}
+					} catch (e) {
+						replacement = "";
 					}
 					break;
 
@@ -3936,7 +4069,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (cardParameters.enableattributesubstitution !== "0") { workString = resolveAttributeSubstitution(activeCharacter, thisMatch); }
 							var token;
 							var attribute = "";
+							var defaultValue = null;
+							var useDefaultValue = false;
 							var attrName = workString.substring(workString.indexOf(":") + 1, workString.length - 1);
+							if (attrName.indexOf("::") >= 0) {
+								defaultValue = attrName.substring(attrName.indexOf("::") + 2, attrName.length - 1);
+								useDefaultValue = true;
+							}
 							var character = getObj("character", activeCharacter);
 							if (character === undefined) {
 								token = getObj("graphic", activeCharacter);
@@ -3957,6 +4096,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								}
 							}
 							if (character != null && (!attrName.toLowerCase().startsWith("t-"))) {
+								//log(`attrName: ${attrName}`)
 								if (attrName !== "bio" && attrName !== "notes" && attrName !== "gmnotes") {
 									attribute = getAttrByName(character.id, attrName, opType);
 									if (attribute === undefined) {
@@ -3964,9 +4104,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									}
 								} else {
 									// Add URL Decoding?
-									character.get(attrName, function (a) {
-										attribute = a;
-									});
+									/*
+									log("In else")
+									const myFunc = async (character) => {
+										const charBio = await getNotes(attrName, character);
+										log(`Bio: ${charBio}`);
+										attribute = charBio;
+										log(`Atrr: ${attribute}`)
+									};
+									*/
+									//character.get(attrName, function (a) {
+									//	attribute = a;
+									//});
 								}
 								if (cardParameters.attemptattributeparsing != 0) {
 									attribute = ParseCalculatedAttribute(attribute, character)
@@ -3980,6 +4129,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								}
 							}
 							replacement = attribute;
+							if (useDefaultValue && (replacement == null || replacement == undefined || replacement == "")) {
+								replacement = defaultValue;
+							}
 							if (character != null) {
 								if (cardParameters.enableattributesubstitution !== "0") {
 									replacement = resolveAttributeSubstitution(character.get("_id"), replacement);
@@ -5113,6 +5265,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		scriptCardsStashedScripts[stashIndex].rollVariables = JSON.stringify(rollVariables);
 		scriptCardsStashedScripts[stashIndex].arrayVariables = JSON.stringify(arrayVariables);
 		scriptCardsStashedScripts[stashIndex].arrayIndexes = JSON.stringify(arrayIndexes);
+		scriptCardsStashedScripts[stashIndex].hashTables = JSON.stringify(hashTables);
 		scriptCardsStashedScripts[stashIndex].returnStack = JSON.stringify(returnStack);
 		scriptCardsStashedScripts[stashIndex].parameterStack = JSON.stringify(parameterStack);
 		scriptCardsStashedScripts[stashIndex].outputLines = JSON.stringify(outputLines);
@@ -5795,9 +5948,191 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
+	/**
+	 * Gets the blob info from roll20 objects asynchronously
+	 * @param {string} prop - the property to get
+	 * @param {Roll20 Object} obj - the Roll20 object to get the prop from
+	 * @returns {Promise<string>} - The contents of the blob.
+	 * 
+	 * Calling this:
+	   const myFunc = async (charObj) => {
+	   const charBio = await getNotes('bio',charObj);
+	   // Do something with the bio content
+};
+	*/
+
+	/*
+	const getNotes = function (prop, obj) {
+		return new Promise((resolve, reject) => {
+			obj.get(prop, (p) => {
+				resolve(p);
+			});
+		});
+	};
+	*/
+
 	return {
 		ObserveTokenChange: observeTokenChange
 	};
+
+	function storeRollVar(charid, prefix, varname) {
+		try {
+			let testObj = findObjs({ type: "attribute", characterid: charid, name: `SCR_${prefix}-${varname}` })[0]
+			if (testObj) {
+				testObj.set("current", JSON.stringify(rollVariables[varname]))
+			} else {
+				createObj("attribute", {
+					name: `SCR_${prefix}-${varname}`,
+					current: JSON.stringify(rollVariables[varname]),
+					characterid: charid
+				})
+			}
+		} catch (e) {
+			log(`Unable to store ${varname} on ${charid}, error ${e} `)
+		}
+	}
+
+	function loadRollVar(charid, prefix, varname) {
+		try {
+			let charobj = getObj("character", charid)
+			if (charobj) {
+				let attr = findObjs({ type: "attribute", characterid: charid, name: `SCR_${prefix}-${varname}` })[0];
+				if (attr) {
+					rollVariables[varname] = JSON.parse(attr.get("current"));
+				}
+			}
+		} catch (e) {
+			log(`Unable to load ${varname} on ${charid}, error ${e} `)
+		}
+	}
+
+	function storeStringVar(charid, prefix, varname) {
+		try {
+			let testObj = findObjs({ type: "attribute", characterid: charid, name: `SCS_${prefix}-${varname}` })[0]
+			if (testObj) {
+				testObj.set("current", stringVariables[varname])
+			} else {
+				createObj("attribute", {
+					name: `SCS_${prefix}-${varname}`,
+					current: stringVariables[varname],
+					characterid: charid
+				})
+			}
+		} catch (e) {
+			log(`Unable to store ${varname} on ${charid}, error ${e} `)
+		}
+	}
+
+	function loadStringVar(charid, prefix, varname) {
+		try {
+			let charobj = getObj("character", charid)
+			if (charobj) {
+				let attr = findObjs({ type: "attribute", characterid: charid, name: `SCS_${prefix}-${varname}` })[0];
+				if (attr) {
+					stringVariables[varname] = attr.get("current");
+				}
+			}
+		} catch (e) {
+			log(`Unable to load ${varname} on ${charid}, error ${e} `)
+		}
+	}
+
+	function storeArray(charid, prefix, varname) {
+		try {
+			let testObj = findObjs({ type: "attribute", characterid: charid, name: `SCA_${prefix}-${varname}` })[0]
+			if (testObj) {
+				testObj.set("current", JSON.stringify(arrayVariables[varname]))
+			} else {
+				createObj("attribute", {
+					name: `SCA_${prefix}-${varname}`,
+					current: JSON.stringify(arrayVariables[varname]),
+					characterid: charid
+				})
+			}
+		} catch (e) {
+			log(`Unable to store ${varname} on ${charid}, error ${e} `)
+		}
+	}
+
+	function loadArray(charid, prefix, varname) {
+		try {
+			let charobj = getObj("character", charid)
+			if (charobj) {
+				let attr = findObjs({ type: "attribute", characterid: charid, name: `SCA_${prefix}-${varname}` })[0];
+				if (attr) {
+					arrayVariables[varname] = JSON.parse(attr.get("current"));
+				}
+			}
+		} catch (e) {
+			log(`Unable to load ${varname} on ${charid}, error ${e} `)
+		}
+	}
+
+	function storeHashTable(charid, prefix, varname) {
+		try {
+			let testObj = findObjs({ 
+				type: "attribute", 
+				characterid: charid, 
+				name: `SCH_${prefix}-${varname}` })[0]
+			if (testObj) {
+				testObj.set("current", JSON.stringify(hashTables[varname]))
+			} else {
+				createObj("attribute", {
+					name: `SCH_${prefix}-${varname}`,
+					current: JSON.stringify(hashTables[varname]),
+					characterid: charid
+				})
+			}
+		} catch (e) {
+			log(`Unable to store ${varname} on ${charid}, error ${e} `)
+		}
+	}
+
+	function loadHashTable(charid, prefix, varname) {
+		try {
+			let charobj = getObj("character", charid)
+			if (charobj) {
+				let attr = findObjs({ type: "attribute", characterid: charid, name: `SCH_${prefix}-${varname}` })[0];
+				if (attr) {
+					hashTables[varname] = JSON.parse(attr.get("current"));
+				}
+			}
+		} catch (e) {
+			log(`Unable to load ${varname} on ${charid}, error ${e} `)
+		}
+	}
+
+	function storeSetting(charid, prefix, varname, cardParameters) {
+		try {
+			let testObj = findObjs({ type: "attribute", characterid: charid, name: `SCT_${prefix}-${varname}` })[0]
+			if (testObj) {
+				testObj.set("current", cardParameters[varname])
+			} else {
+				createObj("attribute", {
+					name: `SCT_${prefix}-${varname}`,
+					current: cardParameters[varname],
+					characterid: charid
+				})
+			}
+		} catch (e) {
+			log(`Unable to store ${varname} on ${charid}, error ${e} `)
+		}
+	}
+
+	function loadSetting(charid, prefix, varname, cardParameters) {
+		try {
+			let charobj = getObj("character", charid)
+			if (charobj) {
+				let attr = findObjs({ type: "attribute", characterid: charid, name: `SCT_${prefix}-${varname}` })[0];
+				if (attr) {
+					cardParameters[varname] = attr.get("current");
+				}
+			}
+		} catch (e) {
+			log(`Unable to load ${varname} on ${charid}, error ${e} `)
+		}
+	}
+
 })();
 
 // Meta marker for the end of ScriptCards
