@@ -1,5 +1,15 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.6.1  - New setting - concatenationcharacter, which will allow you to set an alternative to starting string assignments with "+" to append.
+           This setting defaults to "+", but can be set to another single character if you need to include "+" symbols at the beginning of
+           your string variables. This is a per-line setting, so can be changed and changed back as needed.
+
+           Setting a hash table key value to an empty string will now remove the key from the table:
+
+           ex: --hFruits("Steak")|
+
+           will remove the Steak entry from the Fruits table. Previously the key would remain but the value would be blank. 
+
 v 2.6.0  - Note: This update should be considered EXPERIMENTAL for now. While I have tested the nw features and looked for anything that might
            have impacted existing scripts, there is always the possiblity that I missed something. It will be a couple of weeks before this update
            heads for OneClick in order to provide time to find and fix bugs.

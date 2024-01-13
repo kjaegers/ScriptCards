@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.6.0";
+	const APIVERSION = "2.6.1";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -115,6 +115,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		buttonfontface: "Tahoma",
 		buttonpadding: "5px",
 		parameterdelimiter: ";",
+		concatentioncharacter: "+",
 		formatoutputforobjectmodification: "0",
 		dicefontcolor: "#1C6EA4",
 		dicefontsize: "3.0em",
@@ -1135,7 +1136,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								if (hashTables[tableName] === undefined) {
 									hashTables[tableName] = {};
 								}
-								hashTables[tableName][tableKey] = thisContent;
+								if (thisContent == null || thisContent.trim() == "") {
+									delete hashTables[tableName][tableKey]
+								} else {
+									hashTables[tableName][tableKey] = thisContent;
+								}
 							}
 
 							// Handle setting object values
@@ -2352,7 +2357,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											switch (params[1].toLowerCase()) {
 												case "replaceencoding":
 													var tempparams = Object.assign(params);
-													tempparams.shift(); 
+													tempparams.shift();
 													tempparams.shift();
 													var tempString = tempparams.join();
 													for (let zz = 0; zz < EncodingReplaements.length; zz++) {
@@ -2413,7 +2418,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												}
 											}
 
-											if (params[1].toLowerCase() == "fromhashtablekeys") {
+											if (params[1].toLowerCase() == "fromhashtablekeys" ||
+												params[1].toLowerCase() == "fromkeys") {
 												arrayVariables[params[2]] = [];
 												if (hashTables[params[3]]) {
 													Object.keys(hashTables[params[3]]).forEach(function (key) {
@@ -3373,7 +3379,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 										if (varType == "#") {
 											varList.forEach((element) => storeSetting(storageCharID, prefix, element.toLowerCase(), cardParameters));
-										}										
+										}
 									}
 								}
 							}
@@ -3435,7 +3441,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 										if (varType == "#") {
 											varList.forEach((element) => loadSetting(storageCharID, prefix, element.toLowerCase(), cardParameters));
-										}										
+										}
 									}
 								}
 
@@ -5824,7 +5830,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		} else {
 			if (varValue == null) { varValue = "" }
 
-			if (typeof (varValue) === 'string' && varValue.charAt(0) == "+") {
+			//if (typeof (varValue) === 'string' && varValue.charAt(0) == "+") {
+			if (typeof (varValue) === 'string' && varValue.charAt(0) == cardParameters.concatentioncharacter) {
 				varValue = (stringVariables[varName] || "") + varValue.substring(1);
 			}
 
@@ -6070,10 +6077,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function storeHashTable(charid, prefix, varname) {
 		try {
-			let testObj = findObjs({ 
-				type: "attribute", 
-				characterid: charid, 
-				name: `SCH_${prefix}-${varname}` })[0]
+			let testObj = findObjs({
+				type: "attribute",
+				characterid: charid,
+				name: `SCH_${prefix}-${varname}`
+			})[0]
 			if (testObj) {
 				testObj.set("current", JSON.stringify(hashTables[varname]))
 			} else {
