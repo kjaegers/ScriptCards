@@ -1,0 +1,55 @@
+!script {{
+  --/|This script doesn't do anything game-impacting on its own. It is designed to provide an example of how to use
+  --/|reentrant buttons to build up a list of targets, with the ability to remove targets from the list. All of the
+  --/|selection code is whispered to the player running the script, and when they click "End Selection", the list
+  --/|is displayed to everyone.
+
+  --#reentrant|targetPicker_[&SendingPlayerID]
+  --#title|Select Targets
+  --#whisper|self
+
+  --/|Helper variable build up to allow us to include a target prompt in an rbutton
+  --&TB|& --&TB|+# --&TB|+64 --&TB|+; --&TB|+{
+
+  --=TargetNum|1
+
+  --/|After any button press except "End Selection", we'll return here to allow the list to be expanded.
+  --:Restart|
+  --+|[c][rbutton]Add Target::AddATarget;[&TB]Target|[$TargetNum.Raw]|token_id}[/rbutton]  [rbutton]End Selection::EndSelection[/rbutton][/c]
+  --X|
+
+  --:ShowTargetList|Y or N for including removeal buttons
+  --?"[@targetList()]" -eq ""|<
+  --?"[@targetList()]" -eq "undefined array"|<
+  --=Index|0
+  --%loop|foreach;targetList
+    --&append|[r][rbutton]X::RemoveTarget;[$Index.Raw][/rbutton][/r]
+    --?"[%1%]" -ne "Y"|&append;
+    --+Target|[&loop] ([*[&loop]:t-name]) [&append]
+    --=Index|[$Index] + 1
+  --%|
+  --<|
+
+  --/|Reentrant point for the "Add Target" button
+  --:AddATarget|
+  --=TargetNum|[$TargetNum.Raw] + 1
+  --&targetList(99999)|[&reentryval]
+  -->ShowTargetList|Y
+  --^Restart|
+  --X|
+
+  --/|Reentrant point for the "X" button next to a list item
+  --:RemoveTarget|
+  --=TargetNum|[$TargetNum.Raw] - 1
+  --~|array;removeat;targetList;[&reentryval]
+  -->ShowTargetList|Y
+  --^Restart|
+
+  --/|Reentrant point for the "End Selection" button
+  --:EndSelection|
+  --#whisper|
+  --+|[c][b]Final List of [=[$TargetNum] - 1] Target(s)[/b][/c]
+  -->ShowTargetList|N
+  --X|
+
+}}
