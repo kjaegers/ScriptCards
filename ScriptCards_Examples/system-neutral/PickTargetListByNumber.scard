@@ -1,0 +1,63 @@
+!script {{
+  --/|This script doesn't do anything game-impacting on its own. It is designed to provide an example of how to use
+  --/|reentrant buttons to build up a list of targets. This version of the example generates 10 buttons, each of which
+  --/|includes the code to prompt for an additional target. It asks the user how many targets to pick, they click the
+  --/|numbered button and then select each target.
+
+  --#reentrant|targetPicker_[&SendingPlayerID]
+  --#title|Select Targets
+  --#whisper|self
+
+  --/|Helper variable build up to allow us to include a target prompt in an rbutton
+  --&TB|& --&TB|+# --&TB|+64 --&TB|+; --&TB|+{
+
+  --&TargetBase|[&TB]Target|Target_##|token_id}
+  --&ButtonEnd|[/rbutton]
+
+  --&BaseButton|[rbutton]##::AddTarget;[&TargetBase]
+  --&ButtonArray(0)|[&BaseButton(replaceall,##,1)]
+ 
+  --%loop|1;9
+    --&ButtonArray([&loop])|[@ButtonArray([=[&loop] - 1])]|[&TargetBase(replaceall,##,[=[&loop]+1])]
+    --&temp|[@ButtonArray([&loop])]
+    --&rep|[=[&loop] + 1]::
+    --&find|[&loop]::
+    --&ButtonArray([&loop])|[&temp(replaceall,[&find],[&rep])]
+  --%|
+
+   --%loop|0;[@ButtonArray(maxindex)]
+    --&ButtonArray([&loop])|[@ButtonArray([&loop])][&ButtonEnd]
+  --%|
+
+  --+|[c]Choose number of targets[/c][br]
+
+  --&output|[c]
+  --%loop|foreach;ButtonArray
+    --&output|+[&loop]
+  --%|
+  --&output|+[/c]
+  --+|[&output]
+
+  --X|
+
+  --:ShowTargetList|Y or N for including removeal buttons
+  --?"[@targetList()]" -eq ""|<
+  --?"[@targetList()]" -eq "undefined array"|<
+  --=Index|0
+  --%loop|foreach;targetList
+    --&append|[r][rbutton]X::RemoveTarget;[$Index.Raw][/rbutton][/r]
+    --?"[%1%]" -ne "Y"|&append;
+    --+Target|[&loop] ([*[&loop]:t-name]) [&append]
+    --=Index|[$Index] + 1
+  --%|
+  --<|
+
+  --/|Reentrant point for the "Add Target" button
+  --:AddTarget|
+  --~|array;define;targetList;[&reentryval(replaceall,|,;)]
+  --=TargetNum|[@targetList(length)]
+  --#whisper|
+  -->ShowTargetList|
+  --X|
+
+}}
