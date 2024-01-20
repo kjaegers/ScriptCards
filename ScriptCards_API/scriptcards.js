@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.6.1";
+	const APIVERSION = "2.6.2";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2370,6 +2370,35 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													}
 													if (variableName) { setStringOrArrayElement(variableName, tempString, cardParameters) }
 													break;
+											}
+										}
+										break;
+
+									case "hashtable":
+									case "hash":
+										if (params.length == 3) {
+											if (params[1].toLowerCase() == "clear") {
+												hashTables[params[2]] = {};
+											}
+										}
+
+										if (params.length > 2) {
+											if (params[1].toLowerCase() == "set") {
+												try {
+													let tableName = params[2];
+													if (hashTables[tableName] === undefined) {
+														hashTables[tableName] = {};
+													}
+													for (var x = 3; x < params.length; x++) {
+														if (params[x].indexOf("==") > 0) {
+															let thisKey = params[x].split("==")[0]
+															let thisValue = params[x].split("==")[1]
+															hashTables[tableName][thisKey] = thisValue
+														}
+													}
+												} catch (e) {
+													log(`ScriptCards: Error encounted: ${e}`)
+												}
 											}
 										}
 										break;

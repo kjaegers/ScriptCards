@@ -1,0 +1,6 @@
+{
+    "Lua.diagnostics.disable": [
+        "param-type-mismatch"
+    ],
+    "editor.wordWrap": "off"
+}
