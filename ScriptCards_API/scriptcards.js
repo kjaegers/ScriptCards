@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.6.2";
+	const APIVERSION = "2.6.2a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -402,9 +402,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				on('add:graphic', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:graphic" });
 					if (ability != null && ability !== [] && ability[0] != null) {
-						var replacement = ` --&GraphicAdded|${obj.id}} `;
-						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);
+						setTimeout(() => {
+							var replacement = ` --&GraphicAdded|${obj.id} `;
+							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+							sendChat("API", metacard);
+						}
+							, 500);
 					}
 				})
 				on('destroy:graphic', function (obj) {

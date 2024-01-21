@@ -1,5 +1,18 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.6.2a - Fix for add:graphic trigger running too fast
+
+v 2.6.2  - Added functions to support hashtables:
+
+           --~|hash;clear;HashTableName
+             Removes all key/value pairs from the given hashtable
+
+           --~|hash;set;HashTableName;Key1==Value1;Key2==Value;...
+           
+             Sets key/value pairs in the given hashtable. Ex: --~|hash;set;Fruits;Mango-Cost==2sp;Mango-Size==Medium;Mango-Shape==Oblong
+          
+           Note that for the function group you can use "hash" or "hashtable".
+
 v 2.6.1  - New setting - concatenationcharacter, which will allow you to set an alternative to starting string assignments with "+" to append.
            This setting defaults to "+", but can be set to another single character if you need to include "+" symbols at the beginning of
            your string variables. This is a per-line setting, so can be changed and changed back as needed.
