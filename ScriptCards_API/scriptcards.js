@@ -375,17 +375,23 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				on('add:attribute', function (obj) {
 					var ability = findObjs({ type: "attribute", _characterid: triggerCharID, name: "add:attribute" });
 					if (ability != null && ability !== [] && ability[0] != null) {
-						var replacement = ` --&AttributeAdded|${obj.id}} `;
-						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);
+						setTimeout(() => {
+							var replacement = ` --&AttributeAdded|${obj.id}} `;
+							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+							sendChat("API", metacard);
+						}
+							, 500);
 					}
 				})
 				on('add:page', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:page" });
 					if (ability != null && ability !== [] && ability[0] != null) {
-						var replacement = ` --&PageAdded|${obj.id}} `;
-						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);
+						setTimeout(() => {
+							var replacement = ` --&PageAdded|${obj.id}} `;
+							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+							sendChat("API", metacard);
+						}
+							, 500);
 					}
 				})
 				on('destroy:page', function (obj) {
@@ -424,9 +430,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				on('add:door', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:door" });
 					if (ability != null && ability !== [] && ability[0] != null) {
-						var replacement = ` --&DoorAdded|${obj.id}} `;
-						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);
+						setTimeout(() => {
+							var replacement = ` --&DoorAdded|${obj.id}} `;
+							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+							sendChat("API", metacard);
+						}
+							, 500);
 					}
 				})
 				on('destroy:door', function (obj) {
