@@ -79,7 +79,7 @@ v 2.6.0  - Note: This update should be considered EXPERIMENTAL for now. While I 
            what type of item(s) are being stored:
 
            --s$optionalprefix|  <-- Stores Roll Variables
-           --s&optionalprefix  <-- Stores String Variables
+           --s&optionalprefix|  <-- Stores String Variables
            --s@optionalprefix|  <-- Stores Arrays
            --s:optionalprefix|  <-- Stores Hash Tables
            --s#optionalprefix|  <-- Stores ScriptCards Settings
@@ -92,7 +92,7 @@ v 2.6.0  - Note: This update should be considered EXPERIMENTAL for now. While I 
           
           You can store/load multiple variables of the same type at the same time:
 
-          --s$|MyFirstString;MySecondString;Number3
+          --s$|MyFirstNumber;MySecondNumber;Number3
           
           This will store three separate string variables. Note that the normal variable referencing IS NOT USED (ie, [$MyFirstString] as this will
           be replaced with the actual value of MyFirstString. We need to refer to the variable name itself)
