@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.6.2a";
+	const APIVERSION = "2.6.2b";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -35,6 +35,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		"nominmaxhilight": "nominmaxhighlight",
 		"norollhilight": "norollhilight",
 		"buttonbackgroundcolor": "buttonbackground",
+		"concatentioncharacter": "concatenationcharacter",
 	}
 
 	var lastExecutedByID;
@@ -115,7 +116,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		buttonfontface: "Tahoma",
 		buttonpadding: "5px",
 		parameterdelimiter: ";",
-		concatentioncharacter: "+",
+		concatenationcharacter: "+",
 		formatoutputforobjectmodification: "0",
 		dicefontcolor: "#1C6EA4",
 		dicefontsize: "3.0em",
@@ -5872,7 +5873,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			if (varValue == null) { varValue = "" }
 
 			//if (typeof (varValue) === 'string' && varValue.charAt(0) == "+") {
-			if (typeof (varValue) === 'string' && varValue.charAt(0) == cardParameters.concatentioncharacter) {
+			if (typeof (varValue) === 'string' && varValue.charAt(0) == cardParameters.concatenationcharacter) {
 				varValue = (stringVariables[varName] || "") + varValue.substring(1);
 			}
 
