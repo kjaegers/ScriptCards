@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.6.2c - Minor bug fix
+
 v2.6.2b  - fixed misspelling of "concatenationcharacter". The misspelled version is now an alias of the right version
 
 v 2.6.2a - Fix for add:graphic trigger running too fast
