@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.4.6a
+  --/|Version     : 2.4.6b
   --/|Requires SC : 2.2.9+
   --/|Author      : Kurt Jaegers
 
@@ -567,7 +567,7 @@
     -->Create_Global_Skill_Modifier_Buttons|[*S:character_id];gskmbuttons
     --#buttonpadding|[&smallButtonPadding]
     --+|[p style='text-align:center; font-weight:bold; margin-bottom:0px;']- - - - G L O B A L [&NB][&NB] M O D S - - - -[/p]
-    --+|[t width='100%'][tr][td width='25%' align='center'][b]ATK[/b][/td][td width='25%' align='center'][b]DMG[/b][/td][td width='25%' align='center'][b]AC[/b][/td][td width='25%' align='center'][b]SAVE[/b][/td][/tr][tr][td width='25%' align='center'][&gambuttons][/td][td width='25%' align='center'][&gdmbuttons][/td][td width='25%' align='center'][&gacbuttons][/td][td width='25%' align='center'][&gsmbuttons][/td][/tr][/t]
+    --+|[t width='100%'][tr][td width='25%' align='center'][b]ATK[/b][/td][td width='25%' align='center'][b]DMG[/b][/td][td width='25%' align='center'][b]AC[/b][/td][td width='25%' align='center'][b]SAVE[/b][/td][/tr][tr][td width='25%' align='center'][&gambuttons][/td][td width='25%' align='center'][&gdmbuttons][/td][td width='25%' align='center'][&gacmbuttons][/td][td width='25%' align='center'][&gsmbuttons][/td][/tr][/t]
   --]| 
 
   -->BUILD_BUTTON_LIST|[*S:character_id];repeating_attack;atkname;EXEC_PC_ATTACK;Attacks and Actions;[&pcabilitymulename];0;1
