@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.6.2c";
+	const APIVERSION = "2.6.3";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -304,7 +304,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				log(`ScriptCards Triggers Active. Trigger Character ID is ${triggerCharID}`);
 				on('change:campaign:playerpageid', function (obj, prev) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "change:campaign:playerpageid" });
-					if (ability != null && ability !== [] && ability[0] != null) {
+					if (Array.isArray(ability) && ability.length > 0) {
+					//if (ability != null && ability !== [] && ability[0] != null) {
 						var replacement = ` --&PreviousPageID|${prev.playerpageid} --&NewPageID|${obj.get("playerpageid")} `;
 						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 						sendChat("API", metacard);
@@ -312,7 +313,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 				on('change:campaign:turnorder', function () {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "change:campaign:turnorder" });
-					if (ability != null && ability !== [] && ability[0] != null) {
+					if (Array.isArray(ability) && ability.length > 0) {
+					//if (ability != null && ability !== [] && ability[0] != null) {
 						var replacement = ` `;
 						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 						sendChat("API", metacard);
@@ -320,7 +322,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 				on('change:character', function (obj, prev) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:character` });
-					if (ability != null && ability !== [] && ability[0] != null) {
+					if (Array.isArray(ability) && ability.length > 0) {
+					//if (ability != null && ability !== [] && ability[0] != null) {
 						var replacement = "";
 						for (const property in prev) {
 							replacement += ` --&CharacterOld${property}|${prev[property]} --&CharacterNew${property}|${obj.get(property)}`
@@ -331,7 +334,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 				on('change:attribute', function (obj, prev) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:attribute:${prev.name}` });
-					if (ability != null && ability !== [] && ability[0] != null) {
+					if (Array.isArray(ability) && ability.length > 0) {
+					//if (ability != null && ability !== [] && ability[0] != null) {
 						var replacement = "";
 						for (const property in prev) {
 							replacement += ` --&AttributeOld${property}|${prev[property]} --&AttributeNew${property}|${obj.get(property)}`
@@ -342,7 +346,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 				on('change:graphic', function (obj, prev) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:graphic` });
-					if (ability != null && ability !== [] && ability[0] != null) {
+					if (Array.isArray(ability) && ability.length > 0) {
+					//if (ability != null && ability !== [] && ability[0] != null) {
 						var replacement = "";
 						for (const property in prev) {
 							replacement += ` --&GraphicOld${property}|${prev[property]} --&GraphicNew${property}|${obj.get(property)}`
@@ -353,7 +358,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 				on('change:door', function (obj, prev) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:door` });
-					if (ability != null && ability !== [] && ability[0] != null) {
+					if (Array.isArray(ability) && ability.length > 0) {
+					//if (ability != null && ability !== [] && ability[0] != null) {
 						var replacement = "";
 						for (const property in prev) {
 							replacement += ` --&DoorOld${property}|${prev[property]} --&DoorNew${property}|${obj.get(property)}`
@@ -364,7 +370,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 				on('change:page', function (obj, prev) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:page` });
-					if (ability != null && ability !== [] && ability[0] != null) {
+					if (Array.isArray(ability) && ability.length > 0) {
+					//if (ability != null && ability !== [] && ability[0] != null) {
 						var replacement = "";
 						for (const property in prev) {
 							replacement += ` --&PageOld${property}|${prev[property]} --&PageNew${property}|${obj.get(property)}`
@@ -375,7 +382,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 				on('add:attribute', function (obj) {
 					var ability = findObjs({ type: "attribute", _characterid: triggerCharID, name: "add:attribute" });
-					if (ability != null && ability !== [] && ability[0] != null) {
+					if (Array.isArray(ability) && ability.length > 0) {
+					//if (ability != null && ability !== [] && ability[0] != null) {
 						setTimeout(() => {
 							var replacement = ` --&AttributeAdded|${obj.id}} `;
 							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
@@ -386,7 +394,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 				on('add:page', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:page" });
-					if (ability != null && ability !== [] && ability[0] != null) {
+					if (Array.isArray(ability) && ability.length > 0) {
+					//if (ability != null && ability !== [] && ability[0] != null) {
 						setTimeout(() => {
 							var replacement = ` --&PageAdded|${obj.id}} `;
 							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
@@ -397,7 +406,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 				on('destroy:page', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:page" });
-					if (ability != null && ability !== [] && ability[0] != null) {
+					if (Array.isArray(ability) && ability.length > 0) {
+					//if (ability != null && ability !== [] && ability[0] != null) {
 						var replacement = "";
 						for (const property in obj) {
 							replacement += ` --&PageRemoved${property}|${obj[property]} `
@@ -408,7 +418,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 				on('add:graphic', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:graphic" });
-					if (ability != null && ability !== [] && ability[0] != null) {
+					if (Array.isArray(ability) && ability.length > 0) {
+					//if (ability != null && ability !== [] && ability[0] != null) {
 						setTimeout(() => {
 							var replacement = ` --&GraphicAdded|${obj.id} `;
 							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
@@ -419,7 +430,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 				on('destroy:graphic', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:graphic" });
-					if (ability != null && ability !== [] && ability[0] != null) {
+					if (Array.isArray(ability) && ability.length > 0) {
+					//if (ability != null && ability !== [] && ability[0] != null) {
 						var replacement = "";
 						for (const property in obj) {
 							replacement += ` --&GraphicRemoved${property}|${obj[property]} `
@@ -430,7 +442,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 				on('add:door', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:door" });
-					if (ability != null && ability !== [] && ability[0] != null) {
+					if (Array.isArray(ability) && ability.length > 0) {
+					//if (ability != null && ability !== [] && ability[0] != null) {
 						setTimeout(() => {
 							var replacement = ` --&DoorAdded|${obj.id}} `;
 							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
@@ -441,7 +454,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 				on('destroy:door', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:door" });
-					if (ability != null && ability !== [] && ability[0] != null) {
+					if (Array.isArray(ability) && ability.length > 0) {
+					//if (ability != null && ability !== [] && ability[0] != null) {
 						var replacement = "";
 						for (const property in obj) {
 							replacement += ` --&DoorRemoved${property}|${obj[property]} `
@@ -1747,7 +1761,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													if (char != null) {
 														var abilname = params[3]
 														var ability = findObjs({ type: "ability", _characterid: charid, name: abilname })
-														if (ability != null && ability !== []) {
+														//if (ability != null && ability !== []) {
+														if (Array.isArray(ability) && ability.length > 0) {
 															ability = ability[0]
 															if (ability != null) {
 																sendChat(char.get("name"), ability.get('action').replace(/@\{([^|]*?|[^|]*?\|max|[^|]*?\|current)\}/g, '@{' + (char.get('name')) + '|$1}'));
@@ -1854,7 +1869,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												if (Campaign().get("turnorder") !== "") {
 													turnorder = JSON.parse(Campaign().get("turnorder"));
 												}
-												if (turnorder !== []) {
+												//if (turnorder !== []) {
+												if (Array.isArray(turnorder) && turnorder.length > 0) {
 													stringVariables[variableName] = turnorder[0].id
 												}
 											}
@@ -4367,7 +4383,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			Ones: 0,
 			Aces: 0,
 			Odds: 0,
-			Evens: 0,
+			Evens: 0,			
 			RollText: rollText,
 			Text: "",
 			Style: "",
@@ -4380,7 +4396,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			RollCount: 0,
 			KeptCount: 0,
 			DroppedCount: 0,
-			PaddingDigits: 0
+			PaddingDigits: 0,
+			DiceFont: ""
 		}
 		var hadOne = false;
 		var hadAce = false;
@@ -5487,7 +5504,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			sides: 6,
 			rawRollSet: [],
 			droppedRollSet: [],
-			keptRollSet: []
+			keptRollSet: [],
+			diceFontSet: []
 		};
 
 		// Just some defaults
@@ -5647,6 +5665,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				resultSet.rollSet.push(thisTotal);
 				resultSet.rawRollSet.push(thisTotal);
 				resultSet.rollTextSet.push(thisText);
+				switch (sides) {
+					case 20: rollSet.diceFontSet.push("[d20]thisTotal[/d20]"); break;
+					case 12: rollSet.diceFontSet.push("[d12]thisTotal[/d12]"); break;
+					case 10: rollSet.diceFontSet.push("[d10]thisTotal[/d10]"); break;
+					case 8: rollSet.diceFontSet.push("[d8]thisTotal[/d8]"); break;
+					case 6: rollSet.diceFontSet.push("[d6]thisTotal[/d6]"); break;
+					case 4: rollSet.diceFontSet.push("[d4]thisTotal[/d4]"); break;
+				}
 			}
 
 			// If we are keeping highest or lowest number of dice, eliminate the ones to remove
