@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.6.4  - Changed the default specifier for [*...] references from :: to ::: to not interfere with staus marker names.
+           NOTE: this may be a breaking change if your scripts currently use ::
+
 v 2.6.3  - Small change to the way trigger abilities are detected to correct a non-optional code pattern
 
 v 2.6.2c - Minor bug fix
