@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.6.4";
+	const APIVERSION = "2.6.6";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -243,6 +243,38 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	};
 	//---------------------------------------------------------------------------------------
 	//---------------------------------------------------------------------------------------
+
+	//---------------------------------------------------------------------------------------
+	// "borrowed" from token-mod to force lighting updates after modifying tokens
+	//---------------------------------------------------------------------------------------
+
+	const getActivePages = () => [...new Set([
+		Campaign().get('playerpageid'),
+		...Object.values(Campaign().get('playerspecificpages')),
+		...findObjs({
+			type: 'player',
+			online: true
+		})
+		.filter((p)=>playerIsGM(p.id))
+		.map((p)=>p.get('lastpage'))
+		])
+	];
+
+	const forceLightUpdateOnPage = (()=>{
+        const forPage = (pid) => (getObj('page',pid)||{set:()=>{}}).set('force_lighting_refresh',true);
+        let pids = new Set();
+        let t;
+
+        return (pid) => {
+          pids.add(pid);
+          clearTimeout(t);
+          t = setTimeout(() => {
+            let activePages = getActivePages();
+            [...pids].filter(p=>activePages.includes(p)).forEach(forPage);
+            pids.clear();
+          },100);
+        };
+    })();
 
 	// HTML Templates for the various pieces of the output card. Replaced sections are marked with
 	// !{...} syntax, and will have values substituted in them when the output line is built.
@@ -1366,6 +1398,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 															theToken.set(settingName, settingValue);
 															notifyObservers('tokenChange', theToken, prevTok);
 														}
+
+														forceLightUpdateOnPage();
+														
 													}
 												} else {
 													log(`ScriptCards Error: Modify Token called without valid TokenID`)
@@ -1541,6 +1576,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														thisObject.set(settingName, settingValue);
 													}
 												}
+												if (objectType.toLowerCase() == "graphic") { forceLightUpdateOnPage() }
 											} else {
 												log(`ScriptCards Error: Modify object called without valid object type or object ID`)
 											}
@@ -6209,6 +6245,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			log(`Unable to load ${varname} on ${charid}, error ${e} `)
 		}
 	}
+
+
 
 })();
 

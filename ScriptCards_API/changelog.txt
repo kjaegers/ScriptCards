@@ -1,5 +1,7 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.6.6  - Borrowed code from token-mod to force lighting refresh after graphic/token properties are modified via --!
+
 v 2.6.4  - Changed the default specifier for [*...] references from :: to ::: to not interfere with staus marker names.
            NOTE: this may be a breaking change if your scripts currently use ::
 
