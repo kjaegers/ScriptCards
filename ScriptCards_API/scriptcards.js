@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.6.6";
+	const APIVERSION = "2.6.6a";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1340,6 +1340,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														var thisSetting = settings[i].split(":");
 														var settingName = thisSetting.shift();
 														var settingValue = thisSetting.join(':');
+
+														if (settingName.toLowerCase() == "night_vision_effect") {
+															if (settingValue.trim().toLowerCase() == "dimming") {
+																settingValue = "Dimming_0"
+															}
+														}
+
 														if (settingName.toLowerCase() == "imgsrc") {
 															settingValue = getCleanImgsrc(settingValue);
 														}
@@ -1395,6 +1402,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 															if (TokenAttrsThatAreNumbers.includes(settingName)) {
 																settingValue = Number(settingValue)
 															}
+
 															theToken.set(settingName, settingValue);
 															notifyObservers('tokenChange', theToken, prevTok);
 														}
@@ -1555,6 +1563,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 													var settingValue = thisSetting.join(':');
 													if (settingName.toLowerCase() == "imgsrc") {
 														settingValue = getCleanImgsrc(settingValue);
+													}
+
+													if (settingName.toLowerCase() == "night_vision_effect") {
+														if (settingValue.toLowerCase() == "dimming") {
+															settingValue = "Dimming_0"
+														}
 													}
 
 													if (cardParameters.formatoutputforobjectmodification == "1") {
