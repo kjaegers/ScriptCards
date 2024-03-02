@@ -25,7 +25,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.6.6a";
+	const APIVERSION = "2.6.6b";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1488,6 +1488,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 															createAttribute = true;
 															settingName = settingName.substring(1);
 														}
+                                                        if (settingName.startsWith("repeating_")) {
+                                                            createAttribute = true;
+                                                        }
 														if (settingName.endsWith("^")) {
 															setType = "max";
 															settingName = settingName.slice(0, -1);
