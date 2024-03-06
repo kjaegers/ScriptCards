@@ -1,5 +1,53 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.0  - Major refactoring of the ScriptCards code to improve maintainability and be more friendly to the sandbox.
+
+           Added the --z command to edit z-order information for objects. --z:objecttype:objectid|operation
+           currently supports tofront and toback for graphics. Will support additional items/options when the March 2024
+           API update is released.
+
+           Added --#storagecharid setting to allow you to specify a character ID for future --s and --l statements (in the currently running script)
+           
+           Added --#gmoutputtarget setting which defaults to "gm". If you set this to "self" the output of --* lines will be whispered to the player
+           executing the script. You can also set this to any other valid whisper target.
+           
+           Added --#functionbenchmarking which defaults to 0. Set to 1 to turn on some basic statistics about calls to functinos (with -->). After your
+           script finishes running the number of calls to each called function will be reported in the API console log as well as the number of 
+           milliseconds the script took to run.
+
+           Added --~|array;fromkeys;ArrayName;HashTableName will create an array with all of the keys in a given hashtable
+           
+           Added --~|hashtable;fromobject;HashTableName;objecttype;objectid   Ex: --~|hashtable;fromobject;myhash;character;@{selected|character_id}
+           this function will look up the given object and parse out all attributes (except bio, notes, and gmnotes) into a hashtable with key/value 
+           pairs equal to the attribute names and values.
+
+             Example:
+               !script {{
+                 --~|hashtable;fromobject;myhash;graphic;@{selected|token_id}
+                 --~|array;fromkeys;keys;myhash
+ 
+                 --%keys|foreach;keys
+                   --+[&keys]|[:myhash("[&keys]")]
+                 --%|
+               }}
+
+           Added --~|hashtable;getplayerspecificpages;HashTableName   Retuns a hash with the contents of the Campaign's playerspecificpages object, which
+           will have player IDs as keys and page IDs as values for those entries.
+
+           Added --~|hashtable;setplayerspecificpages;HashTableName  Will set the Campaign's playerspecificpages object. The source hash table should contain
+           player IDs as keys and page IDs as values for them. Leave off the hash table name (but include the semicolon (;)) clear the value and return
+           all players to the ribbon page.
+
+           New Pre-Set String Variable: [&SC_VERSION_NUMERIC], which will contain the version number in the format 0X0Y0Zr, where X is the major version,
+           Y is the minor version, Z is the update number, and r represents the occasional "a", "b", etc. versions. All components are numeric, so v2.7.0 
+           will be represented as "207000" (2=2, 07=7, 00=0, and 0=no fix update), while a theoretical 2.7.0a would be "207001". This can be used to require
+           a specific minimum version of ScriptCards or to change the behavior of the script depending on the version. For example, assuming this had existed
+           for 2.6.6b, the following line:
+               --?"[&SC_VERSION_NUMERIC]" -eq "" -or "[&SC_VERSION_NUMERIC]" -lt 206062|REPORT_BAD_SC_VERSION
+           would check for that minimum version number.
+
+V 2.6.6b - When setting repeating section values, if the attribute doesn't exist it will be created, even without prefixing it with "!".
+
 v 2.6.6a - Automatically replace "Dimming" with "Dimming_0" when setting night_vision_effect
 
 v 2.6.6  - Borrowed code from token-mod to force lighting refresh after graphic/token properties are modified via --!
