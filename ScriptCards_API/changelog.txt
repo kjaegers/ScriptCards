@@ -1,5 +1,12 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.1  - Rewrote distance functions to consolidate code, use better practices
+
+           When using --~|turnorder;addcustom, you can now specify and additional parameter to determine where in the turn order the entry gets
+           inserted. You can leave the custom counter and formula empty (;;;) if you don't want to specify them, but the semicolons must be there.
+           The available placement options are "top", "bottom", "before:tokenid", "after:tokenid" 
+           Ex: --~|turnorder;addcustom;My Fancy Custom Turn;99;-1;after:@{selected|token_id}
+
 v 2.7.0  - Major refactoring of the ScriptCards code to improve maintainability and be more friendly to the sandbox.
 
            Added the --z command to edit z-order information for objects. --z:objecttype:objectid|operation

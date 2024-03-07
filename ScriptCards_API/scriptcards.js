@@ -27,7 +27,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.0 alpha";
+	const APIVERSION = "2.7.1";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -758,7 +758,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					executionCounter = 0;
 
 					stringVariables["ScriptCards_Version"] = APIVERSION;
-					stringVariables["SC_VERSION_NUMERIC"] = "207000"
+					stringVariables["SC_VERSION_NUMERIC"] = "207010"
 
 					if (msg.playerid) {
 						var sendingPlayer = getObj("player", msg.playerid);
@@ -4765,20 +4765,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 							var custom = params[4] || ""
 							var formula = params[5] || ""
-							/*
-							var insertion = params[6] || ""
-							var insertionPoint = turnorder.length
-							if (insertion !== "") {
-								if (insertion.toLowerCase() == "top") { insertionPoint = 0}
-								if (insertion.toLowerCase() == "bottom") { insertionPoint = turnorder.length }
-								if (insertion.toLowerCase().startsWith("before:") || insertion.toLowerCase().startsWith("above:") ) { 
-									insertionPoint = turnorder.indexOf(insertion.substring(insertion.indexOf(":") + 1))
-								}
-								if (insertion.toLowerCase().startsWith("after:") || insertion.toLowerCase().startsWith("below:") ) { 
-									insertionPoint = turnorder.indexOf(insertion.substring(insertion.indexOf(":") + 1)) + 1
-								}
-							}
-							*/
 							var t = getObj('graphic', params[2]);
 							if (t) {
 								turnorder.push({
@@ -4826,22 +4812,40 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (Campaign().get("turnorder") !== "") {
 								turnorder = JSON.parse(Campaign().get("turnorder"));
 							}
-							if (params[4]) {
-								turnorder.push({
-									id: "-1",
-									pr: params[3],
-									_pageid: Campaign().get('playerpageid'),
-									custom: params[2],
-									formula: params[4],
-								});
-							} else {
-								turnorder.push({
-									id: "-1",
-									pr: params[3],
-									_pageid: Campaign().get('playerpageid'),
-									custom: params[2],
-								});
+							var custom = undefined || params[2]
+							var pr = undefined || params[3]
+							var formula = undefined || params[4]
+							var insertionPoint = turnorder.length
+							if (params[5]) {
+								var insertion = params[5] || ""
+								if (insertion !== "") {
+									var foundIndex = -1
+									if (insertion.toLowerCase() == "top") { insertionPoint = 0 }
+									if (insertion.toLowerCase() == "bottom") { insertionPoint = turnorder.length }
+									for (let to = 0; to < turnorder.length; to++) {
+										if (turnorder[to].id == insertion.substring(insertion.indexOf(":") + 1)) {
+											foundIndex = to
+											log(`Found at index ${to}`)
+										}
+									}
+									if (foundIndex != -1) {
+										if (insertion.toLowerCase().startsWith("before:") || insertion.toLowerCase().startsWith("above:")) {
+											insertionPoint = foundIndex
+										}
+										if (insertion.toLowerCase().startsWith("after:") || insertion.toLowerCase().startsWith("below:")) {
+											insertionPoint = foundIndex + 1
+										}
+									}
+								}
 							}
+							turnorder.splice(insertionPoint, 0, {
+								id: "-1",
+								pr: pr,
+								_pageid: Campaign().get('playerpageid'),
+								custom: custom,
+								formula: formula,
+							});
+
 							Campaign().set("turnorder", JSON.stringify(turnorder));
 						}
 					}
@@ -4850,46 +4854,29 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				// Chebyshev Unit distance between two tokens (params[1] and params[2]) (4E/5E)
 				case "chebyshevdistance":
 				case "distance":
-					var result = 0;
-					if (params.length >= 3) {
-						var token1 = getObj("graphic", params[1]);
-						var token2 = getObj("graphic", params[2]);
-						if (token1 != null && token2 != null) {
-							try {
-								var scale = 1.0;
-								var page = getObj("page", token1.get("_pageid"));
-								if (page) { scale = page.get("snapping_increment") }
-
-								// Calculate the Chebyshev Distance between the grid points
-								var x1 = token1.get("left") / (scale * 70);
-								var x2 = token2.get("left") / (scale * 70);
-								var y1 = token1.get("top") / (scale * 70);
-								var y2 = token2.get("top") / (scale * 70);
-								result = Math.floor(Math.max(Math.abs(x1 - x2), Math.abs(y1 - y2)));
-							} catch {
-								result = 0;
-							}
-						}
-					}
-					rollVariables[variableName] = parseDiceRoll(result.toString(), cardParameters);
-					break;
-
 				case "euclideandistance":
+				case "manhattandistance":
+				case "taxicabdistance":
 					var result = 0;
 					if (params.length >= 3) {
-						var token1 = getObj("graphic", params[1]);
-						var token2 = getObj("graphic", params[2]);
+						let token1 = getObj("graphic", params[1]);
+						let token2 = getObj("graphic", params[2]);
 						if (token1 != null && token2 != null) {
 							try {
-								var scale = 1.0;
-								var page = getObj("page", token1.get("_pageid"));
+								let scale = 1.0;
+								let page = getObj("page", token1.get("_pageid"));
 								if (page) { scale = page.get("snapping_increment") }
-								// Calculate the euclidean unit distance between two tokens (params[1] and params[2])
-								var x1 = token1.get("left") / (scale * 70);
-								var x2 = token2.get("left") / (scale * 70);
-								var y1 = token1.get("top") / (scale * 70);
-								var y2 = token2.get("top") / (scale * 70);
-								result = Math.floor(Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2)));
+								let t1 = getTokenCoords(token1, scale)
+								let t2 = getTokenCoords(token2, scale)
+								if (params[0].toLowerCase() == "distance" || params[0].toLowerCase() == "chebyshevdistance") {
+									result = Math.floor(Math.max(Math.abs(t1[0] - t2[0]), Math.abs(t1[1] - t2[1])));
+								}
+								if (params[0].toLowerCase() == "euclideandistance") {
+									result = Math.floor(Math.sqrt(Math.pow((t1[0] - t2[0]), 2) + Math.pow((t1[1] - t2[1]), 2)));
+								}
+								if (params[0].toLowerCase() == "manhattandistance" || params[0].toLowerCase() == "taxicabdistance") {
+									result = Math.abs(t2[0] - t1[0]) + Math.abs(t2[1] - t1[1]);
+								}
 							} catch {
 								result = 0;
 							}
@@ -4910,37 +4897,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								var page = getObj("page", token1.get("_pageid"));
 								if (page) { scale = page.get("snapping_increment") }
 								// Calculate the euclidean unit distance between two tokens (params[1] and params[2])
-								var x1 = token1.get("left");
-								var x2 = token2.get("left");
-								var y1 = token1.get("top");
-								var y2 = token2.get("top");
-								result = Math.floor(Math.sqrt(Math.pow((x1 - x2), 2) + Math.pow((y1 - y2), 2)));
+								let t1 = getTokenCoords(token1, (1 / 70))
+								let t2 = getTokenCoords(token2, (1 / 70))
+								result = Math.floor(Math.sqrt(Math.pow((t1[0] - t2[0]), 2) + Math.pow((t1[1] - t2[1]), 2)));
 								if (params[0].toLowerCase() == "euclideanlong") { result = result / (scale * 70); }
-							} catch {
-								result = 0;
-							}
-						}
-					}
-					rollVariables[variableName] = parseDiceRoll(result.toString(), cardParameters);
-					break;
-
-				case "manhattandistance":
-				case "taxicabdistance":
-					var result = 0;
-					if (params.length >= 3) {
-						var token1 = getObj("graphic", params[1]);
-						var token2 = getObj("graphic", params[2]);
-						if (token1 != null && token2 != null) {
-							try {
-								var scale = 1.0;
-								var page = getObj("page", token1.get("_pageid"));
-								if (page) { scale = page.get("snapping_increment") }
-								// Calculate the manhattan unit distance between two tokens (params[1] and params[2])
-								var x1 = token1.get("left") / (scale * 70);
-								var x2 = token2.get("left") / (scale * 70);
-								var y1 = token1.get("top") / (scale * 70);
-								var y2 = token2.get("top") / (scale * 70);
-								result = Math.abs(x2 - x1) + Math.abs(y2 - y1);
 							} catch {
 								result = 0;
 							}
@@ -5006,47 +4966,39 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				case "math": //min,max,clamp,round,floor,ceil
 				case "round":
 				case "range":
-					// call is --var|range;min;val1;val2
-					if (params[1].toLowerCase() == "min" && params.length == 4) {
-						var val1 = parseDiceRoll(params[2], cardParameters);
-						var val2 = parseDiceRoll(params[3], cardParameters);
-						if (val1.Total <= val2.Total) {
-							rollVariables[variableName] = val1;
-						} else {
-							rollVariables[variableName] = val2;
-						}
-					}
-					// call is --var|range;max;val1;val2
-					if (params[1].toLowerCase() == "max" && params.length == 4) {
-						var val1 = parseDiceRoll(params[2], cardParameters);
-						var val2 = parseDiceRoll(params[3], cardParameters);
-						if (val1.Total >= val2.Total) {
-							rollVariables[variableName] = val1;
-						} else {
-							rollVariables[variableName] = val2;
-						}
-					}
+					switch (params[1].toLowerCase()) {
+						case "min":
+						case "max":
+							if (params.length == 4) {
+								let val1 = parseDiceRoll(params[2], cardParameters);
+								let val2 = parseDiceRoll(params[3], cardParameters);
+								rollVariables[variableName] = params[1].toLowerCase() == "min" ? (val1.Total <= val2.Total ? val1 : val2) :
+									val1.Total >= val2.Total ? val1 : val2;
+							}
+							break;
 
-					if (params[1].toLowerCase() == "abs" && params.length == 3) {
-						if (!isNaN(parseFloat((params[2])))) {
-							rollVariables[variableName] = parseDiceRoll(Math.abs(parseFloat(params[2])), cardParameters)
-						}
-					}
+						case "abs":
+							if (params.length == 3 && !isNaN(parseFloat((params[2])))) {
+								rollVariables[variableName] = parseDiceRoll(Math.abs(parseFloat(params[2])), cardParameters)
+							}
+							break;
 
-					if ((params[1].toLowerCase() == "sqrt" || params[1].toLowerCase() == "squareroot") && params.length == 3) {
-						if (!isNaN(parseFloat((params[2])))) {
-							rollVariables[variableName] = parseDiceRoll(Math.sqrt(parseFloat(params[2])), cardParameters)
-						}
-					}
+						case "sqrt":
+						case "squareroot":
+							if (params.length == 3 && !isNaN(parseFloat((params[2])))) {
+								rollVariables[variableName] = parseDiceRoll(Math.sqrt(parseFloat(params[2])), cardParameters)
+							}
+							break;
 
-					// call is --var|range;clamp;val;lowerbound;upperbound
-					if (params[1].toLowerCase() == "clamp" && params.length == 5) {
-						var val = parseDiceRoll(params[2], cardParameters);
-						var lower = parseDiceRoll(params[3], cardParameters);
-						var upper = parseDiceRoll(params[4], cardParameters);
-						if (val.Total >= lower.Total && val.Total <= upper.Total) { rollVariables[variableName] = val; }
-						if (val.Total < lower.Total) { rollVariables[variableName] = lower; }
-						if (val.Total > upper.Total) { rollVariables[variableName] = upper; }
+						case "clamp":
+							if (params.length == 5) {
+								let val = parseDiceRoll(params[2], cardParameters);
+								let lower = parseDiceRoll(params[3], cardParameters);
+								let upper = parseDiceRoll(params[4], cardParameters);
+								val.Total >= lower.Total && val.Total <= upper.Total ? rollVariables[variableName] = val :
+									val.Total < lower.Total ? rollVariables[variableName] = lower : rollVariables[variableName] = upper;
+							}
+							break;
 					}
 
 					if (params.length == 3) {
@@ -6242,6 +6194,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			return undefined;
 		}
 		return obj;
+	}
+
+	function getTokenCoords(token, scale) {
+		try {
+			return [token.get("left") / (scale * 70), token.get("top") / (scale * 70)]
+		} catch (e) {
+			log(e);
+			return [0, 0]
+		}
 	}
 
 })();
