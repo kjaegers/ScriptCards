@@ -4825,7 +4825,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									for (let to = 0; to < turnorder.length; to++) {
 										if (turnorder[to].id == insertion.substring(insertion.indexOf(":") + 1)) {
 											foundIndex = to
-											log(`Found at index ${to}`)
 										}
 									}
 									if (foundIndex != -1) {
