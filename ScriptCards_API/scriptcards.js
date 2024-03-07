@@ -998,7 +998,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								case ">": handleGosubCommands(thisTag, thisContent, cardParameters); break;
 								case "]": handleBlockEndCommand(thisTag, thisContent, cardLines); break;
 								case "?": handleConditionalBlock(thisTag, thisContent, cardParameters, cardLines); break;
-								case "%": handleLoopStatements(thisTag, thisContent, cardParameters); break;
+								case "%": handleLoopStatements(thisTag, thisContent, cardParameters, cardLines); break;
 							}
 
 
@@ -3549,7 +3549,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
-	function handleLoopStatements(thisTag, thisContent, cardParameters) {
+	function handleLoopStatements(thisTag, thisContent, cardParameters, cardLines) {
 		let loopCounter = undefined || thisTag.substring(1);
 		if (loopCounter && loopCounter !== "" && loopCounter !== "!") {
 			if (loopControl[loopCounter]) { log(`ScriptCards: Warning - loop counter ${loopCounter} reused inside itself on line ${lineCounter}.`); }
@@ -5233,6 +5233,23 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							} catch (e) {
 								log(`ScriptCards: Error encounted: ${e}`)
 							}
+						}
+						if (params[1].toLowerCase() == "getjukeboxtracks") {
+							/*
+							try {
+								hashTables[params[2]] = {};
+								let tracks = findObjs({type: 'jukeboxtrack'});
+								for (let j=0; j<tracks.length; j++) {
+
+									let thisTrack = Object.entries(tracks[j].attributes);
+									log(thisTrack);
+									log(`This Track: id: ${thisTrack.get("_id")}, Title: ${thisTrack.get("title")}`)
+									hashTables[params[2]][thisTrack[3].title] = thisTrack[1]._id
+								}
+							}catch (e) {
+								log(`ScriptCards: Error encounted: ${e}`)
+							}
+							*/
 						}
 						if (params[1].toLowerCase() == "getplayerspecificpages") {
 							try {
