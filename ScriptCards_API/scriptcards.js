@@ -27,7 +27,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.1";
+	const APIVERSION = "2.7.1b";
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -316,7 +316,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	var lineLabels = {};
 	var labelChecking = {};
 
-	// The returnStack stores the line number to return to after a gosub, while the parameter stack stores parameter lists for nexted gosubs
+	// The returnStack stores the line number to return to after a gosub, while the parameter stack stores parameter lists for nested gosubs
 	var returnStack = [];
 	var parameterStack = [];
 	var tableLineCounter = 0;
@@ -758,7 +758,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					executionCounter = 0;
 
 					stringVariables["ScriptCards_Version"] = APIVERSION;
-					stringVariables["SC_VERSION_NUMERIC"] = "207010"
+					stringVariables["SC_VERSION_NUMERIC"] = "207012"
 
 					if (msg.playerid) {
 						var sendingPlayer = getObj("player", msg.playerid);
@@ -995,10 +995,127 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								case "&": setStringOrArrayElement(thisTag.substring(1), thisContent, cardParameters); break;
 								case "\\": handleConsoleLogs(thisTag, thisContent); break;
 								case "<": if (returnStack.length > 0) { callParamList = parameterStack.pop(); lineCounter = returnStack.pop(); } break;
-								case ">": handleGosubCommands(thisTag, thisContent, cardParameters); break;
+								case ">": handleGosubCommands(thisTag, thisContent, cardParameters, cardLines); break;
 								case "]": handleBlockEndCommand(thisTag, thisContent, cardLines); break;
 								case "?": handleConditionalBlock(thisTag, thisContent, cardParameters, cardLines); break;
-								case "%": handleLoopStatements(thisTag, thisContent, cardParameters, cardLines); break;
+								//case "%": handleLoopStatements(thisTag, thisContent, cardParameters, cardLines); break;
+							}
+
+							// Handle looping statements
+							if (thisTag.charAt(0) === "%") {
+								var loopCounter = thisTag.substring(1);
+								if (loopCounter && loopCounter !== "!") {
+									if (loopControl[loopCounter]) { log(`ScriptCards: Warning - loop counter ${loopCounter} reused inside itself on line ${lineCounter}.`); }
+									var params = thisContent.split(cardParameters.parameterdelimiter);
+									if (params.length === 2 && params[0].toLowerCase().endsWith("each")) {
+										// This will be a for-each loop, so the first (and only) parameter must be an array name
+										if (arrayVariables[params[1]] && arrayVariables[params[1]].length > 0) {
+											loopControl[loopCounter] = { loopType: "foreach", initial: 0, current: 0, end: arrayVariables[params[1]].length - 1, step: 1, nextIndex: lineCounter, arrayName: params[1] }
+											stringVariables[loopCounter] = arrayVariables[params[1]][0];
+											loopStack.push(loopCounter);
+											if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
+										} else {
+											log(`ScriptCards For...Each loop without a defined array or with empty array on line ${lineCounter}`)
+										}
+									}
+									if (params.length === 2 && (params[0].toLowerCase().endsWith("while") || params[0].toLowerCase().endsWith("until"))) {
+										var originalContent = getLineContent(cardLines[lineCounter]);
+										var contentParts = originalContent.split(cardParameters.parameterdelimiter);
+										var isTrue = processFullConditional(replaceVariableContent(contentParts[1], cardParameters)) || params[0].toLowerCase().endsWith("until");
+										if (isTrue) {
+											loopControl[loopCounter] = { loopType: params[0].toLowerCase().endsWith("until") ? "until" : "while", initial: 0, current: 0, end: 999999, step: 1, nextIndex: lineCounter, condition: contentParts[1] }
+											stringVariables[loopCounter] = "true";
+											loopStack.push(loopCounter);
+											if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
+										} else {
+											var line = lineCounter;
+											for (line = lineCounter + 1; line < cardLines.length; line++) {
+												if (getLineTag(cardLines[line], line, "").trim() == "%") {
+													lineCounter = line;
+												}
+											}
+											if (lineCounter > cardLines.length) {
+												log(`ScriptCards: Warning - no end block marker found for loop block started ${loopCounter}`);
+												lineCounter = cardLines.length + 1;
+											}
+										}
+									}
+									if (params.length === 2 && (!params[0].toLowerCase().endsWith("each")) && (!params[0].toLowerCase().endsWith("until")) && (!params[0].toLowerCase().endsWith("while"))) { params.push("1"); } // Add a "1" as the assumed step value if only two parameters
+									if (params.length === 3) {
+										if (isNumeric(params[0]) && isNumeric(params[1]) && isNumeric(params[2]) && parseInt(params[2]) != 0) {
+											loopControl[loopCounter] = { loopType: "fornext", initial: parseInt(params[0]), current: parseInt(params[0]), end: parseInt(params[1]), step: parseInt(params[2]), nextIndex: lineCounter }
+											stringVariables[loopCounter] = params[0];
+											loopStack.push(loopCounter);
+											if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
+										} else {
+											if (parseInt(params[2] == 0)) {
+												log(`ScriptCards: Error - cannot use loop step of 0 at line ${lineCounter}`)
+											} else {
+												log(`ScriptCards: Error - loop initialization contains non-numeric values on line ${lineCounter}`)
+											}
+										}
+									}
+								} else {
+									if (loopStack.length >= 1) {
+										var currentLoop = loopStack[loopStack.length - 1];
+										if (loopControl[currentLoop]) {
+											loopControl[currentLoop].current += loopControl[currentLoop].step;
+											switch (loopControl[currentLoop].loopType) {
+												case "fornext":
+													stringVariables[currentLoop] = loopControl[currentLoop].current.toString();
+													break;
+												case "foreach":
+													try {
+														var beforeLoopEnded = stringVariables[currentLoop]
+														stringVariables[currentLoop] = arrayVariables[loopControl[currentLoop].arrayName][loopControl[currentLoop].current]
+													} catch {
+														stringVariables[currentLoop] = "ArrayError"
+													}
+													break;
+												case "while":
+													var isTrue = processFullConditional(replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
+													if (!isTrue) {
+														loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
+														loopControl[currentLoop].step = 1;
+													}
+													break;
+												case "until":
+													var isTrue = processFullConditional(replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
+													if (isTrue) {
+														loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
+														loopControl[currentLoop].step = 1;
+													}
+													break;
+
+											}
+											if ((loopControl[currentLoop].step > 0 && loopControl[currentLoop].current > loopControl[currentLoop].end) ||
+												(loopControl[currentLoop].step < 0 && loopControl[currentLoop].current < loopControl[currentLoop].end) ||
+												loopCounter == "!") {
+												stringVariables[currentLoop] = beforeLoopEnded;
+												loopStack.pop();
+												delete loopControl[currentLoop];
+												if (cardParameters.debug == 1) { log(`ScriptCards: Info - End of loop ${currentLoop}`) }
+												if (loopCounter == "!") {
+													var line = lineCounter;
+													for (line = lineCounter + 1; line < cardLines.length; line++) {
+														if (getLineTag(cardLines[line], line, "").trim() == "%") {
+															lineCounter = line;
+															break;
+														}
+													}
+													if (lineCounter > cardLines.length) {
+														log(`ScriptCards: Warning - no end block marker found for loop block started ${loopCounter}`);
+														lineCounter = cardLines.length + 1;
+													}
+												}
+											} else {
+												lineCounter = loopControl[currentLoop].nextIndex;
+											}
+										}
+									} else {
+										log(`ScriptCards: Error - Loop end statement without an active loop on line ${lineCounter}`);
+									}
+								}
 							}
 
 
@@ -4262,7 +4379,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
-	function handleGosubCommands(thisTag, thisContent, cardParameters) {
+	function handleGosubCommands(thisTag, thisContent, cardParameters, cardLines) {
 		try {
 			parameterStack.push(callParamList);
 			let paramList = CSVtoArray(thisContent.trim());
@@ -5235,21 +5352,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 						if (params[1].toLowerCase() == "getjukeboxtracks") {
-							/*
 							try {
 								hashTables[params[2]] = {};
-								let tracks = findObjs({type: 'jukeboxtrack'});
-								for (let j=0; j<tracks.length; j++) {
-
-									let thisTrack = Object.entries(tracks[j].attributes);
-									log(thisTrack);
-									log(`This Track: id: ${thisTrack.get("_id")}, Title: ${thisTrack.get("title")}`)
-									hashTables[params[2]][thisTrack[3].title] = thisTrack[1]._id
+								let tracks = findObjs({ type: 'jukeboxtrack' });
+								for (let j = 0; j < tracks.length; j++) {
+									hashTables[params[2]][tracks[j].get("title")] = tracks[j].get("_id")
+									hashTables[params[2]][tracks[j].get("title") + "-playing"] = tracks[j].get("playing")
+									hashTables[params[2]][tracks[j].get("title") + "-loop"] = tracks[j].get("loop")
+									hashTables[params[2]][tracks[j].get("title") + "-volume"] = tracks[j].get("volume")
 								}
-							}catch (e) {
+							} catch (e) {
 								log(`ScriptCards: Error encounted: ${e}`)
 							}
-							*/
 						}
 						if (params[1].toLowerCase() == "getplayerspecificpages") {
 							try {
