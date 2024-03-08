@@ -27,7 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.1b";
+	const APIVERSION = "2.7.1c";
+	const NUMERIC_VERSION = "207013"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -758,7 +759,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					executionCounter = 0;
 
 					stringVariables["ScriptCards_Version"] = APIVERSION;
-					stringVariables["SC_VERSION_NUMERIC"] = "207012"
+					stringVariables["SC_VERSION_NUMERIC"] = NUMERIC_VERSION
 
 					if (msg.playerid) {
 						var sendingPlayer = getObj("player", msg.playerid);
@@ -3604,16 +3605,26 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function handleEmoteCommands(thisTag, thisContent) {
+		/*
 		try {
-			let characterName = thisTag.substring(1);
-			let macroName = thisContent.trim();
+			var characterName = thisTag.substring(1);
+			var macroName = thisContent.trim();
+			log("gothere")
 			if (characterName.length >= 1) {
+				log("sendwithname")
 				sendChat("ScriptCards", `%{${characterName}|${macroName}}`);
 			} else {
 				sendChat("ScriptCards", `#${macroName}`);
 			}
 		} catch (e) {
-			log(e)
+			log(`Error generating echo command: ${e}. thisTag: ${thisTag}, thisContent: ${thisContent}`)
+		}
+		*/
+		try {
+			var sendAs = thisTag.substring(1);
+			sendChat(sendAs, thisContent);
+		} catch (e) {
+			log(`Error generating echo command: ${e}. thisTag: ${thisTag}, thisContent: ${thisContent}`)
 		}
 	}
 
