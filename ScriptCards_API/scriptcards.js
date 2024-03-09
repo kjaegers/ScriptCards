@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.1c";
-	const NUMERIC_VERSION = "207013"
+	const APIVERSION = "2.7.2";
+	const NUMERIC_VERSION = "207020"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1669,7 +1669,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							var useDefaultValue = false;
 							var attrName = workString.substring(workString.indexOf(":") + 1, workString.length - 1);
 							if (attrName.indexOf(":::") >= 0) {
-								defaultValue = attrName.substring(attrName.indexOf(":::") + 2, attrName.length);
+								defaultValue = attrName.substring(attrName.indexOf(":::") + 3, attrName.length);
 								attrName = attrName.substring(0, attrName.indexOf(":::"))
 								useDefaultValue = true;
 							}
@@ -6305,7 +6305,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	function reportBenchmarkingData() {
 		log(benchmarks);
 		let difference = Date.now() - scriptStartTimestamp
-		log(`Script Execitopm Time: ${difference} ms`)
+		log(`Script Execution Time: ${difference} ms`)
+		log(`Executed script lines: ${executionCounter}`)
 	}
 
 	const getNotes = function (prop, obj) {

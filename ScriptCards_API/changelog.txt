@@ -1,5 +1,39 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.2  - Updated function benchmarking output to fix egregious typo and add the number of lines executed by the script to the output.
+
+           Added --~|hashtable;getjukeboxtracks;HashTableName. This will create a hash table with the names of every jukebox track as keys and their
+           object ID. It will also create keys with TrackName-playing, TrackName-loop, and TrackName-Volume. Here is a simple jukebox/soundboard
+           Script:
+
+           !script {{
+             --#reentrant|jukebox
+
+             --:SHOW_JUKEBOX|
+             --#hidecard|0
+
+             --~|hashtable;getjukeboxtracks;myhash
+             --~|array;fromkeys;keys;myhash
+
+             --%keys|foreach;keys
+               --?"[&keys]" -ninc "-"|[
+                 --+[&keys]|[r][rbutton]Play::PLAY_AUDIO;[&keys][/rbutton][/r]
+               --]|
+             --%|
+
+             --+|&nbsp;
+             --+|[c][rbutton]Refresh Jukebox::SHOW_JUKEBOX[/rbutton][/c]
+
+             --X|
+
+             --:PLAY_AUDIO|
+             --#hidecard|1
+             --a|[&reentryval]
+             -X|
+           }}
+
+v 2.7.1b - Bug fix
+
 v 2.7.1  - Rewrote distance functions to consolidate code, use better practices
 
            When using --~|turnorder;addcustom, you can now specify and additional parameter to determine where in the turn order the entry gets
