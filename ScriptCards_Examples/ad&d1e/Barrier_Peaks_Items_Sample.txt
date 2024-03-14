@@ -1,0 +1,116 @@
+!script {{
+  --#reentrant|S3_Simple_Non_Lethal_Items
+  --&QB|? --&QB|+{ --&QE|}
+  
+  --/|Bonuses to investigation rolls (default none)
+  --&INTBONUS|0
+  --&SEENBEFORE|0
+  --&EXPLAINED|0
+  --&OPERATEDSIMILAR|0
+  --&CurrentStage|0
+  
+  --=ChargesUsed|0
+  
+  --/|Default to a power disc
+  --^SET_ITEM_POWER_DISC|
+  --X|
+
+  --:GMINTRO|
+  --#title|Complex Interaction
+  --#whisper|gm
+  --+|[c]Please click the buttons below to fill out the details, or click "Go" to start[/c][br]
+  --+|[rbutton]Item Name::SET_ITEM_POWER_DISC[/rbutton][&ItemName]
+  --+|[rbutton]Int Below 10::SET_LOW_INT[/rbutton] : [&INTBONUS]
+  --+|[rbutton]Int Above 15::SET_HIGH_INT[/rbutton] : [&INTBONUS]
+  --+|[rbutton]Similar Observed::SET_SEEN_BEFORE[/rbutton] : [&SEENBEFORE]
+  --+|[rbutton]Previously Explained::SET_EXPLAINED[/rbutton] : [&EXPLAINED]
+  --+|[rbutton]Operated Similar::SET_OPERATEDSIMILAR[/rbutton] : [&OPERATEDSIMILAR]
+  --+|[rbutton]Clean Bonuses::CLEAR_BONUSES[/rbutton]
+  --+|[rbutton]Go::SHOW_TO_PLAYERS[/rbutton]
+  --X|
+
+  --:SET_LOW_INT| --&INTBONUS|+1 --^GMINTRO|
+  --:SET_HIGH_INT| --&INTBONUS|-1 --^GMINTRO|
+  --:SET_SEEN_BEFORE| --&SEENBEFORE|-1 --^GMINTRO|
+  --:SET_EXPLAINED| --&EXPLAINED|-2 --^GMINTRO|
+  --:SET_OPERATEDSIMILAR| --&OPERATEDSIMILAR|-2 --^GMINTRO|
+
+  --:SHOW_TO_PLAYERS|
+  --#whisper|
+  --+|You are investigating a mysterious [&ItemPlayerName][&ItemDesc][br]
+  --+|Do you want to experiment with the [&ItemPlayerName]?
+  --+|[rbutton]Yes::MESS_WITH_ITEM[/rbutton] [rbutton]No::LEAVE_ITEM_ALONE;STAGE0[/rbutton]
+  --X|
+
+  --:LEAVE_ITEM_ALONE|
+  --+|Leaving well enough alone, you walk away from the [&ItemName]
+  --X|
+
+  --:MESS_WITH_ITEM|
+  --=DieRoll|1d10 + [&INTBONUS] + [&SEENBEFORE] + [&EXPLAINED] + [&OPERATEDSIMILAR] {CLAMP:1:10}
+  --+Investigation Roll|[$DieRoll]
+  --*BeforeStage|[&CurrentStage]
+  -->DESCRIBE_[&CurrentStage]|[$DieRoll]
+  --*AfterStage|[&CurrentStage]
+  -->DESCRIBE_[&ItemName]|[&CurrentStage]
+  --?[&CurrentStage] -eq 4 -or [&CurrentStage] -eq 5|ITS_OVER
+  --+|[br]Do you want to continue to investigate with the [&ItemPlayerName]?[br]
+  --+|[rbutton]Yes::MESS_WITH_ITEM[/rbutton] [rbutton]No::LEAVE_ITEM_ALONE;STAGE0[/rbutton]
+  --X|
+
+  --:DESCRIBE_0| STARTING CONDITION
+  --?[%1%] -ge 1 -and [%1%] -le 6|&CurrentStage;1
+  --?[%1%] -ge 7 -and [%1%] -le 9|&CurrentStage;2
+  --?[%1%] -ge 10 -and [%1%] -le 10|&CurrentStage;3
+  --<|
+
+  --:DESCRIBE_1| CENTRAL HUB
+  --?[%1%] -ge 1 -and [%1%] -le 5|&CurrentStage;5
+  --?[%1%] -ge 6 -and [%1%] -le 8|&CurrentStage;2
+  --?[%1%] -ge 9 -and [%1%] -le 10|&CurrentStage;0
+  --<|
+
+  --:DESCRIBE_2| TOP TRIANGLE
+  --?[%1%] -ge 1 -and [%1%] -le 1|&CurrentStage;1
+  --?[%1%] -ge 2 -and [%1%] -le 10|&CurrentStage;0
+  --<|
+
+  --:DESCRIBE_3| CHARGE WASTED
+  --?[%1%] -ge 1 -and [%1%] -le 7|&CurrentStage;1
+  --?[%1%] -ge 8 -and [%1%] -le 9|&CurrentStage;0
+  --?[%1%] -ge 10 -and [%1%] -le 10|&CurrentStage;4
+  --<|
+
+  --:DESCRIBE_4| ITEM DESTROYED
+  --<|
+
+  --:DESCRIBE_5| FINISH
+  --<|
+
+  --:ITS_OVER|
+  --*|Charges remaining: [=[&ItemMaxCharge] - [$ChargesUsed.Raw]]
+  --X|
+
+  --:SET_ITEM_POWER_DISC|
+  --&ItemName|POWER DISC
+  --&ItemPlayerName|blue glass disc
+  --&ItemDesc|, disc the size of a coin. One side is smooth and unmarked, the other side has a white, arced band marked like a sundial with 5 lines.
+  --&ItemChargeDesc|A taut thread rests along the left right end of the sundial markings.
+  --&ItemMaxCharge|6
+  --^GMINTRO|
+
+  --:DESCRIBE_POWER DISC|[Stage]
+  --?[%1%] -eq 0|[&ItemDesc] [&ItemChargeDesc]
+  --?[%1%] -eq 1|&StageDesc;Manipulating the disc causes the thread to bounce slightly.
+  --?[%1%] -eq 2|&StageDesc;A dim blue glow suffuses the disc as you manipulate it, but it is otherwise motionless.
+  --?[%1%] -eq 3 -and [$ChargesUsed] -lt [=[&ItemMaxCharge] - 1]|&StageDesc;Something in the way you manipulate the disc appears to have triggered a resonse. The thread moves one marking to the left.
+  --?[%1%] -eq 3 -and [$ChargesUsed] -eq [=[&ItemMaxCharge] - 1]|&StageDesc;Something in the way you manipulate the disc appears to have triggered a resonse. The thread that spans the sundial markings settles all the way to the left.
+  --?[%1%] -eq 3 -and [$ChargesUsed] -eq [&ItemMaxCharge]|&StageDesc;Something in the way you manipulate the disc appears to have triggered a resonse. The thread that spans the sundial markings settles all the way to the left.
+  --?[%1%] -eq 3|=ChargesUsed|[$ChargesUsed] + 1
+  --?[%1%] -eq 3|&ItemChargeDesc;The thread is lined up with the marking [=[&ItemMaxCharge] - [$ChargesUsed.Raw]] from the left of the dial.
+  --?[%1%] -eq 3 -and [$ChargesUsed] -eq [&ItemMaxCharge]|&ItemChargeDesc;The thread rests against the left side of the dial.
+  --?[%1%] -eq 4|&StageDesc;The blue color of the disc fades into a pale white.
+  --?[%1%] -eq 5|&StageDesc;You have gained an understanding of the functioning of the device. This disc acts as a power source for items in the tower. The sundial indicator shows how much power is left in the disc.
+  --+|[&StageDesc]
+  --<|
+}}

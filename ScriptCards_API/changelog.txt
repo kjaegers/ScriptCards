@@ -3,7 +3,7 @@ ScriptCards Roll20 API Script Changelog
 v 2.7.3  - Added "!sc-purgestachedscripts" as an alternatively recognized command. This will clear from memory all script that have been "stashed", either by reentrant code or --i commands
            the only real effect here is to free up memory, as this happens automatically on a sandbox restart.
 
-           Added "-rsearch", which has the same syntax as --rfind, except that it will do a case-insentitive partial match. This is converted to a regex, so if you need to find special regex
+           Added "--rsearch", which has the same syntax as --rfind, except that it will do a case-insentitive partial match. This is converted to a regex, so if you need to find special regex
            characters (like +), prefix them with a "\".
            Ex: --rsearch|@{selected|character_id};sword;repeating_attack;atkname
            Will search for the first repeating_attack with an atkname containing "sword" and set the repeating index to that row.
