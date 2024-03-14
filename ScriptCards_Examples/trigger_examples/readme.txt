@@ -72,7 +72,7 @@ watch ALL attributes (change:attribute is not supported).
 
 Setting up for ScriptCard Triggers
 
-In order to utilize ScriptCard Triggers, you will need to create a character in your game named exactly “ScriptCard_Triggers”. This name 
+In order to utilize ScriptCard Triggers, you will need to create a character in your game named exactly “ScriptCards_Triggers”. This name 
 is case sensitive, and the character must exist in the game at the time the API sandbox starts for Triggers to be enabled. If you have a 
 correctly named character, you will see a message in the API console similar to “ScriptCards Triggers Active. Trigger Character ID 
 is -N1W93TIw0ofPHUglMV1” when the sandbox starts. If you add the character after the sandbox is running, just restart the sandbox from the 
