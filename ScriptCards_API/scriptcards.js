@@ -27,7 +27,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.2";
+	const APIVERSION = "2.7.3";
 	const NUMERIC_VERSION = "207020"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
@@ -703,6 +703,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						isReentrant = true;
 						processThisAPI = true;
 					}
+				}
+
+				if (apiCmdText.startsWith("!sc-purgestachedscripts")) {
+					scriptCardsStashedScripts = {};
 				}
 
 				if (apiCmdText.startsWith("!scriptcards ")) { processThisAPI = true; }
@@ -2640,16 +2644,26 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return repRowIds;
 	}
 
-	function getSectionAttrs(charid, entryname, sectionname, searchtext) {
+	function getSectionAttrs(charid, entryname, sectionname, searchtext, fuzzy) {
 		var return_set = [];
 		var char_attrs = findObjs({ type: "attribute", _characterid: charid });
 		try {
+			if (!fuzzy) {
 			var action_prefix = char_attrs
 				.filter(function (z) {
 					return (z.get("name").startsWith(sectionname) && z.get("name").endsWith(searchtext))
 				})
 				.filter(entry => entry.get("current") == entryname)[0]
 				.get("name").slice(0, -searchtext.length);
+			} else {
+				var thisRegex = new RegExp(entryname,"i")
+				var action_prefix = char_attrs
+				.filter(function (z) {
+					return (z.get("name").startsWith(sectionname) && z.get("name").match(searchtext))
+				})
+				.filter(entry => entry.get("current").match(thisRegex))[0]
+				.get("name").slice(0, -searchtext.length);
+			}
 		} catch {
 			return return_set;
 		}
@@ -5886,7 +5900,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var param = thisContent.split(cardParameters.parameterdelimiter);
 			switch (command.toLowerCase()) {
 				case "find":
-					repeatingSection = getSectionAttrs(param[0], param[1], param[2], param[3]);
+				case "search":
+					var fuzzy = (command.toLowerCase() == "search" ? true : false)
+					repeatingSection = getSectionAttrs(param[0], param[1], param[2], param[3], fuzzy);
 					fillCharAttrs(findObjs({ _type: 'attribute', _characterid: param[0] }));
 					repeatingCharID = param[0];
 					repeatingSectionName = param[2];
@@ -6053,6 +6069,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						break;
 					case "gosub":
 						jumpDest = jumpDest.substring(1);
+						var nestSkip = 0;
 						parameterStack.push(callParamList);
 						var paramList = CSVtoArray(jumpDest.trim());
 						callParamList = {};
