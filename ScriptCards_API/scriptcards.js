@@ -939,190 +939,192 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								log(`Line Counter: ${lineCounter}, Tag:${thisTag}, Content:${thisContent}`);
 							}
 
-							// Handle Stashing and asking for info
-							if (thisTag.charAt(0).toLowerCase() == "i") {
-								var myGuid = uuidv4();
-								var stashType = thisTag.substring(1);
-								var stashList = thisContent.split("||");
-								var buildLine = "";
-								var varList = "";
-								for (var x = 0; x < stashList.length; x++) {
-									var theseParams = stashList[x].split(";");
-									if (theseParams[0].toLowerCase() == "t") {
-										if (buildLine !== "") { buildLine += "-|-"; varList += ";"; }
-										buildLine += theseParams[1] + ";&#64;{target|" + theseParams[2] + "|token_id}";
-										varList += theseParams[1];
-									}
-									if (theseParams[0].toLowerCase() == "q") {
-										if (buildLine !== "") { buildLine += "-|-"; varList += cardParameters.parameterdelimiter; }
-										buildLine += theseParams[1] + cardParameters.parameterdelimiter + "?{" + theseParams[2] + "}";
-										varList += theseParams[1];
-									}
-								}
-								var flavorText = stashType.split(";")[0];
-								if (cardParameters.formatinforequesttext !== "0") {
-									flavorText = processInlineFormatting(flavorText, cardParameters, false);
-								}
-								var buttonLabel = stashType.split(";")[1];
+							if (thisTag.charAt(0) !== "/") {
 
-								stashAScript(myGuid, cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, "", "X", arrayVariables, arrayIndexes, gmonlyLines, bareoutputLines);
-								lineCounter = cardLines.length + 100;
-								cardParameters.hidecard = "1";
-								sendChat(msg.who, `/w ${msg.who} ${flavorText}` + makeButton(buttonLabel, `!sc-resume ${myGuid}-|-${buildLine}`, cardParameters));
-							}
-
-							// *********** STARTHERE
-
-							switch (thisTag.charAt(0).toLowerCase()) {
-								case "!": handleObjectModificationCommands(thisTag, thisContent, cardParameters); break;
-								case "a": playJukeboxTrack(thisContent); break;
-								case "c": handleCaseCommand(thisTag, thisContent, cardParameters, cardLines); break;
-								case "d": handleDataReadCommands(thisTag); break;
-								case "e": handleEmoteCommands(thisTag, thisContent); break;
-								case "h": handleHasTableCommands(thisTag, hashTables, thisContent); break;
-								case "l": handleLoadCommands(thisTag, thisContent, cardParameters); break;
-								case "r": handleRepeatingAttributeCommands(thisTag, thisContent, cardParameters); break;
-								case "s": handleStashLines(thisTag, thisContent, cardParameters); break;
-								case "w": handleWaitStatements(thisTag, thisContent, cardParameters); break;
-								case "v": handleVisualEffectsCommand(thisTag, thisContent, cardParameters); break;
-								case "x": {
-									if (cardParameters.functionbenchmarking == "1") { reportBenchmarkingData(); }
-									(cardParameters["reentrant"] !== 0) ? stashAScript(cardParameters["reentrant"], cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, varList, "X", arrayVariables, arrayIndexes, gmonlyLines, bareoutputLines) : null
-									lineCounter = cardLines.length + 1;
-								} break;
-								case "z": handleZOrderSettingCommands(thisTag, thisContent); break;
-								case "~": handleFunctionCommands(thisTag, thisContent, cardParameters, msg); break;
-								case "^": if (lineLabels[thisTag.substring(1)]) { lineCounter = lineLabels[thisTag.substring(1)] } else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`) } break;
-								case "@": handleAPICallCommands(thisTag, thisContent, cardParameters, msg); break;
-								case "#": handleCardSettingsCommands(thisTag, thisContent, cardParameters); break;
-								case "+": case "*": handleOutputCommands(thisTag, thisContent, cardParameters); break;
-								case "=": handleRollVariableSetCommand(thisTag, thisContent, cardParameters); break;
-								case "&": setStringOrArrayElement(thisTag.substring(1), thisContent, cardParameters); break;
-								case "\\": handleConsoleLogs(thisTag, thisContent); break;
-								case "<": if (returnStack.length > 0) { callParamList = parameterStack.pop(); lineCounter = returnStack.pop(); } break;
-								case ">": handleGosubCommands(thisTag, thisContent, cardParameters, cardLines); break;
-								case "]": handleBlockEndCommand(thisTag, thisContent, cardLines); break;
-								case "?": handleConditionalBlock(thisTag, thisContent, cardParameters, cardLines); break;
-								//case "%": handleLoopStatements(thisTag, thisContent, cardParameters, cardLines); break;
-							}
-
-							// Handle looping statements
-							if (thisTag.charAt(0) === "%") {
-								var loopCounter = thisTag.substring(1);
-								if (loopCounter && loopCounter !== "!") {
-									if (loopControl[loopCounter]) { log(`ScriptCards: Warning - loop counter ${loopCounter} reused inside itself on line ${lineCounter}.`); }
-									var params = thisContent.split(cardParameters.parameterdelimiter);
-									if (params.length === 2 && params[0].toLowerCase().endsWith("each")) {
-										// This will be a for-each loop, so the first (and only) parameter must be an array name
-										if (arrayVariables[params[1]] && arrayVariables[params[1]].length > 0) {
-											loopControl[loopCounter] = { loopType: "foreach", initial: 0, current: 0, end: arrayVariables[params[1]].length - 1, step: 1, nextIndex: lineCounter, arrayName: params[1] }
-											stringVariables[loopCounter] = arrayVariables[params[1]][0];
-											loopStack.push(loopCounter);
-											if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
-										} else {
-											log(`ScriptCards For...Each loop without a defined array or with empty array on line ${lineCounter}`)
+								// Handle Stashing and asking for info
+								if (thisTag.charAt(0).toLowerCase() == "i") {
+									var myGuid = uuidv4();
+									var stashType = thisTag.substring(1);
+									var stashList = thisContent.split("||");
+									var buildLine = "";
+									var varList = "";
+									for (var x = 0; x < stashList.length; x++) {
+										var theseParams = stashList[x].split(";");
+										if (theseParams[0].toLowerCase() == "t") {
+											if (buildLine !== "") { buildLine += "-|-"; varList += ";"; }
+											buildLine += theseParams[1] + ";&#64;{target|" + theseParams[2] + "|token_id}";
+											varList += theseParams[1];
+										}
+										if (theseParams[0].toLowerCase() == "q") {
+											if (buildLine !== "") { buildLine += "-|-"; varList += cardParameters.parameterdelimiter; }
+											buildLine += theseParams[1] + cardParameters.parameterdelimiter + "?{" + theseParams[2] + "}";
+											varList += theseParams[1];
 										}
 									}
-									if (params.length === 2 && (params[0].toLowerCase().endsWith("while") || params[0].toLowerCase().endsWith("until"))) {
-										var originalContent = getLineContent(cardLines[lineCounter]);
-										var contentParts = originalContent.split(cardParameters.parameterdelimiter);
-										var isTrue = processFullConditional(replaceVariableContent(contentParts[1], cardParameters)) || params[0].toLowerCase().endsWith("until");
-										if (isTrue) {
-											loopControl[loopCounter] = { loopType: params[0].toLowerCase().endsWith("until") ? "until" : "while", initial: 0, current: 0, end: 999999, step: 1, nextIndex: lineCounter, condition: contentParts[1] }
-											stringVariables[loopCounter] = "true";
-											loopStack.push(loopCounter);
-											if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
-										} else {
-											var line = lineCounter;
-											for (line = lineCounter + 1; line < cardLines.length; line++) {
-												if (getLineTag(cardLines[line], line, "").trim() == "%") {
-													lineCounter = line;
-												}
-											}
-											if (lineCounter > cardLines.length) {
-												log(`ScriptCards: Warning - no end block marker found for loop block started ${loopCounter}`);
-												lineCounter = cardLines.length + 1;
-											}
-										}
+									var flavorText = stashType.split(";")[0];
+									if (cardParameters.formatinforequesttext !== "0") {
+										flavorText = processInlineFormatting(flavorText, cardParameters, false);
 									}
-									if (params.length === 2 && (!params[0].toLowerCase().endsWith("each")) && (!params[0].toLowerCase().endsWith("until")) && (!params[0].toLowerCase().endsWith("while"))) { params.push("1"); } // Add a "1" as the assumed step value if only two parameters
-									if (params.length === 3) {
-										if (isNumeric(params[0]) && isNumeric(params[1]) && isNumeric(params[2]) && parseInt(params[2]) != 0) {
-											loopControl[loopCounter] = { loopType: "fornext", initial: parseInt(params[0]), current: parseInt(params[0]), end: parseInt(params[1]), step: parseInt(params[2]), nextIndex: lineCounter }
-											stringVariables[loopCounter] = params[0];
-											loopStack.push(loopCounter);
-											if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
-										} else {
-											if (parseInt(params[2] == 0)) {
-												log(`ScriptCards: Error - cannot use loop step of 0 at line ${lineCounter}`)
+									var buttonLabel = stashType.split(";")[1];
+
+									stashAScript(myGuid, cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, "", "X", arrayVariables, arrayIndexes, gmonlyLines, bareoutputLines);
+									lineCounter = cardLines.length + 100;
+									cardParameters.hidecard = "1";
+									sendChat(msg.who, `/w ${msg.who} ${flavorText}` + makeButton(buttonLabel, `!sc-resume ${myGuid}-|-${buildLine}`, cardParameters));
+								}
+
+								// *********** STARTHERE
+
+								switch (thisTag.charAt(0).toLowerCase()) {
+									case "!": handleObjectModificationCommands(thisTag, thisContent, cardParameters); break;
+									case "a": playJukeboxTrack(thisContent); break;
+									case "c": handleCaseCommand(thisTag, thisContent, cardParameters, cardLines); break;
+									case "d": handleDataReadCommands(thisTag); break;
+									case "e": handleEmoteCommands(thisTag, thisContent); break;
+									case "h": handleHasTableCommands(thisTag, hashTables, thisContent); break;
+									case "l": handleLoadCommands(thisTag, thisContent, cardParameters); break;
+									case "r": handleRepeatingAttributeCommands(thisTag, thisContent, cardParameters); break;
+									case "s": handleStashLines(thisTag, thisContent, cardParameters); break;
+									case "w": handleWaitStatements(thisTag, thisContent, cardParameters); break;
+									case "v": handleVisualEffectsCommand(thisTag, thisContent, cardParameters); break;
+									case "x": {
+										if (cardParameters.functionbenchmarking == "1") { reportBenchmarkingData(); }
+										(cardParameters["reentrant"] !== 0) ? stashAScript(cardParameters["reentrant"], cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, varList, "X", arrayVariables, arrayIndexes, gmonlyLines, bareoutputLines) : null
+										lineCounter = cardLines.length + 1;
+									} break;
+									case "z": handleZOrderSettingCommands(thisTag, thisContent); break;
+									case "~": handleFunctionCommands(thisTag, thisContent, cardParameters, msg); break;
+									case "^": if (lineLabels[thisTag.substring(1)]) { lineCounter = lineLabels[thisTag.substring(1)] } else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`) } break;
+									case "@": handleAPICallCommands(thisTag, thisContent, cardParameters, msg); break;
+									case "#": handleCardSettingsCommands(thisTag, thisContent, cardParameters); break;
+									case "+": case "*": handleOutputCommands(thisTag, thisContent, cardParameters); break;
+									case "=": handleRollVariableSetCommand(thisTag, thisContent, cardParameters); break;
+									case "&": setStringOrArrayElement(thisTag.substring(1), thisContent, cardParameters); break;
+									case "\\": handleConsoleLogs(thisTag, thisContent); break;
+									case "<": if (returnStack.length > 0) { callParamList = parameterStack.pop(); lineCounter = returnStack.pop(); } break;
+									case ">": handleGosubCommands(thisTag, thisContent, cardParameters, cardLines); break;
+									case "]": handleBlockEndCommand(thisTag, thisContent, cardLines); break;
+									case "?": handleConditionalBlock(thisTag, thisContent, cardParameters, cardLines); break;
+									//case "%": handleLoopStatements(thisTag, thisContent, cardParameters, cardLines); break;
+								}
+
+								// Handle looping statements
+								if (thisTag.charAt(0) === "%") {
+									var loopCounter = thisTag.substring(1);
+									if (loopCounter && loopCounter !== "!") {
+										if (loopControl[loopCounter]) { log(`ScriptCards: Warning - loop counter ${loopCounter} reused inside itself on line ${lineCounter}.`); }
+										var params = thisContent.split(cardParameters.parameterdelimiter);
+										if (params.length === 2 && params[0].toLowerCase().endsWith("each")) {
+											// This will be a for-each loop, so the first (and only) parameter must be an array name
+											if (arrayVariables[params[1]] && arrayVariables[params[1]].length > 0) {
+												loopControl[loopCounter] = { loopType: "foreach", initial: 0, current: 0, end: arrayVariables[params[1]].length - 1, step: 1, nextIndex: lineCounter, arrayName: params[1] }
+												stringVariables[loopCounter] = arrayVariables[params[1]][0];
+												loopStack.push(loopCounter);
+												if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
 											} else {
-												log(`ScriptCards: Error - loop initialization contains non-numeric values on line ${lineCounter}`)
+												log(`ScriptCards For...Each loop without a defined array or with empty array on line ${lineCounter}`)
 											}
 										}
-									}
-								} else {
-									if (loopStack.length >= 1) {
-										var currentLoop = loopStack[loopStack.length - 1];
-										if (loopControl[currentLoop]) {
-											loopControl[currentLoop].current += loopControl[currentLoop].step;
-											switch (loopControl[currentLoop].loopType) {
-												case "fornext":
-													stringVariables[currentLoop] = loopControl[currentLoop].current.toString();
-													break;
-												case "foreach":
-													try {
-														var beforeLoopEnded = stringVariables[currentLoop]
-														stringVariables[currentLoop] = arrayVariables[loopControl[currentLoop].arrayName][loopControl[currentLoop].current]
-													} catch {
-														stringVariables[currentLoop] = "ArrayError"
-													}
-													break;
-												case "while":
-													var isTrue = processFullConditional(replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
-													if (!isTrue) {
-														loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
-														loopControl[currentLoop].step = 1;
-													}
-													break;
-												case "until":
-													var isTrue = processFullConditional(replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
-													if (isTrue) {
-														loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
-														loopControl[currentLoop].step = 1;
-													}
-													break;
-
-											}
-											if ((loopControl[currentLoop].step > 0 && loopControl[currentLoop].current > loopControl[currentLoop].end) ||
-												(loopControl[currentLoop].step < 0 && loopControl[currentLoop].current < loopControl[currentLoop].end) ||
-												loopCounter == "!") {
-												stringVariables[currentLoop] = beforeLoopEnded;
-												loopStack.pop();
-												delete loopControl[currentLoop];
-												if (cardParameters.debug == 1) { log(`ScriptCards: Info - End of loop ${currentLoop}`) }
-												if (loopCounter == "!") {
-													var line = lineCounter;
-													for (line = lineCounter + 1; line < cardLines.length; line++) {
-														if (getLineTag(cardLines[line], line, "").trim() == "%") {
-															lineCounter = line;
-															break;
-														}
-													}
-													if (lineCounter > cardLines.length) {
-														log(`ScriptCards: Warning - no end block marker found for loop block started ${loopCounter}`);
-														lineCounter = cardLines.length + 1;
+										if (params.length === 2 && (params[0].toLowerCase().endsWith("while") || params[0].toLowerCase().endsWith("until"))) {
+											var originalContent = getLineContent(cardLines[lineCounter]);
+											var contentParts = originalContent.split(cardParameters.parameterdelimiter);
+											var isTrue = processFullConditional(replaceVariableContent(contentParts[1], cardParameters)) || params[0].toLowerCase().endsWith("until");
+											if (isTrue) {
+												loopControl[loopCounter] = { loopType: params[0].toLowerCase().endsWith("until") ? "until" : "while", initial: 0, current: 0, end: 999999, step: 1, nextIndex: lineCounter, condition: contentParts[1] }
+												stringVariables[loopCounter] = "true";
+												loopStack.push(loopCounter);
+												if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
+											} else {
+												var line = lineCounter;
+												for (line = lineCounter + 1; line < cardLines.length; line++) {
+													if (getLineTag(cardLines[line], line, "").trim() == "%") {
+														lineCounter = line;
 													}
 												}
+												if (lineCounter > cardLines.length) {
+													log(`ScriptCards: Warning - no end block marker found for loop block started ${loopCounter}`);
+													lineCounter = cardLines.length + 1;
+												}
+											}
+										}
+										if (params.length === 2 && (!params[0].toLowerCase().endsWith("each")) && (!params[0].toLowerCase().endsWith("until")) && (!params[0].toLowerCase().endsWith("while"))) { params.push("1"); } // Add a "1" as the assumed step value if only two parameters
+										if (params.length === 3) {
+											if (isNumeric(params[0]) && isNumeric(params[1]) && isNumeric(params[2]) && parseInt(params[2]) != 0) {
+												loopControl[loopCounter] = { loopType: "fornext", initial: parseInt(params[0]), current: parseInt(params[0]), end: parseInt(params[1]), step: parseInt(params[2]), nextIndex: lineCounter }
+												stringVariables[loopCounter] = params[0];
+												loopStack.push(loopCounter);
+												if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
 											} else {
-												lineCounter = loopControl[currentLoop].nextIndex;
+												if (parseInt(params[2] == 0)) {
+													log(`ScriptCards: Error - cannot use loop step of 0 at line ${lineCounter}`)
+												} else {
+													log(`ScriptCards: Error - loop initialization contains non-numeric values on line ${lineCounter}`)
+												}
 											}
 										}
 									} else {
-										log(`ScriptCards: Error - Loop end statement without an active loop on line ${lineCounter}`);
+										if (loopStack.length >= 1) {
+											var currentLoop = loopStack[loopStack.length - 1];
+											if (loopControl[currentLoop]) {
+												loopControl[currentLoop].current += loopControl[currentLoop].step;
+												switch (loopControl[currentLoop].loopType) {
+													case "fornext":
+														stringVariables[currentLoop] = loopControl[currentLoop].current.toString();
+														break;
+													case "foreach":
+														try {
+															var beforeLoopEnded = stringVariables[currentLoop]
+															stringVariables[currentLoop] = arrayVariables[loopControl[currentLoop].arrayName][loopControl[currentLoop].current]
+														} catch {
+															stringVariables[currentLoop] = "ArrayError"
+														}
+														break;
+													case "while":
+														var isTrue = processFullConditional(replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
+														if (!isTrue) {
+															loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
+															loopControl[currentLoop].step = 1;
+														}
+														break;
+													case "until":
+														var isTrue = processFullConditional(replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
+														if (isTrue) {
+															loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
+															loopControl[currentLoop].step = 1;
+														}
+														break;
+
+												}
+												if ((loopControl[currentLoop].step > 0 && loopControl[currentLoop].current > loopControl[currentLoop].end) ||
+													(loopControl[currentLoop].step < 0 && loopControl[currentLoop].current < loopControl[currentLoop].end) ||
+													loopCounter == "!") {
+													stringVariables[currentLoop] = beforeLoopEnded;
+													loopStack.pop();
+													delete loopControl[currentLoop];
+													if (cardParameters.debug == 1) { log(`ScriptCards: Info - End of loop ${currentLoop}`) }
+													if (loopCounter == "!") {
+														var line = lineCounter;
+														for (line = lineCounter + 1; line < cardLines.length; line++) {
+															if (getLineTag(cardLines[line], line, "").trim() == "%") {
+																lineCounter = line;
+																break;
+															}
+														}
+														if (lineCounter > cardLines.length) {
+															log(`ScriptCards: Warning - no end block marker found for loop block started ${loopCounter}`);
+															lineCounter = cardLines.length + 1;
+														}
+													}
+												} else {
+													lineCounter = loopControl[currentLoop].nextIndex;
+												}
+											}
+										} else {
+											log(`ScriptCards: Error - Loop end statement without an active loop on line ${lineCounter}`);
+										}
 									}
 								}
 							}
-
 
 							executionCounter++;
 
@@ -2440,7 +2442,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var webms = outputLine.match(/(\[webm(.*?)\](.*?)\[\/webm\])/gi);
 		for (var webm in webms) {
 			var work = webms[webm].replace("[webm]", "<video autoplay loop width=100% &#115;&#114;&#99;='").replace("[/webm]", "' type=video/webm></video>");
-			log(work);
 			outputLine = outputLine.replace(webms[webm], work);
 		}
 		var statusmarkers = outputLine.match(/\[sm(.*?)\](.*?)\[\/sm\]/gi);
@@ -2649,20 +2650,20 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var char_attrs = findObjs({ type: "attribute", _characterid: charid });
 		try {
 			if (!fuzzy) {
-			var action_prefix = char_attrs
-				.filter(function (z) {
-					return (z.get("name").startsWith(sectionname) && z.get("name").endsWith(searchtext))
-				})
-				.filter(entry => entry.get("current") == entryname)[0]
-				.get("name").slice(0, -searchtext.length);
-			} else {
-				var thisRegex = new RegExp(entryname,"i")
 				var action_prefix = char_attrs
-				.filter(function (z) {
-					return (z.get("name").startsWith(sectionname) && z.get("name").match(searchtext))
-				})
-				.filter(entry => entry.get("current").match(thisRegex))[0]
-				.get("name").slice(0, -searchtext.length);
+					.filter(function (z) {
+						return (z.get("name").startsWith(sectionname) && z.get("name").endsWith(searchtext))
+					})
+					.filter(entry => entry.get("current") == entryname)[0]
+					.get("name").slice(0, -searchtext.length);
+			} else {
+				var thisRegex = new RegExp(entryname, "i")
+				var action_prefix = char_attrs
+					.filter(function (z) {
+						return (z.get("name").startsWith(sectionname) && z.get("name").match(searchtext))
+					})
+					.filter(entry => entry.get("current").match(thisRegex))[0]
+					.get("name").slice(0, -searchtext.length);
 			}
 		} catch {
 			return return_set;
@@ -3244,7 +3245,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function StripAndSplit(content, delimeter) {
-		log(content)
+		//log(content)
 		//var work = content.replace("[","").replace(")","").replace("(","").replace(")","")
 		var work = content.replace(/[^a-z0-9áéíóúñü:; \,_-]/gim, "");
 		return work.split(delimeter);
@@ -4777,6 +4778,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								}
 								break;
 
+							case "runaction":
+							case "runability":
+								var ability = findObjs({ type: "ability", _characterid: params[2], name: params[3] });
+								var metacard = ability[0].get("action")
+								if (Array.isArray(ability) && ability.length > 0) {
+									for(let x=4; x<params.length; x++) {
+										metacard = metacard.replace(`[REPL${x-3}]`, params[x])
+									}
+									metacard = metacard.replaceAll("-_-_", "--")
+									sendChat("API", metacard);
+								}
+								break;
+
 							case "readsetting":
 								stringVariables[variableName] = cardParameters[params[2].toLowerCase()] || "UnknownSetting";
 								break;
@@ -5220,7 +5234,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							case "nonumbers":
 								setStringOrArrayElement(variableName, params[2].replace(/\d/g, ''), cardParameters)
 								break;
-
 
 							case "totitlecase":
 								setStringOrArrayElement(variableName,
@@ -5948,11 +5961,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					break;
 				case "bysectionid":
 					if (param[0] && param[1] && param[2]) {
+						var ci = false
+						if (params[3] && (param[3] == "1" || params[3].toLowerCase() == "i")) {
+							ci = true
+						}
 						repeatingSectionIDs = getRepeatingSectionIDs(param[0], param[1]);
 						if (repeatingSectionIDs) {
 							repeatingIndex = undefined;
 							for (let x = 0; x < repeatingSectionIDs.length; x++) {
 								if (repeatingSectionIDs[x].trim() == param[2].trim()) {
+									repeatingIndex = x;
+								}
+								if (repeatingSectionIDs[x].toLowerCase().trim() == param[2].toLowerCase().trim()) {
 									repeatingIndex = x;
 								}
 							}

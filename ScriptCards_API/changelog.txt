@@ -1,5 +1,28 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.4  - Added a new function: --~|system;runaction;character_id;abilityname;param1;param2;param3;param4;...
+             This function will look for an ability called "abilityname" (case sensitive) on character "charcter_id" and read the Action property of the ability. It will replace the text [REPL1], [REPL2]...
+             and so forth with the parameters passed in param1, param2, etc. The sequence -_-_ will be replaced in the final macro, allowing you to potentially add lines to anything that uses -- to separate
+             parameters, etc. Note that the calls are issued by the API, so there is no current player, so interactive scripts will not do anything (ie, targets, roll queries, etc.) but if the action you
+             are using takes ids, you can pass them as [REPL] items.
+
+             Example: Given the SetMacro ability on the "Macro_Mule": !token-mod --ids [REPL1] --set statusmarkers|[REPL2][REPL3]
+           
+             This will turn on the blue marker:--~|system;runaction;@{Macro_Mule|character_id};SetMarker;@{selected|token_id};+;blue
+             And this will turn it off: --~|system;runaction;@{Macro_Mule|character_id};SetMarker;@{selected|token_id};-;blue
+           
+             In these examples, [REPL1] gets replaced with the selected token id, [REPL2] gets replaced with either + or -, and [REPL3] gets replaced with blue. Obviously these can be variables or
+             other ScriptCards constructs.
+
+             Note that "runability" is an alias for "runaction"
+
+
+           Removed some extraneous logging that might cause slowdowns in some scripts as junk was output to the API Console.
+
+           Updated parsing code to completely ignore --/ lines by skipping the processing block if the tag stats with /
+
+           Added optional parameter for Rbysectionid. If you add a ;1 to the end of the call, it will perform a case-insensitive match. This needs further testing, as I don't generally use bysectionid
+
 v 2.7.3  - Added "!sc-purgestachedscripts" as an alternatively recognized command. This will clear from memory all script that have been "stashed", either by reentrant code or --i commands
            the only real effect here is to free up memory, as this happens automatically on a sandbox restart.
 
