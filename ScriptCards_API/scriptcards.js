@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.3";
-	const NUMERIC_VERSION = "207020"
+	const APIVERSION = "2.7.3a";
+	const NUMERIC_VERSION = "207031"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -5962,7 +5962,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				case "bysectionid":
 					if (param[0] && param[1] && param[2]) {
 						var ci = false
-						if (params[3] && (param[3] == "1" || params[3].toLowerCase() == "i")) {
+						if (param[3] && (param[3] == "1" || param[3].toLowerCase() == "i")) {
 							ci = true
 						}
 						repeatingSectionIDs = getRepeatingSectionIDs(param[0], param[1]);
@@ -5972,7 +5972,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								if (repeatingSectionIDs[x].trim() == param[2].trim()) {
 									repeatingIndex = x;
 								}
-								if (repeatingSectionIDs[x].toLowerCase().trim() == param[2].toLowerCase().trim()) {
+								if (ci && repeatingSectionIDs[x].toLowerCase().trim() == param[2].toLowerCase().trim()) {
 									repeatingIndex = x;
 								}
 							}
