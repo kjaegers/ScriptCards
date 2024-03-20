@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.5";
-	const NUMERIC_VERSION = "207050"
+	const APIVERSION = "2.7.5a";
+	const NUMERIC_VERSION = "207051"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -4791,7 +4791,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								var metacard = ability[0].get("action")
 								if (Array.isArray(ability) && ability.length > 0) {
 									for (let x = 4; x < params.length; x++) {
-										metacard = metacard.replaceAll(`[REPL${x - 3}]`, params[x])
+										metacard = metacard.replace(`[REPL${x - 3}]`, params[x])
 									}
 									metacard = metacard.replaceAll("-_-_", "--")
 									sendChat("API", metacard);
