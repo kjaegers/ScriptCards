@@ -1,5 +1,22 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.5  - Updated [REPL] code for runaction to replace all instances of a given [REPLx] string in the action. Previously, only the first appearance of the marker was replaced.
+
+         - Added function: --~|array;fromplayerlist;ArrayName
+             Returns an array of all of the IDs of all of the players (that aren't GMs) in the game
+
+         - Added function: --~|array;fromgmplayerlist;ArrayName
+             Returns an array of all of the IDs of all of the GM players in the game
+
+         - Added function: --~StringVar|system;playerisgm;playerpageid
+             Will set the StringVar string variable to 1 if the passed playerid is a GM, otherwise will set it to 0
+
+         - Added function: --~|array;fromcontrolledcharacters;ArrayName;playerid
+             Will return an array of all of the characters controlled by the passed player
+
+         - Updated [*O:...:character:...] to accept "isgm" as a psuedo property, which will return 1 if the player object is a GM and 0 if not.
+             Ex: --+GM?|[*O:[&SendingPlayerID]:player:isgm]
+
 v 2.7.4  - Added a new function: --~|system;runaction;character_id;abilityname;param1;param2;param3;param4;...
              This function will look for an ability called "abilityname" (case sensitive) on character "charcter_id" and read the Action property of the ability. It will replace the text [REPL1], [REPL2]...
              and so forth with the parameters passed in param1, param2, etc. The sequence -_-_ will be replaced in the final macro, allowing you to potentially add lines to anything that uses -- to separate

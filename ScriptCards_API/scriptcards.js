@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.4a";
-	const NUMERIC_VERSION = "207041"
+	const APIVERSION = "2.7.5";
+	const NUMERIC_VERSION = "207050"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1796,6 +1796,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								replacement = thisObj.get(propertyName) || "";
 							} else {
 								replacement = ""
+							}
+							if (thisObj != null && objectType == "player" && propertyName.toLowerCase() == "isgm") {
+								replacement = (playerIsGM(thisObj.id)) ? 1 : 0
 							}
 						} else {
 							replacment = ""
@@ -4778,13 +4781,17 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								}
 								break;
 
+							case "playerisgm":
+								stringVariables[variableName] = playerIsGM(params[2] || "") ? 1 : 0
+								break;
+
 							case "runaction":
 							case "runability":
 								var ability = findObjs({ type: "ability", _characterid: params[2], name: params[3] });
 								var metacard = ability[0].get("action")
 								if (Array.isArray(ability) && ability.length > 0) {
-									for(let x=4; x<params.length; x++) {
-										metacard = metacard.replace(`[REPL${x-3}]`, params[x])
+									for (let x = 4; x < params.length; x++) {
+										metacard = metacard.replaceAll(`[REPL${x - 3}]`, params[x])
 									}
 									metacard = metacard.replaceAll("-_-_", "--")
 									sendChat("API", metacard);
@@ -5389,6 +5396,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								log(`ScriptCards: Error encounted: ${e}`)
 							}
 						}
+
 						if (params[1].toLowerCase() == "getjukeboxtracks") {
 							try {
 								hashTables[params[2]] = {};
@@ -5520,6 +5528,38 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								setStringOrArrayElement(variableName, arrayVariables[params[2]].join(sep), cardParameters);
 							} else {
 								setStringOrArrayElement(variableName, "", cardParameters);
+							}
+						}
+
+						if (params[1].toLowerCase() == "fromcontrolledcharacters") {
+							arrayVariables[params[2]] = [];
+							var chars = findObjs({ type: "character" });
+							if (chars && chars[0]) {
+								for (let x = 0; x < chars.length; x++) {
+									if (chars[x].get("controlledby").includes(params[3])) {
+										arrayVariables[params[2]].push(chars[x].id)
+									}
+								}
+							}
+						}
+
+						if (params[1].toLowerCase() == "fromplayerlist") {
+							arrayVariables[params[2]] = [];
+							var players = findObjs({ type: "player" });
+							for (let x = 0; x < players.length; x++) {
+								if (!playerIsGM(players[x].id)) {
+									arrayVariables[params[2]].push(players[x].id)
+								}
+							}
+						}
+
+						if (params[1].toLowerCase() == "fromgmplayerlist") {
+							arrayVariables[params[2]] = [];
+							var players = findObjs({ type: "player" });
+							for (let x = 0; x < players.length; x++) {
+								if (playerIsGM(players[x].id)) {
+									arrayVariables[params[2]].push(players[x].id)
+								}
 							}
 						}
 
