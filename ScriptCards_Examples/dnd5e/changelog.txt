@@ -1,5 +1,10 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2024-03-03 - 5E Character Action Menu 2.5.0
+             - First run at improving the execution speed of the script by utilizing the new benchmarking features in ScriptCards 2.7.0
+             - Cleaned out some commented out items
+             - ScriptCards 2.6.6b (now the necessary version of the API) fixes the issue with setting toggles that haven't been set manually.
+
 2024-01-01 - 5E Character Action Menu 2.4.6a
              - Bug fix
 

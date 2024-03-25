@@ -1,7 +1,7 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.4.6b
-  --/|Requires SC : 2.2.9+
+  --/|Version     : 2.5.0
+  --/|Requires SC : 2.6.6b+
   --/|Author      : Kurt Jaegers
 
   --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
@@ -14,6 +14,8 @@
 
   --/|=========================================================================================================
   --/|Settings Area - Customize the behavior of the script here
+
+  --#functionbenchmarking|1
 
   --/|What bar do you use for representing hit points for damage application?
   --&hitPointsBar|1
@@ -43,6 +45,7 @@
   
   --/| Default:0 - Check spell book for prepared spells only to list as buttons (or rituals). Set to 1 to show all spells.
   --&skipPreppedSpellsCheck|0
+  
   --/| Default:1 - Don't check prepped spells for NPCs. Set to 0 to enforce spell prep for NPCs
   --&skipNPCPrepCheck|1
 
@@ -53,7 +56,7 @@
   --/|Default:1 - Show a table of available spells slots for PCs (if trackPCSpellSlots is 1). Set to 0 to hide table.
   --&showPCSpellSlotList|1
 
-  --/|Default:1 - Tracking ammo for weapons for which it is defined. will be used. Thanks to JustinG for the initial implementation. Note 
+  --/|Default:1 - Tracking ammo for weapons for which it is defined. Thanks to JustinG for the initial implementation. Note 
   --/|            that Ammo Tracking for the character needs to be enabled, and a resource named to match the Ammo (case sensitive) needs 
   --/|            to exist on the sheet to track ammo.
   --&requireAmmo|1
@@ -172,6 +175,8 @@
   --/|End Settings Area
   --/|=========================================================================================================
   
+  -->CHECK_VERSION_INFO|
+
   --/|Determine if a token is selected or if we need to (and can based on config) automatically find a token for this player.
   --?"[@SC_SelectedTokens()]" -eq "undefined array" -and [&DetectPlayersToken] -ne 1|REPORT_NEED_SELECTED_TOKEN
   --?"[@SC_SelectedTokens()]" -ne "undefined array" -and "[@SC_SelectedTokens()]" -eq "1"|BEGIN_WITH_SC_SELECTED_TOKENS
@@ -528,6 +533,10 @@
   --+| 
   --#whisper|self
 
+  -->FIND_CLASS_LEVEL|Sorcerer;SorcLevel
+  -->FIND_CLASS_LEVEL|Warlock;LockLevel
+  -->FIND_CLASS_LEVEL|Wizard;WizLevel
+
   -->BuildCharacterSummary|[*S:character_id];CharSummaryText;ac
 
   --?[&showCharacterSummary] -ne 1 -or "[&perCharacterOptions]" -inc "$SCS0$" |SKIP_PC_SUMMARY
@@ -880,7 +889,7 @@
   -->Find_Active_Global_Save_Modifiers|[$cantrip_target];TARGET_GSM
   --Rfind|[*S:character_id];[&spellInfo2];repeating_spell-[&spellInfo1];spellname
   --#targettoken|[&spellInfo3]
-  --?"[*R:spellconcentration]" -inc "concentration=1" -and [&ConcentrationMarkerName]" -ne "0"|>ADD_STATUS_MARKER;[&saveTokenID];[&ConcentrationMarkerName]
+  --?"[*R:spellconcentration]" -inc "concentration=1" -and "[&ConcentrationMarkerName]" -ne "0"|>ADD_STATUS_MARKER;[&saveTokenID];[&ConcentrationMarkerName]
   --?"[*R:spelloutput]" -eq ATTACK|PC_ATTACK_SPELL|PC_CARD_SPELL
 
   --:PC_ATTACK_SPELL|
@@ -972,6 +981,7 @@
   --+The [*R:spellname] attack missed!|[br][br]
 
   --:PC_CARD_SPELL|
+  
   --+|[*R:spelldescription]
 
   --:PC_DONE_SPELL|
@@ -1328,7 +1338,7 @@
   --X|  
 
   --:_setGlobalMod|name;value
-  --!a:[&saveTokenID]|[%1%]:[%2%]  
+  --!a:[&saveTokenID]|[%1%]:[%2%]
   --<|
 
   --:_TOGGLE_ERROR|Bad name
@@ -1520,6 +1530,11 @@
   --:REPORT_NEED_SELECTED_TOKEN|
   --#whisper|self
   --+No Token Selected|You need to have a single token selected in order to use the 5E Character Action Menu.
+  --X|
+
+  --:REPORT_BAD_SC_VERSION|
+  --#whisper|self
+  --+NOTE|This version of the 5E Character action Menu requires ScriptCards version 2.6.6b or higher. Please update your SC installation.
   --X|
 
   --:REPORT_MULTIPLE_SELECTED_TOKEN|
@@ -1740,7 +1755,7 @@
       --?[%8%] -eq 0|SKIP_BUTTON_LIST_SPELL_CHECK
       --&keepSpell|N
       --&spellSuffix|
-      -->CHECK_SPELLS_TO_KEEP|[*R:atkname];keepSpell;spellSuffix
+      -->CHECK_SPELLS_TO_KEEP|"[*R:atkname]";keepSpell;spellSuffix
       --?"[*R:spelldesc_link]" -ne "" -and [&keepSpell] -eq N|AM_LIST_CONTINUE
       --:SKIP_BUTTON_LIST_SPELL_CHECK|
       --/|5E SPECIFIC END
@@ -1761,9 +1776,6 @@
   --<|
 
   --:BUILD_SPELL_BUTTON_LIST|Character ID;Repeating_section_name;repeating field for name;reentrant point;section header;mule char name/id;spell level
-    -->FIND_CLASS_LEVEL|Sorcerer;SorcLevel
-    -->FIND_CLASS_LEVEL|Warlock;LockLevel
-    -->FIND_CLASS_LEVEL|Wizard;WizLevel
     --&slotString|
     --&RitualslotString|
     --&LevelString|[%7%]|
@@ -1856,8 +1868,6 @@
   --&advantageMenu|[&QB]Roll Type?|Normal|Advantage|Disadvantage[&QE]
   --&skillMenu|[&QB]Skill to roll?|Acrobatics|Animal Handling,animal_handling|Arcana|Athletics|Deception|History|Insight|Intimidation|Investigation|Medicine|Nature|Perception|Persuasion|Religion|Sleight of Hand,sleight_of_hand|Stealth|Survival[&QE]
   --&saveMenu|[&QB]Saving Throw Type?|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma[&QE]
-  --/+|[c]- - - - -[/c]
-  --/&[%1%]|[c][rbutton:8px][&SkillCheckImage]::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton]     [rbutton:8px][&SavingThrowImage]::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton][/c]
   --&[%1%]|[rbutton:Execute a Skill Check][&SkillCheckImage]::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton] [&NB] [rbutton][&SavingThrowImage]::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton]
   --<|
 
@@ -1880,11 +1890,8 @@
   --X|
 
   --:DISPLAY_PC_OTHER_ACTIONS|
-    --/| Traits 
-    --/|   repeating_traits with bonus action or reaction in description
-
+    --/|Traits
     --RFirst|[*S:character_id];repeating_traits
-    --/RDump|
     --&BA_BUTTON_LIST|
     --&RA_BUTTON_LIST|
     --?"[*R:name]" -ne "NoRepeatingAttributeLoaded"|[
@@ -1905,15 +1912,12 @@
     --+|[&BA_BUTTON_LIST]
     --+Reactions|
     --+|[&RA_BUTTON_LIST]
-    --/| Generic
   --<|
 
   --:EXEC_PC_TRAIT|
-  --/+|[hr #58180d]
   --#whisper|self
   --#emotestate|visible
   --Rfind|[*S:character_id];[&reentryval];repeating_traits;name
-  --/Rdump|
   --#title|[*R:name]
   --#leftsub|[*S:character_name]
   --#rightsub|
@@ -1947,4 +1951,7 @@
   --+|You can avoid provoking an opportunity attack by taking the Disengage action. You also don't provoke an opportunity attack when you teleport or when someone or something moves you without using your movement, action, or reaction. For example, you don't provoke an opportunity attack if an explosion hurls you out of a foe's reach or if gravity causes you to fall past an enemy.
   --X|  
 
+  --:CHECK_VERSION_INFO|
+  --?"[&SC_VERSION_NUMERIC]" -eq "" -or "[&SC_VERSION_NUMERIC]" -lt 206062|REPORT_BAD_SC_VERSION
+  --<|
 }}
