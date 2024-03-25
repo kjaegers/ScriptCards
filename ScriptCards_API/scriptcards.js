@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.5a";
-	const NUMERIC_VERSION = "207051"
+	const APIVERSION = "2.7.6";
+	const NUMERIC_VERSION = "207060"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -370,6 +370,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						sendChat("API", metacard);
 					}
 				})
+				on('change:campaign:turnorder', function () { onChangeCampaignTurnorder(triggerCharID) });
+				/*
 				on('change:campaign:turnorder', function () {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "change:campaign:turnorder" });
 					if (Array.isArray(ability) && ability.length > 0) {
@@ -378,6 +380,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						sendChat("API", metacard);
 					}
 				})
+				*/
 				on('change:character', function (obj, prev) {
 					if (bioCharID) {
 						log(`updating bio for ${obj}`)
@@ -3476,7 +3479,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 			}
 		} catch (e) {
-			log(`Unable to store ${varname} on ${charid}, error ${e} `)
+			log(`Unable to store Roll ${varname} on ${charid}, error ${e} `)
 		}
 	}
 
@@ -3507,7 +3510,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 			}
 		} catch (e) {
-			log(`Unable to store ${varname} on ${charid}, error ${e} `)
+			log(`Unable to store String ${varname} on ${charid}, error ${e} `)
 		}
 	}
 
@@ -3538,7 +3541,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 			}
 		} catch (e) {
-			log(`Unable to store ${varname} on ${charid}, error ${e} `)
+			log(`Unable to store Array ${varname} on ${charid}, error ${e} `)
 		}
 	}
 
@@ -3558,22 +3561,33 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function storeHashTable(charid, prefix, varname) {
 		try {
-			let testObj = findObjs({
-				type: "attribute",
-				characterid: charid,
-				name: `SCH_${prefix}-${varname}`
-			})[0]
-			if (testObj) {
-				testObj.set("current", JSON.stringify(hashTables[varname]))
+			// If saving an empty hash table, delete the attribute
+			if (hashTables[varname] && JSON.stringify(hashTables[varname]) == "{}") {
+				let testObj = findObjs({
+					type: "attribute",
+					characterid: charid,
+					name: `SCH_${prefix}-${varname}`
+				})[0];
+				if (testObj) { testObj.remove() }
 			} else {
-				createObj("attribute", {
-					name: `SCH_${prefix}-${varname}`,
-					current: JSON.stringify(hashTables[varname]),
-					characterid: charid
-				})
+				let testObj = findObjs({
+					type: "attribute",
+					characterid: charid,
+					name: `SCH_${prefix}-${varname}`
+				})[0]
+				if (testObj) {
+					testObj.set("current", JSON.stringify(hashTables[varname]))
+				} else {
+					log(JSON.stringify(hashTables[varname]))
+					createObj("attribute", {
+						name: `SCH_${prefix}-${varname}`,
+						current: JSON.stringify(hashTables[varname]),
+						characterid: charid
+					})
+				}
 			}
 		} catch (e) {
-			log(`Unable to store ${varname} on ${charid}, error ${e} `)
+			log(`Unable to store Hash ${varname} on ${charid}, error ${e} `)
 		}
 	}
 
@@ -3604,7 +3618,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 			}
 		} catch (e) {
-			log(`Unable to store ${varname} on ${charid}, error ${e} `)
+			log(`Unable to store Setting ${varname} on ${charid}, error ${e} `)
 		}
 	}
 
@@ -5649,6 +5663,25 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 
+						if (params[1].toLowerCase() == "attributes") {
+							// Note P1=attributes, P2=array name, P3=character id, P4=Name Starts with
+							try {
+								var foundAttrs = findObjs({ type: "attribute", characterid: params[3] });
+								if (foundAttrs && foundAttrs[0]) {
+									arrayVariables[params[2]] = []
+									for (let x = 0; x < foundAttrs.length; x++) {
+										if (params[4]) {
+											if (foundAttrs[x].get("name").startsWith(params[4])) {
+												arrayVariables[params[2]].push(foundAttrs[x].id)
+											}
+										} else {
+											arrayVariables[params[2]].push(foundAttrs[x].id)
+										}
+									}
+								}
+							} catch (e) { log(e); }
+						}
+
 						if (params[1].toLowerCase() == "selectedtokens") {
 							if (msg.selected) {
 								arrayVariables[params[2]] = [];
@@ -6421,6 +6454,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		} catch (e) {
 			log(e);
 			return [0, 0]
+		}
+	}
+
+	function onChangeCampaignTurnorder(triggerCharID) {
+		var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "change:campaign:turnorder" });
+		if (Array.isArray(ability) && ability.length > 0) {
+			var replacement = ` `;
+			var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+			sendChat("API", metacard);
 		}
 	}
 

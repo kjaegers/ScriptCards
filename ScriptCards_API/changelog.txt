@@ -1,5 +1,10 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.6  - Added --~|array;attributes;charid;(optional 'name' starts with)
+             Returns an array of IDs for attributes on a character. If the last parameter is specified, only attributes with names starting with that value will be returned.
+
+           Storing empty hash tables will now remove the attribute from the storage character
+
 v 2.7.5a - Reverted the "replaceall" for [REPL] since it is useful as a comparitor to not do so.
 
 v 2.7.5  - Updated [REPL] code for runaction to replace all instances of a given [REPLx] string in the action. Previously, only the first appearance of the marker was replaced.
