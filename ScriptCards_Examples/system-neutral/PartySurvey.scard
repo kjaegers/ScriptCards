@@ -1,0 +1,226 @@
+!script {{
+
+  --/|Script  : Party Survey
+  --/|Purpose : Whispers a question to each player, and allows for an array of button-based responses. Once all players have responded, the GM gets a button to
+  --/|          report out the results.
+  --/|Versino : 1.0
+  --/|Requires: ScriptCards 2.7.6+
+
+  --/|================ Begin Settings
+  --&IncludeGMs|0
+  --&SurveyPrefix|SURVEY_
+  --/|================ End Settings
+
+  --#whisper|self
+  --&QB|? --&QB|+{ --&QE|}
+  --&AB|@ --&AB|+{
+  --&TB|& --&TB|+# --&TB|+64 --&TB|+; --&TB|+{
+  --&BED|& --&BED|+# --&BED|+128719;
+  --&CLOCK|& --&CLOCK|+# --&CLOCK|+128336;
+  --&GEAR|& --&GEAR|+# --&GEAR|+x2699;
+  --&SPACE|X X --&SPACE|[&SPACE(1,1)]
+  --&NB|& --&NB|+nbsp --&NB|+;
+  --&obrac|[ --&cbrac|]
+  --&vbar||
+  
+  --&StorageMule|@{ScriptCards_Storage|character_id}
+
+  --?"[&StorageMule(0,1)]" -ne "-"|[
+    -->REPORT_ERROR|You must have a character named ScriptCards_Storage defined in order to use this script. If you have just created such a character, you need to restart your sandbox.  
+    --X|
+  --]|
+
+  --?"[&SC_VERSION_NUMERIC]" -lt 207060|[
+    -->REPORT_ERROR|This script requires ScriptCards 2.7.6 or higher to run. You currently have version [&SC_VERSION_NUMERIC] 
+    --X|
+  --]|
+
+  --#reentrant|PartySurvey
+  --?"[&SendingPlayerIsGM]" -eq "1"|INITIAL_RUN
+  -->REPORT_ERROR|You must be a GM to run this script.
+  --X|   
+
+  --:INITIAL_RUN|
+  --~|system;dropoutputlines;all
+  --#title|Party Survey Menu
+  --#leftsub|
+  --/+|What would you like to do?
+  --/+|[c][rbutton]Execute a Survey::RUN_SURVEY[/rbutton][/c]
+  --/+|[c][rbutton]List Surveys::LIST_SURVEYS[/rbutton][/c]
+  --/+|[c][rbutton]Create Survey::CREATE_SURVEY;[&QB]Survey Name?[&QE][/rbutton][/c]
+  --/X|
+
+  --:LIST_SURVEYS|
+ --~|system;dropoutputlines;all
+  --#title|Party Survey Menu
+  --#whisper|self
+  --~|array;attributes;Surveys;[&StorageMule];SCH_-[&SurveyPrefix]
+  --?[@Surveys(length)] -eq 0|[
+    --+|[c]No surveys have been defined[/c]
+  --]|[
+  --%loop|foreach;Surveys
+    --~|hash;fromobject;LoopHash;attribute;[&loop]
+    --&cur|[:LoopHash("current")]
+    --~name|string;before;,;[&cur]
+    --&name|[&name(after,:)]
+    --&name|[&name(replaceall,",)]
+    --+|[&name] [r][rbutton]Run::RUN_SURVEY;[&loop][/rbutton][rbutton]Edit::EDIT_SURVEY;[&loop][/rbutton][rbutton]X::DELETE_SURVEY;[&loop][/rbutton][/r]
+  --%|
+  --]|
+  --+|[c][rbutton]New Survey::CREATE_SURVEY;[&QB]Survey Name?[&QE][/rbutton][/c]
+  --X|
+
+  --:DELETE_SURVEY|
+    --&surveyHash|[*O:[&reentryval]:attribute:name]
+    --&surveyHash|[&surveyHash(after,SCH_-)]
+    --~|hash;clear;[&surveyHash]
+    --s:|[&surveyHash]
+    --^LIST_SURVEYS|
+  --X|
+
+  --:GET_PLAYER_LIST|IncludeGMs (0 for no, 1 for yes), ArrayName
+  --~|array;fromplayerlist;[%2%]
+  --?[%1%] -eq 1|[
+    --~|array;fromgmplayerlist;_gmplayers
+    --%loop|foreach;_gmplayers
+      --~|array;add;[%2%];[&loop]
+    --%|
+  --]|
+  --X|
+
+  --:CREATE_SURVEY|
+  --&NewSurveyTitle|[&reentryval]
+  --&NewSurveyText|
+  --~|array;define;NewSurveyOptions
+  --:CONTINUE_CREATE|
+  --#title|Create Survey
+  --#leftsub|[&NewSurveyTitle]
+  --+Text|[&NewSurveyText]
+  --+|[c][rbutton]Edit Text::SET_SURVEY_TEXT;[&QB]Survey Text:[&QE][/rbutton][/c]
+  --+|[HR][c][b]Possible Responses[/b][/c]
+  --?[@NewSurveyOptions(length)] -gt 0|[
+    --=loopCount|0
+    --%loop|foreach;NewSurveyOptions
+      --+Response|[&loop][r][rbutton]DEL::DELETE_RESPONSE;[$loopCount][/rbutton][/r]
+      --=loopCount|[$loopCount] + 1
+    --%|
+  --]|[
+    --+|[c]No responses defined[/c]
+  --]|
+  --+|[br][c][rbutton]Add Response::ADD_RESPONSE;[&QB]Response:[&QE][/rbutton][/c]
+  --+|[c][rbutton]Save Survey::SAVE_SURVEY[/rbutton][/c]
+  --X|
+
+  --:SET_SURVEY_TEXT|
+  --&NewSurveyText|[&reentryval]
+  --^CONTINUE_CREATE|
+  --X|
+
+  --:ADD_RESPONSE|
+  --~|array;add;NewSurveyOptions;[&reentryval]
+  --^CONTINUE_CREATE|
+  --X|
+
+  --:DELETE_RESPONSE|
+  --~|array;removeat;NewSurveyOptions;[&reentryval]
+  --^CONTINUE_CREATE|
+  --X|
+
+  --:SAVE_SURVEY|
+  -->SURVEY_TO_HASH|
+  --^INITIAL_RUN|
+  --X|
+
+  --:SURVEY_TO_HASH|
+  --&HashName|[&SurveyPrefix][&NewSurveyTitle(replaceall, ,_)]
+  --h:[&HashName]("name")|[&NewSurveyTitle]
+  --h:[&HashName]("text")|[&NewSurveyText]
+  --h:[&HashName]("responsecount")|[@NewSurveyOptions(maxindex)]
+  --%loop|0;[@NewSurveyOptions(maxindex)]
+    --h:[&HashName]("response-[&loop]")|[@NewSurveyOptions([&loop])]
+  --%|
+  --s:|[&HashName]
+  --^INITIAL_RUN|
+  --X|
+
+  --:EDIT_SURVEY|stored_hash_id
+  --&surveyHash|[*O:[&reentryval]:attribute:name]
+  --&surveyHash|[&surveyHash(after,SCH_-)]
+  --l:|[&surveyHash]
+  --&NewSurveyTitle|[:[&surveyHash]("name")]
+  --&NewSurveyText|[:[&surveyHash]("text")]
+  --&responseCount|[:[&surveyHash]("responsecount")]
+  --~|array;define;NewSurveyOptions
+  --%loop|0;[&responseCount]
+    --~|array;add;NewSurveyOptions;[:[&surveyHash]("response-[&loop]")]
+  --%|
+  --^CONTINUE_CREATE|
+  --X|
+
+  --:RUN_SURVEY|stored_hash_id
+  --&surveyHash|[*O:[&reentryval]:attribute:name]
+  --&surveyHash|[&surveyHash(after,SCH_-)]
+  --l:|[&surveyHash]
+  --&NewSurveyTitle|[:[&surveyHash]("name")]
+  --&NewSurveyText|[:[&surveyHash]("text")]
+  --&responseCount|[:[&surveyHash]("responsecount")]
+  --~|array;define;NewSurveyOptions
+  --%loop|0;[&responseCount]
+    --~|array;add;NewSurveyOptions;[:[&surveyHash]("response-[&loop]")]
+  --%|
+    
+  --~|array;fromplayerlist;PlayerList
+  --&whispertarget|
+  --%player|foreach;PlayerList
+    --&choice[&player]|UNKNOWN
+    --&whispertarget|+[*O:[&player]:player:displayname]
+  --%|
+  --#whisper|[&whispertarget]
+  --#title|Party Survey
+  --+|[&NewSurveyText]
+  --+|[c]Make your choice...[/c]
+  --%loop|0;[&responseCount]
+    --+|[c][rbutton][:[&surveyHash]("response-[&loop]")]::MAKECHOICE;[:[&surveyHash]("response-[&loop]")];[&SendingPlayerID][/rbutton][/c]
+  --%|
+  --*|[rbutton]Stop Accepting Results::SHOWRESULTS;forage;[&SendingPlayerID][/rbutton]
+  --X|
+
+  --:MAKECHOICE|
+  --#whisper|self
+  --&choice|[&reentryval(before,;)]
+  --&pid|[&reentryval(after,;)]
+  --&choice[&player]|[&choice]
+  --+|Your choice has been registered
+  --&alldone|1
+  --%player|foreach;PlayerList
+    --?"[&choice[&player]]" -eq "UNKNOWN"|&alldone;0
+  --%|
+
+  --?[&alldone] -eq 1|[
+    --*|All players have registered choices.
+    --*|[rbutton]Show Results::SHOWRESULTS;forage;[&SendingPlayerID][/rbutton]
+  --]|
+
+  --X|
+
+  --:SHOWRESULTS|
+  --#whisper|gm
+  --%player|foreach:PlayerList
+    --+Player [*O:[&player]:player:displayname]|[&choice[&player]]
+  --%|
+  --X|
+
+  --:SHOW_HASH|hashname
+  --~|array;fromkeys;keys;[%1%]
+  --%keys|foreach;keys
+    --+[&keys]|[:[%1%]("[&keys]")]
+  --%|
+  --<|
+  --X|
+
+  --:REPORT_ERROR|
+  --#whisper|self
+  --+Error|[%1%]
+  --X|
+
+}}
