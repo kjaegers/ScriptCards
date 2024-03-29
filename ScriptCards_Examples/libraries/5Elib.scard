@@ -1,4 +1,4 @@
---/|ScriptCards Library: 5ELib version 0.0.2
+--/|ScriptCards Library: 5ELib version 0.0.2a
 --/|Provides various utility procedures for D&D 5E games
 --/|
 --/| Special Note: This is a "new" library for D&D 5E. The existing "dnd5elib" has been left unchanged to avoid breaking scripts that
@@ -8,6 +8,10 @@
 --/|
 --/| Functions from the original dnd5elib may end up being reimplemented in this library over time (like Lib5E_FIND_RESOURCE and
 --/| Lib5E_CHECK_DAMAGE_MODS) have been already, but they have different names from the old library to prevent a label clash.
+--/|
+--/|
+--/|   Lib5E_CHECK_FOR_LIBRARY|ReturnString
+--/|      Sets the ReturnString value to 1. Can be used to check to ensure the library is loaded
 --/|
 --/|   Lib5E_FIND_CLASS_LEVEL|characterid;class;Return String Var
 --/|      Given a (class) name (ie, wizard, warlock, fighter, etc.) will return (Return String Var) with the class level for the 
@@ -46,6 +50,10 @@
 
 
 --/| ======================== BEGIN LIBRARY CODE
+
+--:Lib5E_CHECK_FOR_LIBRARY|ReturnString
+--&[%1%]|1
+--<|
 
 --:Lib5E_CHECK_DAMAGE_MODS|characterid;damageType;damageVariableName
 --&[%2%]|

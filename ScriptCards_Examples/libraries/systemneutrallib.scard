@@ -1,4 +1,4 @@
---/|ScriptCards Library: systemneutrallib (snlib) version 0.0.7
+--/|ScriptCards Library: systemneutrallib (snlib) version 0.0.7a
 --/|Provides various utility procedures for general Roll20 stuff
 
 --/|This library consolidates functions from a number of the sample scripts on the ScriptCards github into a single library
@@ -8,6 +8,12 @@
 
 --/|Functions Included:
 
+--/| ###################################################################################################
+--/| Library related functions
+--/| ###################################################################################################
+--/|   Lib5E_CHECK_FOR_LIBRARY|ReturnString
+--/|      Sets the ReturnString value to 1. Can be used to check to ensure the library is loaded
+--/|
 --/| ###################################################################################################
 --/| Functions related to the BUMP Api/Mod Script
 --/| ###################################################################################################
@@ -197,6 +203,10 @@
 --/|          blank by leaving nothing between the semicolons. The button will use (sheetid) as character on which the abilities are found
 --/|          and abilityfield as the field to use for the ability name.
 --/|
+
+--:LibSN_CHECK_FOR_LIBRARY|ReturnString
+--&[%1%]|1
+--<|
 
 --:LibSN_FIND_BUMP_MASTER_TOKEN|TokenID of Slave Token;Return var
   --~work|string;replaceall;",";"&&&";[*G:Bump:mirrored]
@@ -531,7 +541,7 @@
   --=_LibRows|[*R:[%1%]:[%2%]:rowcount]
   --%loop|1;[$_LibRows]
     --?"[%4%]" -eq "" -or "[*R:[%1%]:[%2%]:[=[&loop]-1]:[%4%]]" -ninc "[%5%]"|[
-      --&_LibBuild|+[rbutton][*R:[%1%]:[%2%]:[=[&loop]-1]:[%3%]]::[%6%];[*R:[%1%]:[%2%]:[=[&loop]-1]:[%7%]][/rbutton]
+      --&_LibBuild|+[rbutton][*R:[%3%]]::[%6%];[*R:[%7%]][/rbutton]
     --]|
   --%|
   --&[%8%]|[&_LibBuild]
@@ -543,7 +553,7 @@
   --=_LibRows|[*R:[%1%]:[%2%]:rowcount]
   --%loop|1;[$_LibRows]
     --?"[%4%]" -eq "" -or "[*R:[%1%]:[%2%]:[=[&loop]-1]:[%4%]]" -inc "[%5%]"|[
-      --&[%8%](9999)|[rbutton][*R:[%1%]:[%2%]:[=[&loop]-1]:[%3%]]::[%6%];[*R:[%1%]:[%2%]:[=[&loop]-1]:[%7%]][/rbutton]
+      --&[%8%](9999)|[rbutton][*R:[%3%]]::[%6%];[*R:[%7%]][/rbutton]
     --]|
   --%|
 --<|
@@ -553,9 +563,9 @@
   --=_LibRows|[*R:[%2%]:[%3%]:rowcount]
   --%loop|1;[$_LibRows]
     --?"[%5%]" -eq "" -or "[*R:[%2%]:[%3%]:[=[&loop]-1]:[%5%]]" -ninc "[%6%]"|[
-      --&_LibAbilName|[*R:[%2%]:[%3%]:[=[&loop]-1]:[%7%]]
+      --&_LibAbilName|[*R:[%7%]]
       --&_LibAbilName|[&_LibAbilName(replaceall, ,-)]
-      --&_LibBuild|+[button][*R:[%2%]:[%3%]:[=[&loop]-1]:[%4%]]::~[%1%]|[&_LibAbilName][/button]
+      --&_LibBuild|+[button][*R:[%4%]]::~[%1%]|[&_LibAbilName][/button]
     --]|
   --%|
   --&[%8%]|[&_LibBuild]
@@ -567,9 +577,9 @@
   --=_LibRows|[*R:[%2%]:[%3%]:rowcount]
   --%loop|1;[$_LibRows]
     --?"[%5%]" -eq "" -or "[*R:[%2%]:[%3%]:[=[&loop]-1]:[%5%]]" -ninc "[%6%]"|[
-      --&_LibAbilName|[*R:[%2%]:[%3%]:[=[&loop]-1]:[%7%]]
+      --&_LibAbilName|[*R:[%7%]]
       --&_LibAbilName|[&_LibAbilName(replaceall, ,-)]
-      --&[%8%](9999)|[button][*R:[%2%]:[%3%]:[=[&loop]-1]:[%4%]]::~[%1%]|[&_LibAbilName][/button]
+      --&[%8%](9999)|[button][*R:[%4%]]::~[%1%]|[&_LibAbilName][/button]
     --]|
   --%|
 --<|
