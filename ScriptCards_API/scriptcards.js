@@ -27,7 +27,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.6";
+	const APIVERSION = "2.7.7";
 	const NUMERIC_VERSION = "207060"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
@@ -536,6 +536,22 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						sendChat("API", metacard);
 					}
 				})
+				setTimeout(function () {
+					if ('undefined' !== typeof TokenMod && TokenMod.ObserveTokenChange) {
+						TokenMod.ObserveTokenChange(function (obj, prev) {
+							var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:graphic` });
+							if (Array.isArray(ability) && ability.length > 0) {
+								var replacement = "";
+								for (const property in prev) {
+									replacement += ` --&GraphicOld${property}|${prev[property]} --&GraphicNew${property}|${obj.get(property)}`
+								}
+								var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+								sendChat("API", metacard);
+							}
+						});
+						log('ScriptCards: Triggers character exists, so registered with TokenMod to observe token changes.');
+					}
+				}, 1);
 			} else {
 				log(`ScriptCards Triggers could not find character named "ScriptCards_Triggers"`);
 			}
@@ -935,7 +951,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					do {
 						while (lineCounter < cardLines.length) {
 
-							let thisTag = replaceVariableContent(getLineTag(cardLines[lineCounter], x, true), cardParameters, false);
+							let thisTag = replaceVariableContent(getLineTag(cardLines[lineCounter], lineCounter, true), cardParameters, false);
 							let thisContent = replaceVariableContent(getLineContent(cardLines[lineCounter]), cardParameters, (thisTag.charAt(0) == "+" || thisTag.charAt(0) == "*" || thisTag.charAt(0) == "&"));
 
 							if (cardParameters.debug == 1) {
@@ -4790,6 +4806,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 										break;
 									case "getraw":
+									case "gettimestamp":
 										stringVariables[variableName] = d.getTime();
 										break;
 								}
