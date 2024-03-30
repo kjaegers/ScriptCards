@@ -27,7 +27,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.7";
+	const APIVERSION = "2.7.7a";
 	const NUMERIC_VERSION = "207060"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
@@ -537,19 +537,22 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 				})
 				setTimeout(function () {
-					if ('undefined' !== typeof TokenMod && TokenMod.ObserveTokenChange) {
-						TokenMod.ObserveTokenChange(function (obj, prev) {
-							var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:graphic` });
-							if (Array.isArray(ability) && ability.length > 0) {
-								var replacement = "";
-								for (const property in prev) {
-									replacement += ` --&GraphicOld${property}|${prev[property]} --&GraphicNew${property}|${obj.get(property)}`
+					var attrib = findObjs({ type: "attribute", _characterid: triggerCharID, name: `listen_to_tokenmod` });
+					if (attrib && attrib[0] && attrib[0].get("current") == "1") {
+						if ('undefined' !== typeof TokenMod && TokenMod.ObserveTokenChange) {
+							TokenMod.ObserveTokenChange(function (obj, prev) {
+								var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:graphic` });
+								if (Array.isArray(ability) && ability.length > 0) {
+									var replacement = "";
+									for (const property in prev) {
+										replacement += ` --&GraphicOld${property}|${prev[property]} --&GraphicNew${property}|${obj.get(property)}`
+									}
+									var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+									sendChat("API", metacard);
 								}
-								var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-								sendChat("API", metacard);
-							}
-						});
-						log('ScriptCards: Triggers character exists, so registered with TokenMod to observe token changes.');
+							});
+							log('ScriptCards: Triggers character exists, so registered with TokenMod to observe token changes.');
+						}
 					}
 				}, 1);
 			} else {

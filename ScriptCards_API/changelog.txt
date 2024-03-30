@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.7a - The listen to tokenmod behavior defaults to off to prevent issues with existing code. You can set an attribute on the ScriptCards_Triggers
+           character called 'listen_to_tokenmod' and make its current value 1 to enable this behavior
+
 v 2.7.7  - If you have a ScriptCards_Triggers character defined when your sandbox starts, ScriptCards will register to observe changes from Token-Mod and
            run the change:graphic trigger if it exists when tokenmod announces a change.
 
