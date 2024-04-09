@@ -1,4 +1,4 @@
---/|ScriptCards Library: systemneutrallib (snlib) version 0.0.7a
+--/|ScriptCards Library: systemneutrallib (snlib) version 0.0.8
 --/|Provides various utility procedures for general Roll20 stuff
 
 --/|This library consolidates functions from a number of the sample scripts on the ScriptCards github into a single library
@@ -148,14 +148,14 @@
 --/| General/Uncategorized functions
 --/| ###################################################################################################
 --/|
---/|  LibSN_APPLY_DAMAGE_OR_HEALING_TO_SELECTED|bar#;amount;display (0 or 1)
+--/|  LibSN_APPLY_DAMAGE_OR_HEALING_TO_SELECTED|bar#;amount;display (0 or 1);Allow Overhealing (0 or 1)
 --/|          Applies (amount) damage [negative number] or healing [positie number] to all selected tokens (bar#) token bar.
 --/|          If (display) is specified as 1, an output line will be genereated for each token damaged/healed.
 --/|
---/|  LibSN_APPLY_DAMAGE_OR_HEALING|tokenid;bar#;amount;display (0 or 1)
+--/|  LibSN_APPLY_DAMAGE_OR_HEALING|tokenid;bar#;amount;display (0 or 1);Allow Overhealing (0 or 1)
 --/|          Applies damage (negative number) or healing (positie number) to (tokenid)'s (bar#) token bar.
 --/|
---/|  LibSN_APPLY_DAMAGE_OR_HEALING_TO_ARRAY|ArrayName;bar#;amount;display (0 or 1)
+--/|  LibSN_APPLY_DAMAGE_OR_HEALING_TO_ARRAY|ArrayName;bar#;amount;display (0 or 1);Allow Overhealing (0 or 1)
 --/|          Applies (amount) damage [negative number] or healing [positie number] to all tokens (bar#) token bar with ids
 --/|          contained as elements in (ArrayName)
 --/|          If (display) is specified as 1, an output line will be genereated for each token damaged/healed.
@@ -353,31 +353,31 @@
   --!t:[%1%]|statusmarkers:|
 --<|
 
---:LibSN_GET_CURRENT_TURN_INFO|TokenID, InitCounter, CustomName, Formula, page, name
+--:LibSN_GET_CURRENT_TURN_INFO|TokenID;InitCounter;CustomName;Formula;page;name
   --?"X[$_toCount.Raw]" -eq "X"|>LibSN__to_PARSE_TURN_ORDER
   --?[$_toCount] -eq 0|LibSN__to_CLEAR_AND_RETURN
   -->LibSN__to_GET_TURN_INFO|[%1%];[%2%];[%3%];[%4%];[%5%];[%6%];"[&_to1(replaceall,;,!!!)]"
 --<|
 
---:LibSN_GET_NEXT_TURN_INFO|TokenID, InitCounter, CustomName, Formula, page, name
+--:LibSN_GET_NEXT_TURN_INFO|TokenID;InitCounter;CustomName;Formula;page;name
   --?"X[$_toCount.Raw]" -eq "X"|>LibSN__to_PARSE_TURN_ORDER
   --?[$_toCount] -lt 2|LibSN__to_CLEAR_AND_RETURN
   -->LibSN__to_GET_TURN_INFO|[%1%];[%2%];[%3%];[%4%];[%5%];[%6%];[&_to2(replaceall,;,!!!)]
 --<|
 
---:LibSN_GET_LAST_TURN_INFO|TokenID, InitCounter, CustomName, Formula, page, name
+--:LibSN_GET_LAST_TURN_INFO|TokenID;InitCounter;CustomName;Formula;page;name
   --?"X[$_toCount.Raw]" -eq "X"|>LibSN__to_PARSE_TURN_ORDER
   --?[$_toCount] -lt 1|LibSN__to_CLEAR_AND_RETURN
   -->LibSN__to_GET_TURN_INFO|[%1%];[%2%];[%3%];[%4%];[%5%];[%6%];[&_to[$_toCount.Raw](replaceall,;,!!!)]
 --<|
 
---:LibSN_GET_NUMBERED_TURN_INFO|TokenID, InitCounter, CustomName, Formula, page, name, turnnumber
+--:LibSN_GET_NUMBERED_TURN_INFO|TokenID;InitCounter;CustomName;Formula;page;name;turnnumber
   --?"X[$_toCount.Raw]" -eq "X"|>LibSN__to_PARSE_TURN_ORDER
   --?[$_toCount] -lt [%7%]|LibSN__to_CLEAR_AND_RETURN
   -->LibSN__to_GET_TURN_INFO|[%1%];[%2%];[%3%];[%4%];[%5%];[%6%];[&_to[%7%](replaceall,;,!!!)]
 --<|
 
---:LibSN_GET_TOKEN_TURN_INFO|TokenID, InitCounter, CustomName, Formula, page
+--:LibSN_GET_TOKEN_TURN_INFO|TokenID;InitCounter;CustomName;Formula;page
   --?"X[$_toCount.Raw]" -eq "X"|>LibSN__to_PARSE_TURN_ORDER
   --&_toID| --&_toPR| --&_toCustom| --&_toFormula| --&_toPageID|
   --%_to_outer_loop|1;[$_toCount]
@@ -436,22 +436,22 @@
   --?[&[%1%]] -ne -1|&[%6%];[*[&[%1%]]:t-name]|&[%6%];[&[%3%]]
 --<|
 
---:LibSN_APPLY_DAMAGE_OR_HEALING_TO_SELECTED|bar#;amount;display (0 or 1)
-  -->LibSN_APPLY_DAMAGE_OR_HEALING_TO_ARRAY|SC_SelectedTokens;[%1%];[%2%];[%3%]
+--:LibSN_APPLY_DAMAGE_OR_HEALING_TO_SELECTED|bar#;amount;display (0 or 1);allow overheal (0 or 1)
+  -->LibSN_APPLY_DAMAGE_OR_HEALING_TO_ARRAY|SC_SelectedTokens;[%1%];[%2%];[%3%];[%4%]
 --<|
 
---:LibSN_APPLY_DAMAGE_OR_HEALING|tokenid;bar#;amount;display (0 or 1)
+--:LibSN_APPLY_DAMAGE_OR_HEALING|tokenid;bar#;amount;display (0 or 1);allow overheal (0 or 1)
   --=_applyValue|[%3%]
   --=_newValue|[*[%1%]:t-bar[%2%]_value] + [$_applyValue]
   --?[$_newValue] -lt 0|=_newValue;0
-  --?[$_newValue] -gt [*[%1%]:t-bar[%2%]_max]|=_newValue;[*[%1%]:t-bar[%2%]_max]
+  --?"X[%5%]" -ne "X1" -and [$_newValue] -gt [*[%1%]:t-bar[%2%]_max]|=_newValue;[*[%1%]:t-bar[%2%]_max]
   --?"X[%4%]" -eq "X1"|+Applying;[%3%] HP to [*[%1%]:t-name]
   --!t:[%1%]|bar[%2%]_value:[$_newValue.Raw]
 --<|
 
---:LibSN_APPLY_DAMAGE_OR_HEALING_TO_ARRAY|ArrayName;bar#;amount;display (0 or 1)
+--:LibSN_APPLY_DAMAGE_OR_HEALING_TO_ARRAY|ArrayName;bar#;amount;display (0 or 1);allow overheal (0 or 1)
   --%_thisToken|foreach;[%1%]
-    -->LibSN_APPLY_DAMAGE_OR_HEALING|[&_thisToken];[%2%];[%3%];[%4%]
+    -->LibSN_APPLY_DAMAGE_OR_HEALING|[&_thisToken];[%2%];[%3%];[%4%];[%5%]
   --%|
 --<|
 

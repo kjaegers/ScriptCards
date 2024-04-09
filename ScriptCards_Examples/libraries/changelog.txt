@@ -1,3 +1,7 @@
+System Neutral Library - 0.0.8
+- Added "allow overheal" parameter to apply damage/healing functions
+- Changed the commas to semicolons for the descriptions of turn order functions
+
 5ELib 0.0.2a
 - Added LibSN_CHECK_FOR_LIBRARY|ReturnString which will just return a 1 to ReturnString
 
