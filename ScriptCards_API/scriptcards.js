@@ -1038,7 +1038,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									case "=": handleRollVariableSetCommand(thisTag, thisContent, cardParameters); break;
 									case "&": setStringOrArrayElement(thisTag.substring(1), thisContent, cardParameters); break;
 									case "\\": handleConsoleLogs(thisTag, thisContent); break;
-									case "<": if (returnStack.length > 0) { callParamList = parameterStack.pop(); lineCounter = returnStack.pop(); } break;
+									case "<": if (returnStack.length > 0) {
+										arrayVariables["args"] = [];
+										callParamList = parameterStack.pop();
+										if (callParamList && callParamList.constructor === Array) {
+											callParamList.forEach(function (item) {
+												arrayVariables["args"].push(item.toString().trim());
+											});
+										}
+										lineCounter = returnStack.pop();
+									} break;
 									case ">": handleGosubCommands(thisTag, thisContent, cardParameters, cardLines); break;
 									case "]": handleBlockEndCommand(thisTag, thisContent, cardLines); break;
 									case "?": handleConditionalBlock(thisTag, thisContent, cardParameters, cardLines); break;
@@ -4461,9 +4470,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			parameterStack.push(callParamList);
 			let paramList = CSVtoArray(thisContent.trim());
 			callParamList = {};
+			arrayVariables["args"] = []
 			let paramCount = 1;
+
 			if (paramList) {
 				paramList.forEach(function (item) {
+					arrayVariables["args"].push(item.toString().trim());
 					callParamList[paramCount] = item.toString().trim();
 					paramCount++;
 				});
@@ -5518,6 +5530,28 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 
+						if (params[1].toLowerCase() == "fromrollvar") {
+							// param2 = array, param3 = rollvar, param3 = rolled/kept/dropped
+							try {
+								arrayVariables[params[2]] = [];
+								if (rollVariables[params[3]]) {
+									switch (params[3].toLowerCase()) {
+										case "rolled":
+											arrayVariables[params[2]] = [...rollVariables[params[3]].RolledDice];
+											break;
+										case "kept":
+											arrayVariables[params[2]] = [...rollVariables[params[3]].KeptDice];
+											break;
+										case "dropped":
+											arrayVariables[params[2]] = [...rollVariables[params[3]].DroppedDice];
+											break;
+									}
+								}
+							} catch (e) {
+								log(`ScriptCards: array fromrolleddice error: ${e}`)
+							}
+						}
+
 						if (params[1].toLowerCase() == "fromtable") {
 							arrayVariables[params[2]] = [];
 							var theTable = findObjs({ type: "rollabletable", name: params[3] })[0];
@@ -6171,8 +6205,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 						break;
 					case "return":
+						arrayVariables["args"] = []
 						if (returnStack.length > 0) {
 							callParamList = parameterStack.pop();
+							if (callParamList && callParamList.constructor === Array) {
+								callParamList.forEach(function (item) {
+									arrayVariables["args"].push(item.toString().trim());
+								});
+							}
 							lineCounter = returnStack.pop();
 						}
 						break;
@@ -6206,9 +6246,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						var paramList = CSVtoArray(jumpDest.trim());
 						callParamList = {};
 						var paramCount = 0;
+						arrayVariables["args"] = []
 						if (paramList) {
 							paramList.forEach(function (item) {
 								callParamList[paramCount] = item.toString().trim();
+								arrayVariables["args"].push(item.toString().trim());
 								paramCount++;
 							});
 						}
@@ -6330,9 +6372,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									}
 									break;
 								case "return":
+									arrayVariables["args"] = []
 									if (returnStack.length > 0) {
 										callParamList = parameterStack.pop();
 										lineCounter = returnStack.pop();
+										if (callParamList && callParamList.constructor === Array) {
+											callParamList.forEach(function (item) {
+												arrayVariables["args"].push(item.toString().trim());
+											});
+										}
 									}
 									break;
 								case "directoutput":
@@ -6365,9 +6413,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									var paramList = CSVtoArray(jumpDest.trim());
 									callParamList = {};
 									var paramCount = 0;
+									arrayVariables["args"] = []
 									if (paramList) {
 										paramList.forEach(function (item) {
 											callParamList[paramCount] = item.toString().trim();
+											arrayVariables["args"].push(item.toString().trim());
 											paramCount++;
 										});
 									}

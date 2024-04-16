@@ -1,19 +1,34 @@
 ScriptCards Roll20 API Script Changelog
 
-v 2.7.7b - Fix sandbox crash error in destroy:graphic trigger and added error handling to destroy:page and destroy:door code as well.
+v 2.7.8:
 
-v 2.7.7a - The listen to tokenmod behavior defaults to off to prevent issues with existing code. You can set an attribute on the ScriptCards_Triggers
-           character called 'listen_to_tokenmod' and make its current value 1 to enable this behavior
+- Changing changelog format to remove hard breaks and let word-wrapping determine line length. I've updated the log entries back to 2.7.6, but won't be going back further than that on revisions.
 
-v 2.7.7  - If you have a ScriptCards_Triggers character defined when your sandbox starts, ScriptCards will register to observe changes from Token-Mod and
-           run the change:graphic trigger if it exists when tokenmod announces a change.
+- Added array fromrollvar which will convert the array items in a roll variable into a standalone array. Syntax:
+    --~|array;fromrolleddice;ArrayName;RollVariableName;type
+  where type is "rolled", "kept", or "dropped". NOTE that the roll variable name is just the name of the variable and not a [$rollvar] reference.
 
-           Fixed "Line undefined is missing a | character" error message to now actually show the line number
+- Added built-in array variabls "args" which will be set to the parameters (arguments) passed to a GOSUB command. This means that you can use [@args(0)] in place of [%1%], etc. Note that arrays are zero-based. [@args(length)] and [@args(maxindex)] can be used to retrieve the number of parameters passed. The older [%x%] references still work, but you can use this to call a function with a variable number of parameters, or use a foreach loop for them, etc.
 
-v 2.7.6  - Added --~|array;attributes;ArrayName;charid;(optional 'name' starts with)
-             Returns an array of IDs for attributes on a character. If the last parameter is specified, only attributes with names starting with that value will be returned.
+v 2.7.7b:
 
-           Storing empty hash tables will now remove the attribute from the storage character
+- Fix sandbox crash error in destroy:graphic trigger and added error handling to destroy:page and destroy:door code as well.
+
+v 2.7.7a:
+
+- The listen to tokenmod behavior defaults to off to prevent issues with existing code. You can set an attribute on the ScriptCards_Triggers character called 'listen_to_tokenmod' and make its current value 1 to enable this behavior
+
+v 2.7.7:
+
+- If you have a ScriptCards_Triggers character defined when your sandbox starts, ScriptCards will register to observe changes from Token-Mod and run the change:graphic trigger if it exists when tokenmod announces a change.
+
+- Fixed "Line undefined is missing a | character" error message to now actually show the line number
+
+v 2.7.6:
+ - Added --~|array;attributes;ArrayName;charid;(optional 'name' starts with)
+   Returns an array of IDs for attributes on a character. If the last parameter is specified, only attributes with names starting with that value will be returned.
+
+ - Storing empty hash tables will now remove the attribute from the storage character
 
 v 2.7.5a - Reverted the "replaceall" for [REPL] since it is useful as a comparitor to not do so.
 
