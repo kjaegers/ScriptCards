@@ -5535,7 +5535,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							try {
 								arrayVariables[params[2]] = [];
 								if (rollVariables[params[3]]) {
-									switch (params[3].toLowerCase()) {
+									switch (params[4].toLowerCase()) {
 										case "rolled":
 											arrayVariables[params[2]] = [...rollVariables[params[3]].RolledDice];
 											break;
