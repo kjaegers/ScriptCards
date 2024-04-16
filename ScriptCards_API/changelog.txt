@@ -5,7 +5,7 @@ v 2.7.8:
 - Changing changelog format to remove hard breaks and let word-wrapping determine line length. I've updated the log entries back to 2.7.6, but won't be going back further than that on revisions.
 
 - Added array fromrollvar which will convert the array items in a roll variable into a standalone array. Syntax:
-    --~|array;fromrolleddice;ArrayName;RollVariableName;type
+    --~|array;fromrollvar;ArrayName;RollVariableName;type
   where type is "rolled", "kept", or "dropped". NOTE that the roll variable name is just the name of the variable and not a [$rollvar] reference.
 
 - Added built-in array variabls "args" which will be set to the parameters (arguments) passed to a GOSUB command. This means that you can use [@args(0)] in place of [%1%], etc. Note that arrays are zero-based. [@args(length)] and [@args(maxindex)] can be used to retrieve the number of parameters passed. The older [%x%] references still work, but you can use this to call a function with a variable number of parameters, or use a foreach loop for them, etc.
