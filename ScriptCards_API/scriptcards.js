@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.7b";
-	const NUMERIC_VERSION = "207060"
+	const APIVERSION = "2.7.8a";
+	const NUMERIC_VERSION = "207081"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1041,10 +1041,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									case "<": if (returnStack.length > 0) {
 										arrayVariables["args"] = [];
 										callParamList = parameterStack.pop();
-										if (callParamList && callParamList.constructor === Array) {
-											callParamList.forEach(function (item) {
-												arrayVariables["args"].push(item.toString().trim());
-											});
+											if (callParamList) {
+											for (const [key, value] of Object.entries(callParamList)) {
+												arrayVariables["args"].push(value.toString().trim());
+											}
 										}
 										lineCounter = returnStack.pop();
 									} break;
@@ -6207,11 +6207,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					case "return":
 						arrayVariables["args"] = []
 						if (returnStack.length > 0) {
+							arrayVariables["args"] = [];
 							callParamList = parameterStack.pop();
-							if (callParamList && callParamList.constructor === Array) {
-								callParamList.forEach(function (item) {
-									arrayVariables["args"].push(item.toString().trim());
-								});
+								if (callParamList) {
+								for (const [key, value] of Object.entries(callParamList)) {
+									arrayVariables["args"].push(value.toString().trim());
+								}
 							}
 							lineCounter = returnStack.pop();
 						}
@@ -6375,12 +6376,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									arrayVariables["args"] = []
 									if (returnStack.length > 0) {
 										callParamList = parameterStack.pop();
-										lineCounter = returnStack.pop();
-										if (callParamList && callParamList.constructor === Array) {
-											callParamList.forEach(function (item) {
-												arrayVariables["args"].push(item.toString().trim());
-											});
+											if (callParamList) {
+											for (const [key, value] of Object.entries(callParamList)) {
+												arrayVariables["args"].push(value.toString().trim());
+											}
 										}
+										lineCounter = returnStack.pop();
 									}
 									break;
 								case "directoutput":
