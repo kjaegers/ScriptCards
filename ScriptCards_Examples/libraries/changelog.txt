@@ -1,3 +1,6 @@
+System Neutral Library - 0.0.9
+- Added "allow negative hp" parameter to apply damage/healing functions
+
 System Neutral Library - 0.0.8
 - Added "allow overheal" parameter to apply damage/healing functions
 - Changed the commas to semicolons for the descriptions of turn order functions
