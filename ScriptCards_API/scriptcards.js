@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.8a";
-	const NUMERIC_VERSION = "207081"
+	const APIVERSION = "2.7.9";
+	const NUMERIC_VERSION = "207090"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -614,7 +614,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		// !sc-reentrant - resume execution of a card at a particular label
 		on('chat:message', function (msg) {
 			if (msg.type === "api") {
-				var apiCmdText = msg.content.toLowerCase();
+				var apiCmdText = msg.content.toLowerCase().trim();
 				var processThisAPI = false;
 				var isResume = false;
 				var isReentrant = false;
@@ -1041,7 +1041,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									case "<": if (returnStack.length > 0) {
 										arrayVariables["args"] = [];
 										callParamList = parameterStack.pop();
-											if (callParamList) {
+										if (callParamList) {
 											for (const [key, value] of Object.entries(callParamList)) {
 												arrayVariables["args"].push(value.toString().trim());
 											}
@@ -3634,6 +3634,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
+	/*
 	function loadHashTable(charid, prefix, varname) {
 		try {
 			let charobj = getObj("character", charid)
@@ -3647,35 +3648,62 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			log(`Unable to load ${varname} on ${charid}, error ${e} `)
 		}
 	}
+	*/
+
+	function loadHashTable(characterId, prefix, variableName) {
+		try {
+			let characterObject = getObj("character", characterId)
+			if (characterObject) {
+				let attribute = findObjs({ type: "attribute", characterid: characterId, name: `SCH_${prefix}-${variableName}` })[0];
+				if (attribute) {
+					hashTables[variableName] = JSON.parse(attribute.get("current"));
+				} else {
+					log(`Attribute not found for ${variableName} on ${characterId}`)
+				}
+			} else {
+				log(`Character not found for id ${characterId}`)
+			}
+		} catch (error) {
+			log(`Unable to load ${variableName} on ${characterId}, error ${error} `)
+		}
+	}
 
 	function storeSetting(charid, prefix, varname, cardParameters) {
-		try {
-			let testObj = findObjs({ type: "attribute", characterid: charid, name: `SCT_${prefix}-${varname}` })[0]
-			if (testObj) {
-				testObj.set("current", cardParameters[varname])
-			} else {
-				createObj("attribute", {
-					name: `SCT_${prefix}-${varname}`,
-					current: cardParameters[varname],
-					characterid: charid
-				})
+		if (cardParameters[varName] !== undefined) {
+			try {
+				let testObj = findObjs({ type: "attribute", characterid: charid, name: `SCT_${prefix}-${varname}` })[0]
+				if (testObj) {
+					testObj.set("current", cardParameters[varname])
+				} else {
+					createObj("attribute", {
+						name: `SCT_${prefix}-${varname}`,
+						current: cardParameters[varname],
+						characterid: charid
+					})
+				}
+			} catch (e) {
+				log(`Unable to store Setting ${varname} on ${charid}, error ${e} `)
 			}
-		} catch (e) {
-			log(`Unable to store Setting ${varname} on ${charid}, error ${e} `)
+		} else {
+			log(`Attempted to store ${varname} setting, which does not exist`)
 		}
 	}
 
 	function loadSetting(charid, prefix, varname, cardParameters) {
-		try {
-			let charobj = getObj("character", charid)
-			if (charobj) {
-				let attr = findObjs({ type: "attribute", characterid: charid, name: `SCT_${prefix}-${varname}` })[0];
-				if (attr) {
-					cardParameters[varname] = attr.get("current");
+		if (cardParameters[varName] !== undefined) {
+			try {
+				let charobj = getObj("character", charid)
+				if (charobj) {
+					let attr = findObjs({ type: "attribute", characterid: charid, name: `SCT_${prefix}-${varname}` })[0];
+					if (attr) {
+						cardParameters[varname] = attr.get("current");
+					}
 				}
+			} catch (e) {
+				log(`Unable to load ${varname} on ${charid}, error ${e} `)
 			}
-		} catch (e) {
-			log(`Unable to load ${varname} on ${charid}, error ${e} `)
+		} else {
+			log(`Attempted to load ${varname} setting, which does not exist`)
 		}
 	}
 
@@ -4013,6 +4041,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									break;
 
 								case "#": {
+									let returnVarName = thisTag.substring(4);
 									let settings = thisContent.split(cardParameters.parameterdelimiter);
 									if (returnVarName && settings[0]) {
 										let showPlayers = false;
@@ -4021,15 +4050,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 										var newTable = createObj("rollabletable", { name: settings[0], showplayers: showPlayers })
 										if (newTable) {
-											stringVariables[thisTag.substring(4)] = newTable.id
+											stringVariables[returnVarName] = newTable.id
 										} else {
-											stringVariables[thisTag.substring(4)] = "OBJECT_CREATION_ERROR";
+											stringVariables[returnVarName] = "OBJECT_CREATION_ERROR";
 										}
 									}
 								}
 									break;
 
 								case "e": {
+									let returnVarName = thisTag.substring(4);
 									let settings = thisContent.split(cardParameters.parameterdelimiter);
 									if (returnVarName && settings[0] && settings[1]) {
 										let weight = 1;
@@ -4042,9 +4072,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 										var newTableEntry = createObj("tableitem", { _rollabletableid: settings[0], name: settings[1], weight: weight, avatar: avatar })
 										if (newTableEntry) {
-											stringVariables[thisTag.substring(4)] = newTableEntry.id
+											stringVariables[returnVarName] = newTableEntry.id
 										} else {
-											stringVariables[thisTag.substring(4)] = "OBJECT_CREATION_ERROR";
+											stringVariables[returnVarName] = "OBJECT_CREATION_ERROR";
 										}
 									}
 								}
@@ -6209,7 +6239,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						if (returnStack.length > 0) {
 							arrayVariables["args"] = [];
 							callParamList = parameterStack.pop();
-								if (callParamList) {
+							if (callParamList) {
 								for (const [key, value] of Object.entries(callParamList)) {
 									arrayVariables["args"].push(value.toString().trim());
 								}
@@ -6376,7 +6406,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									arrayVariables["args"] = []
 									if (returnStack.length > 0) {
 										callParamList = parameterStack.pop();
-											if (callParamList) {
+										if (callParamList) {
 											for (const [key, value] of Object.entries(callParamList)) {
 												arrayVariables["args"].push(value.toString().trim());
 											}
@@ -6509,6 +6539,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		log(`Executed script lines: ${executionCounter}`)
 	}
 
+	/*
 	const getNotes = function (prop, obj) {
 		return new Promise((resolve, reject) => {
 			obj.get(prop, (p) => {
@@ -6516,6 +6547,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			});
 		});
 	};
+	*/
 
 	return {
 		ObserveTokenChange: observeTokenChange

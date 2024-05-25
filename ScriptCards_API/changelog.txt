@@ -1,5 +1,10 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.9:
+
+- Bug fix for table and table entry creation using --!o# and --!oe
+- Trim the input text to account for scripts sent with leading spaces before the !script text
+
 v 2.7.8:
 
 - Changing changelog format to remove hard breaks and let word-wrapping determine line length. I've updated the log entries back to 2.7.6, but won't be going back further than that on revisions.
