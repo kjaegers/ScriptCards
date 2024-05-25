@@ -17,7 +17,7 @@
   --=_LibEffect|1d20
   --=_LibIndex|[$_LibEffect]-1
   --~|array;define;_LibFumbles;Major Catastrophic Failure;Catastrophic Failure;Failure!;Forgotten;Forgotten;Forgotten;Weakend and Dampened;Weakend and Dampened;Weakend and Dampened;Dazed and Confused;Dazed and Configuration;Dazed and Confused;Grasping;Grasping;Grasping;Grasping;Grasping;Clinging;Clinging;Clinging
-  --+Spell Fumble Roll|[$_libEffect] - [@_LibFumbles([$_LibIndex.Raw])]
+  --+Spell Fumble Roll|[$_LibEffect] - [@_LibFumbles([$_LibIndex.Raw])]
   -->_CritFumbleDesc[@_LibFumbles([$_LibIndex.Raw])]|
   --<|
 --]|
@@ -27,7 +27,7 @@
   --=_LibEffect|1d20-1
   --=_LibIndex|[$_LibEffect]-1
   --~|array;define;_LibCrits;Charged!;Charged!;Charged!;Charged!;Arcane Adeptness!;Arcane Adeptness!;Arcane Adeptness!;Arcane Adeptness!;Magnified!;Magnified!;Magnified!;Magnified!;Magnified!;Advanced Arcana!;Advanced Arcana!;Advanced Arcana!;Advanced Arcana!;Arcane Mastery!;Advanced Arcane Mastery!;Absolute Arcane Mastery!
-  --+Spell Crit Roll |[$_liEffect] - [@_LibCrits([$_LibIndex.Raw])]
+  --+Spell Crit Roll |[$_LibEffect] - [@_LibCrits([$_LibIndex.Raw])]
   -->_CritFumbleDesc[@_LibCrits([$_LibIndex.Raw])]|
   --<|
 --]|
