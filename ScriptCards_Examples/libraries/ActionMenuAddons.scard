@@ -17,7 +17,7 @@
   --=_LibEffect|1d20
   --=_LibIndex|[$_LibEffect]-1
   --~|array;define;_LibFumbles;Major Catastrophic Failure;Catastrophic Failure;Failure!;Forgotten;Forgotten;Forgotten;Weakend and Dampened;Weakend and Dampened;Weakend and Dampened;Dazed and Confused;Dazed and Configuration;Dazed and Confused;Grasping;Grasping;Grasping;Grasping;Grasping;Clinging;Clinging;Clinging
-  --+Spell Check|[$_libEffect] - [@_LibFumbles([$_LibIndex.Raw])]
+  --+Spell Fumble Roll|[$_libEffect] - [@_LibFumbles([$_LibIndex.Raw])]
   -->_CritFumbleDesc[@_LibFumbles([$_LibIndex.Raw])]|
   --<|
 --]|
