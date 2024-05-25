@@ -1,5 +1,11 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2024-05-25
+- 5E Action Menu 2.6.0 adds support for a library called "ActionMenuAddons", which can define functions that will be executed at various points in the action menu processing. This is the initial implementation and includes a handful of triggers (PCPostCantripCastFunction, PCPostSpellCastFunction, PCPostAttackFunction, and NPCPostAttackFunction). This will be expanded over time. To use this functinality, create a handout called "ScriptCards Library ActionMenuAddons" (case sensitive) and see the ActionMenuAddons library in the GitHub for an example.
+
+2024-04-29 - 5E Character Action Menu 2.5.1
+             - Removed magic damage bonus from secondary damage types on weapons, as it was being added to both damage types.
+
 2024-03-03 - 5E Character Action Menu 2.5.0
              - First run at improving the execution speed of the script by utilizing the new benchmarking features in ScriptCards 2.7.0
              - Cleaned out some commented out items

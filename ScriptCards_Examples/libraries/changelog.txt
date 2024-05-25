@@ -1,3 +1,6 @@
+ActionMenuAddons - 0.0.1
+- Initial release, adds "spell crit/fumble" functionality suggested by dk03nig
+
 System Neutral Library - 0.0.9
 - Added "allow negative hp" parameter to apply damage/healing functions
 

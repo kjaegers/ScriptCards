@@ -1,24 +1,48 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.5.0
-  --/|Requires SC : 2.6.6b+
+  --/|Version     : 2.6.0
+  --/|Requires SC : 2.6.6+
   --/|Author      : Kurt Jaegers
 
   --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
-  --/|                to make settings changes, make them in an external editor (like NOTEPAD) and copy/paste the whole
-  --/|                macro into the Roll20 editor.
+  --/|to make settings changes, make them in an external editor (like NOTEPAD) and copy/paste the whole
+  --/|macro into the Roll20 editor.
 
   --/|Description : This script can be used with either a PC or NPC selected. It will generate an action menu with clickable
-  --/|              buttons to execute character actions and cast spells. The menu is whispered to the player executing the
-  --/|              script, while the results of clicking the action buttons are displayed in general chat.
+  --/|buttons to execute character actions and cast spells. The menu is whispered to the player executing the
+  --/|script, while the results of clicking the action buttons are displayed in general chat.
+
+  --/|Includes the optional "ActionMenuAddons" library if it is being used
+  +++ActionMenuAddons+++
+  -->LibAMA_CHECK_FOR_LIBRARY|UseAddons
 
   --/|=========================================================================================================
   --/|Settings Area - Customize the behavior of the script here
 
-  --#functionbenchmarking|1
+  --#functionbenchmarking|0          --/|If set to 1, the console will show performance info after the script is run
+  --&hitPointsBar|1                  --/|What bar do you use for representing hit points for damage application?
+  --&skipPreppedSpellsCheck|0        --/|If set to 1, show all known spells for PCs. Otherwise (default) show prepared spells only
+  --&skipNPCPrepCheck|1              --/|If set to 1 (Default), show all known spells for NPCs. Otherwise show prepared spells only
+  --&trackPCSpellSlots|1             --/|If set to 1, available PC spell slots will be tracked/used.
+  --&showPCSpellSlotList|1           --/|If set to 1, a section on the menu will show available spell slots (if the character has them)
+  --&requireAmmo|1                   --/|If set to 1, ammo will be required for items that have defined ammo. Create a repeating resource matching the Ammo name
+  --&showPCSkillsAndSaves|1          --/|Show saving throw and skill check buttons for PCs (set to 0 to hide)
+  --&showNPCSkillsAndSaves|1         --/|Show saving throw and skill check buttons for NPCs (set to 0 to hide)
+  --&showPCStandardActions|1         --/|Show "Standard Actions" on PCs (if skills and saves are displayed). Set to 0 to hide
+  --&showNPCStandardActions|1        --/|Show "Standard Actions" on NPCs (if skills and saves are displayed). Set to 0 to hide
+  --&showCharacterSummary|1          --/|Show a line of summary information at the top of the Action Menu. Set to 0 to disable
+  --&showGlobalModifierButtons|1     --/|Show global modifiers (attack, damage, save, skill) buttons and allow players to toggle them on/off. Set to 0 to hide
+  --&showBonusActionsAndReactions|1  --/|Show Bonus Actions and Reactions for characters. Set to 0 to disable
 
-  --/|What bar do you use for representing hit points for damage application?
-  --&hitPointsBar|1
+  --/|Defaults: 1 for title buttons, 0 for icongraphic and "white-on-black" for icon set. These control how and if some text/images
+  --/|            on the Action Menu are replaced with icons from game-icons.net, hosted on my github. In particular, the 
+  --/|            TitleButtons setting replaces the emoji's previously used in the title area for settings, short rest, and long rest.
+  --/|            the IconsGraphics setting (if 1) replaces "AC", "HP", and "Speed" in the character summary with icons.
+  --/|            The type of icons used outside the title area are determiend by the IconsSet - white (white on transparent), 
+  --/|            black (black on transparent), or white-on-black.
+  --&useGameIconsGraphicsForTitleButtons|1
+  --&useGameIconsGraphics|0
+  --&gameIconsSet|white-on-black
 
   --/|If you create a "spell mule" character and put its name here, it's ability list will be checked for
   --/|abilities that match the name of each spell found on PCs. If a match is found, the button that is
@@ -39,57 +63,6 @@
   --/|If you create a mule character and put its name here, you can define macros to be used for PC Actions listed in
   --/|"Abilities and Spellcasting" section on the character sheet.
   --&pcabilitymulename|PCAbility_Mule
-
-  --/|=========================================================================================================
-  --/| Toggle various featurs on or off in this section. This applies to ALL runs of the script
-  
-  --/| Default:0 - Check spell book for prepared spells only to list as buttons (or rituals). Set to 1 to show all spells.
-  --&skipPreppedSpellsCheck|0
-  
-  --/| Default:1 - Don't check prepped spells for NPCs. Set to 0 to enforce spell prep for NPCs
-  --&skipNPCPrepCheck|1
-
-  --/|Default:1 - Only show spells the player has slots available to cast are displayed, and spell slots will be deducted on cast
-  --/|            Set to 0 to disable interaction with spell slots
-  --&trackPCSpellSlots|1
-
-  --/|Default:1 - Show a table of available spells slots for PCs (if trackPCSpellSlots is 1). Set to 0 to hide table.
-  --&showPCSpellSlotList|1
-
-  --/|Default:1 - Tracking ammo for weapons for which it is defined. Thanks to JustinG for the initial implementation. Note 
-  --/|            that Ammo Tracking for the character needs to be enabled, and a resource named to match the Ammo (case sensitive) needs 
-  --/|            to exist on the sheet to track ammo.
-  --&requireAmmo|1
-
-  --/|Default:1 - Show saving throw and skill check buttons for PCs/NPCs (set to 0 to hide)
-  --&showPCSkillsAndSaves|1
-  --&showNPCSkillsAndSaves|1
-  
-  --/|Default:1 - Show "Standard Actions" on PCs/NPCs (if skills and saves are displayed). Set to 0 to hide
-  --&showPCStandardActions|1
-  --&showNPCStandardActions|1
-
-  --/|Default:1 - A line of summary information will be displayed at the top of the Action Menu. Set to 0 to disable
-  --&showCharacterSummary|1
-
-  --/|Default:1 - Show global attack, damage, save, skill modifiers with toggle buttons. NOTE: due to roll20's strangeness in handling 
-  --/|            some attributes, if a global modifier has never been turned on from the character sheet, the buttons here may not be 
-  --/|            able to set the active state. Opening the character sheet and toggling the modifier on and back off will
-  --/|            fix it permanently for that modifier. Set to 0 to disable
-  --&showGlobalModifierButtons|1
-  
-  --/|Default:1 - Show Bonus Actions and Reactions for characters. Set to 1 to disable
-  --&showBonusActionsAndReactions|1
-  
-  --/|Defaults: 1 for title buttons, 0 for icongraphic and "white-on-black" for icon set. These control how and if some text/images
-  --/|            on the Action Menu are replaced with icons from game-icons.net, hosted on my github. In particular, the 
-  --/|            TitleButtons setting replaces the emoji's previously used in the title area for settings, short rest, and long rest.
-  --/|            the IconsGraphics setting (if 1) replaces "AC", "HP", and "Speed" in the character summary with icons.
-  --/|            The type of icons used outside the title area are determiend by the IconsSet - white (white on transparent), 
-  --/|            black (black on transparent), or white-on-black.
-  --&useGameIconsGraphicsForTitleButtons|1
-  --&useGameIconsGraphics|0
-  --&gameIconsSet|white-on-black
 
   --/|=========================================================================================================
   --/| More generalized settings. You may not need to change these.
@@ -175,6 +148,20 @@
   --/|End Settings Area
   --/|=========================================================================================================
   
+  --/|=========================================================================================================
+  --/|Action Menu Addons Settings
+    --&PCPostSpellCastFunction|_LibAMA_SpellFumbleOrCrit
+    --&PCPostCantripCastFunction|_LibAMA_SpellFumbleOrCrit
+    --&PCPostAttackFunction|
+    --&NPCPostAttackFunction|
+  --?[&UseAddons] -eq "1"|[
+    
+  --]|
+
+  --/|Action Menu Addons Settings Area
+  --/|=========================================================================================================
+  
+
   -->CHECK_VERSION_INFO|
 
   --/|Determine if a token is selected or if we need to (and can based on config) automatically find a token for this player.
@@ -467,8 +454,10 @@
 
     --:NPCA_NOT_ATTACK|
     --+|[*R:description]
+    
     --:NPCA_DONE|
-  --]|
+    --?"[&NPCPostAttackFunction]" -ne ""|>[&NPCPostAttackFunction]
+    --]|
   --X|
 
   --:EXEC_NPC_BONUS_ACTION|action_name
@@ -536,7 +525,12 @@
   -->FIND_CLASS_LEVEL|Sorcerer;SorcLevel
   -->FIND_CLASS_LEVEL|Warlock;LockLevel
   -->FIND_CLASS_LEVEL|Wizard;WizLevel
-
+  -->FIND_CLASS_LEVEL|Bard;BardLevel
+  -->FIND_CLASS_LEVEL|Druid;DruidLevel
+  -->FIND_CLASS_LEVEL|Cleric;ClericLevel
+  
+  --+WizLevel|[&WizLevel]
+  
   -->BuildCharacterSummary|[*S:character_id];CharSummaryText;ac
 
   --?[&showCharacterSummary] -ne 1 -or "[&perCharacterOptions]" -inc "$SCS0$" |SKIP_PC_SUMMARY
@@ -703,8 +697,8 @@
   --?[*R:dmg2attr] -lt 0|&dmgroll2;+ [$dmg2Mod.Raw] [&dmg2AttrName]
   --?[*R:dmg2mod] -gt 0|&dmgroll;+ + [*R:dmg2mod] [Special]
   --?[*R:dmg2mod] -lt 0|&dmgroll;+ [*R:dmg2mod] [Special]
-  --?[*R:atkmagic] -gt 0|&dmgroll2;+ + [*R:atkmagic] [Magic]
-  --?[*R:atkmagic] -lt 0|&dmgroll2;+ [*R:atkmagic] [Magic]
+  --/?[*R:atkmagic] -gt 0|&dmgroll2;+ + [*R:atkmagic] [Magic]
+  --/?[*R:atkmagic] -lt 0|&dmgroll2;+ [*R:atkmagic] [Magic]
   --=AC|[*T:ac]
   --?"[*T:npc_ac]" -ne ""|=AC;[*T:npc_ac] [&NPC_ACMOD]
   --?[&sendGmInfo] -eq 1|[
@@ -770,7 +764,8 @@
   --!a:[*S:character_id]|[&AmmoAttributeID]:-=1
 
   --:NO_AMMO_USED|
-
+  
+  --?"[&PCPostAttackFunction]" -ne ""|>[&PCPostAttackFunction]
   --X|
 
   --:EXEC_PC_CANTRIP|
@@ -853,6 +848,7 @@
   --:SKIP_CANTRIP_REPEAT|
   --+|[*R:spelldescription]
   --:PC_DONE_CANTRIP|
+  --?"[&PCPostCantripCastFunction]" -ne ""|>[&PCPostCantripCastFunction]
   --X|
 
   --:EXEC_PC_SPELL|spellInfo1=Spell Level, 2=SpellName, 3=Target ID, 4=Slot Level
@@ -985,6 +981,7 @@
   --+|[*R:spelldescription]
 
   --:PC_DONE_SPELL|
+    --?"[&PCPostSpellCastFunction]" -ne ""|>[&PCPostSpellCastFunction]
   --X|
 
   --:SAVING_THROW|
