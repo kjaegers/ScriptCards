@@ -1,5 +1,30 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.10:
+- Fixed --s#, which had a typo and wasn't working at all...
+- Added the ability to specify "allsettings" as the content for --s and --l to save/load full setting sets
+  ex: 
+
+  !script {{
+    --#title|Test All Save
+    --#leftsub|New Left Test
+    --#rightsub|New Right Test
+    --#whisper|gm
+    --s#AllTest|allsettings
+  }}
+
+  The above will set four settings and save them as "AllTest", while the below will load them all in:
+
+  !script {{
+    --l#AllTest|allsettings
+  }}
+
+  Note that you can still load individual settings from a set:
+
+  !script {{
+    --l#AllTest|title
+  }}
+
 v 2.7.9:
 
 - Bug fix for table and table entry creation using --!o# and --!oe

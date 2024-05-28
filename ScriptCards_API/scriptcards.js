@@ -27,7 +27,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.9";
+	const APIVERSION = "2.7.10";
 	const NUMERIC_VERSION = "207090"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
@@ -3669,7 +3669,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function storeSetting(charid, prefix, varname, cardParameters) {
-		if (cardParameters[varName] !== undefined) {
+		if (cardParameters[varname] !== undefined) {
 			try {
 				let testObj = findObjs({ type: "attribute", characterid: charid, name: `SCT_${prefix}-${varname}` })[0]
 				if (testObj) {
@@ -3690,7 +3690,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function loadSetting(charid, prefix, varname, cardParameters) {
-		if (cardParameters[varName] !== undefined) {
+		if (cardParameters[varname] !== undefined) {
 			try {
 				let charobj = getObj("character", charid)
 				if (charobj) {
@@ -3700,10 +3700,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 				}
 			} catch (e) {
-				log(`Unable to load ${varname} on ${charid}, error ${e} `)
+				//log(`Unable to load ${varname} on ${charid}, error ${e} `)
 			}
 		} else {
-			log(`Attempted to load ${varname} setting, which does not exist`)
+			//log(`Attempted to load ${varname} setting, which does not exist`)
 		}
 	}
 
@@ -4695,6 +4695,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							varList.forEach((element) => storeHashTable(cardParameters.storagecharid, prefix, element));
 						}
 						if (varType == "#") {
+							if (thisContent.toLowerCase().trim() == "allsettings") {
+								varList = [];
+								for (var key in cardParameters) {
+									if (cardParameters[key] !== defaultParameters[key]) {
+										if (key != "storagecharid") {
+											varList.push(key);
+										}
+									}
+								}
+							}
 							varList.forEach((element) => storeSetting(cardParameters.storagecharid, prefix, element.toLowerCase(), cardParameters));
 						}
 					}
@@ -4762,8 +4772,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							varList.forEach((element) => loadHashTable(cardParameters.storagecharid, prefix, element));
 						}
 						if (varType == "#") {
+							if (thisContent.toLowerCase().trim() == "allsettings") {
+								varList = [];
+								for (var key in cardParameters) {
+									if (key != "storagecharid") {
+										varList.push(key);
+									}
+								}
+							}
 							varList.forEach((element) => loadSetting(cardParameters.storagecharid, prefix, element.toLowerCase(), cardParameters));
 						}
+						//if (varType == "#") {
+						//	varList.forEach((element) => loadSetting(cardParameters.storagecharid, prefix, element.toLowerCase(), cardParameters));
+						//}
 					}
 				}
 
