@@ -1,5 +1,30 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.11:
+- Expanded array;pagetokens filter syntax to allow:
+  - Multiple filter values - separated by semicolons. Filters are cumulative and can only remove items from the returned list. For example, specifying npc;pc will always return no results because the PCs will be removed when "npc" is processed, and the NPCs will then be removed by the "pc" filter
+
+  - New Filters:
+    attr, prop, and tprop. each of these filters can accept attribute/propert name, and a comparitor value. The property name and value are separated by = for an exact match or ~= for a partial match. The property name is case sensitive, but the match is not.
+    - attr:characterAttributeName=value
+    - attr:characterAttributeName~=partialvalue
+    - prop:characterPropertyName=value
+    - prop:characterPropertyName~=partialvalue
+    - tprop:tokenPropertyName=value
+    - tprop:tokenPropertyName~=partialvalue
+  
+    Examples:
+    --~|array;pagetokens;Tokens;@{selected|token_id};tprop:tooltip~=hello
+      returns all tokens on the page with the selected token that have a token "tooltip" property with "hello" in it
+
+    --~|array;pagetokens;Tokens;@{selected|token_id};attr:npc_type~=undead
+      returns all tokens on the page with the selected token that have a character attribute "npc_type" with "undead" in it
+
+    --~|array;pagetokens;Tokens;@{selected|token_id};npc;tprop:name~=Dr
+      returns all NPC tokens on the page with the selected token that have a token property "name" with "Dr" in it. Note the use of multiple filters (NPC, followed by tprop)
+
+    Note that there are very few useful character properties, but the ability to search them is included for completeness.
+
 v 2.7.10:
 - Fixed --s#, which had a typo and wasn't working at all...
 - Added the ability to specify "allsettings" as the content for --s and --l to save/load full setting sets

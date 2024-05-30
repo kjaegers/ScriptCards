@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.10";
-	const NUMERIC_VERSION = "207090"
+	const APIVERSION = "2.7.11";
+	const NUMERIC_VERSION = "207110"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -5704,49 +5704,155 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (templateToken) {
 								pageid = templateToken.get("_pageid");
 							}
-							var filter = "all";
-							if (params[4]) {
-								if (params[4].toLowerCase() == "char" || params[3].toLowerCase() == "chars") {
-									filter = "char";
-								}
-								if (params[4].toLowerCase() == "npc" || params[3].toLowerCase() == "npcs") {
-									filter = "npc";
-								}
-								if (params[4].toLowerCase() == "pc" || params[3].toLowerCase() == "pcs") {
-									filter = "pc";
-								}
-								if (params[4].toLowerCase() == "graphic" || params[3].toLowerCase() == "graphics") {
-									filter = "graphic";
-								}
-							}
 							if (getObj("page", pageid)) {
-								var t = findObjs({ _type: "graphic", _pageid: pageid });
-								if (t) {
-									for (var x = 0; x < t.length; x++) {
-										if (filter == "all") {
-											arrayVariables[params[2]].push(t[x].id);
+								var foundTokens = findObjs({ _type: "graphic", _pageid: pageid });
+							}
+							if (params[4]) {
+								for (let p = 4; p < params.length; p++) {
+									for (let t = foundTokens.length - 1; t >= 0; t--) {
+										if (params[p].toLowerCase() == "char" || params[p].toLowerCase() == "chars") {
+											if (isBlank(foundTokens[t].get("represents"))) {
+												foundTokens.splice(t, 1);
+											}
 										}
 
-										if (filter == "char") {
-											if (!isBlank(t[x].get("represents"))) { arrayVariables[params[2]].push(t[x].id); }
+										if (params[p].toLowerCase() == "graphic" || params[p].toLowerCase() == "graphics") {
+											if (!isBlank(foundTokens[t].get("represents"))) {
+												foundTokens.splice(t, 1);
+											}
 										}
 
-										if (filter == "npc") {
-											var charobj = getObj("character", t[x].get("represents"));
-											if (charobj && isBlank(charobj.get("controlledby"))) { arrayVariables[params[2]].push(t[x].id); }
+										if (params[p].toLowerCase() == "npc" || params[p].toLowerCase() == "npcs") {
+											if (isBlank(foundTokens[t].get("represents"))) {
+												foundTokens.splice(t, 1);
+											} else {
+												if (!isBlank(getObj("character", foundTokens[t].get("represents")).get("controlledby"))) {
+													foundTokens.splice(t, 1);
+												}
+											}
 										}
 
-										if (filter == "pc") {
-											var charobj = getObj("character", t[x].get("represents"));
-											if (charobj && !isBlank(charobj.get("controlledby"))) { arrayVariables[params[2]].push(t[x].id); }
+										if (params[p].toLowerCase() == "pc" || params[p].toLowerCase() == "pcs") {
+											if (isBlank(foundTokens[t].get("represents"))) {
+												foundTokens.splice(t, 1);
+											} else {
+												if (isBlank(getObj("character", foundTokens[t].get("represents")).get("controlledby"))) {
+													foundTokens.splice(t, 1);
+												}
+											}
 										}
 
-										if (filter == "graphic") {
-											if (isBlank(t[x].get("represents"))) { arrayVariables[params[2]].push(t[x].id); }
-										}
+										if (params[p].toLowerCase().startsWith("attr:") ||
+											params[p].toLowerCase().startsWith("prop:") ||
+											params[p].toLowerCase().startsWith("tprop:")) {
+											var attrFilter = "";
+											var attrValue = "";
+											let subfilter = params[p].toLowerCase().split(":")[0];
+											if (subfilter.indexOf("~") > 0) {
+												subfilter = subfilter.slice(0, -1)
+											}
+											try {
+												if (params[p].indexOf("=") >= 0) {
+													attrFilter = params[p].split(":")[1].split("=")[0];
+													attrValue = (params[p].split(":")[1].split("=")[1]).toLowerCase().trim();
+												}
+												if (params[p].indexOf("~=") >= 0) {
+													subfilter = subfilter + "_partial";
+													attrFilter = params[p].split(":")[1].split("~=")[0];
+													attrValue = (params[p].split(":")[1].split("~=")[1]).toLowerCase().trim();
+												}
+											} catch (e) {
+												log('Incorrect pagetokens attribute filter syntax.')
+											}
+											var charobj = getObj("character", foundTokens[t].get("represents"));
+											if (subfilter.startsWith("tp") || charobj) {
+												switch (subfilter) {
+													case "attr":
+														if (!charobj) {
+															foundTokens.splice(t, 1);
+														} else {
+															try {
+																var attrFind = findObjs({ type: 'attribute', characterid: charobj.id, name: attrFilter })[0]
+																if (!attrFind || attrFind.get('current').toLowerCase().trim() !== attrValue) {
+																	foundTokens.splice(t, 1);
+																}
+															} catch (e) {
+																foundTokens.splice(t, 1);
+															}
+														}
+														break;
 
+													case "attr_partial":
+														if (!charobj) {
+															foundTokens.splice(t, 1);
+														} else {
+															try {
+																var attrFind = findObjs({ type: 'attribute', characterid: charobj.id, name: attrFilter })[0]
+																if (!attrFind || attrFind.get('current').toLowerCase().trim().indexOf(attrValue) == -1) {
+																	foundTokens.splice(t, 1);
+																}
+															} catch (e) {
+																//
+															}
+														}
+														break;
+
+													case "prop":
+														try {
+															var charobj = getObj("character", foundTokens[t].get("represents"));
+															if (charobj.get(attrFilter).toLowerCase().trim() !== attrValue) {
+																foundTokens.splice(t, 1);
+															}
+														} catch (e) {
+															//
+														}
+														break;
+
+													case "prop_partial":
+														try {
+															var charobj = getObj("character", foundTokens[t].get("represents"));
+															if (charobj.get(attrFilter).toLowerCase().trim().indexOf(attrValue) == -1) {
+																foundTokens.splice(t, 1);
+															}
+														} catch (e) {
+															//
+														}
+														break;
+
+													case "tprop":
+														try {
+															if (foundTokens[t].get(attrFilter).toLowerCase().trim() !== attrValue) {
+																foundTokens.splice(t, 1);
+															}
+														} catch (e) {
+															//
+														}
+														break;
+
+													case "tprop_partial":
+														try {
+															if (foundTokens[t].get(attrFilter).toLowerCase().trim().indexOf(attrValue) == -1) {
+																foundTokens.splice(t, 1);
+															}
+														} catch (e) {
+															//
+														}
+														break;
+												}
+
+											} else {
+												foundTokens.splice(t, 1);
+											}
+										}
 									}
 								}
+
+								arrayVariables[params[2]] = [];
+								for (let x = 0; x < foundTokens.length; x++) {
+									arrayVariables[params[2]].push(foundTokens[x].id);
+								}
+							}
+							if (foundTokens.length == 0) {
 								arrayIndexes[params[2]] = 0;
 								if (variableName) { stringVariables[variableName] = arrayVariables[params[2]].length; }
 							} else {
