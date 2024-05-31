@@ -1,0 +1,78 @@
+!script {{
+  --/|Script Name : 5E Group Save
+  --/|Version     : 1.0
+  --/|Requires SC : 1.5.2 or later
+  --/|Author      : Kurt Jaegers
+
+  --/|Description : Rolls a given save for all player-controlled tokens on the current page. 
+  --/| The script will output a message to the chat window listing the saves and success/failures. 
+
+  --&SaveType|?{Save Type|Strength,strength|Dexterity,dexterity|Constitution,constitution|Intelligence,intelligence|Wisdom,wisdom|Charisma,charisma}
+  --&DC|?{Difficulty Class|10}
+  --#title|Group Saving Throw
+  --#leftsub|[&SaveType] save
+  --#rightsub|vs DC [&DC]
+
+  -->GET_PLAYER_CONTROLLED_TOKENS_FROM_PAGETOKENS|TokenList
+  --~|array;fromstring;PCTokens;,;[&TokenList]
+  --%loop|foreach;PCTokens
+    -->SAVING_THROW|[*[&loop]:t-represents];[&SaveType];[&DC];Result
+    --+[*[&loop]:t-name]|[&Result]
+  --%|
+  --X||
+
+  --:GET_PLAYER_CONTROLLED_TOKENS_FROM_PAGETOKENS|
+  --~|array;pagetokens;_FCT_Tokens;[*C:playerpageid];pc
+  --%_loop|0;[@_FCT_Tokens(maxindex)]
+    --&_FCT_TID|[@_FCT_Tokens([&_loop])]
+    --&_FCT_CHAR|[*[&_FCT_TID]:t-represents]
+    --?"X[*O:[&_FCT_CHAR]:character:controlledby]" -eq "X"|%
+    --?"X[&[%1%]]" -eq "X"|&[%1%];+[&_FCT_TID]|&[%1%];+,[&_FCT_TID]
+  --%|
+  --<|
+
+  --:SAVING_THROW|charid;saveType;DC;RetunString
+  -->Find_Active_Global_Save_Modifiers|[%1%];GSM_VALUES
+  --&saveBonus|[*[%1%]:[%2%]_save_bonus]
+  --&rollEquation|1d20
+  -->Get_Ability_Modifier|[%1%];[%2%]_mod;attrMod;attrName
+  --=SavingThrow|[&rollEquation] + [&saveBonus] [&attrName] [&GSM_VALUES]
+  --?[$SavingThrow.Raw] -ge [%3%]|[
+    --&[%4%]|Rolled [$SavingThrow] [r][#393]Success[/#][/r]
+  --]|[
+    --&[%4%]|Rolled [$SavingThrow] [r][#933]Failure[/#][/r]
+  --]|
+  --<|
+
+  --:Find_Active_Global_Save_Modifiers|character_id;StringVariableToSet
+  --&_GSM_Temp| 
+  --Rfirst|[%1%];repeating_savemod
+  --:_GSM_Loop|
+  --?"[*R:global_save_active_flag]" -eq "1"|>_AddGSM;[*R:global_save_name];[*R:global_save_roll]
+  --Rnext| 
+  --?"[*R:global_save_name]" -ne "NoRepeatingAttributeLoaded"|_GSM_Loop
+  --&[%2%]|[&_GSM_Temp] 
+  --<|
+
+  --:_AddGSM| 
+  --&_GSM_Temp|+ + [%2%]# [&obrac][%1%][&cbrac] 
+  --<|
+
+  --:Get_Ability_Modifier|characterid;attribute_string;returnnumericvalue;returnnamestring
+  --=[%3%]|
+  --&[%4%]|
+  --?"[%2%]" -eq "strength_mod"|=[%3%];[*[%1%]:strength_mod]
+  --?"[%2%]" -eq "strength_mod"|&[%4%];[STR]
+  --?"[%2%]" -eq "intelligence_mod"|=[%3%];[*[%1%]:intelligence_mod]
+  --?"[%2%]" -eq "intelligence_mod"|&[%4%];[INT]
+  --?"[%2%]" -eq "wisdom_mod"|=[%3%];[*[%1%]:wisdom_mod]
+  --?"[%2%]" -eq "wisdom_mod"|&[%4%];[WIS]
+  --?"[%2%]" -eq "dexterity_mod"|=[%3%];[*[%1%]:dexterity_mod]
+  --?"[%2%]" -eq "dexterity_mod"|&[%4%];[DEX]
+  --?"[%2%]" -eq "constitution_mod"|=[%3%];[*[%1%]:constitution_mod]
+  --?"[%2%]" -eq "constitution_mod"|&[%4%];[CON]
+  --?"[%2%]" -eq "charisma_mod"|=[%3%];[*[%1%]:charisma_mod]
+  --?"[%2%]" -eq "charisma_mod"|&[%4%];[CHA]
+  --<|
+
+}}
