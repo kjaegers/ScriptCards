@@ -523,8 +523,11 @@
   --#whisper|self
 
   -->FIND_CLASS_LEVEL|Sorcerer;SorcLevel
+  --&SorcererLevel|[&SorcLevel]
   -->FIND_CLASS_LEVEL|Warlock;LockLevel
+  --&WarlockLevel|[&LockLevel]
   -->FIND_CLASS_LEVEL|Wizard;WizLevel
+  --&WizardLevel|[&WizLevel]
   -->FIND_CLASS_LEVEL|Bard;BardLevel
   -->FIND_CLASS_LEVEL|Druid;DruidLevel
   -->FIND_CLASS_LEVEL|Cleric;ClericLevel
