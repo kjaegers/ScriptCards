@@ -1,3 +1,7 @@
+System Neutral Library - 0.1.0
+- Removed extraneous "Test" output from LibSN_APPLY_DAMAGE_OR_HEALING
+- Fixed documentation that stated Lib5E_CHECK_FOR_LIBRARY was a function, when it is really LibSN_CHECK_FOR_LIBRARY
+
 ActionMenuAddons - 0.0.1
 - Initial release, adds "spell crit/fumble" functionality suggested by dk03nig
 

@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.6.0
+  --/|Version     : 2.6.1
   --/|Requires SC : 2.6.6+
   --/|Author      : Kurt Jaegers
 
@@ -528,8 +528,15 @@
   -->FIND_CLASS_LEVEL|Bard;BardLevel
   -->FIND_CLASS_LEVEL|Druid;DruidLevel
   -->FIND_CLASS_LEVEL|Cleric;ClericLevel
+  -->FIND_CLASS_LEVEL|Ranger;RangerLevel
+  -->FIND_CLASS_LEVEL|Paladin;PaladinLevel
+  -->FIND_CLASS_LEVEL|Fighter;FighterLevel
+  -->FIND_CLASS_LEVEL|Barbarian;BarbarianLevel
+  -->FIND_CLASS_LEVEL|Monk;MonkLevel
+  -->FIND_CLASS_LEVEL|Rogue;RogueLevel
+  -->FIND_CLASS_LEVEL|Artificer;ArtificerLevel
   
-  --+WizLevel|[&WizLevel]
+  --/+WizLevel|[&WizLevel]
   
   -->BuildCharacterSummary|[*S:character_id];CharSummaryText;ac
 

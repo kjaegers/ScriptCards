@@ -1,4 +1,4 @@
-[--/|ScriptCards Library: systemneutrallib (snlib) version 0.0.9
+--/|ScriptCards Library: systemneutrallib (snlib) version 0.1.0
 --/|Provides various utility procedures for general Roll20 stuff
 
 --/|This library consolidates functions from a number of the sample scripts on the ScriptCards github into a single library
@@ -11,7 +11,7 @@
 --/| ###################################################################################################
 --/| Library related functions
 --/| ###################################################################################################
---/|   Lib5E_CHECK_FOR_LIBRARY|ReturnString
+--/|   LibSN_CHECK_FOR_LIBRARY|ReturnString
 --/|      Sets the ReturnString value to 1. Can be used to check to ensure the library is loaded
 --/|
 --/| ###################################################################################################
@@ -54,7 +54,11 @@
 --/|  LibSN_GET_CONTROLLED_TOKENS_FROM_PAGETOKENS|Return Var Name (string)
 --/|          Returns a comma separated list of all of the tokens on the current player (ribbon) page
 --/|          that are controlled by the player executing the script.
-
+--/|
+--/|  LibSN_GET_PLAYER_CONTROLLED_TOKENS_FROM_PAGETOKENS|
+--/|          Returns a comma separated list of all of the tokens on the current player (ribbon) page
+--/|          that are controlled by a player
+--/|
 --/| ###################################################################################################
 --/| Functions related to the Token Status Markers
 --/| ###################################################################################################
@@ -279,6 +283,16 @@
   --%|
 --<|
 
+--:LibSN_GET_PLAYER_CONTROLLED_TOKENS_FROM_PAGETOKENS|
+  --~|array;pagetokens;_FCT_Tokens;[*C:playerpageid];pc
+  --%_loop|0;[@_FCT_Tokens(maxindex)]
+    --&_FCT_TID|[@_FCT_Tokens([&_loop])]
+    --&_FCT_CHAR|[*[&_FCT_TID]:t-represents]
+    --?"X[*O:[&_FCT_CHAR]:character:controlledby]" -eq "X"|%
+    --?"X[&[%1%]]" -eq "X"|&[%1%];+[&_FCT_TID]|&[%1%];+,[&_FCT_TID]
+  --%|
+--<|
+
 --:LibSN_ADD_STATUS_MARKER|Token_ID;Status Marker;Count
   -->LibSN_REMOVE_STATUS_MARKER|[%1%];[%2%]
   --~|array;statusmarkers;Conditions;[%1%]
@@ -443,7 +457,6 @@
 --:LibSN_APPLY_DAMAGE_OR_HEALING|tokenid;bar#;amount;display (0 or 1);allow overheal (0 or 1);allow negative hp (0 or 1)
   --=_applyValue|[%3%]
   --=_newValue|[*[%1%]:t-bar[%2%]_value] + [$_applyValue]
-  --+Test|X[%6%]
   --?[$_newValue] -lt 0 -and "X[%6%]" -ne "X1"|=_newValue;0
   --?"X[%5%]" -ne "X1" -and [$_newValue] -gt [*[%1%]:t-bar[%2%]_max]|=_newValue;[*[%1%]:t-bar[%2%]_max]
   --?"X[%4%]" -eq "X1"|+Applying;[%3%] HP to [*[%1%]:t-name]

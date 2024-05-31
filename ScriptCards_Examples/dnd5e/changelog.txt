@@ -1,5 +1,10 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2024-05-31 - 5e Action Menu 2.6.1
+- Adds RangerLevel, PaladinLevel, MonkLevel, BarbarianLevel, RogueLevel, FighterLevel and ArtificerLevel to the variables generated upon scirpt execution to support use in the ActionMenuAddons library.
+- Removed extraneoud "WizLevel" output :)
+- Created copies of WizLevel, SorcLeve, and LockLevel with the full names (SorcererLevel, etc.) for consistency. The old variables still exist.
+
 2024-05-25
 - 5E Action Menu 2.6.0 adds support for a library called "ActionMenuAddons", which can define functions that will be executed at various points in the action menu processing. This is the initial implementation and includes a handful of triggers (PCPostCantripCastFunction, PCPostSpellCastFunction, PCPostAttackFunction, and NPCPostAttackFunction). This will be expanded over time. To use this functinality, create a handout called "ScriptCards Library ActionMenuAddons" (case sensitive) and see the ActionMenuAddons library in the GitHub for an example.
 
