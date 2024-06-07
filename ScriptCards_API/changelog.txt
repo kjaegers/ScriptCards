@@ -1,5 +1,18 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.12:
+- New array function: fromrepeatingsection, which will create a hashtable of the content of a repeating section on a given character. The required parameters are a character ID, the name of the repeating section, the field in the repeating section that identifies the row, and the name of the hashtable.
+
+ex: --~|hashtable;fromrepeatingsection;@{selected|character_id};repeating_attack;atkname;MyAttacks
+
+This will create a hashtable called "MyAttacks" with the atkname field as the key and the full row as the value. This can be used to create a lookup table for repeating section entries.
+
+The hashtable keys will be in the format RowIdentifier_AttributeName, for example: [:Test("Greatsword_atkdmgtype")]
+
+Each entry will also have a _max version (--+Greatsword|[:Test("Greatsword_atkdmgtype_max")]) which is normally empty.
+
+There are some repeating attributes that are unsupported. These include attributes with @{...} references, and attributes that include either [[ (for an inline roll) or {{ (for a template reference). These entries in the hash table will still be created, but have values of Unsupported (AttrRef), Unsupported (InlineRoll) or Unsupported (TemplateRef) respectively.
+
 v 2.7.11:
 - Expanded array;pagetokens filter syntax to allow:
   - Multiple filter values - separated by semicolons. Filters are cumulative and can only remove items from the returned list. For example, specifying npc;pc will always return no results because the PCs will be removed when "npc" is processed, and the NPCs will then be removed by the "pc" filter

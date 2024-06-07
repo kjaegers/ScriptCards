@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.11";
-	const NUMERIC_VERSION = "207110"
+	const APIVERSION = "2.7.12";
+	const NUMERIC_VERSION = "207120"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -5506,6 +5506,44 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								}
 							} catch (e) {
 								log(`ScriptCards: Error encounted: ${e}`)
+							}
+						}
+
+						if (params[1].toLowerCase() == "fromrepeatingsection") {
+							try {
+								let charid = params[2]
+								let sectionname = params[3]
+								let identifier = params[4]
+								let hashname = params[5]
+								let rowID = ""
+
+								hashTables[hashname] = {};
+
+								let sectionIDs = getRepeatingSectionIDs(charid, sectionname)
+								log(sectionIDs)
+								for (let x = 0; x < sectionIDs.length; x++) {
+									let thisSection = getSectionAttrsByID(charid, sectionname, sectionIDs[x])
+									for (let y = 0; y < thisSection.length; y++) {
+										let rowName = thisSection[y].split("|")[0]
+										let rowValue = thisSection[y].split("|")[1]
+										if (rowName.toLowerCase() == identifier) {
+											rowID = rowValue
+										}
+									}
+
+									for (let y = 0; y < thisSection.length; y++) {
+										let rowName = thisSection[y].split("|")[0]
+										let rowValue = thisSection[y].split("|")[1]
+										if (rowValue.indexOf("@{") > -1) { rowValue = "Unsupported (AttrRef)" }
+										if (rowValue.indexOf("[[") > -1) { rowValue = "Unsupported (InlineRoll)" }
+										if (rowValue.indexOf("{{") > -1) { rowValue = "Unsupported (TemplateRef)" }
+										if (!rowValue) { rowValue = "" }
+										hashTables[hashname][rowID + "_" + rowName] = rowValue
+									}
+
+								}
+							} catch (e) {
+								log(`ScriptCards: Error occured converting repeating section to hash table: ${e}`)
 							}
 						}
 
