@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.13:
+- Bug fix for pagetokens returning an empty array
+
 v 2.7.12:
 - New array function: fromrepeatingsection, which will create a hashtable of the content of a repeating section on a given character. The required parameters are a character ID, the name of the repeating section, the field in the repeating section that identifies the row, and the name of the hashtable.
 

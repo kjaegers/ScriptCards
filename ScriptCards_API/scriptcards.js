@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.12";
-	const NUMERIC_VERSION = "207120"
+	const APIVERSION = "2.7.13";
+	const NUMERIC_VERSION = "207130"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -5739,11 +5739,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							arrayVariables[params[2]] = [];
 							var pageid = params[3];
 							var templateToken = getObj("graphic", params[3]);
+							var foundTokens = []
 							if (templateToken) {
 								pageid = templateToken.get("_pageid");
 							}
 							if (getObj("page", pageid)) {
-								var foundTokens = findObjs({ _type: "graphic", _pageid: pageid });
+								foundTokens = findObjs({ _type: "graphic", _pageid: pageid });
 							}
 							if (params[4]) {
 								for (let p = 4; p < params.length; p++) {
@@ -5751,7 +5752,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (params[p].toLowerCase() == "char" || params[p].toLowerCase() == "chars") {
 											if (isBlank(foundTokens[t].get("represents"))) {
 												foundTokens.splice(t, 1);
-											}
+											} 
 										}
 
 										if (params[p].toLowerCase() == "graphic" || params[p].toLowerCase() == "graphics") {
@@ -5886,11 +5887,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								}
 
 								arrayVariables[params[2]] = [];
-								for (let x = 0; x < foundTokens.length; x++) {
-									arrayVariables[params[2]].push(foundTokens[x].id);
+								for (let l = 0; l < foundTokens.length; l++) {
+									arrayVariables[params[2]].push(foundTokens[l].id);
 								}
 							}
-							if (foundTokens.length == 0) {
+							if (foundTokens.length > 0) {
 								arrayIndexes[params[2]] = 0;
 								if (variableName) { stringVariables[variableName] = arrayVariables[params[2]].length; }
 							} else {
