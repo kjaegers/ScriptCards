@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.14:
+- Added support for add:character and change:character events as Triggers. Your trigger for add:character will receive [&CharAdded], containing the ID of the added char. For change:character you will receive [&CharChanged] with the char id and the series of [&CharOld...] and [&CharNew...] for properties that changed as with other triggers.
+
 v 2.7.13:
 - Bug fix for pagetokens returning an empty array
 

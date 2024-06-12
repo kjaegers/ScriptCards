@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.13";
-	const NUMERIC_VERSION = "207130"
+	const APIVERSION = "2.7.14";
+	const NUMERIC_VERSION = "207140"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -460,6 +460,17 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						sendChat("API", metacard);
 					}
 				})
+				on('change:character', function (obj, prev) {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:character` });
+					if (Array.isArray(ability) && ability.length > 0) {
+						var replacement = ` --&CharChanged|${obj.id}} `;
+						for (const property in prev) {
+							replacement += ` --&CharOld${property}|${prev[property]} --&CharNew${property}|${obj.get(property)}`
+						}
+						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+						sendChat("API", metacard);
+					}
+				})				
 				on('add:attribute', function (obj) {
 					var ability = findObjs({ type: "attribute", _characterid: triggerCharID, name: "add:attribute" });
 					if (Array.isArray(ability) && ability.length > 0) {
@@ -476,6 +487,17 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (Array.isArray(ability) && ability.length > 0) {
 						setTimeout(() => {
 							var replacement = ` --&PageAdded|${obj.id}} `;
+							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+							sendChat("API", metacard);
+						}
+							, 500);
+					}
+				})
+				on('add:character', function (obj) {
+					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:character" });
+					if (Array.isArray(ability) && ability.length > 0) {
+						setTimeout(() => {
+							var replacement = ` --&CharAdded|${obj.id}} `;
 							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 							sendChat("API", metacard);
 						}
