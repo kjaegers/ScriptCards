@@ -1,5 +1,41 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.15:
+- Creating a has from a repeating section now includes a _sectionid attribute
+
+- Added hashtable function: fromrepeatingrow, which will create a hashtable of the content of a repeating section row on a given character. The required parameters are a character ID, the name of the repeating section, the section row id, and the name of the hashtable.
+
+Example (combined with fromrepeatingsection) using the 5E sheet with a PC:
+
+!script {{
+  -=/|Load the character's Attacks into the MyAttacks hash
+  --~|hashtable;fromrepeatingsection;@{selected|character_id};repeating_attack;atkname;MyAttacks
+  
+  --/|Create a list of keys from the hash table
+  --~|array;fromkeys;Keys;MyAttacks
+  
+  --/|Find the row containing the "Longsword +3_sectionid"|
+  --&FoundSection|[:MyAttacks("Longsword +3_sectionid")]
+
+  --/|Display Section ID
+  --+|[hr][c]Section Info[/c]
+  --+Found Section|[&FoundSection]
+
+  --/|Create a hash table based on the section row id
+  --~|hashtable;fromrepeatingrow;@{selected|character_id};repeating_attack;[&FoundSection];Longsword3
+
+  --/|Display the results
+  --+|[hr][c]One-Off Property Access[/c]
+  --+itemid|[:Longsword3("itemid")]
+  --+dmgtype|[:Longsword3("dmgtype")]
+
+  --+|[hr][c]All Row Properties[/c]
+  --~|array;fromkeys;Keys;Longsword3
+  --%loop|foreach;Keys
+    --+[&loop]|[:Longsword3("[&loop]")]
+  --%|
+}}
+
 v 2.7.14:
 - Added support for add:character and change:character events as Triggers. Your trigger for add:character will receive [&CharAdded], containing the ID of the added char. For change:character you will receive [&CharChanged] with the char id and the series of [&CharOld...] and [&CharNew...] for properties that changed as with other triggers.
 
@@ -160,8 +196,7 @@ v 2.7.2  - Corrected bug where specifying a default value when setting an attrib
 
            Updated function benchmarking output to fix egregious typo and add the number of lines executed by the script to the output.
 
-           Added --~|hashtable;getjukeboxtracks;HashTableName. This will create a hash table with the names of every jukebox track as keys and their
-           object ID. It will also create keys with TrackName-playing, TrackName-loop, and TrackName-Volume. Here is a simple jukebox/soundboard
+           Added --~|hashtable;getjukeboxtracks;HashTableName. This will create a hash table with the names of every jukebox track as keys and their object ID. It will also create keys with TrackName-playing, TrackName-loop, and TrackName-Volume. Here is a simple jukebox/soundboard
            Script:
 
            !script {{
@@ -194,25 +229,19 @@ v 2.7.1b - Bug fix
 
 v 2.7.1  - Rewrote distance functions to consolidate code, use better practices
 
-           When using --~|turnorder;addcustom, you can now specify and additional parameter to determine where in the turn order the entry gets
-           inserted. You can leave the custom counter and formula empty (;;;) if you don't want to specify them, but the semicolons must be there.
-           The available placement options are "top", "bottom", "before:tokenid", "after:tokenid" 
+           When using --~|turnorder;addcustom, you can now specify and additional parameter to determine where in the turn order the entry gets inserted. You can leave the custom counter and formula empty (;;;) if you don't want to specify them, but the semicolons must be there. The available placement options are "top", "bottom", "before:tokenid", "after:tokenid" 
            Ex: --~|turnorder;addcustom;My Fancy Custom Turn;99;-1;after:@{selected|token_id}
 
 v 2.7.0  - Major refactoring of the ScriptCards code to improve maintainability and be more friendly to the sandbox.
 
            Added the --z command to edit z-order information for objects. --z:objecttype:objectid|operation
-           currently supports tofront and toback for graphics. Will support additional items/options when the March 2024
-           API update is released.
+           currently supports tofront and toback for graphics. Will support additional items/options when the March 2024 API update is released.
 
            Added --#storagecharid setting to allow you to specify a character ID for future --s and --l statements (in the currently running script)
            
-           Added --#gmoutputtarget setting which defaults to "gm". If you set this to "self" the output of --* lines will be whispered to the player
-           executing the script. You can also set this to any other valid whisper target.
+           Added --#gmoutputtarget setting which defaults to "gm". If you set this to "self" the output of --* lines will be whispered to the player executing the script. You can also set this to any other valid whisper target.
            
-           Added --#functionbenchmarking which defaults to 0. Set to 1 to turn on some basic statistics about calls to functinos (with -->). After your
-           script finishes running the number of calls to each called function will be reported in the API console log as well as the number of 
-           milliseconds the script took to run.
+           Added --#functionbenchmarking which defaults to 0. Set to 1 to turn on some basic statistics about calls to functinos (with -->). After your script finishes running the number of calls to each called function will be reported in the API console log as well as the number of milliseconds the script took to run.
 
            Added --~|array;fromkeys;ArrayName;HashTableName will create an array with all of the keys in a given hashtable
            

@@ -27,7 +27,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.14";
+	const APIVERSION = "2.7.15";
 	const NUMERIC_VERSION = "207140"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
@@ -470,7 +470,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 						sendChat("API", metacard);
 					}
-				})				
+				})
 				on('add:attribute', function (obj) {
 					var ability = findObjs({ type: "attribute", _characterid: triggerCharID, name: "add:attribute" });
 					if (Array.isArray(ability) && ability.length > 0) {
@@ -5542,7 +5542,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								hashTables[hashname] = {};
 
 								let sectionIDs = getRepeatingSectionIDs(charid, sectionname)
-								log(sectionIDs)
+
 								for (let x = 0; x < sectionIDs.length; x++) {
 									let thisSection = getSectionAttrsByID(charid, sectionname, sectionIDs[x])
 									for (let y = 0; y < thisSection.length; y++) {
@@ -5562,10 +5562,35 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (!rowValue) { rowValue = "" }
 										hashTables[hashname][rowID + "_" + rowName] = rowValue
 									}
+									hashTables[hashname][rowID + "_sectionid"] = sectionIDs[x]
 
 								}
 							} catch (e) {
 								log(`ScriptCards: Error occured converting repeating section to hash table: ${e}`)
+							}
+						}
+
+						if (params[1].toLowerCase() == "fromrepeatingrow") {
+							try {
+								let charid = params[2]
+								let sectionname = params[3]
+								let sectionID = params[4]
+								let hashname = params[5]
+
+								hashTables[hashname] = {};
+
+								let thisSection = getSectionAttrsByID(charid, sectionname, sectionID)
+								for (let y = 0; y < thisSection.length; y++) {
+									let rowName = thisSection[y].split("|")[0]
+									let rowValue = thisSection[y].split("|")[1]
+									if (rowValue.indexOf("@{") > -1) { rowValue = "Unsupported (AttrRef)" }
+									if (rowValue.indexOf("[[") > -1) { rowValue = "Unsupported (InlineRoll)" }
+									if (rowValue.indexOf("{{") > -1) { rowValue = "Unsupported (TemplateRef)" }
+									if (!rowValue) { rowValue = "" }
+									hashTables[hashname][rowName] = rowValue
+								}
+							} catch (e) {
+								log(`ScriptCards: Error occured converting repeating row to hash table: ${e}`)
 							}
 						}
 
@@ -5774,7 +5799,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (params[p].toLowerCase() == "char" || params[p].toLowerCase() == "chars") {
 											if (isBlank(foundTokens[t].get("represents"))) {
 												foundTokens.splice(t, 1);
-											} 
+											}
 										}
 
 										if (params[p].toLowerCase() == "graphic" || params[p].toLowerCase() == "graphics") {
