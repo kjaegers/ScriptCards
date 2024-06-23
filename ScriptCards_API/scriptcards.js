@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.15";
-	const NUMERIC_VERSION = "207140"
+	const APIVERSION = "2.7.17";
+	const NUMERIC_VERSION = "207170"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1653,10 +1653,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				case "=":
 					var vName = "ScriptCardsInternalDummyRollVariable";
 					var rollFormula = thisMatch.substring(2, thisMatch.length - 1);
-					if (thisMatch.indexOf(":") > 0 && thisMatch.indexOf(":") < thisMatch.indexOf("{")) {
+					if (thisMatch.indexOf(":") > 0 && thisMatch.indexOf(":") < thisMatch.indexOf("]")) {
 						vName = thisMatch.substring(2, thisMatch.indexOf(":"));
 						rollFormula = thisMatch.substring(thisMatch.indexOf(":") + 1, thisMatch.length - 1);
 					}
+					log(vName)
 					rollVariables[vName] = parseDiceRoll(rollFormula, cardParameters);
 					replacement = rollVariables[vName]["Total"]
 					break;
@@ -2385,6 +2386,15 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var trimmed = conditional.replace(/\s+/g, ' ').trim();
 		var parts = trimmed.match(/(?:[^\s"]+|"[^"]*")+/g);
 		if (!parts) { return false; }
+		var alljoinersAnd = true;
+		var alljoinersOr = true;
+		for (var x=0; x<parts.length; x++) {
+			if (parts[x].toLowerCase() !== "-and" || parts[x].toLowerCase() !== "-or") {
+				if (parts[x].toLowerCase() == "-and") { alljoinersOr = false; }
+				if (parts[x].toLowerCase() == "-or") { alljoinersAnd = false; }	
+			}
+		}
+		log(`AllJoinersAnd: ${alljoinersAnd} AllJoinersOr: ${alljoinersOr}`)
 		var currentJoiner = "none";
 		var overallResult = true;
 		if (parts.length < 3) { return false; }
@@ -2399,6 +2409,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				case "-and": overallResult = overallResult && thisResult; break;
 				case "-or": overallResult = overallResult || thisResult; break;
 			}
+			/*
+			if (alljoinersAnd && !overallResult) { log(`False, exiting`); x = parts.length + 1; }
+			if (alljoinersOr && overallResult) { log(`True, exiting`); x = parts.length + 1; }
+			*/
 			if (parts.length > 0) {
 				if ((parts[0].toLowerCase() == "-or") || (parts[0].toLowerCase() == "-and")) {
 					currentJoiner = parts[0].toLowerCase();
@@ -6296,6 +6310,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		try {
 			var command = thisTag.substring(1).toLowerCase();
 			var param = thisContent.split(cardParameters.parameterdelimiter);
+			log(`Processing Repeating Section Command: ${command}, Params: ${param}`)
 			switch (command.toLowerCase()) {
 				case "find":
 				case "search":
@@ -6346,11 +6361,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					break;
 				case "bysectionid":
 					if (param[0] && param[1] && param[2]) {
+						let charID = param[0]
+						let secName = param[1]
 						var ci = false
 						if (param[3] && (param[3] == "1" || param[3].toLowerCase() == "i")) {
 							ci = true
 						}
-						repeatingSectionIDs = getRepeatingSectionIDs(param[0], param[1]);
+						repeatingSectionIDs = getRepeatingSectionIDs(charID, secName);
 						if (repeatingSectionIDs) {
 							repeatingIndex = undefined;
 							for (let x = 0; x < repeatingSectionIDs.length; x++) {
@@ -6361,11 +6378,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									repeatingIndex = x;
 								}
 							}
-							repeatingCharID = param[0];
-							repeatingSectionName = param[1];
+							repeatingCharID = charID;
+							repeatingSectionName = secName;
 							fillCharAttrs(findObjs({ _type: 'attribute', _characterid: repeatingCharID }));
 							repeatingSection = getSectionAttrsByID(repeatingCharID, repeatingSectionName, repeatingSectionIDs[repeatingIndex]);
-							repeatingIndex = Number(param[2]);
 						} else {
 							repeatingSection = undefined;
 						}
