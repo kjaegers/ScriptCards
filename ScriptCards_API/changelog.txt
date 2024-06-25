@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.18:
+- Bug fix for pagetokens without a filter returning nothing
+
 v 2.7.17:
 - Fixed a bug in bysectionid repeating section lookup that was setting repeatingindex to undefined
 

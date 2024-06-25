@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.17";
-	const NUMERIC_VERSION = "207170"
+	const APIVERSION = "2.7.18";
+	const NUMERIC_VERSION = "207180"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -381,7 +381,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						sendChat("API", metacard);
 					}
 				})
-				*/
 				on('change:character', function (obj, prev) {
 					if (bioCharID) {
 						log(`updating bio for ${obj}`)
@@ -404,6 +403,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						sendChat("API", metacard);
 					}
 				})
+					*/
 				on('change:attribute', function (obj, prev) {
 					/*
 					if (bioCharID) {
@@ -2388,13 +2388,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (!parts) { return false; }
 		var alljoinersAnd = true;
 		var alljoinersOr = true;
-		for (var x=0; x<parts.length; x++) {
+		for (var x = 0; x < parts.length; x++) {
 			if (parts[x].toLowerCase() !== "-and" || parts[x].toLowerCase() !== "-or") {
 				if (parts[x].toLowerCase() == "-and") { alljoinersOr = false; }
-				if (parts[x].toLowerCase() == "-or") { alljoinersAnd = false; }	
+				if (parts[x].toLowerCase() == "-or") { alljoinersAnd = false; }
 			}
 		}
-		log(`AllJoinersAnd: ${alljoinersAnd} AllJoinersOr: ${alljoinersOr}`)
+		//log(`AllJoinersAnd: ${alljoinersAnd} AllJoinersOr: ${alljoinersOr}`)
 		var currentJoiner = "none";
 		var overallResult = true;
 		if (parts.length < 3) { return false; }
@@ -5946,11 +5946,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										}
 									}
 								}
-
-								arrayVariables[params[2]] = [];
-								for (let l = 0; l < foundTokens.length; l++) {
-									arrayVariables[params[2]].push(foundTokens[l].id);
-								}
+							}
+							arrayVariables[params[2]] = [];
+							for (let l = 0; l < foundTokens.length; l++) {
+								arrayVariables[params[2]].push(foundTokens[l].id);
 							}
 							if (foundTokens.length > 0) {
 								arrayIndexes[params[2]] = 0;
