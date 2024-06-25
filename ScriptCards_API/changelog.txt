@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.19:
+- Added the ability to have multiple change:attribute triggers for the same attribute. This change will be coming to all attributes shortly
+
 v 2.7.18a:
 - array;statusmarkers will now exclude anything that is actually empty in the statusmarkers list
 

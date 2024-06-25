@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.18a";
-	const NUMERIC_VERSION = "207181"
+	const APIVERSION = "2.7.19";
+	const NUMERIC_VERSION = "207190"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -405,26 +405,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				})
 					*/
 				on('change:attribute', function (obj, prev) {
-					/*
-					if (bioCharID) {
-						let bioChar = getObj("character", obj._characterid)
-						bioChar.get("bio", function (bio) {
-							createObj("attribute"), {
-								characterid: bioCharID,
-								name: "test_bio",
-								current: bio
-							}
-						});
-					}
-					*/
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:attribute:${prev.name}` });
 					if (Array.isArray(ability) && ability.length > 0) {
 						var replacement = "";
 						for (const property in prev) {
 							replacement += ` --&AttributeOld${property}|${prev[property]} --&AttributeNew${property}|${obj.get(property)}`
 						}
-						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);
+						for (let ab=0; ab<ability.length; ab++) {
+							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+							sendChat("API", metacard);
+						}
 					}
 				})
 				on('change:graphic', function (obj, prev) {
