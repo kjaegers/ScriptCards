@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.19";
-	const NUMERIC_VERSION = "207190"
+	const APIVERSION = "2.7.20";
+	const NUMERIC_VERSION = "207200"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -367,8 +367,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "change:campaign:playerpageid" });
 					if (Array.isArray(ability) && ability.length > 0) {
 						var replacement = ` --&PreviousPageID|${prev.playerpageid} --&NewPageID|${obj.get("playerpageid")} `;
-						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);
+						for (let ab = 0; ab < ability.length; ab++) {
+							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+							sendChat("API", metacard);
+						}
 					}
 				})
 				on('change:campaign:turnorder', function () { onChangeCampaignTurnorder(triggerCharID) });
@@ -411,7 +413,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						for (const property in prev) {
 							replacement += ` --&AttributeOld${property}|${prev[property]} --&AttributeNew${property}|${obj.get(property)}`
 						}
-						for (let ab=0; ab<ability.length; ab++) {
+						for (let ab = 0; ab < ability.length; ab++) {
 							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 							sendChat("API", metacard);
 						}
@@ -424,8 +426,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						for (const property in prev) {
 							replacement += ` --&GraphicOld${property}|${prev[property]} --&GraphicNew${property}|${obj.get(property)}`
 						}
-						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);
+						for (let ab = 0; ab < ability.length; ab++) {
+							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+							sendChat("API", metacard);
+						}
 					}
 				})
 				on('change:door', function (obj, prev) {
@@ -435,8 +439,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						for (const property in prev) {
 							replacement += ` --&DoorOld${property}|${prev[property]} --&DoorNew${property}|${obj.get(property)}`
 						}
-						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);
+						for (let ab = 0; ab < ability.length; ab++) {
+							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+							sendChat("API", metacard);
+						}
 					}
 				})
 				on('change:page', function (obj, prev) {
@@ -446,8 +452,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						for (const property in prev) {
 							replacement += ` --&PageOld${property}|${prev[property]} --&PageNew${property}|${obj.get(property)}`
 						}
-						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);
+						for (let ab = 0; ab < ability.length; ab++) {
+							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+							sendChat("API", metacard);
+						}
 					}
 				})
 				on('change:character', function (obj, prev) {
@@ -457,41 +465,49 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						for (const property in prev) {
 							replacement += ` --&CharOld${property}|${prev[property]} --&CharNew${property}|${obj.get(property)}`
 						}
-						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);
+						for (let ab = 0; ab < ability.length; ab++) {
+							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+							sendChat("API", metacard);
+						}
 					}
 				})
 				on('add:attribute', function (obj) {
 					var ability = findObjs({ type: "attribute", _characterid: triggerCharID, name: "add:attribute" });
 					if (Array.isArray(ability) && ability.length > 0) {
-						setTimeout(() => {
-							var replacement = ` --&AttributeAdded|${obj.id}} `;
-							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-							sendChat("API", metacard);
+						for (let ab = 0; ab < ability.length; ab++) {
+							setTimeout(() => {
+								var replacement = ` --&AttributeAdded|${obj.id}} `;
+								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+								sendChat("API", metacard);
+							}
+								, 500);
 						}
-							, 500);
 					}
 				})
 				on('add:page', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:page" });
 					if (Array.isArray(ability) && ability.length > 0) {
-						setTimeout(() => {
-							var replacement = ` --&PageAdded|${obj.id}} `;
-							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-							sendChat("API", metacard);
+						for (let ab = 0; ab < ability.length; ab++) {
+							setTimeout(() => {
+								var replacement = ` --&PageAdded|${obj.id}} `;
+								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+								sendChat("API", metacard);
+							}
+								, 500);
 						}
-							, 500);
 					}
 				})
 				on('add:character', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:character" });
 					if (Array.isArray(ability) && ability.length > 0) {
-						setTimeout(() => {
-							var replacement = ` --&CharAdded|${obj.id}} `;
-							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-							sendChat("API", metacard);
+						for (let ab = 0; ab < ability.length; ab++) {
+							setTimeout(() => {
+								var replacement = ` --&CharAdded|${obj.id}} `;
+								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+								sendChat("API", metacard);
+							}
+								, 500);
 						}
-							, 500);
 					}
 				})
 				on('destroy:page', function (obj) {
@@ -505,19 +521,23 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								//do nothing 
 							}
 						}
-						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);
+						for (let ab = 0; ab < ability.length; ab++) {
+							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+							sendChat("API", metacard);
+						}
 					}
 				})
 				on('add:graphic', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:graphic" });
 					if (Array.isArray(ability) && ability.length > 0) {
-						setTimeout(() => {
-							var replacement = ` --&GraphicAdded|${obj.id} `;
-							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-							sendChat("API", metacard);
+						for (let ab = 0; ab < ability.length; ab++) {
+							setTimeout(() => {
+								var replacement = ` --&GraphicAdded|${obj.id} `;
+								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+								sendChat("API", metacard);
+							}
+								, 500);
 						}
-							, 500);
 					}
 				})
 				on('destroy:graphic', function (obj) {
@@ -532,20 +552,24 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									//do nothing 
 								}
 							}
-							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-							sendChat("API", metacard);
+							for (let ab = 0; ab < ability.length; ab++) {
+								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+								sendChat("API", metacard);
+							}
 						}
 					} catch (e) { log(`Error: ${e}`) }
 				})
 				on('add:door', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:door" });
 					if (Array.isArray(ability) && ability.length > 0) {
-						setTimeout(() => {
-							var replacement = ` --&DoorAdded|${obj.id}} `;
-							var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-							sendChat("API", metacard);
+						for (let ab = 0; ab < ability.length; ab++) {
+							setTimeout(() => {
+								var replacement = ` --&DoorAdded|${obj.id}} `;
+								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+								sendChat("API", metacard);
+							}
+								, 500);
 						}
-							, 500);
 					}
 				})
 				on('destroy:door', function (obj) {
@@ -559,8 +583,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								//do nothing 
 							}
 						}
-						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);
+						for (let ab = 0; ab < ability.length; ab++) {
+							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+							sendChat("API", metacard);
+						}
 					}
 				})
 				setTimeout(function () {
@@ -4959,6 +4985,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											log(`ArrayVariable: ${key}, Value: ${arrayVariables[key]}`)
 										}
 										break;
+
+									case "hash":
+									case "hashtable":
+									case "hashtables":
+										for (var key in hashTables) {
+											log(`Hash: ${key}, Value: ${JSON.stringify(hashTables[key])}`)
+										}
+										break
 								}
 								break;
 
@@ -6802,9 +6836,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	function onChangeCampaignTurnorder(triggerCharID) {
 		var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "change:campaign:turnorder" });
 		if (Array.isArray(ability) && ability.length > 0) {
-			var replacement = ` `;
-			var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-			sendChat("API", metacard);
+			for (let ab = 0; ab < ability.length; ab++) {
+				var replacement = ` `;
+				var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+				sendChat("API", metacard);
+			}
 		}
 	}
 
