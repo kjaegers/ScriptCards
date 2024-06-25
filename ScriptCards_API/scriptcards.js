@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.18";
-	const NUMERIC_VERSION = "207180"
+	const APIVERSION = "2.7.18a";
+	const NUMERIC_VERSION = "207181"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -6027,7 +6027,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (theToken) {
 								var markers = theToken.get("statusmarkers").split(",");
 								for (var x = 0; x < markers.length; x++) {
-									arrayVariables[params[2]].push(markers[x]);
+									if (markers[x].trim() != "") {
+										arrayVariables[params[2]].push(markers[x]);
+									}
 								}
 								arrayIndexes[params[2]] = 0;
 							}
