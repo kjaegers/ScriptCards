@@ -21,7 +21,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	
 		After the identifier, is a line tag, followed by a vertical bar (|) character, followed by the line content. The scripting language supports 
 		end-inclusion of function libraries with the +++libname+++ directive, which will be pre-parsed and removed from the script. Any number of libraries 
-		can be specified by separating library names (case sensitive) with semicolons (;).
+		can be specified by separating library names (case sensitive) with semicolons (;). 
 	
 		Please see the ScriptCards Wiki Entry on Roll20 at https://wiki.roll20.net/Script:ScriptCards for details.
 	*/
