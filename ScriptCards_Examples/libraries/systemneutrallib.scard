@@ -1,4 +1,4 @@
---/|ScriptCards Library: systemneutrallib (snlib) version 0.1.0
+--/|ScriptCards Library: systemneutrallib (snlib) version 0.1.2
 --/|Provides various utility procedures for general Roll20 stuff
 
 --/|This library consolidates functions from a number of the sample scripts on the ScriptCards github into a single library
@@ -69,6 +69,12 @@
 --/|
 --/|  LibSN_REMOVE_STATUS_MARKER|TokenID;MarkerToRemove
 --/|          Will remove any variation of (MarkerToRemove from the given token (TokenID)
+--/|
+--/|  LibSN_REMOVE_STATUS_MARKER_SET|Token_ID;Status Marker1;Status Marker 2;...
+--/|          Removes all of the status markers in the list from the indicated token.
+--/|
+--/|  LibSN_ADD_STATUS_MARKER_SET|Token_ID;Status Marker1;Status Marker 2;...
+--/|          Adds all of the status markers in the list to the indicated token.
 --/|
 --/|  LibSN_ADD_STATUS_MARKER|TokenID;MarkerToAdd;Count
 --/|          Will add (MarkerToAdd) to the given token (TokenID). If count is specified with a number
@@ -207,6 +213,9 @@
 --/|          blank by leaving nothing between the semicolons. The button will use (sheetid) as character on which the abilities are found
 --/|          and abilityfield as the field to use for the ability name.
 --/|
+--/|  LibSN_Move_Token|TokenID;X;Y
+--/|        Moves the token (TokenID) to the X,Y coordinates specified by (X) and (Y). X and Y can also be relative
+--/|        by prefixing them with + or - (ie, +10 for X moves the token 10 units to the right)
 
 --:LibSN_CHECK_FOR_LIBRARY|ReturnString
 --&[%1%]|1
@@ -218,9 +227,9 @@
   --~|array;fromstring;workarray;&&&;[&work]
   --&searchVal|[%1%]
   --&[%2%]|
-  --%loop|foreach;workarray
-    --?"[&loop]" -ninc "[&searchVal]"|%
-    --~[%2%]|string;before;:;[&loop]
+  --%_libloop|foreach;workarray
+    --?"[&_libloop]" -ninc "[&searchVal]"|%
+    --~[%2%]|string;before;:;[&_libloop]
   --%|
 --<|
 
@@ -230,9 +239,9 @@
   --~|array;fromstring;workarray;&&&;[&work]
   --&searchVal|[%1%]
   --&[%2%]|
-  --%loop|foreach;workarray
-    --?"[&loop]" -ninc "[&searchVal]"|%
-    --~[%2%]|string;after;:;[&loop]
+  --%_libloop|foreach;workarray
+    --?"[&_libloop]" -ninc "[&searchVal]"|%
+    --~[%2%]|string;after;:;[&_libloop]
   --%|
 --<|
 
@@ -242,10 +251,10 @@
   --~|array;fromstring;workarray;&&&;[&work]
   --&searchVal|[%1%]
   --&[%2%]|
-  --%loop|foreach;workarray
-    --?"[&loop]" -ninc "[&searchVal]"|%
-    --~[%2%]|string;before;:;[&loop]
-    --~[%3%]|string;after;:;[&loop]
+  --%_libloop|foreach;workarray
+    --?"[&_libloop]" -ninc "[&searchVal]"|%
+    --~[%2%]|string;before;:;[&_libloop]
+    --~[%3%]|string;after;:;[&_libloop]
   --%|
 --<|
 
@@ -257,9 +266,9 @@
 --:LibSN_GET_CONTROLLED_CHARACTER_LIST|--/|SendingPlayerID
   --~|array;objects:character;_FCT_Characters
   --&[%1%]|
-  --%_loop|0;[@_FCT_Characters(maxindex)]
-    --?"X[*[@_FCT_Characters([&_loop])]:controlledby]" -ninc [&SendingPlayerID]|%
-    --?"X[&[%1%]]" -eq "X"|&[%1%];+[@_FCT_Characters([&_loop])]|&[%1%];+,[@_FCT_Characters([&_loop])]
+  --%_libloop|0;[@_FCT_Characters(maxindex)]
+    --?"X[*[@_FCT_Characters([&_libloop])]:controlledby]" -ninc [&SendingPlayerID]|%
+    --?"X[&[%1%]]" -eq "X"|&[%1%];+[@_FCT_Characters([&_libloop])]|&[%1%];+,[@_FCT_Characters([&_libloop])]
   --%|
 --<|
 
@@ -267,16 +276,16 @@
   --&[%3%]|
   --?"X[%1%]" -eq "X"|<
   --~|array;pagetokens;_FCT_Tokens;[%2%];pc
-  --%_loop|0;[@_FCT_Tokens(maxindex)]
-    --?"X[*[@_FCT_Tokens([&_loop])]:t-represents]" -ninc [%1%]|%
-    --?"X[&[%3%]]" -eq "X"|&[%3%];+[@_FCT_Tokens([&_loop])]|&[%3%];+,[@_FCT_Tokens([&_loop])]
+  --%_libloop|0;[@_FCT_Tokens(maxindex)]
+    --?"X[*[@_FCT_Tokens([&_libloop])]:t-represents]" -ninc [%1%]|%
+    --?"X[&[%3%]]" -eq "X"|&[%3%];+[@_FCT_Tokens([&_libloop])]|&[%3%];+,[@_FCT_Tokens([&_libloop])]
   --%|
 --<|
 
 --:LibSN_GET_CONTROLLED_TOKENS_FROM_PAGETOKENS|
   --~|array;pagetokens;_FCT_Tokens;[*C:playerpageid];pc
-  --%_loop|0;[@_FCT_Tokens(maxindex)]
-    --&_FCT_TID|[@_FCT_Tokens([&_loop])]
+  --%_libloop|0;[@_FCT_Tokens(maxindex)]
+    --&_FCT_TID|[@_FCT_Tokens([&_libloop])]
     --&_FCT_CHAR|[*[&_FCT_TID]:t-represents]
     --?"X[*O:[&_FCT_CHAR]:character:controlledby]" -ninc [&SendingPlayerID]|%
     --?"X[&[%1%]]" -eq "X"|&[%1%];+[&_FCT_TID]|&[%1%];+,[&_FCT_TID]
@@ -285,8 +294,8 @@
 
 --:LibSN_GET_PLAYER_CONTROLLED_TOKENS_FROM_PAGETOKENS|
   --~|array;pagetokens;_FCT_Tokens;[*C:playerpageid];pc
-  --%_loop|0;[@_FCT_Tokens(maxindex)]
-    --&_FCT_TID|[@_FCT_Tokens([&_loop])]
+  --%_libloop|0;[@_FCT_Tokens(maxindex)]
+    --&_FCT_TID|[@_FCT_Tokens([&_libloop])]
     --&_FCT_CHAR|[*[&_FCT_TID]:t-represents]
     --?"X[*O:[&_FCT_CHAR]:character:controlledby]" -eq "X"|%
     --?"X[&[%1%]]" -eq "X"|&[%1%];+[&_FCT_TID]|&[%1%];+,[&_FCT_TID]
@@ -325,6 +334,18 @@
 --:LibSN_DONE_REMOVE_STATUS_MARKER|
 --<|  
 
+--:LibSN_REMOVE_STATUS_MARKER_SET|Token_ID;Status Marker1;Status Marker 2;...
+  --%_libmarkerloop|1;[@args(maxindex)]
+    -->LibSN_REMOVE_STATUS_MARKER|[%1%];[@args([&_libmarkerloop])]
+  --%|
+--<|
+
+--:LibSN_ADD_STATUS_MARKER_SET|Token_ID;Status Marker1;Status Marker 2;...
+  --%_libmarkerloop|1;[@args(maxindex)]
+    -->LibSN_ADD_STATUS_MARKER|[%1%];[@args([&_libmarkerloop])]
+  --%|
+--<|
+
 --:LibSN_DECREMENT_STATUS_MARKER|Token_ID;Status Marker;Optional:0=remove marker if decrementing from 0 or 1=Remove marker if decrementing TO 0.
   -->LibSN_CHECK_STATUS_MARKER|[%1%];[%2%];_DEC_EXIST;_DEC_COUNT
   --?[&_DEC_EXIST] -eq 0|LibSN_DONE_DECREMENT_STATUS_MARKER
@@ -349,9 +370,9 @@
 --:LibSN_CHECK_STATUS_MARKER|TokenID;MarkerToFind;Exists;Counter
   --~|array;statusmarkers;Conditions;[%1%]
   --&FoundMarker|-1
-  --%loop|0;[@Conditions(maxindex)]
-    --&Temp|[@Conditions([&loop])]
-	--?[&Temp(indexof,[%2%])] -eq 0|&FoundMarker;[&loop]
+  --%_libloop|0;[@Conditions(maxindex)]
+    --&Temp|[@Conditions([&_libloop])]
+	--?[&Temp(indexof,[%2%])] -eq 0|&FoundMarker;[&_libloop]
   --%|
   --?[&FoundMarker] -ne -1|LibSN_FOUND_STATUS_MARKER
   --&[%3%]|0 --&[%4%]|0 --<|
@@ -394,8 +415,8 @@
 --:LibSN_GET_TOKEN_TURN_INFO|TokenID;InitCounter;CustomName;Formula;page
   --?"X[$_toCount.Raw]" -eq "X"|>LibSN__to_PARSE_TURN_ORDER
   --&_toID| --&_toPR| --&_toCustom| --&_toFormula| --&_toPageID|
-  --%_to_outer_loop|1;[$_toCount]
-    --&_work_turn|[&_to[&_to_outer_loop]]
+  --%_to_outer_libloop|1;[$_toCount]
+    --&_work_turn|[&_to[&_to_outer_libloop]]
     --&_work_turn|[&_work_turn(replaceall,{,)] --&_work_turn|[&_work_turn(replaceall,},)]     
     --~_to_ThisTurn|string;split;,;[&_work_turn]
     --%_toLoop|1;[$_to_ThisTurnCount]
@@ -475,8 +496,8 @@
 
 --:LibSN_BUILD_DROPDOWN_FROM_ARRAY|ReturnVar;Prompt;arrayName
 --&_DDOWN|? --&_DDOWN|+{ --&_DDOWN|+[%2%]
---%_LibLoop|foreach;[%3%]
-  --&_DDOWN|+|[&_LibLoop]
+--%_libloop|foreach;[%3%]
+  --&_DDOWN|+|[&_libloop]
 --%|
 --&_DDOWN|+}
 --&[%1%]|[&_DDOWN]
@@ -485,7 +506,7 @@
 --:LibSN_RANDOMIZE_ARRAY|ArrayToRandomize;Iterations (optional, default 3 * number of items)
 --=_ITERATIONS|[@[%1%](maxindex)] * 3
 --?"[%2%]" -ne ""|=_ITERATIONS;[%2%]
---%_loop|0;[$_ITERATIONS]
+--%_libloop|0;[$_ITERATIONS]
   -->LibSN_SWAP_ARRAY_ITEMS|[%1%];[=1d[@[%1%](length)] - 1];[=1d[@[%1%](length)] - 1]
 --%|
 --<|
@@ -497,8 +518,8 @@
 --?"[&_ENDCOUNT]" -eq ""|&_ENDCOUNT;[@[%1%](maxindex)]
 --~dummy|array;[%2%];define
 --=_DESTITEM|0
---%_loop|[&_STARTCOUNT];[&_ENDCOUNT]
-  --&[%2%]([$_DESTITEM.Raw])|[@[%1%]([&_loop])]
+--%_libloop|[&_STARTCOUNT];[&_ENDCOUNT]
+  --&[%2%]([$_DESTITEM.Raw])|[@[%1%]([&_libloop])]
   --=_DESTITEM|[$_DESTITEM] + 1
 --%|
 --<|
@@ -515,8 +536,8 @@
 --?"[%4%]" -eq "1"|=_PICKROLL;[%3%]u[&_MAXROLL]|=_PICKROLL;[%3%]d[&_MAXROLL]
 --~dummy|array;define;[%2%];
 --~dummy|array;removeat;[%2%];0
---%_loop|1;[$_PICKROLL.RollCount]
-  --=_THISROLL|[$_PICKROLL.RolledDice([&_loop])] - 1
+--%_libloop|1;[$_PICKROLL.RollCount]
+  --=_THISROLL|[$_PICKROLL.RolledDice([&_libloop])] - 1
   --&[%2%](99999)|[@[%1%]([$_THISROLL.Raw])]
 --%|
 --<|
@@ -553,8 +574,8 @@
 --:LibSN_REPEATING_RBUTTONS|charid;sectionname,displayfield,filterfield;filtersearch;reentrypoint,reentryfield;returnstring
   --&_LibBuild|
   --=_LibRows|[*R:[%1%]:[%2%]:rowcount]
-  --%loop|1;[$_LibRows]
-    --?"[%4%]" -eq "" -or "[*R:[%1%]:[%2%]:[=[&loop]-1]:[%4%]]" -ninc "[%5%]"|[
+  --%_libloop|1;[$_LibRows]
+    --?"[%4%]" -eq "" -or "[*R:[%1%]:[%2%]:[=[&_libloop]-1]:[%4%]]" -ninc "[%5%]"|[
       --&_LibBuild|+[rbutton][*R:[%3%]]::[%6%];[*R:[%7%]][/rbutton]
     --]|
   --%|
@@ -565,8 +586,8 @@
   --~|array;define;[%8%];
   --~|array;removat;[%8];0
   --=_LibRows|[*R:[%1%]:[%2%]:rowcount]
-  --%loop|1;[$_LibRows]
-    --?"[%4%]" -eq "" -or "[*R:[%1%]:[%2%]:[=[&loop]-1]:[%4%]]" -inc "[%5%]"|[
+  --%_libloop|1;[$_LibRows]
+    --?"[%4%]" -eq "" -or "[*R:[%1%]:[%2%]:[=[&_libloop]-1]:[%4%]]" -inc "[%5%]"|[
       --&[%8%](9999)|[rbutton][*R:[%3%]]::[%6%];[*R:[%7%]][/rbutton]
     --]|
   --%|
@@ -575,8 +596,8 @@
 --:LibSN_REPEATING_SHEETBUTTONS|sheetid;charid;sectionname,displayfield,filterfield;filtersearch;abilitiyfield;returnstring
   --&_LibBuild|
   --=_LibRows|[*R:[%2%]:[%3%]:rowcount]
-  --%loop|1;[$_LibRows]
-    --?"[%5%]" -eq "" -or "[*R:[%2%]:[%3%]:[=[&loop]-1]:[%5%]]" -ninc "[%6%]"|[
+  --%_libloop|1;[$_LibRows]
+    --?"[%5%]" -eq "" -or "[*R:[%2%]:[%3%]:[=[&_libloop]-1]:[%5%]]" -ninc "[%6%]"|[
       --&_LibAbilName|[*R:[%7%]]
       --&_LibAbilName|[&_LibAbilName(replaceall, ,-)]
       --&_LibBuild|+[button][*R:[%4%]]::~[%1%]|[&_LibAbilName][/button]
@@ -589,8 +610,8 @@
   --~|array;define;[%8%];
   --~|array;removat;[%8];0
   --=_LibRows|[*R:[%2%]:[%3%]:rowcount]
-  --%loop|1;[$_LibRows]
-    --?"[%5%]" -eq "" -or "[*R:[%2%]:[%3%]:[=[&loop]-1]:[%5%]]" -ninc "[%6%]"|[
+  --%_libloop|1;[$_LibRows]
+    --?"[%5%]" -eq "" -or "[*R:[%2%]:[%3%]:[=[&_libloop]-1]:[%5%]]" -ninc "[%6%]"|[
       --&_LibAbilName|[*R:[%7%]]
       --&_LibAbilName|[&_LibAbilName(replaceall, ,-)]
       --&[%8%](9999)|[button][*R:[%4%]]::~[%1%]|[&_LibAbilName][/button]
@@ -598,4 +619,47 @@
   --%|
 --<|
 
---X|
+--:LibSN_Filter_Repeating_Hash_Keys|HashName;searchfield;searchvalue;ReturnArrayName
+  --~|array;fromkeys;[%1%]
+  --%_libloop|
+
+  --%|
+--<|
+
+--:LibSN_Move_Token|TokenID;X;Y
+  --+Tid|[%1%]
+  --&_LibTID|[%1%]
+  --&_TestX|_[%2%]
+  --&_TestY|_[%3%]
+  --=_XPOS|70 * [%2%] - 35
+  --=_YPOS|70 * [%3%] - 35
+  --?"[&_TestX(0,2)]" -eq "_+"|>_LibMoveToken_RELATIVEX;add
+  --?"[&_TestX(0,2)]" -eq "_-"|>_LibMoveToken_RELATIVEX;sub
+  --?"[&_TestY(0,2)]" -eq "_+"|>_LibMoveToken_RELATIVEY;add
+  --?"[&_TestY(0,2)]" -eq "_-"|>_LibMoveToken_RELATIVEY;sub
+  --!t:[%1%]|left:[$_XPOS]|top:[$_YPOS]
+  --X|
+
+  --:_LibMoveToken_RELATIVEX|add or sub
+    --&_LibNewX|[&_TestX(2)]
+    --=_LibXBASE|[*[&_LibTID]:t-left] {ROUND} - 35
+    --=_LibXOFF|[&_LibNewX] * 70
+    --?"[%1%]" -eq "add"|=_XPOS;[$_LibXBASE] + [$_LibXOFF] + 35
+    --?"[%1%]" -eq "sub"|=_XPOS;[$_LibXBASE] - [$_LibXOFF] + 35
+  --<|
+
+  --:_LibMoveToken_RELATIVEY|add or sub
+    --&_LibNewY|[&_TestY(2)]
+    --=_LibYBASE|[*[&_LibTID]:t-top] {ROUND} - 35
+    --=_LibYOFF|[&_LibNewY] * 70
+    --?"[%1%]" -eq "add"|=_YPOS;[$_LibYBASE] + [$_LibYOFF] + 35
+    --?"[%1%]" -eq "sub"|=_YPOS;[$_LibYBASE] - [$_LibYOFF] + 35
+  --<|
+ --<|
+
+
+--:LibSN_Report_Array|ArrayName
+  --%_libloop|foreach;[%1%]
+    --+Entry|[%_libloop]
+  --%|
+  --<|

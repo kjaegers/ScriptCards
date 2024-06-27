@@ -1,3 +1,10 @@
+System Neutral Library - 0.1.2
+- Added "LibSN_ADD_STATUS_MARKER_SET" and "LibSN_REMOVE_STATUS_MARKER_SET" to add or remove a set of status markers from a token
+
+System Neutral Library - 0.1.1
+- Replaced any instance of loops using "loop" as the control variable with _libloop to avoid conflicts with base scripts
+- Added "LibSN_Move_Token" to allow for absolute or relative movement of tokens by grid squares
+
 System Neutral Library - 0.1.0
 - Removed extraneous "Test" output from LibSN_APPLY_DAMAGE_OR_HEALING
 - Fixed documentation that stated Lib5E_CHECK_FOR_LIBRARY was a function, when it is really LibSN_CHECK_FOR_LIBRARY
