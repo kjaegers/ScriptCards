@@ -1,5 +1,38 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.21:
+- Updated trigger attribute creation to handle entities with -- in their text. No changes needed to trigger scripts.
+
+- New referencing syntax that allows a conditional to be used inline as part of a variable reference by using [?...]. The syntax is [?condition|TrueResult|FalseResult]
+
+Ex: 
+[?1 -eq 2|True|False] will return False, since 1 is not equal to 2
+[?1 -lt 2|True|False] will return True, since 1 is less than to 2
+
+Note that when using Roll Variable references in the conditional, it is advisable to use the .Raw, .Base, or other modifier except .Total or no suffix since these will both contain HTML code. [?...] can be nested as evaluation happens from the inside out.
+
+Ex:
+  !script {{
+    --=Roll|1d20
+    --=Roll2|1d20
+    --+Roll|[$Roll]
+    --+Roll2|[$Roll2]
+
+    --+Test|Evaluation: [?[$Roll.Raw] -gt 10|Roll 1 is HIGH|Roll 1 is Low]
+    --+Test|[?[$Roll.Raw] -gt 10|[?[$Roll2.Raw] -gt 10|Both High|First high]|first or both low]
+  }}
+
+You CAN nest additional [?...] statements inside the TrueResult or FalseResult sections, but you must be careful to balance the brackets. Also, you CANNOT have two open or close brackets in a row ([[ or ]]) as Roll20 will try to interepret this as an in-line roll and throw an error. Separate them with spaces. In the example below, the ] ] ] sequence is separated with spaces to prevent this from happening. (There is sadly nothing I can do about this, as it is a Roll20 limitation).
+
+Ex:
+
+  !script {{
+    --=Roll|1d20 + @{selected|strength_mod} [STR] + @{selected|pb} [PROF]
+    --&HitType|[?[$Roll.Base] -eq 20|Crit|[?[$Roll.Base] -eq 1|Fumble|[?[$Roll.Base] -ge @{target|npc_ac}|Hit|Miss] ] ]
+
+    --+Roll Info|[$Roll] - [&HitType]
+  }}
+
 v 2.7.20:
 - Extended multiple trigger functionality to all triggers
 - Added "hash" to system;dumpvariables (ie, --~|system;dumpvariables;hash) to show all hash tables

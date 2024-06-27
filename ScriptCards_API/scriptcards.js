@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.20";
-	const NUMERIC_VERSION = "207200"
+	const APIVERSION = "2.7.21";
+	const NUMERIC_VERSION = "207210"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -137,6 +137,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		attemptattributeparsing: "0",
 		disableinlineformatting: "0",
 		executionlimit: "40000",
+		inlineconditionseparator: "|",
 		deferralcharacter: "^",
 		locale: "en-US", //apparently not supported by Roll20's Javascript implementation...
 		timezone: "America/New_York",
@@ -374,44 +375,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 				})
 				on('change:campaign:turnorder', function () { onChangeCampaignTurnorder(triggerCharID) });
-				/*
-				on('change:campaign:turnorder', function () {
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "change:campaign:turnorder" });
-					if (Array.isArray(ability) && ability.length > 0) {
-						var replacement = ` `;
-						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);
-					}
-				})
-				on('change:character', function (obj, prev) {
-					if (bioCharID) {
-						log(`updating bio for ${obj}`)
-						obj.get("bio", function (bio) {
-							createObj("attribute"), {
-								characterid: bioCharID,
-								name: obj.id + "bio",
-								current: bio
-							}
-						});
-					}
 
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:character` });
-					if (Array.isArray(ability) && ability.length > 0) {
-						var replacement = "";
-						for (const property in prev) {
-							replacement += ` --&CharacterOld${property}|${prev[property]} --&CharacterNew${property}|${obj.get(property)}`
-						}
-						var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-						sendChat("API", metacard);
-					}
-				})
-					*/
 				on('change:attribute', function (obj, prev) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:attribute:${prev.name}` });
 					if (Array.isArray(ability) && ability.length > 0) {
 						var replacement = "";
 						for (const property in prev) {
-							replacement += ` --&AttributeOld${property}|${prev[property]} --&AttributeNew${property}|${obj.get(property)}`
+							//replacement += ` --&AttributeOld${property}|${prev[property]} --&AttributeNew${property}|${obj.get(property)}`
+							replacement += ` ${getSafeTriggerString("AttributeOld" + property, prev[property])} ${getSafeTriggerString("AttributeNew" + property, obj.get(property))} `
 						}
 						for (let ab = 0; ab < ability.length; ab++) {
 							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
@@ -424,7 +395,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (Array.isArray(ability) && ability.length > 0) {
 						var replacement = "";
 						for (const property in prev) {
-							replacement += ` --&GraphicOld${property}|${prev[property]} --&GraphicNew${property}|${obj.get(property)}`
+							//replacement += ` --&GraphicOld${property}|${prev[property]} --&GraphicNew${property}|${obj.get(property)}`
+							replacement += ` ${getSafeTriggerString("GraphicOld" + property, prev[property])} ${getSafeTriggerString("GraphicNew" + property, obj.get(property))} `
 						}
 						for (let ab = 0; ab < ability.length; ab++) {
 							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
@@ -437,7 +409,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (Array.isArray(ability) && ability.length > 0) {
 						var replacement = "";
 						for (const property in prev) {
-							replacement += ` --&DoorOld${property}|${prev[property]} --&DoorNew${property}|${obj.get(property)}`
+							//replacement += ` --&DoorOld${property}|${prev[property]} --&DoorNew${property}|${obj.get(property)}`
+							replacement += ` ${getSafeTriggerString("DoorOld" + property, prev[property])} ${getSafeTriggerString("DoorNew" + property, obj.get(property))} `
 						}
 						for (let ab = 0; ab < ability.length; ab++) {
 							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
@@ -450,7 +423,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (Array.isArray(ability) && ability.length > 0) {
 						var replacement = "";
 						for (const property in prev) {
-							replacement += ` --&PageOld${property}|${prev[property]} --&PageNew${property}|${obj.get(property)}`
+							//replacement += ` --&PageOld${property}|${prev[property]} --&PageNew${property}|${obj.get(property)}`
+							replacement += ` ${getSafeTriggerString("PageOld" + property, prev[property])} ${getSafeTriggerString("PageNew" + property, obj.get(property))} `
+
 						}
 						for (let ab = 0; ab < ability.length; ab++) {
 							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
@@ -461,9 +436,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				on('change:character', function (obj, prev) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:character` });
 					if (Array.isArray(ability) && ability.length > 0) {
-						var replacement = ` --&CharChanged|${obj.id}} `;
+						//var replacement = ` --&CharChanged|${obj.id}} `;
+						var replacement = getSafeTriggerString("CharChanged", obj.id);
 						for (const property in prev) {
-							replacement += ` --&CharOld${property}|${prev[property]} --&CharNew${property}|${obj.get(property)}`
+							//replacement += ` --&CharOld${property}|${prev[property]} --&CharNew${property}|${obj.get(property)}`
+							replacement += ` ${getSafeTriggerString("CharOld" + property, prev[property])} ${getSafeTriggerString("CharNew" + property, obj.get(property))} `
+							replacement += ` ${getSafeTriggerString("CharacterOld" + property, prev[property])} ${getSafeTriggerString("CharacterNew" + property, obj.get(property))} `
 						}
 						for (let ab = 0; ab < ability.length; ab++) {
 							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
@@ -476,7 +454,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (Array.isArray(ability) && ability.length > 0) {
 						for (let ab = 0; ab < ability.length; ab++) {
 							setTimeout(() => {
-								var replacement = ` --&AttributeAdded|${obj.id}} `;
+								//var replacement = ` --&AttributeAdded|${obj.id}} `;
+								var replacement = ` ${getSafeTriggerString("AttributeAdded", obj.id)} `
 								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 								sendChat("API", metacard);
 							}
@@ -489,7 +468,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (Array.isArray(ability) && ability.length > 0) {
 						for (let ab = 0; ab < ability.length; ab++) {
 							setTimeout(() => {
-								var replacement = ` --&PageAdded|${obj.id}} `;
+								//var replacement = ` --&PageAdded|${obj.id}} `;
+								var replacement = ` ${getSafeTriggerString("PageAdded", obj.id)} `
 								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 								sendChat("API", metacard);
 							}
@@ -502,7 +482,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (Array.isArray(ability) && ability.length > 0) {
 						for (let ab = 0; ab < ability.length; ab++) {
 							setTimeout(() => {
-								var replacement = ` --&CharAdded|${obj.id}} `;
+								//var replacement = ` --&CharAdded|${obj.id}} `;
+								var replacement = ` ${getSafeTriggerString("CharAdded", obj.id)} `
 								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 								sendChat("API", metacard);
 							}
@@ -516,7 +497,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						var replacement = "";
 						for (const property in obj) {
 							try {
-								replacement += ` --&PageRemoved${property}|${obj[property]} `
+								//replacement += ` --&PageRemoved${property}|${obj[property]} `
+								replacement += ` ${getSafeTriggerString("PageRemoved" + obj[property])} `
 							} catch (e) {
 								//do nothing 
 							}
@@ -532,7 +514,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (Array.isArray(ability) && ability.length > 0) {
 						for (let ab = 0; ab < ability.length; ab++) {
 							setTimeout(() => {
-								var replacement = ` --&GraphicAdded|${obj.id} `;
+								//var replacement = ` --&GraphicAdded|${obj.id} `;
+								var replacement = ` ${getSafeTriggerString("GraphicAdded", obj.id)} `
 								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 								sendChat("API", metacard);
 							}
@@ -547,7 +530,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							var replacement = "";
 							for (const property in obj) {
 								try {
-									replacement += ` --&GraphicRemoved${property}|${obj[property]} `
+									//replacement += ` --&GraphicRemoved${property}|${obj[property]} `
+									replacement += ` ${getSafeTriggerString("GraphicRemoved" + obj[property])} `
 								} catch (e) {
 									//do nothing 
 								}
@@ -564,7 +548,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (Array.isArray(ability) && ability.length > 0) {
 						for (let ab = 0; ab < ability.length; ab++) {
 							setTimeout(() => {
-								var replacement = ` --&DoorAdded|${obj.id}} `;
+								//var replacement = ` --&DoorAdded|${obj.id}} `;
+								var replacement = ` ${getSafeTriggerString("DoorAdded", obj.id)} `
 								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 								sendChat("API", metacard);
 							}
@@ -578,7 +563,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						var replacement = "";
 						for (const property in obj) {
 							try {
-								replacement += ` --&DoorRemoved${property}|${obj[property]} `
+								//replacement += ` --&DoorRemoved${property}|${obj[property]} `
+								replacement += ` ${getSafeTriggerString("DoorRemoved" + obj[property])} `
 							} catch (e) {
 								//do nothing 
 							}
@@ -1377,8 +1363,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		content = content.replace(/\[&zwnj;/g, "[")
 		//		while (content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
 		//			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:])[^\[\]]*?(?!\.+[\[])(\])/g)[0];
-		while (content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
-			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:])[^\[\]]*?(?!\.+[\[])(\])/g)[0];
+		while (content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:|\?])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
+			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:|\?])[^\[\]]*?(?!\.+[\[])(\])/g)[0];
 			var replacement = "";
 			switch (thisMatch.charAt(1)) {
 				case "&":
@@ -1726,6 +1712,20 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								replacement = callParamList[vName];
 							}
 						}
+					}
+					break;
+
+				case "?":
+					// Replace inline conditional references
+					try {
+						let Pieces = (thisMatch.substring(2, thisMatch.length - 1)).split(cardParameters.inlineconditionseparator)
+						if (processFullConditional(Pieces[0])) {
+							replacement = Pieces[1]
+						} else {
+							replacement = Pieces[2]
+						}
+					} catch (e) {
+						replacement = "";
 					}
 					break;
 
@@ -6335,7 +6335,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		try {
 			var command = thisTag.substring(1).toLowerCase();
 			var param = thisContent.split(cardParameters.parameterdelimiter);
-			log(`Processing Repeating Section Command: ${command}, Params: ${param}`)
+			//log(`Processing Repeating Section Command: ${command}, Params: ${param}`)
 			switch (command.toLowerCase()) {
 				case "find":
 				case "search":
@@ -6802,6 +6802,23 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		});
 	};
 	*/
+
+	function getSafeTriggerString(prefix, property) {
+		try {
+			let prop = property || ""
+			if (prop.toString().indexOf("--") < 0) {
+				return ` --&${prefix}|${prop} `
+			}
+			let split = prop.split("--")
+			let ret = ""
+			for (let x = 0; x < split.length; x++) {
+				ret += ` --&${prefix}|${x == 0 ? "" : "+-"}${split[x]}${x < (split.length - 1) ? "-" : ""}`
+			}
+			return ret;
+		} catch (e) {
+			log(`Error creating safe trigger string: ${e.message}`)
+		}
+	}
 
 	return {
 		ObserveTokenChange: observeTokenChange
