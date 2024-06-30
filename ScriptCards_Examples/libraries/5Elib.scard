@@ -1,4 +1,4 @@
---/|ScriptCards Library: 5ELib version 0.0.2a
+--/|ScriptCards Library: 5ELib version 0.0.2b
 --/|Provides various utility procedures for D&D 5E games
 --/|
 --/| Special Note: This is a "new" library for D&D 5E. The existing "dnd5elib" has been left unchanged to avoid breaking scripts that
@@ -61,9 +61,9 @@
 --?"[*[%1%]:npc_resistances]" -inc "[%2%]"|>_Lib5E_Is_Resistant;[%3%]
 --?"[*[%1%]:npc_immunities]" -inc "[%2%]"|>_Lib5E_Is_Immune;[%3%]
 --<|
---:L_Lib5E_Is_Vulnerable| --&[%3%]| * 2 [Vulnerable] --<|
---:_Lib5E_Is_Resistant| --&[%3%]| \ 2 [Resistant] --<|
---:_Lib5E_Is_Immune| --&[%3%]| * 0 [Immune] --<|
+--:_Lib5E_Is_Vulnerable| --&[%1%]| * 2 [Vulnerable] --<|
+--:_Lib5E_Is_Resistant| --&[%1%]| \ 2 [Resistant] --<|
+--:_Lib5E_Is_Immune| --&[%1%]| * 0 [Immune] --<|
 
 --:Lib5E_FIND_RESOURCE|character_id;resourceName;resourceReturnNameStringVariable;ResourceReturnValueStringVariable
 --C[%2%]|[*[%1%]:class_resource_name]:_Lib5E_Is_ResourceClass|[*[%1%]:other_resource_name]:_Lib5E_Is_ResourceOther

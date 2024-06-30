@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.22:
+- Console log message removed when using [=...]
+
 v 2.7.21:
 - Updated trigger attribute creation to handle entities with -- in their text. No changes needed to trigger scripts.
 

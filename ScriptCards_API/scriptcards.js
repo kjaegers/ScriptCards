@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.21";
-	const NUMERIC_VERSION = "207210"
+	const APIVERSION = "2.7.22";
+	const NUMERIC_VERSION = "207220"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1659,7 +1659,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						vName = thisMatch.substring(2, thisMatch.indexOf(":"));
 						rollFormula = thisMatch.substring(thisMatch.indexOf(":") + 1, thisMatch.length - 1);
 					}
-					log(vName)
 					rollVariables[vName] = parseDiceRoll(rollFormula, cardParameters);
 					replacement = rollVariables[vName]["Total"]
 					break;

@@ -1,3 +1,6 @@
+5Elib - 0.0.2b
+- Fixed bugs in Lib5E_CHECK_DAMAGE_MODS not properly setting return values
+
 System Neutral Library - 0.1.2
 - Added "LibSN_ADD_STATUS_MARKER_SET" and "LibSN_REMOVE_STATUS_MARKER_SET" to add or remove a set of status markers from a token
 
