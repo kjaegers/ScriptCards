@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.22";
-	const NUMERIC_VERSION = "207220"
+	const APIVERSION = "2.7.23";
+	const NUMERIC_VERSION = "207230"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -494,11 +494,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				on('destroy:page', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:page" });
 					if (Array.isArray(ability) && ability.length > 0) {
+						const copy = Object.assign({}, obj);
 						var replacement = "";
-						for (const property in obj) {
+						for (const property in copy.attributes) {
 							try {
-								//replacement += ` --&PageRemoved${property}|${obj[property]} `
-								replacement += ` ${getSafeTriggerString("PageRemoved" + obj[property])} `
+								replacement += ` ${getSafeTriggerString("PageRemoved" + property, copy.attributes[property])} `
 							} catch (e) {
 								//do nothing 
 							}
@@ -527,11 +527,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					try {
 						var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:graphic" });
 						if (Array.isArray(ability) && ability.length > 0) {
+							const copy = Object.assign({}, obj);
 							var replacement = "";
-							for (const property in obj) {
+							for (const property in copy.attributes) {
 								try {
-									//replacement += ` --&GraphicRemoved${property}|${obj[property]} `
-									replacement += ` ${getSafeTriggerString("GraphicRemoved" + obj[property])} `
+									replacement += ` ${getSafeTriggerString("GraphicRemoved" + property, copy.attributes[property])} `
 								} catch (e) {
 									//do nothing 
 								}
@@ -560,11 +560,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				on('destroy:door', function (obj) {
 					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:door" });
 					if (Array.isArray(ability) && ability.length > 0) {
+						const copy = Object.assign({}, obj);
 						var replacement = "";
-						for (const property in obj) {
+						for (const property in copy.attributes) {
 							try {
-								//replacement += ` --&DoorRemoved${property}|${obj[property]} `
-								replacement += ` ${getSafeTriggerString("DoorRemoved" + obj[property])} `
+								replacement += ` ${getSafeTriggerString("DoorRemoved" + property, copy.attributes[property])} `
 							} catch (e) {
 								//do nothing 
 							}
@@ -6804,7 +6804,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function getSafeTriggerString(prefix, property) {
 		try {
-			let prop = property || ""
+			let prop = property
+			prop == null ? prop = "" : prop = prop.toString()
 			if (prop.toString().indexOf("--") < 0) {
 				return ` --&${prefix}|${prop} `
 			}

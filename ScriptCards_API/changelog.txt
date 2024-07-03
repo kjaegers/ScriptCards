@@ -1,5 +1,9 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.23:
+- Fixed issues with destroy: triggers. All object properties will now be returned.
+- Fixed a trigger variable issue that would return empty strings for "false" values
+
 v 2.7.22:
 - Console log message removed when using [=...]
 
