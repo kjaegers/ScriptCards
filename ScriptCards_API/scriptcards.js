@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.23";
-	const NUMERIC_VERSION = "207230"
+	const APIVERSION = "2.7.24";
+	const NUMERIC_VERSION = "207240"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2401,8 +2401,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		var trimmed = conditional.replace(/\s+/g, ' ').trim();
 		var parts = trimmed.match(/(?:[^\s"]+|"[^"]*")+/g);
 		if (!parts) { return false; }
+		/*
 		var alljoinersAnd = true;
 		var alljoinersOr = true;
+		// Currently disabled... beginnings of short-circuit evaluation
 		for (var x = 0; x < parts.length; x++) {
 			if (parts[x].toLowerCase() !== "-and" || parts[x].toLowerCase() !== "-or") {
 				if (parts[x].toLowerCase() == "-and") { alljoinersOr = false; }
@@ -2410,6 +2412,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			}
 		}
 		//log(`AllJoinersAnd: ${alljoinersAnd} AllJoinersOr: ${alljoinersOr}`)
+		*/
 		var currentJoiner = "none";
 		var overallResult = true;
 		if (parts.length < 3) { return false; }
@@ -2460,7 +2463,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			case "-ne": if (left !== right) return true; break;
 			case "-nei": if (left.toString().toLowerCase() !== right.toString().toLowerCase()) return true; break;
 			case "-inc": if (left.toString().toLowerCase().indexOf(right.toString().toLowerCase()) >= 0) return true; break;
-			case "-ninc": if (left.toString().toLowerCase().indexOf(right.toString().toLowerCase()) < 0) return true; break;
+			case "-csinc": if (left.toString().indexOf(right.toString()) >= 0) return true; break;
+			case "-csninc": if (left.toString().indexOf(right.toString()) < 0) return true; break;
 		}
 		return false;
 	}
@@ -6505,6 +6509,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						if (jumpDest.split(";") != null) {
 							var conditionalTag = jumpDest.split(";")[0];
 							var conditionalContent = jumpDest.substring(jumpDest.indexOf(";") + 1);
+							if (jumpDest.indexOf(";") < 0) {
+								conditionalContent = "";
+							}
 							var rowData = buildRowOutput(conditionalTag.substring(1), replaceVariableContent(conditionalContent, cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
 
 							tableLineCounter += 1;
@@ -6672,6 +6679,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (jumpDest.split(";") != null) {
 										var conditionalTag = jumpDest.split(";")[0];
 										var conditionalContent = jumpDest.substring(jumpDest.indexOf(";") + 1);
+										if (jumpDest.indexOf(";") < 0) {
+											conditionalContent = "";
+										}
 										var rowData = buildRowOutput(conditionalTag.substring(1), replaceVariableContent(conditionalContent, cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
 
 										tableLineCounter += 1;
