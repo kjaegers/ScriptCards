@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.25:
+- Minor error logging changes
+
 v 2.7.24:
 - Added "-csinc" and "-csninc" to the list of valid conditional operators. These are case sensitive versions of -inc and -ninc respectively.
 - Updated the "+" and "*" options for conditials to output something so it won't duplicate the text in the tag and content if there is not a ";" in the string, which were also including the + or * character.

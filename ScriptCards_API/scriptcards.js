@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.24";
-	const NUMERIC_VERSION = "207240"
+	const APIVERSION = "2.7.25";
+	const NUMERIC_VERSION = "207250"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -39,6 +39,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		"norollhilight": "norollhilight",
 		"buttonbackgroundcolor": "buttonbackground",
 		"concatentioncharacter": "concatenationcharacter",
+		"reentry": "reentrant"
 	}
 
 	var lastExecutedByID;
@@ -2435,7 +2436,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				if ((parts[0].toLowerCase() == "-or") || (parts[0].toLowerCase() == "-and")) {
 					currentJoiner = parts[0].toLowerCase();
 				} else {
-					log(`ScriptCards conditional error: Condition contains an invalid clause joiner on line. Only -and and -or are supported. Assume results are incorrect. ${conditional}`);
+					log(`ScriptCards conditional error: Condition contains an invalid clause joiner on line. Only -and and -or are supported. Assume results are incorrect. ${conditional} - ${thisContent}`);
 				}
 				parts.shift();
 			}
