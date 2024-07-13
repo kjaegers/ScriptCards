@@ -1,5 +1,11 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2024-07-06 - 5e Character Action Menu 2.6.2
+- REQUIRES SCRIPTCARDS 2.7.15 or higher
+- Switch to hash-table based repeating section references for performance improvements
+- The "default_critical_range" for a character will now be factored in when determining if a hit is a critical. Individual attacks can have their own critical range, but if it is higher than the default critical for the character the default will be used.
+- WizLevel, SorcLevel, and LockLeve have been changed to WizardLevel, SorcererLevel, and WarlockLevel for consistency
+
 2024-05-31 - 5e Action Menu 2.6.1
 - Adds RangerLevel, PaladinLevel, MonkLevel, BarbarianLevel, RogueLevel, FighterLevel and ArtificerLevel to the variables generated upon scirpt execution to support use in the ActionMenuAddons library.
 - Removed extraneoud "WizLevel" output :)
