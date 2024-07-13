@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.26:
+- Added code to replace \\[ and \\] with [ and ] in globally in script to allow [ and ] to be escaped
+
 v 2.7.25:
 - Minor error logging changes
 

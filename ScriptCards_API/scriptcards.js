@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.25a";
-	const NUMERIC_VERSION = "207251"
+	const APIVERSION = "2.7.26";
+	const NUMERIC_VERSION = "207260"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -930,6 +930,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						cardContent = msg.content.replace(/(\r\n|\n|\r)/gm, " ");
 						cardContent = cardContent.replace(/(<br ?\/?>)*/g, "");
 						cardContent = cardContent.replace(/\}\}/g, " }}");
+						cardContent = cardContent.replace(/\\\\\[/g, "[");
+						cardContent = cardContent.replace(/\\\\\]/g, "]");
 						cardContent = cardContent.trim();
 						if (cardContent.charAt(cardContent.length - 1) !== "}") {
 							if (cardContent.charAt(cardContent.length - 2) !== "}") {
