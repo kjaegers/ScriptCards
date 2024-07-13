@@ -1,7 +1,7 @@
 !script {{
   --/|Script Name : 5E Action Menu
   --/|Version     : 2.6.2
-  --/|Requires SC : 2.6.6+
+  --/|Requires SC : 2.7.15+
   --/|Author      : Kurt Jaegers
 
   --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
