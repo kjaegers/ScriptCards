@@ -1,4 +1,4 @@
---/|ScriptCards Library: 5ELib version 0.0.2b
+--/|ScriptCards Library: 5ELib version 0.0.5
 --/|Provides various utility procedures for D&D 5E games
 --/|
 --/| Special Note: This is a "new" library for D&D 5E. The existing "dnd5elib" has been left unchanged to avoid breaking scripts that
@@ -55,9 +55,14 @@
 --&[%1%]|1
 --<|
 
+--:Lib5E_LIBRARY_INITIALIZATION|
+--:5Elib_LIBRARY_INITIALIZATION|
+--\|5Elib Library Loaded
+--<|
+
 --:Lib5E_CHECK_DAMAGE_MODS|characterid;damageType;damageVariableName
 --&[%2%]|
---?"[*[%1%]:npc_vulnerabilities]" -inc "[%2%]"|>L_Lib5E_Is_Vulnerable;[%3%]
+--?"[*[%1%]:npc_vulnerabilities]" -inc "[%2%]"|>_Lib5E_Is_Vulnerable;[%3%]
 --?"[*[%1%]:npc_resistances]" -inc "[%2%]"|>_Lib5E_Is_Resistant;[%3%]
 --?"[*[%1%]:npc_immunities]" -inc "[%2%]"|>_Lib5E_Is_Immune;[%3%]
 --<|

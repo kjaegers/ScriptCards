@@ -221,6 +221,11 @@
 --&[%1%]|1
 --<|
 
+--:LibSN_LIBRARY_INITIALIZATION|
+--:snlib_LIBRARY_INITIALIZATION|
+--\|System Neutral Library Library Loaded
+--<|
+
 --:LibSN_FIND_BUMP_MASTER_TOKEN|TokenID of Slave Token;Return var
   --~work|string;replaceall;",";"&&&";[*G:Bump:mirrored]
   --~work|string;stripchars;{}";[&work]
@@ -315,7 +320,6 @@
   --#parameterdelimiter|;
   --?"[&newConditions(0,1)]" -eq ","|&newConditions;[&newConditions(1)]
   --!t:[%1%]|statusmarkers:[&newConditions]
---:LibSN_DONE_ADD_STATUS_MARKER|
 --<|
 
 --:LibSN_REMOVE_STATUS_MARKER|Token_ID;Status Marker
@@ -324,14 +328,13 @@
   --~|array;statusmarkers;Conditions;[%1%]
   --?[&MarkerCounter] -eq 0|&toCheckFor;[%2%]|&toCheckFor;[%2%]@[&MarkerCounter]
   --~hasCondition|array;indexof;Conditions;[&toCheckFor]
-  --?[&hasCondition] -eq "ArrayError"|LibSN_DONE_REMOVE_STATUS_MARKER
+  --?[&hasCondition] -eq "ArrayError"|<
   --~|array;remove;Conditions;[&toCheckFor]
   --~newConditions|array;stringify;Conditions
   --#parameterdelimiter|$
   --~newConditions|string$replaceall$;$,$[&newConditions]
   --#parameterdelimiter|;
-  --!t:[%1%]|statusmarkers: [&newConditions]
---:LibSN_DONE_REMOVE_STATUS_MARKER|
+  --!t:[%1%]|statusmarkers:[&newConditions]
 --<|  
 
 --:LibSN_REMOVE_STATUS_MARKER_SET|Token_ID;Status Marker1;Status Marker 2;...
@@ -348,23 +351,21 @@
 
 --:LibSN_DECREMENT_STATUS_MARKER|Token_ID;Status Marker;Optional:0=remove marker if decrementing from 0 or 1=Remove marker if decrementing TO 0.
   -->LibSN_CHECK_STATUS_MARKER|[%1%];[%2%];_DEC_EXIST;_DEC_COUNT
-  --?[&_DEC_EXIST] -eq 0|LibSN_DONE_DECREMENT_STATUS_MARKER
-  --?[&_DEC_COUNT] -eq 0 -and "X[%3%]" -eq "X"|LibSN_DONE_DECREMENT_STATUS_MARKER
+  --?[&_DEC_EXIST] -eq 0|<
+  --?[&_DEC_COUNT] -eq 0 -and "X[%3%]" -eq "X"|<
   -->LibSN_REMOVE_STATUS_MARKER|[%1%];[%2%]
-  --?[&_DEC_COUNT] -eq 1 -and "X[%3%]" -eq "X1"|LibSN_DONE_DECREMENT_STATUS_MARKER
-  --?[&_DEC_COUNT] -eq 0 -and "X[%3%]" -eq "X0"|LibSN_DONE_DECREMENT_STATUS_MARKER
+  --?[&_DEC_COUNT] -eq 1 -and "X[%3%]" -eq "X1"|<
+  --?[&_DEC_COUNT] -eq 0 -and "X[%3%]" -eq "X0"|<
   --?[&_DEC_COUNT] -gt 1|>LibSN_ADD_STATUS_MARKER;[%1%];[%2%];[=[&_DEC_COUNT]-1]
   --?[&_DEC_COUNT] -eq 1|>LibSN_ADD_STATUS_MARKER;[%1%];[%2%]
---:LibSN_DONE_DECREMENT_STATUS_MARKER|
 --<|
 
 --:LibSN_INCREMENT_STATUS_MARKER|Token_ID;Status Marker;Optional:0=remove marker if decrementing from 0 or 1=Remove marker if decrementing TO 0.
 -->LibSN_CHECK_STATUS_MARKER|[%1%];[%2%];_INC_EXIST;_INC_COUNT
---?[&_INC_EXIST] -eq 0 -and "X[%3%]" -eq "X"|LibSN_DONE_INCREMENT_STATUS_MARKER
+--?[&_INC_EXIST] -eq 0 -and "X[%3%]" -eq "X"|<
 -->LibSN_REMOVE_STATUS_MARKER|[%1%];[%2%]
 --?[&_INC_COUNT] -lt 9|>LibSN_ADD_STATUS_MARKER;[%1%];[%2%];[=[&_INC_COUNT]+1]
 --?[&_INC_COUNT] -eq 9|>LibSN_ADD_STATUS_MARKER;[%1%];[%2%];9
---:LibSN_DONE_INCREMENT_STATUS_MARKER|
 --<|
   
 --:LibSN_CHECK_STATUS_MARKER|TokenID;MarkerToFind;Exists;Counter
