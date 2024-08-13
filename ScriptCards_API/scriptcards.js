@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.26";
-	const NUMERIC_VERSION = "207260"
+	const APIVERSION = "2.7.27";
+	const NUMERIC_VERSION = "207270"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -150,6 +150,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		overridetemplate: "none",
 		explodingonesandaces: "0",
 		functionbenchmarking: "0",
+		limitmaxbarvalues: "0",
 		gmoutputtarget: "gm",
 		storagecharid: "",
 		styleTableTag: " border-collapse:separate; border: solid black 2px; border-radius: 6px; -moz-border-radius: 6px; ",
@@ -4203,7 +4204,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							var tokenID = thisTag.substring(3);
 							if (tokenID.toLowerCase() == "s" && cardParameters.sourcetoken) { tokenID = cardParameters.sourcetoken; }
 							if (tokenID.toLowerCase() == "t" && cardParameters.targettoken) { tokenID = cardParameters.targettoken; }
-							let settings = thisContent.split("|");
+							let settings = thisContent.split(/(?<![\\\\])\|/);
 							let theToken = getObj("graphic", tokenID);
 							let prevTok = JSON.parse(JSON.stringify(theToken));
 
@@ -4211,7 +4212,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								for (let i = 0; i < settings.length; i++) {
 									let thisSetting = settings[i].split(":");
 									let settingName = thisSetting.shift();
-									let settingValue = thisSetting.join(':');
+									let settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");;
 
 									if (settingName.toLowerCase() == "night_vision_effect" && (settingValue.trim().toLowerCase() == "dimming")) {
 										settingValue = "Dimming_0"
@@ -4244,8 +4245,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												theToken.set("imgsrc", newImgSrc);
 											}
 										}
-
 									}
+
 									if (settingValue && (settingValue.startsWith("+=") || settingValue.startsWith("-="))) {
 										let currentValue = theToken.get(settingName);
 										let delta = settingValue.substring(2);
@@ -4253,7 +4254,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
 										} else {
 											settingValue = currentValue + delta;
-										}
+										}							
 									}
 									if (cardParameters.formatoutputforobjectmodification == "1") {
 										settingValue = processInlineFormatting(settingValue, cardParameters, false);
@@ -4266,6 +4267,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											case "": case "toggle": case "flip": settingValue = !(theToken.get(settingName)); break;
 										}
 									}
+
+									if (cardParameters.limitmaxbarvalues !== "0" && (settingName.toLowerCase() == "bar1_value" || settingName.toLowerCase() == "bar2_value" || settingName.toLowerCase() == "bar3_value")) {
+										let sMaxname = settingName.toLowerCase().replace("value", "max");
+										if (theToken.get(sMaxname) && settingValue > theToken.get(sMaxname)) {
+											settingValue = theToken.get(sMaxname);
+										}
+									}												
 
 									//if (settingName && settingValue) { 
 									if (settingName) {
@@ -4298,13 +4306,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									tokenID = cardParameters.targetcharacter.id;
 								}
 							}
-							var settings = thisContent.split("|");
+							var settings = thisContent.split(/(?<![\\\\])\|/);
 							var theCharacter = getObj("character", charID);
 							if (theCharacter) {
 								for (var i = 0; i < settings.length; i++) {
 									var thisSetting = settings[i].split(":");
 									var settingName = thisSetting.shift();
-									var settingValue = thisSetting.join(':');
+									var settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");
 									if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
 										var currentValue = theCharacter.get(settingName);
 										var delta = settingValue.substring(2);
@@ -4349,7 +4357,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								characterObj = getObj("character", objectID);
 							}
 							if (characterObj != null) {
-								var settings = thisContent.split("|");
+								var settings = thisContent.split(/(?<![\\\\])\|/);
 								for (var i = 0; i < settings.length; i++) {
 									var thisSetting = settings[i].split(":");
 									var settingName = thisSetting.shift();
@@ -4371,7 +4379,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										useSheetWorker = false;
 										settingName = settingName.substring(1);
 									}
-									var settingValue = thisSetting.join(":");
+									var settingValue = thisSetting.join(":").replace(/\\\\\|/gi, "|");
 									var theAttribute = findObjs({
 										type: 'attribute',
 										characterid: characterObj.id,
@@ -4432,11 +4440,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						var objectID = objectInfo[1];
 						var thisObject = getObj(objectType, objectID);
 						if (thisObject != null) {
-							var settings = thisContent.split("|");
+							var settings = thisContent.split(/(?<![\\\\])\|/);
 							for (var i = 0; i < settings.length; i++) {
 								var thisSetting = settings[i].split(":");
 								var settingName = thisSetting.shift();
-								var settingValue = thisSetting.join(':');
+								var settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");;
 								if (settingName.toLowerCase() == "imgsrc") {
 									settingValue = getCleanImgsrc(settingValue);
 								}
@@ -5576,6 +5584,26 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 
+						if (params[1].toLowerCase() == "fromjson") {
+							try {
+								let tableName = params[2];
+								hashTables[tableName] = {};
+								let parse = [...params];
+								parse.shift();
+								parse.shift();
+								parse.shift();
+								let jsonData = parse.join("")
+								let theObject = JSON.parse(jsonData)
+								let jsonArray = Object.entries(theObject);
+								for (let j = 0; j < jsonArray.length; j++) {
+									hashTables[tableName][jsonArray[j][0]] = jsonArray[j][1]
+								}
+								console.log(hashTables[tableName])
+							} catch (e) {
+								log(`ScriptCards: Error encounted: ${e}`)
+							}
+						}
+
 						if (params[1].toLowerCase() == "fromrepeatingsection") {
 							try {
 								let charid = params[2]
@@ -6631,12 +6659,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	function handleCaseCommand(thisTag, thisContent, cardParameters, cardLines) {
 		try {
 			var testvalue = thisTag.substring(1);
-			var cases = thisContent.split("|");
+			var cases = thisContent.split(/(?<![\\\\])\|/);
 			var blockSkip = false;
 			var blockChar = "";
 			if (cases) {
 				for (var x = 0; x < cases.length; x++) {
-					var testcase = cases[x].split(":")[0];
+					var testcase = cases[x].split(":")[0].replace(/\\\\\|/gi, "|");;
 					if (testvalue.toLowerCase() == testcase.toLowerCase()) {
 						var jumpDest = cases[x].split(":")[1];
 						var resultType = "goto";
