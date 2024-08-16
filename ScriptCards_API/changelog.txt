@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.27a:
+- Using --!a| and specifying an attribute that doesn't yet exist (with the "!" prefix on the attribute name) will now create the attribute with a dummy value and then set it to the desired value with the sheetworker.
+
 v 2.7.27:
 - New setting: limitmaxbarvalues (default:0). If set to any non-default value, any use of --!t to set the value of a bar will be limited to the maximum value of the bar. 
 - In --!a, --!t, and --c statements, it is now possible to include vertical bar (|) characters in the values by escaping them with a double backslash (ex: \\|)

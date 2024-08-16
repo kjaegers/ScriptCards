@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.27";
-	const NUMERIC_VERSION = "207270"
+	const APIVERSION = "2.7.27a";
+	const NUMERIC_VERSION = "207271"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -4418,9 +4418,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												theAttribute = createObj('attribute', {
 													characterid: characterObj.id,
 													name: settingName,
-													current: setType == "current" ? settingValue : "",
-													max: setType == "max" ? settingValue : ""
+													current: setType == "sc_create_dummy" ? "" : "",
+													max: setType == "max" ? "sc_create_dummy" : ""
 												});
+
+												if (setType == "current" && useSheetWorker) {
+													theAttribute.setWithWorker({ current: settingValue });
+												}
+												if (setType == "max" && useSheetWorker) {
+													theAttribute.setWithWorker({ max: settingValue });
+												}
+												if (!useSheetWorker) {
+													theAttribute.set(setType, settingValue);
+												}
 											}
 										}
 									} else {
