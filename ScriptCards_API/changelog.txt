@@ -1,5 +1,23 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.28:
+- Updated the code that separates tags from content to allow for | characters to be used by escaping them with a double backslash (\\). Any \\| sequence will be replaced with a | character.
+- Added two new conditional operators: -match and -imatch, which accept Regex as the right side of a comparison. Use \\| to escape the | character in the regex. The -match operator is case sensitive, while -imatch is case insensitive. A few examples:
+
+  --?"[&name]" -match "(Medusa\\|Fred\\|Pixie)"|+Yes|+No
+  Will be true if the [&name] variable has "Medusa", "Fred" or "Pixie" in it (case sensitive)
+
+  --?"[&name]" -imatch "^(Medusa\\|Fred\\|Pixie)"|+Yes|+No
+  Will be true if the [&name] variable starts with "Medusa", "Fred" or "Pixie" (case insensitive)
+
+  --?"[&name]" -imatch "^a.*n$"|+Yes|+No
+  Will be true if the [&name] variable starts with "a" and ends with "n" (case insensitive) (ex: Ancient Red Dragon, Aragorn, etc.) 
+
+  --?[$Roll.Raw] -match "^[1-2]$"|+Yes|+No
+  Will be true if the roll is a 1 or a 2 (won't match 12, or 20, etc because the 1 or 2 has to be the first AND last character)
+
+  Regex values should be enclosed in quotes. If you want to actually look for a literal | in your regex, use \\\| (the first \ is included in the regex to escape the |, which will be the result of \\|)
+
 v 2.7.27a:
 - Using --!a| and specifying an attribute that doesn't yet exist (with the "!" prefix on the attribute name) will now create the attribute with a dummy value and then set it to the desired value with the sheetworker.
 

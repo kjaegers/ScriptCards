@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.27a";
-	const NUMERIC_VERSION = "207271"
+	const APIVERSION = "2.7.28";
+	const NUMERIC_VERSION = "207280"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1979,8 +1979,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function getLineTag(line, linenum, logerror) {
-		if (line.indexOf("|") >= 0) {
-			return line.split("|")[0].trim();
+		// (?<!\\)\|
+		if (line.match(/(?<!\\\\)\|/)) {
+			return line.split(/(?<!\\\\)\|/)[0].replaceAll("\\\\|","|").trim();
 		} else {
 			if (line.trim() !== "" && logerror) {
 				log(`ScriptCards Error: Line ${linenum} is missing a | character. (${line})`);
@@ -1990,8 +1991,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function getLineContent(line) {
-		if (line.indexOf("|") >= 0) {
-			return line.substring(line.indexOf("|") + 1).trim();
+		if (line.match(/(?<!\\)\|/)) {
+			return line.substring(line.search(/(?<!\\\\)\|/) + 1).replaceAll("\\\\|","|").trim();
 		} else {
 			return "/Error - No Line Content Specified";
 		}
@@ -2448,6 +2449,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function evaluateConditional(conditional, cardParameters) {
+		// /(?<![\\\\])\|/
 		var components = conditional.match(/(?:[^\s"]+|"[^"]*")+/g);
 		if (!components) { return false; }
 		if (components.length !== 3) {
@@ -2470,6 +2472,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			case "-ninc": if (left.toString().toLowerCase().indexOf(right.toString().toLowerCase()) < 0) return true; break;
 			case "-csinc": if (left.toString().indexOf(right.toString()) >= 0) return true; break;
 			case "-csninc": if (left.toString().indexOf(right.toString()) < 0) return true; break;
+			case "-match": { let r=new RegExp(right,"g"); if (r.test(left)) return true; } break;
+			case "-imatch": { let r=new RegExp(right,"gi"); if (r.test(left)) return true; } break;
 		}
 		return false;
 	}
