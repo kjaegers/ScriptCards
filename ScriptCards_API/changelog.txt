@@ -1,5 +1,24 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.29:
+- Added initial support for "Beacon" SDK character sheets by modifying the [*...] code to allow nested name references. For example, the Candela Obscura character sheet defines an attribute named "role" which looks like this internally:
+
+{"name":"role","current":
+  {"role":{"description":"","name":"Face"},
+   "specialty":{"description":"","name":"Magician"}
+},
+"max":"","_id":"-O4tZZXLjeIL3uex_74R","_type":"attribute","_characterid":"-O4tZTQ4Cyb5rBB5M0Wj"}
+
+So "role" contains two entities: role and specialty. Each of these contains two items: description and name. To access the name of the role, you would use [*S:role->role->name], while to access the name of the specialty, you would use [*S:role->specialty->name]. This will return "Face" and "Magician" respectively. This can be used in any [*...] reference, so you can use it in a --+ line, etc. Here is an example of a script that will display the role and specialty of the selected token: 
+
+!script {{ 
+  --#sourcetoken|[@SC_SelectedTokens(0)]
+  --+Role|[*S:role->role->name]
+  --+Specialty|[*S:role->specialty->name]
+}}
+
+If the field(s) you are specifying don't exist, you will likely get either "undefined" (if the base attribute doesn't exist) or "Object.object" (if one of t he fields doesn't exist). Ex: [*S:role->focus->name] will return "Object.object" if the "focus" field doesn't exist in the "role" attribute, while [*S:superpower->name] will return "undefined" if the "superpower" attribute doesn't exist.
+
 v 2.7.28:
 - Updated the code that separates tags from content to allow for | characters to be used by escaping them with a double backslash (\\). Any \\| sequence will be replaced with a | character.
 - Added two new conditional operators: -match and -imatch, which accept Regex as the right side of a comparison. Use \\| to escape the | character in the regex. The -match operator is case sensitive, while -imatch is case insensitive. A few examples:

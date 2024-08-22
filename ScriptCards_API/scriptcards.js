@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.28";
-	const NUMERIC_VERSION = "207280"
+	const APIVERSION = "2.7.29";
+	const NUMERIC_VERSION = "207290"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1761,6 +1761,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							var attribute = "";
 							var defaultValue = null;
 							var useDefaultValue = false;
+							var hasSubFields = false;
+							var subfields = undefined;
+							var opType = "current";
+							var returnID = false;
+
 							var attrName = workString.substring(workString.indexOf(":") + 1, workString.length - 1);
 							if (attrName.indexOf(":::") >= 0) {
 								defaultValue = attrName.substring(attrName.indexOf(":::") + 3, attrName.length);
@@ -1775,23 +1780,52 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								}
 							}
 							if (character != null) {
-								var opType = "current";
 								if (attrName.endsWith("^")) {
 									attrName = attrName.substring(0, attrName.length - 1);
 									opType = "max";
 								}
+								if (attrName.endsWith("*")) {
+									attrName = attrName.substring(0, attrName.length - 1);
+									returnID = "true";
+								}
 							}
-							if (token != null && attrName.toLowerCase().startsWith("t-")) { //&& tokenAttributes.indexOf(attrName.substring(2)) >= 0) {
+							if (attrName.indexOf("->") >= 0) {
+								subfields = attrName.split("->");
+								hasSubFields = true;
+								attrName = subfields[0];
+							}
+							if (token != null && attrName.toLowerCase().startsWith("t-")) {
 								if (token.get(attrName.substring(2))) {
 									attribute = token.get(attrName.substring(2)).toString() || "";
 								}
 							}
 							if (character != null && (!attrName.toLowerCase().startsWith("t-"))) {
-								//log(`attrName: ${attrName}`)
 								if (attrName !== "bio" && attrName !== "notes" && attrName !== "gmnotes") {
 									attribute = getAttrByName(character.id, attrName, opType);
+									log(JSON.stringify(attribute))
 									if (attribute === undefined) {
-										attribute = character.get(attrName);
+										if (returnID) {
+											attribute = attribute._id;
+										} else {
+											attribute = character.get(attrName);
+											if (hasSubFields && attribute) {
+												for (var sf = 1; sf < subfields.length; sf++) {
+													attribute = attribute[subfields[sf]];
+												}
+											}
+										}
+									} else {
+										if (returnID) {
+											attribute = attribute._id;
+										} else {
+											if (hasSubFields && attribute) {
+												for (var sf = 1; sf < subfields.length; sf++) {
+													if (attribute[subfields[sf]]) {
+														attribute = attribute[subfields[sf]];
+													}
+												}
+											}
+										}
 									}
 								} else {
 									// Add URL Decoding?
@@ -1981,7 +2015,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	function getLineTag(line, linenum, logerror) {
 		// (?<!\\)\|
 		if (line.match(/(?<!\\\\)\|/)) {
-			return line.split(/(?<!\\\\)\|/)[0].replaceAll("\\\\|","|").trim();
+			return line.split(/(?<!\\\\)\|/)[0].replaceAll("\\\\|", "|").trim();
 		} else {
 			if (line.trim() !== "" && logerror) {
 				log(`ScriptCards Error: Line ${linenum} is missing a | character. (${line})`);
@@ -1992,7 +2026,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function getLineContent(line) {
 		if (line.match(/(?<!\\)\|/)) {
-			return line.substring(line.search(/(?<!\\\\)\|/) + 1).replaceAll("\\\\|","|").trim();
+			return line.substring(line.search(/(?<!\\\\)\|/) + 1).replaceAll("\\\\|", "|").trim();
 		} else {
 			return "/Error - No Line Content Specified";
 		}
@@ -2472,8 +2506,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			case "-ninc": if (left.toString().toLowerCase().indexOf(right.toString().toLowerCase()) < 0) return true; break;
 			case "-csinc": if (left.toString().indexOf(right.toString()) >= 0) return true; break;
 			case "-csninc": if (left.toString().indexOf(right.toString()) < 0) return true; break;
-			case "-match": { let r=new RegExp(right,"g"); if (r.test(left)) return true; } break;
-			case "-imatch": { let r=new RegExp(right,"gi"); if (r.test(left)) return true; } break;
+			case "-match": { let r = new RegExp(right, "g"); if (r.test(left)) return true; } break;
+			case "-imatch": { let r = new RegExp(right, "gi"); if (r.test(left)) return true; } break;
 		}
 		return false;
 	}
@@ -4258,7 +4292,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
 										} else {
 											settingValue = currentValue + delta;
-										}							
+										}
 									}
 									if (cardParameters.formatoutputforobjectmodification == "1") {
 										settingValue = processInlineFormatting(settingValue, cardParameters, false);
@@ -4277,7 +4311,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (theToken.get(sMaxname) && settingValue > theToken.get(sMaxname)) {
 											settingValue = theToken.get(sMaxname);
 										}
-									}												
+									}
 
 									//if (settingName && settingValue) { 
 									if (settingName) {

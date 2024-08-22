@@ -14,103 +14,143 @@
 
 const QuickTest = (() => {
     on('chat:message', function (msg) {
-	    if (msg.type === "api") {
-		    var apiCmdText = msg.content.toLowerCase();
-		    var processThisAPI = false;
+        if (msg.type === "api") {
+            var apiCmdText = msg.content.toLowerCase();
+            var processThisAPI = false;
 
             if (apiCmdText.startsWith("!gettoks")) {
                 log("In Get Toks");
-                findObjs( {_type: "graphic" } ).forEach((item) => {
+                findObjs({ _type: "graphic" }).forEach((item) => {
                     log(`Name:${item.get("name")}, ID:${item.id}, Represents:${item.get("represents")}`);
                 });
             }
-            
+
             if (apiCmdText.startsWith("!getplayers")) {
-                findObjs( {_type: "player" } ).forEach((item) => {
+                findObjs({ _type: "player" }).forEach((item) => {
                     log(`Name:${item.get("displayname")}, ID:${item.id}, UserID: ${item.get("_d20userid")}`);
                 });
             }
 
             if (apiCmdText.startsWith("!getchars")) {
-                findObjs( {_type: "character" } ).forEach((item) => {
+                findObjs({ _type: "character" }).forEach((item) => {
                     log(`Name:${item.get("name")}, ID:${item.id}, Controlledby:${item.get("controlledby")}`);
                 });
             }
 
             if (apiCmdText.startsWith("!liststatusmarkers")) {
                 const tokenMarkers = JSON.parse(Campaign().get("token_markers"));
-			    for (var x=0;x<tokenMarkers.length;x++) {
-			  	    log(`Name: ${tokenMarkers[x].name}, URL: ${tokenMarkers[x].url}`);
-			    }
+                for (var x = 0; x < tokenMarkers.length; x++) {
+                    log(`Name: ${tokenMarkers[x].name}, URL: ${tokenMarkers[x].url}`);
+                }
             }
-            
-            if (apiCmdText.startsWith ("!crashsandbox")) {
+
+            if (apiCmdText.startsWith("!crashsandbox")) {
                 var crash = null;
                 log(crash.ToString());
             }
 
-            if (apiCmdText.startsWith ("!dumpdice ")) {
+            if (apiCmdText.startsWith("!dumpdice ")) {
                 var dicetype = apiCmdText.substring(10).trim();
-                sendChat("","<span style='color: blue; font-size:30px; font-family: dicefontd" + dicetype + ";'>abcdefghijklknopqrstuvwxyz0123456789-=[]{};:'?</span>")   
+                sendChat("", "<span style='color: blue; font-size:30px; font-family: dicefontd" + dicetype + ";'>abcdefghijklknopqrstuvwxyz0123456789-=[]{};:'?</span>")
             }
 
-		    if (apiCmdText.startsWith ("!clearchat")) {
-	    	    log("clearing chat...");
-		        sendChat("", "<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>")
-    		}
-    		 		
-    		if (apiCmdText.startsWith("!rolltable ")) {
+            if (apiCmdText.startsWith("!clearchat")) {
+                log("clearing chat...");
+                sendChat("", "<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>")
+            }
+
+            if (apiCmdText.startsWith("!rolltable ")) {
                 var table = msg.content.substring(11).trim();
-	            sendChat("", rollOnRollableTable(table));
-    		}
-    		
-    		if (apiCmdText.startsWith("!ability ")) {
-    		    var token = msg.selected[0]
-    		    var charid
-                var char = undefined
-    		    if (token !== undefined) {
-    		        var actualToken = getObj("graphic", token._id);
-    		        charid = actualToken.get("represents");
-    		        char = getObj("character", charid);
-    		    }
-    		    var abilname = apiCmdText.substring(9).trim();
-    		    var ability = findObjs({type: "ability", _characterid: charid, name: abilname })[0]
-    		    var action = ability.get('action').replace(/@\{([^|]*?|[^|]*?\|max|[^|]*?\|current)\}/g, '@{'+(char.get('name'))+'|$1}');
-    		    action = `{& select ${charid}} ${action}`
-    		    log(action)
-    		    sendChat(char.get("name"), action);
-    		}
-    		
-    		if (apiCmdText.startsWith("!turnorder")) {
-    		    var turnorder = JSON.parse(Campaign().get("turnorder"));
-    		    log(turnorder);
-    		}
-    		
-    		if (apiCmdText.startsWith("!getallattributes")) {
+                sendChat("", rollOnRollableTable(table));
+            }
+
+            if (apiCmdText.startsWith("!getallattrs")) {
+                var token = msg.selected[0]
                 var charid
-    		    if (token !== undefined) {
-    		        var actualToken = getObj("graphic", token._id);
-    		        charid = actualToken.get("represents") || undefined;
+                var char = undefined
+                if (token !== undefined) {
+                    var actualToken = getObj("graphic", token._id);
+                    charid = actualToken.get("represents");
+                    char = getObj("character", charid);
+                }                
+                findObjs({ type: "attribute", characterid: charid }).forEach((item) => {
+                    log(`Name:${item.get("name")}, ID:${item.id}, Character:${item.get("characterid")}`);
+                });
+            }
+
+            if (apiCmdText.startsWith("!getbeaconattr")) {
+                var token = msg.selected[0]
+                log("=== Beacon Attributes ===");
+                var charid
+                var char = undefined
+                if (token !== undefined) {
+                    var actualToken = getObj("graphic", token._id);
+                    charid = actualToken.get("represents");
+                    char = getObj("character", charid);
                 }
-                if (charid) { log(findObjs({type: "attribute", _characterid: charid })); }
-    		}
-	    }
+                var splits = apiCmdText.substring(15).trim().split(" ");
+                var attrname = splits[0];
+                var attr = findObjs({ type: "attribute", _characterid: charid, name: attrname })[0]
+                for (let x=1; x<splits.length; x++) {
+                    attr = attr[splits[x]];
+                }
+                for (var key in attr) {
+                    if (typeof attr[key] !== "function" && typeof attr[key] == "object") {
+                        log(`Attribute: ${key} - [Sub Object]`);
+                    }
+                    if (typeof attr[key] !== "function" && typeof attr[key] != "object") {
+                        log(`Attribute: ${key} = ${attr[key]}`);
+                    }
+                }
+            }
+
+            if (apiCmdText.startsWith("!ability ")) {
+                var token = msg.selected[0]
+                var charid
+                var char = undefined
+                if (token !== undefined) {
+                    var actualToken = getObj("graphic", token._id);
+                    charid = actualToken.get("represents");
+                    char = getObj("character", charid);
+                }
+                var abilname = apiCmdText.substring(9).trim();
+                var ability = findObjs({ type: "ability", _characterid: charid, name: abilname })[0]
+                var action = ability.get('action').replace(/@\{([^|]*?|[^|]*?\|max|[^|]*?\|current)\}/g, '@{' + (char.get('name')) + '|$1}');
+                action = `{& select ${charid}} ${action}`
+                log(action)
+                sendChat(char.get("name"), action);
+            }
+
+            if (apiCmdText.startsWith("!turnorder")) {
+                var turnorder = JSON.parse(Campaign().get("turnorder"));
+                log(turnorder);
+            }
+
+            if (apiCmdText.startsWith("!getallattributes")) {
+                var charid
+                if (token !== undefined) {
+                    var actualToken = getObj("graphic", token._id);
+                    charid = actualToken.get("represents") || undefined;
+                }
+                if (charid) { log(findObjs({ type: "attribute", _characterid: charid })); }
+            }
+        }
     })
-    
+
     function rollOnRollableTable(tableName) {
-        var theTable = findObjs({type: "rollabletable", name:tableName })[0];
+        var theTable = findObjs({ type: "rollabletable", name: tableName })[0];
         if (theTable) {
-            var tableItems = findObjs({type: "tableitem", _rollabletableid: theTable.id});
+            var tableItems = findObjs({ type: "tableitem", _rollabletableid: theTable.id });
             if (tableItems !== undefined) {
                 var rollResults = {};
                 var rollIndex = 0;
                 var lastRollIndex = 0;
                 var itemCount = 0;
                 var maxRoll = 0;
-                tableItems.forEach(function(item) {
+                tableItems.forEach(function (item) {
                     var thisWeight = parseInt(item.get("weight"));
-                rollIndex += thisWeight;
-                    for (var x = lastRollIndex+1; x <= rollIndex; x++) {
+                    rollIndex += thisWeight;
+                    for (var x = lastRollIndex + 1; x <= rollIndex; x++) {
                         rollResults[x] = itemCount;
                     }
                     itemCount += 1;
