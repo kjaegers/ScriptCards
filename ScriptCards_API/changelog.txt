@@ -3,7 +3,7 @@ ScriptCards Roll20 API Script Changelog
 v 2.7.30:
 - Added the ability to create graphic objects (tokens, maps, etc.) with --!ot:. The syntax for this is:
    --!ot:ReturnTID|Property1=Value1|Property2=Value2;...
-If a property contains (or could contain) a colon (:) character. Numeric values will be checked for validity and assigned 0 if the passed value is not convertable to a number (ie, left=HELLO will result in left=0). Boolean values will be converted from "true", "yes", "on", or "1" to true and will otherwise be false.
+If a property value contains (or could contain) a colon (:) character, enclose it in double quotes ("). Numeric values will be checked for validity and assigned 0 if the passed value is not convertable to a number (ie, left=HELLO will result in left=0). Boolean values will be converted from "true", "yes", "on", or "1" to true and will otherwise be false.
 
 A handful of graphic properties, if not specified will have defaults:
   subtype = token
