@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.29";
-	const NUMERIC_VERSION = "207290"
+	const APIVERSION = "2.7.30";
+	const NUMERIC_VERSION = "207300"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -4138,6 +4138,41 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								}
 									break;
 
+								case "t": {
+									let settings = thisContent.split("|");
+									let tProps = {}
+									for (let x = 0; x < settings.length; x++) {
+										//log(`Setting ${x} is ${settings[x]}`)
+										let setting = settings[x].match(/(".*?"|[^":\s]+)(?=\s*:|\s*$)/g);
+										if (setting[1]) {
+											if (setting[1].startsWith('"') && setting[1].endsWith('"')) {
+												setting[1] = setting[1].substring(1, setting[1].length - 1);
+											}
+											tProps[setting[0]] = GetSafeTokenProperty(setting[0], setting[1]);
+											//if (setting[0].toLowerCase() == "imgsrc") { setting[1] = getCleanImgsrc(setting[1]) }
+										}
+									}
+									if (tProps["subtype"] == undefined) { tProps["subtype"] = "token"; }
+									if (tProps["layer"] == undefined) { tProps["layer"] = "objects"; }
+									if (tProps["pageid"] == undefined) { tProps["pageid"] = Campaign().get("playerpageid"); }
+									if (tProps["left"] == undefined) { tProps["left"] = 200; }
+									if (tProps["top"] == undefined) { tProps["top"] = 200; }
+									if (tProps["width"] == undefined) { tProps["width"] = 70; }
+									if (tProps["height"] == undefined) { tProps["height"] = 70; }
+									try {
+										var newToken = createObj("graphic", tProps);
+									} catch (e) {
+										log(e)
+									}
+
+									if (newToken) {
+										stringVariables[thisTag.substring(4)] = newToken.id
+									} else {
+										stringVariables[thisTag.substring(4)] = "OBJECT_CREATION_ERROR";
+									}
+								}
+									break;
+
 								case "#": {
 									let returnVarName = thisTag.substring(4);
 									let settings = thisContent.split(cardParameters.parameterdelimiter);
@@ -6388,7 +6423,21 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					break;
 
 				case "object":
-
+					if ((params[1].toLowerCase() == "token" || params[1].toLowerCase() == "graphic") &&
+						(params[2].toLowerCase() == "remove" || params[2].toLowerCase() == "delete")) {
+						for (let x = 3; x < params.length; x++) {
+							var tokenID = params[x].trim();
+							try {
+								var theToken = getObj("graphic", tokenID);
+								if (theToken) {
+									theToken.remove();
+									log(`ScriptCards: Token ${tokenID} removed by user ${stringVariables["SendingPlayerID"]} (${stringVariables["SendingPlayerName"]}).`);
+								}
+							} catch (e) {
+								log(e);
+							}
+						}
+					}
 					break;
 			}
 		} catch (e) {
@@ -6873,6 +6922,58 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			log(`Error processing case statement ${e.message}, thisTag: ${thisTag}, thisContent: ${thisContent}`)
 		}
 
+	}
+
+	function GetSafeTokenProperty(propName, propValue) {
+		var ret = propValue
+		//log(`GetSafeTokenProperty: ${propName}, ${propValue}`)
+		switch (propName) {
+			case "left":
+			case "top":
+			case "width":
+			case "height":
+			case "light_radius":
+			case "light_dimradius":
+			case "light_angle":
+			case "light_losangle":
+			case "light_multiplier":
+			case "adv_fow_view_distance":
+			case "light_sensitivity_radius":
+			case "rotation":
+				var n = Number(propValue);
+				if (isNaN(n)) { n = parseFloat(propValue); }
+				if (isNaN(n)) { n = 0; }
+				ret = n;
+				break;
+			case "isdrawing":
+			case "flipv":
+			case "fliph":
+			case "aura1_square":
+			case "aura2_square":
+			case "showname":
+			case "showplayers_name":
+			case "showplayers_bar1":
+			case "showplayers_bar2":
+			case "showplayers_bar3":
+			case "showplayers_aura1":
+			case "showplayers_aura2":
+			case "playersedit_name":
+			case "playersedit_bar1":
+			case "playersedit_bar2":
+			case "playersedit_bar3":
+			case "playersedit_aura1":
+			case "playersedit_aura2":
+			case "light_otherplayers":
+			case "light_hassight":
+			case "lockmovement":
+				ret = false;
+				if (propValue == "true" || propValue == "yes" || propValue == "on" || propValue == "1") { ret = true; }
+				break;
+			case "imgsrc":
+				ret = getCleanImgsrc(propValue);
+				break;
+		}
+		return ret
 	}
 
 	function reportBenchmarkingData() {

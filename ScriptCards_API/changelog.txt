@@ -1,5 +1,32 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.30:
+- Added the ability to create graphic objects (tokens, maps, etc.) with --!ot:. The syntax for this is:
+   --!ot:ReturnTID|Property1=Value1|Property2=Value2;...
+If a property contains (or could contain) a colon (:) character. Numeric values will be checked for validity and assigned 0 if the passed value is not convertable to a number (ie, left=HELLO will result in left=0). Boolean values will be converted from "true", "yes", "on", or "1" to true and will otherwise be false.
+
+A handful of graphic properties, if not specified will have defaults:
+  subtype = token
+  layer = objects
+  pageid = current player ribbon page
+  left = 200
+  top = 200
+  width = 70
+  height = 70
+
+Example copy a token and place it 1 square to the right of the selected token (does not copy ALL properties, just the ones specified):
+
+!script {{
+  --&sourceTID|@{selected|token_id}
+  --#sourcetoken|[&sourceTID]
+  --!ot:NewTID|name:"[*S:t-name] Copy"|left:[=[*S:t-left]+70]|top:[*S:t-top]|width:[*S:t-width]|height:[*S:t-height]|imgsrc:"[*S:t-imgsrc]"|tooltip:"[*S:t-tooltip]"|bar1_value:"[*S:t-bar1_value]"|bar1_value:"[*S:t-bar1_value]"| bar1_max:"[*S:t-bar1_max]"| bar2_value:"[*S:t-bar2_value]"| bar2_max:"[*S:t-bar2_max]"| bar3_value:"[*S:t-bar3_value]"| bar3_max:"[*S:t-bar3_max]"|bar1_link:[*S:t-bar1_link]|bar2_link:[*S:t-bar2_link]|bar3_link:[*S:t-bar3_link]|represents:[*S:t-represents]|controlledby:[*S:t-controlledby]|showname:1|statusmarkers:[*S:t-statusmarkers]
+  --+TID|[&NewTID]
+}}
+
+- Added the "object" function class, which right now has one subfunction and one operation for that subfunction - the deletion of tokens:
+  --~|object;token;delete;tokenid1;tokenid2;...
+If used, a log entry will be written to the console stating the player that deleted to token and the token id.
+
 v 2.7.29:
 - Added initial support for "Beacon" SDK character sheets by modifying the [*...] code to allow nested name references. For example, the Candela Obscura character sheet defines an attribute named "role" which looks like this internally:
 
