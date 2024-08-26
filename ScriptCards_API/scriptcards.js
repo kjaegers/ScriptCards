@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.30";
-	const NUMERIC_VERSION = "207300"
+	const APIVERSION = "2.7.30a";
+	const NUMERIC_VERSION = "207301"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1802,7 +1802,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (character != null && (!attrName.toLowerCase().startsWith("t-"))) {
 								if (attrName !== "bio" && attrName !== "notes" && attrName !== "gmnotes") {
 									attribute = getAttrByName(character.id, attrName, opType);
-									log(JSON.stringify(attribute))
+									//log(JSON.stringify(attribute))
 									if (attribute === undefined) {
 										if (returnID) {
 											attribute = attribute._id;
@@ -4139,7 +4139,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									break;
 
 								case "t": {
-									let settings = thisContent.split("|");
+									let regexSplit = /\|(?=(?:[^"]*"[^"]*")*[^"]*$)/
+									let settings = thisContent.split(regexSplit);
 									let tProps = {}
 									for (let x = 0; x < settings.length; x++) {
 										//log(`Setting ${x} is ${settings[x]}`)
@@ -4149,7 +4150,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 												setting[1] = setting[1].substring(1, setting[1].length - 1);
 											}
 											tProps[setting[0]] = GetSafeTokenProperty(setting[0], setting[1]);
-											//if (setting[0].toLowerCase() == "imgsrc") { setting[1] = getCleanImgsrc(setting[1]) }
 										}
 									}
 									if (tProps["subtype"] == undefined) { tProps["subtype"] = "token"; }
@@ -6971,6 +6971,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				break;
 			case "imgsrc":
 				ret = getCleanImgsrc(propValue);
+				break;
+			case "sides":
+				sides = propValue.split("|");
+				for (let x=0; x<sides.length; x++) {
+					sides[x] = getCleanImgsrc(sides[x]);
+				}
+				ret = sides.join("|");
 				break;
 		}
 		return ret
