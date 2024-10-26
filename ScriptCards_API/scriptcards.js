@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.31";
-	const NUMERIC_VERSION = "207310"
+	const APIVERSION = "2.7.31a";
+	const NUMERIC_VERSION = "207311"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -5130,7 +5130,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				case "roll":
 				case "rollvar":
 				case "rollvariable":
-					log(params)
 					switch (params[1].toLowerCase()) {
 						case "sethilight":
 						case "sethighlight":
