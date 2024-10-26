@@ -1,5 +1,16 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.31:
+- New function group: "roll". one subfunction for now: setrollhighlight, which will set the highlight color for a roll variable. The syntax is:
+  --~|roll;setrollhighlight;Roll Var Name;identifier
+  
+  Where roll var name is the case sensitive name of the roll variable and identifier is one of: none, crit, fumble, both
+
+- Code standardization and cleanup, slight performance improvements
+
+v 2.7.30b:
+- Added a log message if you try to set imgsrc to a marketplace image, as this isn't supported by Roll20 thru the API
+
 v 2.7.30a:
 - Bug fix for --!ot: when the property value has a | in it. Like values with a :, the value should be in double quotes.
 - When setting the sides property through --!ot:, each side image will be checked for Roll20 validity (requires a ?... at the end)

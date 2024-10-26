@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.30a";
-	const NUMERIC_VERSION = "207301"
+	const APIVERSION = "2.7.31";
+	const NUMERIC_VERSION = "207310"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -171,6 +171,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		usersetting7: "",
 		usersetting8: "",
 		usersetting9: "",
+
+		critd20: "20",
+		critd100: "100",
+		critd10: "10",
+		critd8: "8",
+		critd6: "6",
+		critd4: "4",
+		fumbled20: "1",
+		fumbled100: "1",
+		fumbled10: "1",
+		fumbled8: "1",
+		fumbled6: "1",
+		fumbled4: "1",
 	};
 
 	const SettingsThatAreColors = [
@@ -231,24 +244,28 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	//---------------------------------------------------------------------------------------
 	// Handles registering token change events for other api scripts
 	//---------------------------------------------------------------------------------------
-	let observers = {
+	const observers = {
 		tokenChange: []
 	};
-
-	const observeTokenChange = function (handler) {
+	
+	const observeTokenChange = (handler) => {
 		if (handler && _.isFunction(handler)) {
 			observers.tokenChange.push(handler);
 		}
 	};
-
-	const notifyObservers = function (event, obj, prev) {
-		_.each(observers[event], function (handler) {
-			try {
-				handler(obj, prev);
-			} catch (e) {
-				log(`ScriptCards: An observer threw and exception in handler: ${handler}`);
-			}
-		});
+	
+	const notifyObservers = (event, obj, prev) => {
+		if (observers[event]) {
+			_.each(observers[event], (handler) => {
+				try {
+					handler(obj, prev);
+				} catch (e) {
+					log(`ScriptCards: An observer threw an exception in handler: ${handler}. Error: ${e.message}`);
+				}
+			});
+		} else {
+			log(`ScriptCards: No observers found for event: ${event}`);
+		}
 	};
 	//---------------------------------------------------------------------------------------
 	//---------------------------------------------------------------------------------------
@@ -331,7 +348,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	var gmonlyLines = [];
 	var lineCounter = 1;
 	var lastBlockAction = "";
-	var blockDepth = 0;
 
 	// Storage for any Library handouts found in the game
 	var ScriptCardsLibrary = {};
@@ -357,238 +373,149 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 		reload_template_mule();
 
+		const findBioMule = findObjs({ _type: "character", name: "ScriptCards_BioMule" })[0];
+		if (findBioMule) {
+			const bioCharID = findBioMule.id;
+			log(`ScriptCards Bio Mule Active. BioMule Character ID is ${bioCharID}`);
+		}
+
 		if (state[APINAME].triggersenabled) {
-
-			var findBioMule = findObjs({ _type: "character", name: "ScriptCards_BioMule" })[0];
-			if (findBioMule) { bioCharID = findBioMule.id; log(`ScriptCards Bio Mule Active. BioMule Character ID is ${bioCharID}`) }
-
-			var findTriggerChar = findObjs({ _type: "character", name: "ScriptCards_Triggers" })[0];
+			const findTriggerChar = findObjs({ _type: "character", name: "ScriptCards_Triggers" })[0];
 			if (findTriggerChar) {
-				triggerCharID = findTriggerChar.id;
+				const triggerCharID = findTriggerChar.id;
 				log(`ScriptCards Triggers Active. Trigger Character ID is ${triggerCharID}`);
-				on('change:campaign:playerpageid', function (obj, prev) {
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "change:campaign:playerpageid" });
-					if (Array.isArray(ability) && ability.length > 0) {
-						var replacement = ` --&PreviousPageID|${prev.playerpageid} --&NewPageID|${obj.get("playerpageid")} `;
-						for (let ab = 0; ab < ability.length; ab++) {
-							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-							sendChat("API", metacard);
-						}
-					}
-				})
-				on('change:campaign:turnorder', function () { onChangeCampaignTurnorder(triggerCharID) });
+		
+				on('change:campaign:turnorder', () => onChangeCampaignTurnorder(triggerCharID));
 
-				on('change:attribute', function (obj, prev) {
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:attribute:${prev.name}` });
-					if (Array.isArray(ability) && ability.length > 0) {
-						var replacement = "";
-						for (const property in prev) {
-							//replacement += ` --&AttributeOld${property}|${prev[property]} --&AttributeNew${property}|${obj.get(property)}`
-							replacement += ` ${getSafeTriggerString("AttributeOld" + property, prev[property])} ${getSafeTriggerString("AttributeNew" + property, obj.get(property))} `
-						}
-						for (let ab = 0; ab < ability.length; ab++) {
-							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-							sendChat("API", metacard);
-						}
-					}
-				})
-				on('change:graphic', function (obj, prev) {
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:graphic` });
-					if (Array.isArray(ability) && ability.length > 0) {
-						var replacement = "";
-						for (const property in prev) {
-							//replacement += ` --&GraphicOld${property}|${prev[property]} --&GraphicNew${property}|${obj.get(property)}`
-							replacement += ` ${getSafeTriggerString("GraphicOld" + property, prev[property])} ${getSafeTriggerString("GraphicNew" + property, obj.get(property))} `
-						}
-						for (let ab = 0; ab < ability.length; ab++) {
-							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-							sendChat("API", metacard);
-						}
-					}
-				})
-				on('change:door', function (obj, prev) {
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:door` });
-					if (Array.isArray(ability) && ability.length > 0) {
-						var replacement = "";
-						for (const property in prev) {
-							//replacement += ` --&DoorOld${property}|${prev[property]} --&DoorNew${property}|${obj.get(property)}`
-							replacement += ` ${getSafeTriggerString("DoorOld" + property, prev[property])} ${getSafeTriggerString("DoorNew" + property, obj.get(property))} `
-						}
-						for (let ab = 0; ab < ability.length; ab++) {
-							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-							sendChat("API", metacard);
-						}
-					}
-				})
-				on('change:page', function (obj, prev) {
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:page` });
-					if (Array.isArray(ability) && ability.length > 0) {
-						var replacement = "";
-						for (const property in prev) {
-							//replacement += ` --&PageOld${property}|${prev[property]} --&PageNew${property}|${obj.get(property)}`
-							replacement += ` ${getSafeTriggerString("PageOld" + property, prev[property])} ${getSafeTriggerString("PageNew" + property, obj.get(property))} `
-
-						}
-						for (let ab = 0; ab < ability.length; ab++) {
-							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-							sendChat("API", metacard);
-						}
-					}
-				})
-				on('change:character', function (obj, prev) {
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:character` });
-					if (Array.isArray(ability) && ability.length > 0) {
-						//var replacement = ` --&CharChanged|${obj.id}} `;
-						var replacement = getSafeTriggerString("CharChanged", obj.id);
-						for (const property in prev) {
-							//replacement += ` --&CharOld${property}|${prev[property]} --&CharNew${property}|${obj.get(property)}`
-							replacement += ` ${getSafeTriggerString("CharOld" + property, prev[property])} ${getSafeTriggerString("CharNew" + property, obj.get(property))} `
-							replacement += ` ${getSafeTriggerString("CharacterOld" + property, prev[property])} ${getSafeTriggerString("CharacterNew" + property, obj.get(property))} `
-						}
-						for (let ab = 0; ab < ability.length; ab++) {
-							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-							sendChat("API", metacard);
-						}
-					}
-				})
-				on('add:attribute', function (obj) {
-					var ability = findObjs({ type: "attribute", _characterid: triggerCharID, name: "add:attribute" });
-					if (Array.isArray(ability) && ability.length > 0) {
-						for (let ab = 0; ab < ability.length; ab++) {
-							setTimeout(() => {
-								//var replacement = ` --&AttributeAdded|${obj.id}} `;
-								var replacement = ` ${getSafeTriggerString("AttributeAdded", obj.id)} `
-								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+				const handleAbilityTrigger = (eventName, replacementGenerator) => {
+					on(eventName, (obj, prev) => {
+						const abilities = findObjs({ type: "ability", _characterid: triggerCharID, name: eventName });
+						if (Array.isArray(abilities) && abilities.length > 0) {
+							const replacement = replacementGenerator(obj, prev);
+							abilities.forEach(ability => {
+								const metacard = ability.get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 								sendChat("API", metacard);
-							}
-								, 500);
+							});
+						}
+					});
+				};
+		
+				handleAbilityTrigger('change:campaign:playerpageid', (obj, prev) => 
+					` --&PreviousPageID|${prev.playerpageid} --&NewPageID|${obj.get("playerpageid")} `
+				);
+		
+				handleAbilityTrigger('change:attribute', (obj, prev) => {
+					let replacement = "";
+					for (const property in prev) {
+						replacement += ` ${getSafeTriggerString("AttributeOld" + property, prev[property])} ${getSafeTriggerString("AttributeNew" + property, obj.get(property))} `;
+					}
+					return replacement;
+				});
+		
+				handleAbilityTrigger('change:graphic', (obj, prev) => {
+					let replacement = "";
+					for (const property in prev) {
+						replacement += ` ${getSafeTriggerString("GraphicOld" + property, prev[property])} ${getSafeTriggerString("GraphicNew" + property, obj.get(property))} `;
+					}
+					return replacement;
+				});
+		
+				handleAbilityTrigger('change:door', (obj, prev) => {
+					let replacement = "";
+					for (const property in prev) {
+						replacement += ` ${getSafeTriggerString("DoorOld" + property, prev[property])} ${getSafeTriggerString("DoorNew" + property, obj.get(property))} `;
+					}
+					return replacement;
+				});
+		
+				handleAbilityTrigger('change:page', (obj, prev) => {
+					let replacement = "";
+					for (const property in prev) {
+						replacement += ` ${getSafeTriggerString("PageOld" + property, prev[property])} ${getSafeTriggerString("PageNew" + property, obj.get(property))} `;
+					}
+					return replacement;
+				});
+		
+				handleAbilityTrigger('change:character', (obj, prev) => {
+					let replacement = getSafeTriggerString("CharChanged", obj.id);
+					for (const property in prev) {
+						replacement += ` ${getSafeTriggerString("CharOld" + property, prev[property])} ${getSafeTriggerString("CharNew" + property, obj.get(property))} `;
+						replacement += ` ${getSafeTriggerString("CharacterOld" + property, prev[property])} ${getSafeTriggerString("CharacterNew" + property, obj.get(property))} `;
+					}
+					return replacement;
+				});
+		
+				handleAbilityTrigger('add:attribute', (obj) => 
+					` ${getSafeTriggerString("AttributeAdded", obj.id)} `
+				);
+		
+				handleAbilityTrigger('add:page', (obj) => 
+					` ${getSafeTriggerString("PageAdded", obj.id)} `
+				);
+		
+				handleAbilityTrigger('add:character', (obj) => 
+					` ${getSafeTriggerString("CharAdded", obj.id)} `
+				);
+		
+				handleAbilityTrigger('destroy:page', (obj) => {
+					const copy = Object.assign({}, obj);
+					let replacement = "";
+					for (const property in copy.attributes) {
+						try {
+							replacement += ` ${getSafeTriggerString("PageRemoved" + property, copy.attributes[property])} `;
+						} catch (e) {
+							// do nothing
 						}
 					}
-				})
-				on('add:page', function (obj) {
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:page" });
-					if (Array.isArray(ability) && ability.length > 0) {
-						for (let ab = 0; ab < ability.length; ab++) {
-							setTimeout(() => {
-								//var replacement = ` --&PageAdded|${obj.id}} `;
-								var replacement = ` ${getSafeTriggerString("PageAdded", obj.id)} `
-								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-								sendChat("API", metacard);
-							}
-								, 500);
+					return replacement;
+				});
+		
+				handleAbilityTrigger('add:graphic', (obj) => 
+					` ${getSafeTriggerString("GraphicAdded", obj.id)} `
+				);
+		
+				handleAbilityTrigger('destroy:graphic', (obj) => {
+					const copy = Object.assign({}, obj);
+					let replacement = "";
+					for (const property in copy.attributes) {
+						try {
+							replacement += ` ${getSafeTriggerString("GraphicRemoved" + property, copy.attributes[property])} `;
+						} catch (e) {
+							// do nothing
 						}
 					}
-				})
-				on('add:character', function (obj) {
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:character" });
-					if (Array.isArray(ability) && ability.length > 0) {
-						for (let ab = 0; ab < ability.length; ab++) {
-							setTimeout(() => {
-								//var replacement = ` --&CharAdded|${obj.id}} `;
-								var replacement = ` ${getSafeTriggerString("CharAdded", obj.id)} `
-								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-								sendChat("API", metacard);
-							}
-								, 500);
+					return replacement;
+				});
+		
+				handleAbilityTrigger('add:door', (obj) => 
+					` ${getSafeTriggerString("DoorAdded", obj.id)} `
+				);
+		
+				handleAbilityTrigger('destroy:door', (obj) => {
+					const copy = Object.assign({}, obj);
+					let replacement = "";
+					for (const property in copy.attributes) {
+						try {
+							replacement += ` ${getSafeTriggerString("DoorRemoved" + property, copy.attributes[property])} `;
+						} catch (e) {
+							// do nothing
 						}
 					}
-				})
-				on('destroy:page', function (obj) {
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:page" });
-					if (Array.isArray(ability) && ability.length > 0) {
-						const copy = Object.assign({}, obj);
-						var replacement = "";
-						for (const property in copy.attributes) {
-							try {
-								replacement += ` ${getSafeTriggerString("PageRemoved" + property, copy.attributes[property])} `
-							} catch (e) {
-								//do nothing 
-							}
-						}
-						for (let ab = 0; ab < ability.length; ab++) {
-							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-							sendChat("API", metacard);
-						}
-					}
-				})
-				on('add:graphic', function (obj) {
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:graphic" });
-					if (Array.isArray(ability) && ability.length > 0) {
-						for (let ab = 0; ab < ability.length; ab++) {
-							setTimeout(() => {
-								//var replacement = ` --&GraphicAdded|${obj.id} `;
-								var replacement = ` ${getSafeTriggerString("GraphicAdded", obj.id)} `
-								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-								sendChat("API", metacard);
-							}
-								, 500);
-						}
-					}
-				})
-				on('destroy:graphic', function (obj) {
-					try {
-						var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:graphic" });
-						if (Array.isArray(ability) && ability.length > 0) {
-							const copy = Object.assign({}, obj);
-							var replacement = "";
-							for (const property in copy.attributes) {
-								try {
-									replacement += ` ${getSafeTriggerString("GraphicRemoved" + property, copy.attributes[property])} `
-								} catch (e) {
-									//do nothing 
-								}
-							}
-							for (let ab = 0; ab < ability.length; ab++) {
-								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-								sendChat("API", metacard);
-							}
-						}
-					} catch (e) { log(`Error: ${e}`) }
-				})
-				on('add:door', function (obj) {
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "add:door" });
-					if (Array.isArray(ability) && ability.length > 0) {
-						for (let ab = 0; ab < ability.length; ab++) {
-							setTimeout(() => {
-								//var replacement = ` --&DoorAdded|${obj.id}} `;
-								var replacement = ` ${getSafeTriggerString("DoorAdded", obj.id)} `
-								var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-								sendChat("API", metacard);
-							}
-								, 500);
-						}
-					}
-				})
-				on('destroy:door', function (obj) {
-					var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "destroy:door" });
-					if (Array.isArray(ability) && ability.length > 0) {
-						const copy = Object.assign({}, obj);
-						var replacement = "";
-						for (const property in copy.attributes) {
-							try {
-								replacement += ` ${getSafeTriggerString("DoorRemoved" + property, copy.attributes[property])} `
-							} catch (e) {
-								//do nothing 
-							}
-						}
-						for (let ab = 0; ab < ability.length; ab++) {
-							var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-							sendChat("API", metacard);
-						}
-					}
-				})
-				setTimeout(function () {
-					var attrib = findObjs({ type: "attribute", _characterid: triggerCharID, name: `listen_to_tokenmod` });
+					return replacement;
+				});
+		
+				setTimeout(() => {
+					const attrib = findObjs({ type: "attribute", _characterid: triggerCharID, name: `listen_to_tokenmod` });
 					if (attrib && attrib[0] && attrib[0].get("current") == "1") {
-						if ('undefined' !== typeof TokenMod && TokenMod.ObserveTokenChange) {
-							TokenMod.ObserveTokenChange(function (obj, prev) {
-								var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:graphic` });
-								if (Array.isArray(ability) && ability.length > 0) {
-									var replacement = "";
+						if (typeof TokenMod !== 'undefined' && TokenMod.ObserveTokenChange) {
+							TokenMod.ObserveTokenChange((obj, prev) => {
+								const abilities = findObjs({ type: "ability", _characterid: triggerCharID, name: `change:graphic` });
+								if (Array.isArray(abilities) && abilities.length > 0) {
+									let replacement = "";
 									for (const property in prev) {
-										replacement += ` --&GraphicOld${property}|${prev[property]} --&GraphicNew${property}|${obj.get(property)}`
+										replacement += ` --&GraphicOld${property}|${prev[property]} --&GraphicNew${property}|${obj.get(property)}`;
 									}
-									var metacard = ability[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
+									const metacard = abilities[0].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
 									sendChat("API", metacard);
 								}
 							});
@@ -609,9 +536,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		// [sm]...[/sm] inline formatting syntax. This allows us to fully support custom token
 		// marker sets.
 		const tokenMarkers = JSON.parse(Campaign().get("token_markers"));
-		for (let x = 0; x < tokenMarkers.length; x++) {
-			tokenMarkerURLs[tokenMarkers[x].name] = tokenMarkers[x].url;
-		}
+		tokenMarkers.forEach(({ name, url }) => {
+			tokenMarkerURLs[name] = url;
+		});
 
 		// Cache any library handouts
 		loadLibraryHandounts();
@@ -622,6 +549,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		// to track sandbox crash errors by subtracting the offset from the line number that the
 		// sandbox reports to contain the error.
 		log(`-=> ${APINAME} - ${APIVERSION} by ${APIAUTHOR} Ready <=- Meta Offset : ${API_Meta.ScriptCards.offset}`);
+		
 		if (APIVERSION.endsWith("experimental")) {
 			log(`-=> NOTE: This is an experimental version of ScriptCards and is not recommended for widespread use at this time. <=-`);
 		}
@@ -1070,13 +998,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										arrayVariables["args"] = [];
 										callParamList = parameterStack.pop();
 										if (callParamList) {
-											for (const [key, value] of Object.entries(callParamList)) {
+											for (const value of Object.values(callParamList)) {
 												arrayVariables["args"].push(value.toString().trim());
 											}
 										}
 										lineCounter = returnStack.pop();
 									} break;
-									case ">": handleGosubCommands(thisTag, thisContent, cardParameters, cardLines); break;
+									case ">": handleGosubCommands(thisTag, thisContent, cardParameters); break;
 									case "]": handleBlockEndCommand(thisTag, thisContent, cardLines); break;
 									case "?": handleConditionalBlock(thisTag, thisContent, cardParameters, cardLines); break;
 									//case "%": handleLoopStatements(thisTag, thisContent, cardParameters, cardLines); break;
@@ -3399,6 +3327,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	const getCleanImgsrc = (imgsrc) => {
+		if (imgsrc.startsWith('https://s3.amazonaws.com/files.d20.io/marketplace')) {
+			log(`ScriptCards: imgsrc property appears to be a marketplace image. ${imgsrc}. imgsrc properties must be from the user's asset library.`);
+		}
 		let parts = imgsrc.match(/(.*\/images\/.*)(thumb|med|original|max)([^?]*)(\?[^?]+)?$/);
 		if (parts) {
 			return parts[1] + 'thumb' + parts[3] + (parts[4] ? parts[4] : `?${Math.round(Math.random() * 9999999)}`);
@@ -3535,46 +3466,41 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		try {
 			var findTemplateChar = findObjs({ _type: "character", name: "ScriptCards_TemplateMule" })[0];
 		} catch {
-			//log(`ScriptCards: TemplateMule not found`) 
+			log(`ScriptCards: TemplateMule not found`) 
 		}
 
 		try {
 			if (findTemplateChar) {
-				var muleTemplates = findObjs({ _type: "ability", characterid: findTemplateChar.id });
+				const muleTemplates = findObjs({ _type: "ability", characterid: findTemplateChar.id });
 				if (muleTemplates) {
-					for (var x = 0; x < muleTemplates.length; x++) {
-						var tempName = muleTemplates[x].get("name")
-						templates[tempName] = templates[tempName] || {}
-						var templateText = muleTemplates[x].get("action")
-						var templateLines = templateText.split("||")
-						for (var i = 0; i < templateLines.length; i++) {
-							var pieces = templateLines[i].replace(/(\r\n|\n|\r)/gm, "").split("::")
-							if (pieces && pieces.length == 2) {
-								pieces[1] = pieces[1].replace(/\{/g, "<").replace(/\}/g, ">").trim()
-								pieces[0] = pieces[0].trim()
-								if (pieces[0] == 'boxcode') { templates[tempName].boxcode = pieces[1] }
-								if (pieces[0] == 'titlecode') { templates[tempName].titlecode = pieces[1] }
-								if (pieces[0] == 'textcode') { templates[tempName].textcode = pieces[1] }
-								if (pieces[0] == 'buttonwrapper') { templates[tempName].buttonwrapper = pieces[1] }
-								if (pieces[0] == 'buttonstyle') { templates[tempName].buttonstyle = pieces[1] }
-								if (pieces[0] == 'footer') { templates[tempName].footer = pieces[1] }
-								if (pieces[0] == 'tablestyle') { templates[tempName].tablestyle = pieces[1] }
-								if (pieces[0] == 'thstyle') { templates[tempName].thstyle = pieces[1] }
-								if (pieces[0] == 'tdstyle') { templates[tempName].tdstyle = pieces[1] }
-								if (pieces[0] == 'trstyle') { templates[tempName].trstyle = pieces[1] }
-								if (pieces[0] == 'subtitlestyle') { templates[tempName].subtitlestyle = pieces[1] }
-								if (pieces[0] == 'h1style') { templates[tempName].h1style = pieces[1] }
-								if (pieces[0] == 'h2style') { templates[tempName].h2style = pieces[1] }
-								if (pieces[0] == 'h3style') { templates[tempName].h3style = pieces[1] }
-								if (pieces[0] == 'h4style') { templates[tempName].h4style = pieces[1] }
-								if (pieces[0] == 'h5style') { templates[tempName].h5style = pieces[1] }
+					muleTemplates.forEach(template => {
+						const tempName = template.get("name");
+						templates[tempName] = templates[tempName] || {};
+						const templateText = template.get("action");
+						const templateLines = templateText.split("||");
+		
+						templateLines.forEach(line => {
+							const pieces = line.replace(/(\r\n|\n|\r)/gm, "").split("::");
+							if (pieces && pieces.length === 2) {
+								const [key, value] = pieces.map(piece => piece.trim());
+								const formattedValue = value.replace(/\{/g, "<").replace(/\}/g, ">");
+		
+								const templateKeys = [
+									'boxcode', 'titlecode', 'textcode', 'buttonwrapper', 'buttonstyle', 
+									'footer', 'tablestyle', 'thstyle', 'tdstyle', 'trstyle', 
+									'subtitlestyle', 'h1style', 'h2style', 'h3style', 'h4style', 'h5style'
+								];
+		
+								if (templateKeys.includes(key)) {
+									templates[tempName][key] = formattedValue;
+								}
 							}
-						}
-					}
+						});
+					});
 				}
 			}
-		} catch {
-			log("ScriptCards: Error parsing Templates Mule. Mule templates may not be available")
+		} catch (error) {
+			log("ScriptCards: Error parsing Templates Mule. Mule templates may not be available");
 		}
 		log(`ScriptCards: ${Object.keys(templates).length} Templates loaded`);
 	}
@@ -3598,14 +3524,71 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function FillTemplateStyle(piece, cardParameters, raw) {
-		if (!raw) { return "" }
-		if (cardParameters.overridetemplate == "none") { return "" }
-		if (templates[cardParameters.overridetemplate][piece]) {
-			return `style='${templates[cardParameters.overridetemplate][piece]}'`
-		} else {
-			return ""
+		if (!raw || cardParameters.overridetemplate === "none") {
+			return "";
 		}
+	
+		const templateStyle = templates[cardParameters.overridetemplate][piece];
+		return templateStyle ? `style='${templateStyle}'` : "";
 	}
+
+	function storeVariable(charid, prefix, varname, type, cardParameters = null) {
+		try {
+			let attributeName;
+			let variableValue;
+	
+			switch (type) {
+				case 'roll':
+					attributeName = `SCR_${prefix}-${varname}`;
+					variableValue = JSON.stringify(rollVariables[varname]);
+					break;
+				case 'string':
+					attributeName = `SCS_${prefix}-${varname}`;
+					variableValue = stringVariables[varname];
+					break;
+				case 'array':
+					attributeName = `SCA_${prefix}-${varname}`;
+					variableValue = JSON.stringify(arrayVariables[varname]);
+					break;
+				case 'hash':
+					attributeName = `SCH_${prefix}-${varname}`;
+					variableValue = JSON.stringify(hashTables[varname]);
+					if (variableValue === '{}') {
+						const testObj = findObjs({ type: "attribute", characterid: charid, name: attributeName })[0];
+						if (testObj) {
+							testObj.remove();
+						}
+						return;
+					}
+					break;
+				case 'setting':
+					if (cardParameters && cardParameters[varname] !== undefined) {
+						attributeName = `SCT_${prefix}-${varname}`;
+						variableValue = cardParameters[varname];
+					} else {
+						log(`Attempted to store ${varname} setting, which does not exist`);
+						return;
+					}
+					break;
+				default:
+					log(`Unknown variable type: ${type}`);
+					return;
+			}
+	
+			const testObj = findObjs({ type: "attribute", characterid: charid, name: attributeName })[0];
+			if (testObj) {
+				testObj.set("current", variableValue);
+			} else {
+				createObj("attribute", {
+					name: attributeName,
+					current: variableValue,
+					characterid: charid
+				});
+			}
+		} catch (e) {
+			log(`Unable to store ${type} ${varname} on ${charid}, error ${e}`);
+		}
+	}	
 
 	function storeRollVar(charid, prefix, varname) {
 		try {
@@ -3731,22 +3714,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			log(`Unable to store Hash ${varname} on ${charid}, error ${e} `)
 		}
 	}
-
-	/*
-	function loadHashTable(charid, prefix, varname) {
-		try {
-			let charobj = getObj("character", charid)
-			if (charobj) {
-				let attr = findObjs({ type: "attribute", characterid: charid, name: `SCH_${prefix}-${varname}` })[0];
-				if (attr) {
-					hashTables[varname] = JSON.parse(attr.get("current"));
-				}
-			}
-		} catch (e) {
-			log(`Unable to load ${varname} on ${charid}, error ${e} `)
-		}
-	}
-	*/
 
 	function loadHashTable(characterId, prefix, variableName) {
 		try {
@@ -3878,6 +3845,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
+	/*
 	function handleLoopStatements(thisTag, thisContent, cardParameters, cardLines) {
 		let loopCounter = undefined || thisTag.substring(1);
 		if (loopCounter && loopCounter !== "" && loopCounter !== "!") {
@@ -3992,6 +3960,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			}
 		}
 	}
+		*/
 
 	function handleCardSettingsCommands(thisTag, thisContent, cardParameters) {
 		try {
@@ -4104,7 +4073,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		try {
 			let statementParams = thisTag.split(":");
 			let contentParams = thisContent.split(" ");
-			if (statementParams[1].toLowerCase() == "graphic") {
+			if (statementParams[1].toLowerCase() == "graphic" || statementParams[1].toLowerCase() == "token") {
 				if (contentParams[0].toLowerCase() == "tofront") {
 					let thisObj = getObj("graphic", statementParams[2]);
 					if (thisObj) { toFront(thisObj); }
@@ -4149,7 +4118,42 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											if (setting[1].startsWith('"') && setting[1].endsWith('"')) {
 												setting[1] = setting[1].substring(1, setting[1].length - 1);
 											}
-											tProps[setting[0]] = GetSafeTokenProperty(setting[0], setting[1]);
+											tProps[setting[0]] = getSafeTokenProperty(setting[0], setting[1]);
+										}
+									}
+									if (tProps["subtype"] == undefined) { tProps["subtype"] = "token"; }
+									if (tProps["layer"] == undefined) { tProps["layer"] = "objects"; }
+									if (tProps["pageid"] == undefined) { tProps["pageid"] = Campaign().get("playerpageid"); }
+									if (tProps["left"] == undefined) { tProps["left"] = 200; }
+									if (tProps["top"] == undefined) { tProps["top"] = 200; }
+									if (tProps["width"] == undefined) { tProps["width"] = 70; }
+									if (tProps["height"] == undefined) { tProps["height"] = 70; }
+									try {
+										var newToken = createObj("graphic", tProps);
+									} catch (e) {
+										log(e)
+									}
+
+									if (newToken) {
+										stringVariables[thisTag.substring(4)] = newToken.id
+									} else {
+										stringVariables[thisTag.substring(4)] = "OBJECT_CREATION_ERROR";
+									}
+								}
+									break;
+
+								case "p": {
+									let regexSplit = /\|(?=(?:[^"]*"[^"]*")*[^"]*$)/
+									let settings = thisContent.split(regexSplit);
+									let tProps = {}
+									for (let x = 0; x < settings.length; x++) {
+										//log(`Setting ${x} is ${settings[x]}`)
+										let setting = settings[x].match(/(".*?"|[^":\s]+)(?=\s*:|\s*$)/g);
+										if (setting[1]) {
+											if (setting[1].startsWith('"') && setting[1].endsWith('"')) {
+												setting[1] = setting[1].substring(1, setting[1].length - 1);
+											}
+											tProps[setting[0]] = getSafeTokenProperty(setting[0], setting[1]);
 										}
 									}
 									if (tProps["subtype"] == undefined) { tProps["subtype"] = "token"; }
@@ -4285,7 +4289,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								for (let i = 0; i < settings.length; i++) {
 									let thisSetting = settings[i].split(":");
 									let settingName = thisSetting.shift();
-									let settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");;
+									let settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");
 
 									if (settingName.toLowerCase() == "night_vision_effect" && (settingValue.trim().toLowerCase() == "dimming")) {
 										settingValue = "Dimming_0"
@@ -4527,7 +4531,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							for (var i = 0; i < settings.length; i++) {
 								var thisSetting = settings[i].split(":");
 								var settingName = thisSetting.shift();
-								var settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");;
+								var settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");
 								if (settingName.toLowerCase() == "imgsrc") {
 									settingValue = getCleanImgsrc(settingValue);
 								}
@@ -4645,7 +4649,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
-	function handleGosubCommands(thisTag, thisContent, cardParameters, cardLines) {
+	function handleGosubCommands(thisTag, thisContent, cardParameters) {
 		try {
 			parameterStack.push(callParamList);
 			let paramList = CSVtoArray(thisContent.trim());
@@ -4833,16 +4837,20 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					let varList = thisContent.split(cardParameters.parameterdelimiter)
 					if (cardParameters.storagecharid && varList) {
 						if (varType == "$") {
-							varList.forEach((element) => storeRollVar(cardParameters.storagecharid, prefix, element));
+							//varList.forEach((element) => storeRollVar(cardParameters.storagecharid, prefix, element));
+							varList.forEach((element) => storeVariable(storageCharID, prefix, element, "roll", cardParameters));
 						}
 						if (varType == "&") {
-							varList.forEach((element) => storeStringVar(cardParameters.storagecharid, prefix, element));
+							//varList.forEach((element) => storeStringVar(cardParameters.storagecharid, prefix, element));
+							varList.forEach((element) => storeVariable(storageCharID, prefix, element, "string", cardParameters));
 						}
 						if (varType == "@") {
-							varList.forEach((element) => storeArray(cardParameters.storagecharid, prefix, element));
+							//varList.forEach((element) => storeArray(cardParameters.storagecharid, prefix, element));
+							varList.forEach((element) => storeVariable(storageCharID, prefix, element, "array", cardParameters));
 						}
 						if (varType == ":") {
-							varList.forEach((element) => storeHashTable(cardParameters.storagecharid, prefix, element));
+							//varList.forEach((element) => storeHashTable(cardParameters.storagecharid, prefix, element));
+							varList.forEach((element) => storeVariable(storageCharID, prefix, element, "hash", cardParameters));
 						}
 						if (varType == "#") {
 							if (thisContent.toLowerCase().trim() == "allsettings") {
@@ -4855,7 +4863,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									}
 								}
 							}
-							varList.forEach((element) => storeSetting(cardParameters.storagecharid, prefix, element.toLowerCase(), cardParameters));
+							//varList.forEach((element) => storeSetting(cardParameters.storagecharid, prefix, element.toLowerCase(), 
+							varList.forEach((element) => storeVariable(storageCharID, prefix, element, "setting", cardParameters));
 						}
 					}
 				}
@@ -5118,6 +5127,31 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					break;
 
+				case "roll":
+				case "rollvar":
+				case "rollvariable":
+					log(params)
+					switch (params[1].toLowerCase()) {
+						case "sethilight":
+						case "sethighlight":
+						case "sethighlightmode":
+						case "sethilightmode":
+							if (params[3].toLowerCase() == "none") {
+								rollVariables[params[2]].Style = cardParameters.stylenormal;
+							}
+							if (params[3].toLowerCase() == "crit" || params[3].toLowerCase() == "critical") {
+								rollVariables[params[2]].Style = cardParameters.stylecrit;
+							}
+							if (params[3].toLowerCase() == "fumble") {
+								rollVariables[params[2]].Style = cardParameters.stylefumble;
+							}
+							if (params[3].toLowerCase() == "both") {
+								rollVariables[params[2]].Style = cardParameters.styleboth;
+							}
+							break;							
+					}
+					break;
+
 				case "turnorder":
 					var variableName = thisTag.substring(1);
 					if (params.length >= 2) {
@@ -5301,13 +5335,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								let t1 = getTokenCoords(token1, scale)
 								let t2 = getTokenCoords(token2, scale)
 								if (params[0].toLowerCase() == "distance" || params[0].toLowerCase() == "chebyshevdistance") {
-									result = Math.floor(Math.max(Math.abs(t1[0] - t2[0]), Math.abs(t1[1] - t2[1])));
+									result = Math.floor(Math.max(Math.abs(t1.x - t2.x), Math.abs(t1.y - t2.y)));
 								}
 								if (params[0].toLowerCase() == "euclideandistance") {
-									result = Math.floor(Math.sqrt(Math.pow((t1[0] - t2[0]), 2) + Math.pow((t1[1] - t2[1]), 2)));
+									result = Math.floor(Math.sqrt(Math.pow((t1.x - t2.x), 2) + Math.pow((t1.y - t2.y), 2)));
 								}
 								if (params[0].toLowerCase() == "manhattandistance" || params[0].toLowerCase() == "taxicabdistance") {
-									result = Math.abs(t2[0] - t1[0]) + Math.abs(t2[1] - t1[1]);
+									result = Math.abs(t2.x - t1.x) + Math.abs(t2.y - t1.y);
 								}
 							} catch {
 								result = 0;
@@ -5331,7 +5365,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								// Calculate the euclidean unit distance between two tokens (params[1] and params[2])
 								let t1 = getTokenCoords(token1, (1 / 70))
 								let t2 = getTokenCoords(token2, (1 / 70))
-								result = Math.floor(Math.sqrt(Math.pow((t1[0] - t2[0]), 2) + Math.pow((t1[1] - t2[1]), 2)));
+								result = Math.floor(Math.sqrt(Math.pow((t1.x - t2.x), 2) + Math.pow((t1.y - t2.y), 2)));
 								if (params[0].toLowerCase() == "euclideanlong") { result = result / (scale * 70); }
 							} catch {
 								result = 0;
@@ -6589,8 +6623,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var jumpDest = isTrue ? trueDest : falseDest;
 			var blockSkip = false;
 			var blockChar = "]";
-			if (falseDest == "[" || trueDest == "]") {
-				var curDepth = blockDepth
+			if (falseDest == "[" || trueDest == "]") {			
 				blockDepth++
 			}
 			if (isTrue && falseDest == "[") { blockSkip = true; }
@@ -6626,7 +6659,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							arrayVariables["args"] = [];
 							callParamList = parameterStack.pop();
 							if (callParamList) {
-								for (const [key, value] of Object.entries(callParamList)) {
+								for (const value of Object.values(callParamList)) {
 									arrayVariables["args"].push(value.toString().trim());
 								}
 							}
@@ -6661,7 +6694,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						break;
 					case "gosub":
 						jumpDest = jumpDest.substring(1);
-						var nestSkip = 0;
 						parameterStack.push(callParamList);
 						var paramList = CSVtoArray(jumpDest.trim());
 						callParamList = {};
@@ -6761,7 +6793,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var blockChar = "";
 			if (cases) {
 				for (var x = 0; x < cases.length; x++) {
-					var testcase = cases[x].split(":")[0].replace(/\\\\\|/gi, "|");;
+					var testcase = cases[x].split(":")[0].replace(/\\\\\|/gi, "|");
 					if (testvalue.toLowerCase() == testcase.toLowerCase()) {
 						var jumpDest = cases[x].split(":")[1];
 						var resultType = "goto";
@@ -6796,7 +6828,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									if (returnStack.length > 0) {
 										callParamList = parameterStack.pop();
 										if (callParamList) {
-											for (const [key, value] of Object.entries(callParamList)) {
+											for (const value of Object.values(callParamList)) {
 												arrayVariables["args"].push(value.toString().trim());
 											}
 										}
@@ -6924,63 +6956,50 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	}
 
-	function GetSafeTokenProperty(propName, propValue) {
-		var ret = propValue
-		//log(`GetSafeTokenProperty: ${propName}, ${propValue}`)
-		switch (propName) {
-			case "left":
-			case "top":
-			case "width":
-			case "height":
-			case "light_radius":
-			case "light_dimradius":
-			case "light_angle":
-			case "light_losangle":
-			case "light_multiplier":
-			case "adv_fow_view_distance":
-			case "light_sensitivity_radius":
-			case "rotation":
-				var n = Number(propValue);
-				if (isNaN(n)) { n = parseFloat(propValue); }
-				if (isNaN(n)) { n = 0; }
-				ret = n;
-				break;
-			case "isdrawing":
-			case "flipv":
-			case "fliph":
-			case "aura1_square":
-			case "aura2_square":
-			case "showname":
-			case "showplayers_name":
-			case "showplayers_bar1":
-			case "showplayers_bar2":
-			case "showplayers_bar3":
-			case "showplayers_aura1":
-			case "showplayers_aura2":
-			case "playersedit_name":
-			case "playersedit_bar1":
-			case "playersedit_bar2":
-			case "playersedit_bar3":
-			case "playersedit_aura1":
-			case "playersedit_aura2":
-			case "light_otherplayers":
-			case "light_hassight":
-			case "lockmovement":
-				ret = false;
-				if (propValue == "true" || propValue == "yes" || propValue == "on" || propValue == "1") { ret = true; }
-				break;
-			case "imgsrc":
-				ret = getCleanImgsrc(propValue);
-				break;
-			case "sides":
-				sides = propValue.split("|");
-				for (let x=0; x<sides.length; x++) {
-					sides[x] = getCleanImgsrc(sides[x]);
-				}
-				ret = sides.join("|");
-				break;
+	function getSafeTokenProperty(propName, propValue) {
+		let ret = propValue;
+	
+		// Convert numeric properties
+		const numericProps = [
+			"left", "top", "width", "height", "light_radius", "light_dimradius",
+			"light_angle", "light_losangle", "light_multiplier", "adv_fow_view_distance",
+			"light_sensitivity_radius", "rotation"
+		];
+		if (numericProps.includes(propName)) {
+			let numValue = Number(propValue);
+			if (isNaN(numValue)) {
+				numValue = parseFloat(propValue);
+			}
+			if (isNaN(numValue)) {
+				numValue = 0;
+			}
+			return numValue;
 		}
-		return ret
+	
+		// Convert boolean properties
+		const booleanProps = [
+			"isdrawing", "flipv", "fliph", "aura1_square", "aura2_square", "showname",
+			"showplayers_name", "showplayers_bar1", "showplayers_bar2", "showplayers_bar3",
+			"showplayers_aura1", "showplayers_aura2", "playersedit_name", "playersedit_bar1",
+			"playersedit_bar2", "playersedit_bar3", "playersedit_aura1", "playersedit_aura2",
+			"light_otherplayers", "light_hassight", "lockmovement"
+		];
+		if (booleanProps.includes(propName)) {
+			return ["true", "yes", "on", "1"].includes(propValue.toLowerCase());
+		}
+	
+		// Clean image source
+		if (propName === "imgsrc") {
+			return getCleanImgsrc(propValue);
+		}
+	
+		// Clean sides property
+		if (propName === "sides") {
+			const sides = propValue.split("|").map(side => getCleanImgsrc(side));
+			return sides.join("|");
+		}
+	
+		return ret;
 	}
 
 	function reportBenchmarkingData() {
@@ -7000,6 +7019,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	};
 	*/
 
+	/*
 	function getSafeTriggerString(prefix, property) {
 		try {
 			let prop = property
@@ -7017,6 +7037,29 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			log(`Error creating safe trigger string: ${e.message}`)
 		}
 	}
+	*/
+
+	function getSafeTriggerString(prefix, property) {
+		try {
+			let prop = property ? property.toString() : "";
+			
+			if (!prop.includes("--")) {
+				return ` --&${prefix}|${prop} `;
+			}
+	
+			const split = prop.split("--");
+			let result = split.map((part, index) => {
+				const separator = index === 0 ? "" : "+-";
+				const suffix = index < split.length - 1 ? "-" : "";
+				return ` --&${prefix}|${separator}${part}${suffix}`;
+			}).join("");
+	
+			return result;
+		} catch (error) {
+			log(`Error creating safe trigger string: ${error.message}`);
+			return "";
+		}
+	}	
 
 	return {
 		ObserveTokenChange: observeTokenChange
@@ -7027,35 +7070,49 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	function arrayPairsToObject(arrayPairs) {
-		var obj = {};
-		if (arrayPairs) {
-			arrayPairs.forEach(pair => {
-				const [key, value] = pair;
-				obj[key] = value;
-			});
-		} else {
+		if (!arrayPairs) {
 			return undefined;
 		}
+	
+		const obj = {};
+		arrayPairs.forEach(pair => {
+			const [key, value] = pair;
+			obj[key] = value;
+		});
+	
 		return obj;
 	}
 
 	function getTokenCoords(token, scale) {
 		try {
-			return [token.get("left") / (scale * 70), token.get("top") / (scale * 70)]
-		} catch (e) {
-			log(e);
-			return [0, 0]
+			const left = token.get("left");
+			const top = token.get("top");
+			const scaledLeft = left / (scale * 70);
+			const scaledTop = top / (scale * 70);
+			//log(`Token ID: ${token.id}, Scale: ${scale}, Left: ${left}, Top: ${top}, Scaled Left: ${scaledLeft}, Scaled Top: ${scaledTop}`);
+
+			return { x: scaledLeft, y: scaledTop };
+		} catch (error) {
+			log(`Error in getTokenCoords for token ID ${token.id}: ${error.message}`);
+			return { x: 0, y: 0 };
 		}
 	}
 
 	function onChangeCampaignTurnorder(triggerCharID) {
-		var ability = findObjs({ type: "ability", _characterid: triggerCharID, name: "change:campaign:turnorder" });
-		if (Array.isArray(ability) && ability.length > 0) {
-			for (let ab = 0; ab < ability.length; ab++) {
-				var replacement = ` `;
-				var metacard = ability[ab].get("action").replace("--/|TRIGGER_REPLACEMENTS", replacement);
-				sendChat("API", metacard);
+		try {
+			const abilities = findObjs({ type: "ability", _characterid: triggerCharID, name: "change:campaign:turnorder" });
+			if (Array.isArray(abilities) && abilities.length > 0) {
+				const replacement = ` `;
+				abilities.forEach(ability => {
+					const action = ability.get("action");
+					const metacard = action.replace("--/|TRIGGER_REPLACEMENTS", replacement);
+					sendChat("API", metacard);
+				});
+			} else {
+				log(`No abilities found for character ID: ${triggerCharID}`);
 			}
+		} catch (error) {
+			log(`Error in onChangeCampaignTurnorder: ${error.message}`);
 		}
 	}
 
