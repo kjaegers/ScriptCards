@@ -247,13 +247,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	const observers = {
 		tokenChange: []
 	};
-	
+
 	const observeTokenChange = (handler) => {
 		if (handler && _.isFunction(handler)) {
 			observers.tokenChange.push(handler);
 		}
 	};
-	
+
 	const notifyObservers = (event, obj, prev) => {
 		if (observers[event]) {
 			_.each(observers[event], (handler) => {
@@ -384,7 +384,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			if (findTriggerChar) {
 				const triggerCharID = findTriggerChar.id;
 				log(`ScriptCards Triggers Active. Trigger Character ID is ${triggerCharID}`);
-		
+
 				on('change:campaign:turnorder', () => onChangeCampaignTurnorder(triggerCharID));
 
 				const handleAbilityTrigger = (eventName, replacementGenerator) => {
@@ -399,11 +399,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 					});
 				};
-		
-				handleAbilityTrigger('change:campaign:playerpageid', (obj, prev) => 
+
+				handleAbilityTrigger('change:campaign:playerpageid', (obj, prev) =>
 					` --&PreviousPageID|${prev.playerpageid} --&NewPageID|${obj.get("playerpageid")} `
 				);
-		
+
 				handleAbilityTrigger('change:attribute', (obj, prev) => {
 					let replacement = "";
 					for (const property in prev) {
@@ -411,7 +411,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					return replacement;
 				});
-		
+
 				handleAbilityTrigger('change:graphic', (obj, prev) => {
 					let replacement = "";
 					for (const property in prev) {
@@ -419,7 +419,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					return replacement;
 				});
-		
+
 				handleAbilityTrigger('change:door', (obj, prev) => {
 					let replacement = "";
 					for (const property in prev) {
@@ -427,7 +427,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					return replacement;
 				});
-		
+
 				handleAbilityTrigger('change:page', (obj, prev) => {
 					let replacement = "";
 					for (const property in prev) {
@@ -435,7 +435,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					return replacement;
 				});
-		
+
 				handleAbilityTrigger('change:character', (obj, prev) => {
 					let replacement = getSafeTriggerString("CharChanged", obj.id);
 					for (const property in prev) {
@@ -444,19 +444,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					return replacement;
 				});
-		
-				handleAbilityTrigger('add:attribute', (obj) => 
+
+				handleAbilityTrigger('add:attribute', (obj) =>
 					` ${getSafeTriggerString("AttributeAdded", obj.id)} `
 				);
-		
-				handleAbilityTrigger('add:page', (obj) => 
+
+				handleAbilityTrigger('add:page', (obj) =>
 					` ${getSafeTriggerString("PageAdded", obj.id)} `
 				);
-		
-				handleAbilityTrigger('add:character', (obj) => 
+
+				handleAbilityTrigger('add:character', (obj) =>
 					` ${getSafeTriggerString("CharAdded", obj.id)} `
 				);
-		
+
 				handleAbilityTrigger('destroy:page', (obj) => {
 					const copy = Object.assign({}, obj);
 					let replacement = "";
@@ -469,11 +469,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					return replacement;
 				});
-		
-				handleAbilityTrigger('add:graphic', (obj) => 
+
+				handleAbilityTrigger('add:graphic', (obj) =>
 					` ${getSafeTriggerString("GraphicAdded", obj.id)} `
 				);
-		
+
 				handleAbilityTrigger('destroy:graphic', (obj) => {
 					const copy = Object.assign({}, obj);
 					let replacement = "";
@@ -486,11 +486,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					return replacement;
 				});
-		
-				handleAbilityTrigger('add:door', (obj) => 
+
+				handleAbilityTrigger('add:door', (obj) =>
 					` ${getSafeTriggerString("DoorAdded", obj.id)} `
 				);
-		
+
 				handleAbilityTrigger('destroy:door', (obj) => {
 					const copy = Object.assign({}, obj);
 					let replacement = "";
@@ -503,7 +503,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					return replacement;
 				});
-		
+
 				setTimeout(() => {
 					const attrib = findObjs({ type: "attribute", _characterid: triggerCharID, name: `listen_to_tokenmod` });
 					if (attrib && attrib[0] && attrib[0].get("current") == "1") {
@@ -549,7 +549,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		// to track sandbox crash errors by subtracting the offset from the line number that the
 		// sandbox reports to contain the error.
 		log(`-=> ${APINAME} - ${APIVERSION} by ${APIAUTHOR} Ready <=- Meta Offset : ${API_Meta.ScriptCards.offset}`);
-		
+
 		if (APIVERSION.endsWith("experimental")) {
 			log(`-=> NOTE: This is an experimental version of ScriptCards and is not recommended for widespread use at this time. <=-`);
 		}
@@ -3466,7 +3466,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		try {
 			var findTemplateChar = findObjs({ _type: "character", name: "ScriptCards_TemplateMule" })[0];
 		} catch {
-			log(`ScriptCards: TemplateMule not found`) 
+			log(`ScriptCards: TemplateMule not found`)
 		}
 
 		try {
@@ -3478,19 +3478,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						templates[tempName] = templates[tempName] || {};
 						const templateText = template.get("action");
 						const templateLines = templateText.split("||");
-		
+
 						templateLines.forEach(line => {
 							const pieces = line.replace(/(\r\n|\n|\r)/gm, "").split("::");
 							if (pieces && pieces.length === 2) {
 								const [key, value] = pieces.map(piece => piece.trim());
 								const formattedValue = value.replace(/\{/g, "<").replace(/\}/g, ">");
-		
+
 								const templateKeys = [
-									'boxcode', 'titlecode', 'textcode', 'buttonwrapper', 'buttonstyle', 
-									'footer', 'tablestyle', 'thstyle', 'tdstyle', 'trstyle', 
+									'boxcode', 'titlecode', 'textcode', 'buttonwrapper', 'buttonstyle',
+									'footer', 'tablestyle', 'thstyle', 'tdstyle', 'trstyle',
 									'subtitlestyle', 'h1style', 'h2style', 'h3style', 'h4style', 'h5style'
 								];
-		
+
 								if (templateKeys.includes(key)) {
 									templates[tempName][key] = formattedValue;
 								}
@@ -3527,7 +3527,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (!raw || cardParameters.overridetemplate === "none") {
 			return "";
 		}
-	
+
 		const templateStyle = templates[cardParameters.overridetemplate][piece];
 		return templateStyle ? `style='${templateStyle}'` : "";
 	}
@@ -3536,7 +3536,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		try {
 			let attributeName;
 			let variableValue;
-	
+
 			switch (type) {
 				case 'roll':
 					attributeName = `SCR_${prefix}-${varname}`;
@@ -3574,7 +3574,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					log(`Unknown variable type: ${type}`);
 					return;
 			}
-	
+
 			const testObj = findObjs({ type: "attribute", characterid: charid, name: attributeName })[0];
 			if (testObj) {
 				testObj.set("current", variableValue);
@@ -3588,7 +3588,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		} catch (e) {
 			log(`Unable to store ${type} ${varname} on ${charid}, error ${e}`);
 		}
-	}	
+	}
 
 	function storeRollVar(charid, prefix, varname) {
 		try {
@@ -4117,6 +4117,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (setting[1]) {
 											if (setting[1].startsWith('"') && setting[1].endsWith('"')) {
 												setting[1] = setting[1].substring(1, setting[1].length - 1);
+											}
+											if (setting[0].startsWith("t-") || setting[0].startsWith("T-")) {
+												setting[0] = setting[0].substring(2);
 											}
 											tProps[setting[0]] = getSafeTokenProperty(setting[0], setting[1]);
 										}
@@ -5147,7 +5150,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (params[3].toLowerCase() == "both") {
 								rollVariables[params[2]].Style = cardParameters.styleboth;
 							}
-							break;							
+							break;
 					}
 					break;
 
@@ -6622,7 +6625,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			var jumpDest = isTrue ? trueDest : falseDest;
 			var blockSkip = false;
 			var blockChar = "]";
-			if (falseDest == "[" || trueDest == "]") {			
+			if (falseDest == "[" || trueDest == "]") {
 				blockDepth++
 			}
 			if (isTrue && falseDest == "[") { blockSkip = true; }
@@ -6957,7 +6960,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	function getSafeTokenProperty(propName, propValue) {
 		let ret = propValue;
-	
+
 		// Convert numeric properties
 		const numericProps = [
 			"left", "top", "width", "height", "light_radius", "light_dimradius",
@@ -6974,7 +6977,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			}
 			return numValue;
 		}
-	
+
 		// Convert boolean properties
 		const booleanProps = [
 			"isdrawing", "flipv", "fliph", "aura1_square", "aura2_square", "showname",
@@ -6986,18 +6989,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (booleanProps.includes(propName)) {
 			return ["true", "yes", "on", "1"].includes(propValue.toLowerCase());
 		}
-	
+
 		// Clean image source
 		if (propName === "imgsrc") {
 			return getCleanImgsrc(propValue);
 		}
-	
+
 		// Clean sides property
 		if (propName === "sides") {
 			const sides = propValue.split("|").map(side => getCleanImgsrc(side));
 			return sides.join("|");
 		}
-	
+
 		return ret;
 	}
 
@@ -7041,24 +7044,24 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	function getSafeTriggerString(prefix, property) {
 		try {
 			let prop = property ? property.toString() : "";
-			
+
 			if (!prop.includes("--")) {
 				return ` --&${prefix}|${prop} `;
 			}
-	
+
 			const split = prop.split("--");
 			let result = split.map((part, index) => {
 				const separator = index === 0 ? "" : "+-";
 				const suffix = index < split.length - 1 ? "-" : "";
 				return ` --&${prefix}|${separator}${part}${suffix}`;
 			}).join("");
-	
+
 			return result;
 		} catch (error) {
 			log(`Error creating safe trigger string: ${error.message}`);
 			return "";
 		}
-	}	
+	}
 
 	return {
 		ObserveTokenChange: observeTokenChange
@@ -7072,13 +7075,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (!arrayPairs) {
 			return undefined;
 		}
-	
+
 		const obj = {};
 		arrayPairs.forEach(pair => {
 			const [key, value] = pair;
 			obj[key] = value;
 		});
-	
+
 		return obj;
 	}
 

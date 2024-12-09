@@ -8,6 +8,8 @@ v 2.7.31:
 
 - Code standardization and cleanup, slight performance improvements
 
+- When using --!t you can prefix the property names with t- or T- and they will be mapped to the right values
+
 v 2.7.30b:
 - Added a log message if you try to set imgsrc to a marketplace image, as this isn't supported by Roll20 thru the API
 
