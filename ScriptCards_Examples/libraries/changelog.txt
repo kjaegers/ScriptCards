@@ -1,3 +1,6 @@
+5Elib - 0.0.6
+- Fix bug in Lib5E_GET_GLOBAL_MOD_STATUS (Thanks to BMiniPainting for finding the error)
+
 NameGenLib - 0.0.1
 - Initial release, provides functions for generating random names
 

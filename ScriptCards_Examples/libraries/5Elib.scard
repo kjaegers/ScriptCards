@@ -1,4 +1,4 @@
---/|ScriptCards Library: 5ELib version 0.0.5
+--/|ScriptCards Library: 5ELib version 0.0.6
 --/|Provides various utility procedures for D&D 5E games
 --/|
 --/| Special Note: This is a "new" library for D&D 5E. The existing "dnd5elib" has been left unchanged to avoid breaking scripts that
@@ -17,16 +17,6 @@
 --/|      Given a (class) name (ie, wizard, warlock, fighter, etc.) will return (Return String Var) with the class level for the 
 --/|      character indicated by (characterid). If the character has no levels in that class, the return value will be 0
 --/|
---/|   Lib5E_GET_GLOBAL_MOD_STATUS|characterid; Category; name; returnstring (0=off, 1=on)
---/|      Given a (category) which can be one of attack,damage,ac,skill,save and a (name) which corresponds to the global modifier name
---/|      this function will search (characterid) for a matching global modifier and return in (returnstring) a 0 if it is off or a 1 if
---/|      it is on. An error will be output to the GM ("*") and the API console if the modifier can't be found, and a 0 will be returned
---/|
---/|   Lib5E_SET_GLOBAL_MOD_STATUS|characterid; Category; name; 0=off,1=on,2=toggle
---/|      Given a (category) which can be one of attack,damage,ac,skill,save and a (name) which corresponds to the global modifier name
---/|      this function will search (characterid) for a matching global modifier. If the fourth parameter is 0 (off) or 1 (on), the global
---/|      mod will be set to that value. If the fourth parameter is a 2, the current value (on/off) will be flipped.
---/|      An error will be output to the GM ("*") and the API console if the modifier can't be found.
 --/|
 --/|   Lib5E_FIND_RESOURCE|characterid;resourceName;resourceReturnNameStringVariable;ResourceReturnValueStringVariable
 --/|      Examing the repeating resource section of character (characterid) looking for a given value (resourceName).
@@ -39,10 +29,11 @@
 --/|      Checks a character (characterid) for a global_(category)_mod entry called (name) and returns a string value (returnstring) that is
 --/|      set to 1 if the global mod is turned on or 0 if it is either off or the modifier wasn't found on the character. Valid Categories are
 --/|      attack,tohit,ac,save,damage,skill (note that "attack" and "tohit" are the same thing)
---/|
 --/|   Lib5E_SET_GLOBAL_MOD_STATUS|characterid; Category; name; 0=off,1=on,2=toggle
---/|      Sets a character's (characterid) global_(category)_mod entry called (name) by turning it off (0), on (1) or toggleing to the opposite
---/|      of the current setting.Valid Categories are: attack,tohit,ac,save,damage,skill (note that "attack" and "tohit" are the same thing)
+--/|      Given a (category) which can be one of attack,damage,ac,skill,save and a (name) which corresponds to the global modifier name
+--/|      this function will search (characterid) for a matching global modifier. If the fourth parameter is 0 (off) or 1 (on), the global
+--/|      mod will be set to that value. If the fourth parameter is a 2, the current value (on/off) will be flipped.
+--/|      An error will be output to the GM ("*") and the API console if the modifier can't be found.
 --/|
 --/|   Lib5E_RESTORE_HIT_DICE|TokenID
 --/|      Call on a long rest to restore up to half the character's level in used hit dice
@@ -107,8 +98,8 @@
 --C[&_Lib5E_Temp(tolowercase)]|attack:&_Lib5E_Search_Field;attack|tohit:&_Lib5E_Search_Field;attack|ac:&_Lib5E_Search_Field;ac|save:&_Lib5E_Search_Field;save|damage:&_Lib5E_Search_Field;damage|skill:&_Lib5E_Search_Field;skill
 --?"[&_Lib5E_WHICH_GM]" -eq ""|>_Lib5E_THROW_ERROR;Global Modifier type [%2%] not recognized
 --Rfind|[*[%1%]:character_id];[%3%];repeating_[&_Lib5E_WHICH_GM];global_[&_Lib5E_Search_Field]_name
---?"[*R:global_attack_name]" -eq "NoRepeatingAttributeLoaded"|>_Lib5E_THROW_ERROR;Global [%2%] Modifier [%3%] not found on character [%1%]
---?"[*R:global_attack_active_flag]" -eq "1"|&[%4%];1|&[%4%];0
+--?"[*R:global_[&_Lib5E_WHICH_GM]_name]" -eq "NoRepeatingAttributeLoaded"|>_Lib5E_THROW_ERROR;Global [%2%] Modifier [%3%] not found on character [%1%]
+--?"[*R:global_[&_Lib5E_Search_Field]_active_flag]" -eq "1"|&[%4%];1|&[%4%];0
 --<|
 
 --:Lib5E_SET_GLOBAL_MOD_STATUS|characterid; Category; name; 0=off,1=on,2=toggle
