@@ -1,4 +1,4 @@
---/|ScriptCards Library: 5ELib version 0.0.6
+--/|ScriptCards Library: 5ELib version 0.0.7
 --/|Provides various utility procedures for D&D 5E games
 --/|
 --/| Special Note: This is a "new" library for D&D 5E. The existing "dnd5elib" has been left unchanged to avoid breaking scripts that
@@ -17,7 +17,6 @@
 --/|      Given a (class) name (ie, wizard, warlock, fighter, etc.) will return (Return String Var) with the class level for the 
 --/|      character indicated by (characterid). If the character has no levels in that class, the return value will be 0
 --/|
---/|
 --/|   Lib5E_FIND_RESOURCE|characterid;resourceName;resourceReturnNameStringVariable;ResourceReturnValueStringVariable
 --/|      Examing the repeating resource section of character (characterid) looking for a given value (resourceName).
 --/|
@@ -29,6 +28,7 @@
 --/|      Checks a character (characterid) for a global_(category)_mod entry called (name) and returns a string value (returnstring) that is
 --/|      set to 1 if the global mod is turned on or 0 if it is either off or the modifier wasn't found on the character. Valid Categories are
 --/|      attack,tohit,ac,save,damage,skill (note that "attack" and "tohit" are the same thing)
+--/||
 --/|   Lib5E_SET_GLOBAL_MOD_STATUS|characterid; Category; name; 0=off,1=on,2=toggle
 --/|      Given a (category) which can be one of attack,damage,ac,skill,save and a (name) which corresponds to the global modifier name
 --/|      this function will search (characterid) for a matching global modifier. If the fourth parameter is 0 (off) or 1 (on), the global
@@ -37,8 +37,12 @@
 --/|
 --/|   Lib5E_RESTORE_HIT_DICE|TokenID
 --/|      Call on a long rest to restore up to half the character's level in used hit dice
-
-
+--
+--/|   Lib5E_EXPEND_SPELL_SLOT|characterid;slotlevel
+--/|      Deduct one spell slot of the specified slot level from character characterid - Capped at 0
+--/|
+--/|   Lib5E_RESTORE_SPELL_SLOT|characterid;slotlevel
+--/|      Restore one spell slot of the specified slot level to character characterid - Capped at total slots available for that level
 
 --/| ======================== BEGIN LIBRARY CODE
 
@@ -129,6 +133,18 @@
 
 --:_Lib5E_RESET_HITPOINTS|[TokenID]
 --!a:[%1%]]|hp:[*[%1%]]:hp^]
+--<|
+
+--:Lib5E_EXPEND_SPELL_SLOT|characterid;slotlevel
+--=_Lib5ESlotsExpended|[*[%1%]:lvl[%2%]_slots_expended]
+--=_Lib5ESlotsExpended|[$_Lib5ESlotsExpended] - 1 {MIN:0}
+--!a:[%1%]|lvl[%2%]_slots_expended:[$_Lib5ESlotsExpended]
+--<|
+
+--:Lib5E_RESTORE_SPELL_SLOT|characterid;slotlevel
+--=_Lib5ESlotsExpended|[*[%1%]:lvl[%2%]_slots_expended]
+--=_Lib5ESlotsExpended|[$_Lib5ESlotsExpended] + 1 {MAX:[*[%1%]:lvl[%2%]_slots_total]}
+--!a:[%1%]|lvl[%2%]_slots_expended:[$_Lib5ESlotsExpended]
 --<|
 
 --:_Lib5E_RESET_SPELL_SLOTS|[TokenID]
