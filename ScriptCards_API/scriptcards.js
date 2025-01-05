@@ -27,10 +27,19 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.31a";
+	const APIVERSION = "2.7.32";
 	const NUMERIC_VERSION = "207311"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
+
+	const getAttribute = async (characterId, property) => {
+        const character = getObj("character", characterId);
+        const sheetShortname = character.get("charactersheetname");
+        if (sheetShortname === "dnd2024byroll20") {
+            return await getComputed({ characterId, property });
+        }
+        return getAttrByName(characterId, property);
+    };
 
 	const parameterAliases = {
 		"tablebackgroundcolor": "tablebgcolor",
@@ -5711,13 +5720,31 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								parse.shift();
 								parse.shift();
 								parse.shift();
-								let jsonData = parse.join("")
-								let theObject = JSON.parse(jsonData)
-								let jsonArray = Object.entries(theObject);
+								//let jsonData = parse.join("")
+								//let theObject = JSON.parse(jsonData)
+								//let jsonArray = Object.entries(theObject);
+								//let parts = extractKeyValuePairs(theObject)
+								let parts = extractKeyValuePairsFromJson(parse.join(""))
+								log(parts)
+								for (let j = 0; j < parts.length; j++) {
+									let part = parts[j].split(": ")
+									hashTables[tableName][part[0]] = part[1]
+								}
+								/*
 								for (let j = 0; j < jsonArray.length; j++) {
-									hashTables[tableName][jsonArray[j][0]] = jsonArray[j][1]
+									log(jsonArray[j][0] + " Type:" + jsonArray[j][1])
+									if (jsonArray[j][1] == "[object Object]") {
+										log (`***** Object Object *****`)
+										let subArray = Object.entries(jsonArray[j][1])
+										for (let q=0; q<subArray.length; q++) {
+											hashTables[tableName][jsonArray[j][0] + "_" + subArray[q][0]] = subArray[q][1]
+										}
+									} else {
+										hashTables[tableName][jsonArray[j][0]] = jsonArray[j][1]
+									}
 								}
 								console.log(hashTables[tableName])
+								*/
 							} catch (e) {
 								log(`ScriptCards: Error encounted: ${e}`)
 							}
@@ -7116,6 +7143,43 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		} catch (error) {
 			log(`Error in onChangeCampaignTurnorder: ${error.message}`);
 		}
+	}
+
+	function extractKeyValuePairsFromJson(jsonString) {
+		let obj;
+		try {
+			obj = JSON.parse(jsonString);
+		} catch (e) {
+			console.error("Invalid JSON string provided:", e);
+			return [];
+		}
+	
+		return extractKeyValuePairs(obj);
+	}
+	
+	function extractKeyValuePairs(obj, prefix = '') {
+		let result = [];
+	
+		for (const [key, value] of Object.entries(obj)) {
+			const newKey = prefix ? `${prefix}_${key}` : key;
+	
+			if (Array.isArray(value)) {
+				value.forEach((item, index) => {
+					const arrayKey = `${newKey}_${index}`;
+					if (typeof item === 'object' && item !== null) {
+						result = result.concat(extractKeyValuePairs(item, arrayKey));
+					} else {
+						result.push(`${arrayKey}: ${item}`);
+					}
+				});
+			} else if (typeof value === 'object' && value !== null) {
+				result = result.concat(extractKeyValuePairs(value, newKey));
+			} else {
+				result.push(`${newKey}: ${value}`);
+			}
+		}
+	
+		return result;
 	}
 
 })();

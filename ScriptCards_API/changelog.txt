@@ -1,5 +1,10 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.32:
+- New function hashtable;fromjson which can convert a JSON string into a hashtable. The syntax is:
+  --~|hashtable;fromjson;hashtablename;JSONSTRING (all ";" will simply be concatenated into the JSONSTRING)
+  Where jsonstring is the JSON string to convert and hashtablename is the name of the hashtable to create. If the hashtable already exists, it will be overwritten.
+
 v 2.7.31:
 - New function group: "roll". one subfunction for now: setrollhighlight, which will set the highlight color for a roll variable. The syntax is:
   --~|roll;setrollhighlight;Roll Var Name;identifier
