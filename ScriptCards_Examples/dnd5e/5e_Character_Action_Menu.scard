@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.6.2
+  --/|Version     : 2.6.5
   --/|Requires SC : 2.7.15+
   --/|Author      : Kurt Jaegers
 
@@ -175,8 +175,9 @@
   --&ACImage|[b]AC:[&NB][/b]
   --&HPImage|[b]HP:[&NB][/b]
   --&SpeedImage|[b]Speed:[&NB][/b]
-  --&SkillCheckImage|Skill Check
-  --&SavingThrowImage|Saving Throw
+  --&SkillCheckImage|Skill
+  --&ToolCheckImage|Tool
+  --&SavingThrowImage|Save
   --&RepeatImage|Repeat
 
   --/|Useful Emoticons
@@ -1007,6 +1008,58 @@
   --#leftsub|[*S:character_name]
   --#rightsub|
   --+|[&skillDisplayName] check result: [$SkillCheck]
+  --X|
+
+  --:TOOL_CHECK|
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1|[
+  --#whisper|self
+  --]|[
+  --#whisper|
+  --]|
+  --~toolInfo|string;split;|;[&reentryval]
+  --&tool_base_roll|1d20
+  --?[&toolInfo2] e-eq "Advantage"|&tool_base_roll;2d20kh1
+  --?[&toolInfo2] e-eq "Disadvantage"|&tool_base_roll;2d20kl1
+  --rfind|[*S:character_id];[&toolInfo1];repeating_tool;toolname
+  --rdump|
+  --?"[*R:toolname]" -eq "NoRepeatingAttributeLoaded"|BAD_TOOL_ROLL
+  --&toolattr|[*R:toolattr]_mod
+  --&toolattr|[&toolattr(tolowercase)]
+  --&toolbonus|[*R:toolbonus_base]
+  --&toolproftype|[PROF]
+  --?"[&toolbonus]" -inc "(pb*2)|&toolproftype;[EXPERT]
+  --?"[&toolbonus]" -inc "(pb/2)|&toolproftype;[JACK]
+    --~toolbonus|string;replace;(pb*2);[*S:pb] * 2;[&toolbonus]
+  --~toolbonus|string;replace;(floor(pb/2));[*S:pb] \ 2;[&toolbonus]
+  --?"[&toolbonus]" -eq ""|&toolbonus;[*S:pb]
+  --=toolprofbonus|[&toolbonus]
+  --?"[&toolattr]" -eq "query_mod"|TOOL_ATTR_QUERY
+  --:DO_TOOL_ROLL|
+  --&toolattr_display|[
+  --&toolattr_display|+[&toolattr(0,3)]
+  --&toolattr_display|+]
+  --&toolRoll|[&tool_base_roll] + [*S:[&toolattr]] [&toolattr_display(touppercase)] + [$toolprofbonus.Raw] [&toolproftype]
+  --=ToolRollResult|[&toolRoll]
+  --+[&toolInfo1] Result|[$ToolRollResult]
+  --X|
+  --:BAD_TOOL_ROLL|
+   --+|Bad tool info : [&toolInfo1]
+  --X|
+  --:TOOL_ATTR_QUERY|
+  --#whisper|self
+  --+[&toolInfo1]|This tool requires you to select the associated attribute to roll against. Please click the button below to choose.
+  --+|[c][rbutton]Choose Attribute::TOOL_ATTR_RETURN;[&QB]Skill to roll?|Strength,strength_mod|Dexterity,dexterity_mod|Constitution,constitution_mod|Intelligence,intelligence_mod|Wisdom,wisdom_mod|Charisma,charisma_mod[&QE][/rbutton][/c]
+  --X|
+  --:TOOL_ATTR_RETURN|
+  --~toolAttrInfo|string;split;|;[&reentryval]
+  --&toolattr|[&toolAttrInfo1]
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1|[
+  --#whisper|self
+  --]|[
+  --#whisper|
+  --]|
+  --^DO_TOOL_ROLL|
+  --?"[*R:toolname]" -eq "NoRepeatingAttributeLoaded"|BAD_TOOL_ROLL
   --X|
 
   --/|=========================================================================================================
@@ -1859,8 +1912,24 @@
   --:BUILD_SAVES_AND_SKILLS_BUTTONS|[%1%]
   --&advantageMenu|[&QB]Roll Type?|Normal|Advantage|Disadvantage[&QE]
   --&skillMenu|[&QB]Skill to roll?|Acrobatics|Animal Handling,animal_handling|Arcana|Athletics|Deception|History|Insight|Intimidation|Investigation|Medicine|Nature|Perception|Persuasion|Religion|Sleight of Hand,sleight_of_hand|Stealth|Survival[&QE]
+  --=ToolCount|0
+  --&toolMenu|[&QB]Tool to roll?
+  --RFirst|[*S:character_id];repeating_tool
+  --:reptoollist|
+  --?"[*R:toolname]" -eq "NoRepeatingAttributeLoaded"|endToolMenu
+    --=ToolCount|[$ToolCount.Raw] + 1
+    --&toolMenu|+|[*R:toolname],[*R:toolname]
+    --rNext|
+  --?"[*R:toolname]" -ne "NoRepeatingAttributeLoaded"|reptoollist
+  --:endToolMenu|
+  --&toolMenu|+[&QE]
+
   --&saveMenu|[&QB]Saving Throw Type?|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma[&QE]
-  --&[%1%]|[rbutton:Execute a Skill Check][&SkillCheckImage]::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton] [&NB] [rbutton][&SavingThrowImage]::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton]
+  --&toolButton|
+  --?[$ToolCount] -gt 0|[
+      --&toolButton|[&NB] [rbutton:Execute a Tool Check][&ToolCheckImage]::TOOL_CHECK;[&toolMenu]|[&advantageMenu][/rbutton] 
+  --]|
+  --&[%1%]|[rbutton:Execute a Skill Check][&SkillCheckImage]::SKILL_CHECK;[&skillMenu]|[&advantageMenu][/rbutton] [&toolButton] [&NB] [rbutton][&SavingThrowImage]::SAVING_THROW;[&saveMenu]|[&advantageMenu][/rbutton]
   --<|
 
   --:REPLACE_WORDS_WITH_EMOJIS|Input variable NAME (not the variable refernce). Will be updated in place
