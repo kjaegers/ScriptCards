@@ -1,5 +1,8 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2025-01-27 - 5e Character Action Menu 2.6.6
+- Fixed a bug in the Tool menu that appeared if the character had a single tool.
+
 2025-01-23 - 5e Character Action Menu 2.6.5
 - Added support for Tools and Custom Skills (appears under the Tools button). Supports proficiency, expertise, and advantage as well as tools that prompt for an attribute to use.
 

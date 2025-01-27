@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.6.5
+  --/|Version     : 2.6.6
   --/|Requires SC : 2.7.15+
   --/|Author      : Kurt Jaegers
 
@@ -612,7 +612,6 @@
   -->FIND_REPEATING_RESOURCE|[*S:character_id];[&ResourceUsed];AmmoAttrName;AmmoAttributeID;AmmoCount
   --?[&AmmoCount] -lt 1|_NO_AMMO_AVAILABLE
   --:NoAmmoNeededPC_Attack|
-  --/Rdump|
   --#title|[*R:atkname]
   --#leftsub|[*S:character_name]
   --#rightsub|[rbutton][&RepeatImage]::EXEC_PC_ATTACK;[&attack_name]|[&TB]target|token_id}[/rbutton]
@@ -1021,7 +1020,6 @@
   --?[&toolInfo2] e-eq "Advantage"|&tool_base_roll;2d20kh1
   --?[&toolInfo2] e-eq "Disadvantage"|&tool_base_roll;2d20kl1
   --rfind|[*S:character_id];[&toolInfo1];repeating_tool;toolname
-  --rdump|
   --?"[*R:toolname]" -eq "NoRepeatingAttributeLoaded"|BAD_TOOL_ROLL
   --&toolattr|[*R:toolattr]_mod
   --&toolattr|[&toolattr(tolowercase)]
@@ -1913,17 +1911,20 @@
   --&advantageMenu|[&QB]Roll Type?|Normal|Advantage|Disadvantage[&QE]
   --&skillMenu|[&QB]Skill to roll?|Acrobatics|Animal Handling,animal_handling|Arcana|Athletics|Deception|History|Insight|Intimidation|Investigation|Medicine|Nature|Perception|Persuasion|Religion|Sleight of Hand,sleight_of_hand|Stealth|Survival[&QE]
   --=ToolCount|0
-  --&toolMenu|[&QB]Tool to roll?
-  --RFirst|[*S:character_id];repeating_tool
+    --RFirst|[*S:character_id];repeating_tool
   --:reptoollist|
   --?"[*R:toolname]" -eq "NoRepeatingAttributeLoaded"|endToolMenu
     --=ToolCount|[$ToolCount.Raw] + 1
     --&toolMenu|+|[*R:toolname],[*R:toolname]
+    --&saveFirstTool|[*R:toolname]
     --rNext|
   --?"[*R:toolname]" -ne "NoRepeatingAttributeLoaded"|reptoollist
   --:endToolMenu|
-  --&toolMenu|+[&QE]
-
+  --?[$ToolCount.Raw] -eq 1|[
+    --&toolMenu|+[&vbar]
+  --]|
+  --&toolMenu|[&QB]Tool to roll?[&toolMenu][&QE]
+  
   --&saveMenu|[&QB]Saving Throw Type?|Strength|Dexterity|Constitution|Intelligence|Wisdom|Charisma[&QE]
   --&toolButton|
   --?[$ToolCount] -gt 0|[
