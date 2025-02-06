@@ -1,4 +1,4 @@
---/|ScriptCards Library: systemneutrallib (snlib) version 0.1.2
+--/|ScriptCards Library: systemneutrallib (snlib) version 0.1.3
 --/|Provides various utility procedures for general Roll20 stuff
 
 --/|This library consolidates functions from a number of the sample scripts on the ScriptCards github into a single library
@@ -40,7 +40,7 @@
 --/| ###################################################################################################
 --/| Functions related controlled and/or selected tokens
 --/| ###################################################################################################
---/|  LibSN_CHECK_FOR_SELECTED_TOKEN|Result Var Name (string)
+--/|  LibSN_CHECK_FOR_SELECTED_TOKENS|Result Var Name (string)
 --/|          Returns a "1" if there is a selected token passed to the script, otherwise returns "0"
 --/|
 --/|  LibSN_GET_CONTROLLED_CHARACTER_LIST|Result Var Name (string)
@@ -153,7 +153,17 @@
 --/|          maximum number of items returned will be the maximum number in Source if (Quantity) is
 --/|          larger than that. (Ex, an array with 3 items will only ever return 3 unique items)
 --/|
-
+--/|
+--/| ###################################################################################################
+--/| General/Uncategorized functions
+--/| ###################################################################################################
+--/|  LibSN_BUILD_QUERY_FROM_REPSECTION|charid;sectionname;displayfield;valuefield;prompt;returnstring
+--/|        Returns (returnstring) a string variable by iterating through a (sectionname) repeating section on 
+--/|        the character sheet (charid). The (displayfield) will be used as the text of the dropdown entry, 
+--/|        and the (valuefield) will be used as the hiden value of the dropdown entry. The (prompt) will be the
+--/|        text of the query prompt.
+--/|
+--/|
 --/| ###################################################################################################
 --/| General/Uncategorized functions
 --/| ###################################################################################################
@@ -664,3 +674,18 @@
     --+Entry|[%_libloop]
   --%|
   --<|
+
+--:LibSN_BUILD_QUERY_FROM_REPSECTION|charid;sectionname;displayfield;valuefield;prompt;returnstring
+  --&_LibBuild|
+  --&_LibBuild|+?
+  --&_LibBuild|+{[%5%]|
+  --Rfirst|[%1%];[%2%]
+    --:_LibSN_BQFR_REPEAT|
+    --?"[*R:[%3%]]" -eq "NoRepeatingAttributeLoaded"|_LibSN_BQFR_DONE
+    --&_LibBuild|+[*R:[%3%]],[*R:[%4%]]|
+  --Rnext|
+  --^_LibSN_BQFR_REPEAT|
+  --:_LibSN_BQFR_DONE|
+  --&_LibBuild|+}
+  --&[%6%]|[&_LibBuild(replace,|},})]
+--<|

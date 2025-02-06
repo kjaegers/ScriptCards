@@ -1,3 +1,6 @@
+System Neutral Library - 0.1.3
+- Added "LibSN_BUILD_QUERY_FROM_REPSECTION" to build a Roll20 query string from a repeating section.
+
 5ELib - 0.0.7
 - Added LIB5E_EXPEND_SPELL_SLOT and LIB5E_RESTORE_SPELL_SLOT to handle spell slot tracking
 
