@@ -1,5 +1,15 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.34:
+- Added the string funciton "striplinefeeds" which will removed \r and \n characters and replace them with <br>.
+  --~Result|string;striplinefeeds;InputString
+  InputString would usually be a [&VariableReference]
+- Added string function bytes which takes the NAME of a string variable and logs the byte value for each character to the console log.
+  --~|string;bytes;MyCoolString
+
+v 2.7.33:
+- When using [$string(#,#)] to get substrings, if the second number is negative, that many characters will be trimmed from the end of the string.
+
 v 2.7.32:
 - New function hashtable;fromjson which can convert a JSON string into a hashtable. The syntax is:
   --~|hashtable;fromjson;hashtablename;JSONSTRING (all ";" will simply be concatenated into the JSONSTRING)

@@ -27,19 +27,35 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.32";
-	const NUMERIC_VERSION = "207311"
+	const APIVERSION = "2.7.34";
+	const NUMERIC_VERSION = "207330"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
+	var sheetType = "classic";
+
 	const getAttribute = async (characterId, property) => {
-        const character = getObj("character", characterId);
-        const sheetShortname = character.get("charactersheetname");
-        if (sheetShortname === "dnd2024byroll20") {
-            return await getComputed({ characterId, property });
-        }
-        return getAttrByName(characterId, property);
-    };
+		const character = getObj("character", characterId);
+		//const sheetShortname = character.get("charactersheetname");
+		const sheetShortname = sheetType;
+		if (sheetShortname === "beacon") {
+			return await getComputed({ characterId, property });
+		}
+		return getAttrByName(characterId, property);
+	};
+
+	function getAttributeSync(characterId, property) {
+		let result;
+		getAttribute(characterId, property)
+			.then((value) => {
+				result = value;
+				console.log("Attribute value:", result); // Handle the resolved value
+			})
+			.catch((error) => {
+				console.error("Error fetching attribute:", error);
+			});
+		return result; // This will return undefined initially
+	}
 
 	const parameterAliases = {
 		"tablebackgroundcolor": "tablebgcolor",
@@ -162,6 +178,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		limitmaxbarvalues: "0",
 		gmoutputtarget: "gm",
 		storagecharid: "",
+		beaconsheet: "0",
 		styleTableTag: " border-collapse:separate; border: solid black 2px; border-radius: 6px; -moz-border-radius: 6px; ",
 		stylenone: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; ",
 		stylenormal: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolornormal}; border-color: #87850A; color: #000000;",
@@ -212,6 +229,33 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		"buttonbackground",
 		"buttonbordercolor",
 		"dicefontcolor"
+	];
+
+	const SettingsThatAreBooleans = [
+		"debug",
+		"hidecard",
+		"hidetitlecard",
+		"dontcheckbuttonsforapi",
+		"roundup",
+		"usehollowdice",
+		"allowplaintextinrolls",
+		"showfromfornonwhispers",
+		"allowinlinerollsinoutput",
+		"nominmaxhighlight",
+		"norollhighlight",
+		"disablestringexpansion",
+		"disablerollvariableexpansion",
+		"disableparameterexpansion",
+		"disablerollprocessing",
+		"disableattributereplacement",
+		"attemptattributeparsing",
+		"disableinlineformatting",
+		"enableattributesubstitution",
+		"formatinforequesttext",
+		"explodingonesandaces",
+		"functionbenchmarking",
+		"limitmaxbarvalues",
+		"beaconsheet",
 	];
 
 	const SettingsThatAreNumbers = [
@@ -1483,6 +1527,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (parseInt(substringInfo[0]) >= 0) {
 											var first = parseInt(substringInfo[0]);
 											var last = first + parseInt(substringInfo[1]);
+											if (parseInt(substringInfo[1]) < 0) {
+												last = stringVariables[vName].length - Math.abs(parseInt(substringInfo[1]));
+											}
 											replacement = stringVariables[vName].substring(first, last);
 										} else {
 											var first = stringVariables[vName].length + parseInt(substringInfo[0]);
@@ -4070,6 +4117,24 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					cardParameters[paramName] = "#00000000"
 				}
 			}
+			if (SettingsThatAreBooleans.includes(paramName)) {
+				if (thisContent.trim().toLowerCase() == "true"
+					|| thisContent.trim().toLowerCase() == "yes"
+					|| thisContent.trim().toLowerCase() == "on"
+					|| thisContent.trim() == "1"
+					|| thisContent.trim().toLowerCase() == "show") {
+					cardParameters[paramName] = "1";
+				} else {
+					cardParameters[paramName] = "0";
+				}
+				if (paramName == "beaconsheet") {
+					if (cardParameters[paramName] == "1") {
+						sheetType = "beacon";
+					} else {
+						sheetType = "classic";
+					}
+				}
+			}
 			if (SettingsThatAreNumbers.includes(paramName)) {
 				cardParameters[paramName] = thisContent.match(/\d+/)[0]
 			}
@@ -5543,6 +5608,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								setStringOrArrayElement(variableName, params[2].replace(/<[^>]*>?/gm, ''), cardParameters)
 								break;
 
+							case "striplinefeeds":
+								setStringOrArrayElement(variableName, params[2].replace(/\r?\n/gm, "<br>"), cardParameters)
+								break;
+
 							case "trim":
 								setStringOrArrayElement(variableName, params[2].trim(), cardParameters)
 								break;
@@ -5566,6 +5635,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										})
 										.join(" "),
 									cardParameters);
+								break;
+							
+							case "bytes":
+								for(let z=0;z<stringVariables[params[2]].length; z++) {
+									log(stringVariables[params[2]].charCodeAt(z))
+								}
 								break;
 						}
 					}
@@ -7153,16 +7228,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			console.error("Invalid JSON string provided:", e);
 			return [];
 		}
-	
+
 		return extractKeyValuePairs(obj);
 	}
-	
+
 	function extractKeyValuePairs(obj, prefix = '') {
 		let result = [];
-	
+
 		for (const [key, value] of Object.entries(obj)) {
 			const newKey = prefix ? `${prefix}_${key}` : key;
-	
+
 			if (Array.isArray(value)) {
 				value.forEach((item, index) => {
 					const arrayKey = `${newKey}_${index}`;
@@ -7178,7 +7253,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				result.push(`${newKey}: ${value}`);
 			}
 		}
-	
+
 		return result;
 	}
 
