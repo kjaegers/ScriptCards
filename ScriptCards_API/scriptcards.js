@@ -5588,7 +5588,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				case "stringfuncs": // strlength, substring, replace, split, before, after
 				case "strings":
 				case "string":
-					log(params)
 					if (params.length == 3) {
 						switch (params[1].toLowerCase()) {
 							//stringfuncs;strlength;string
