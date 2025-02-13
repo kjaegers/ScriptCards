@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.34";
-	const NUMERIC_VERSION = "207330"
+	const APIVERSION = "2.7.35";
+	const NUMERIC_VERSION = "207350"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -5588,6 +5588,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				case "stringfuncs": // strlength, substring, replace, split, before, after
 				case "strings":
 				case "string":
+					log(params)
 					if (params.length == 3) {
 						switch (params[1].toLowerCase()) {
 							//stringfuncs;strlength;string
@@ -5609,8 +5610,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								break;
 
 							case "striplinefeeds":
+							case "linefeedstobr":
+							case "linefeedstobrs":
 								setStringOrArrayElement(variableName, params[2].replace(/\r?\n/gm, "<br>"), cardParameters)
 								break;
+
+							case "brtolinefeed":
+							case "brtolinefeeds":
+							case "brstolinefeed":
+							case "brstolinefeeds":
+								setStringOrArrayElement(variableName, params[2].replace(/<br\s*\/?>/gi, '\n'), cardParameters)
+								break;
+
 
 							case "trim":
 								setStringOrArrayElement(variableName, params[2].trim(), cardParameters)
@@ -5636,9 +5647,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										.join(" "),
 									cardParameters);
 								break;
-							
+
 							case "bytes":
-								for(let z=0;z<stringVariables[params[2]].length; z++) {
+								for (let z = 0; z < stringVariables[params[2]].length; z++) {
 									log(stringVariables[params[2]].charCodeAt(z))
 								}
 								break;
