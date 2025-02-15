@@ -1,4 +1,4 @@
---/|ScriptCards Library: 5ELib version 0.0.7
+--/|ScriptCards Library: 5ELib version 0.0.8
 --/|Provides various utility procedures for D&D 5E games
 --/|
 --/| Special Note: This is a "new" library for D&D 5E. The existing "dnd5elib" has been left unchanged to avoid breaking scripts that
@@ -28,12 +28,22 @@
 --/|      Checks a character (characterid) for a global_(category)_mod entry called (name) and returns a string value (returnstring) that is
 --/|      set to 1 if the global mod is turned on or 0 if it is either off or the modifier wasn't found on the character. Valid Categories are
 --/|      attack,tohit,ac,save,damage,skill (note that "attack" and "tohit" are the same thing)
---/||
+--/|
 --/|   Lib5E_SET_GLOBAL_MOD_STATUS|characterid; Category; name; 0=off,1=on,2=toggle
 --/|      Given a (category) which can be one of attack,damage,ac,skill,save and a (name) which corresponds to the global modifier name
 --/|      this function will search (characterid) for a matching global modifier. If the fourth parameter is 0 (off) or 1 (on), the global
 --/|      mod will be set to that value. If the fourth parameter is a 2, the current value (on/off) will be flipped.
 --/|      An error will be output to the GM ("*") and the API console if the modifier can't be found.
+--/|
+--/|   Lib5E_FIND_ACTIVE_GLOBAL_SAVE_MODS|character_id;StringVariableToSet
+--/|   Lib5E_FIND_ACTIVE_GLOBAL_SAVE_MODS|character_id;StringVariableToSet
+--/|   Lib5E_FIND_ACTIVE_GLOBAL_SAVE_MODS|character_id;StringVariableToSet
+--/|   Lib5E_FIND_ACTIVE_GLOBAL_SAVE_MODS|character_id;StringVariableToSet
+--/|   Lib5E_FIND_ACTIVE_GLOBAL_SAVE_MODS|character_id;StringVariableToSet
+--/|     All of these functions perform similar tasks, so they are grouped here. In each case, supply a Character ID and 
+--/|     the name of a string value to be set. The function will read the global mods for the given category and return a string
+--/|     representing what to add to a roll expression to account for the mod(s). Dice rolls in mods (ie, 1d4 for guidance) will
+--/|     include a # after the expression to keep it from being counted in the Crit/Fumble check.
 --/|
 --/|   Lib5E_RESTORE_HIT_DICE|TokenID
 --/|      Call on a long rest to restore up to half the character's level in used hit dice
@@ -125,6 +135,82 @@
 --:_Lib5E_SET_GLOBAL_MOD_VALUE|
 --!a:[%1%]|[%2%]:[%3%]  
 --<|
+
+  --:Lib5E_FIND_ACTIVE_GLOBAL_ATTACK_MODS|character_id;StringVariableToSet
+  --&_obrac|[ --&_cbrac|]
+  --&_GAM_Temp| 
+  --Rfirst|[%1%];repeating_tohitmod
+  --:_GAM_Loop|
+  --?"[*R:global_attack_active_flag]" -eq "1"|>_AddGAM;[*R:global_attack_name];[*R:global_attack_roll]
+  --Rnext| 
+  --?"[*R:global_attack_name]" -ne "NoRepeatingAttributeLoaded"|_GAM_Loop
+  --&[%2%]|[&_GAM_Temp] 
+  --<|
+  
+  --:_AddGAM| 
+  --&_GAM_Temp|+ + [%2%]# [&_obrac][%1%][&_cbrac] 
+  --<|
+
+  --:Lib5E_FIND_ACTIVE_GLOBAL_DAMAGE_MODS|character_id;StringVariableToSet;isCrit(1=true)
+  --&_obrac|[ --&_cbrac|]
+  --&_GDM_Temp| 
+  --Rfirst|[%1%];repeating_damagemod
+  --:_GDM_Loop|
+  --?"[*R:global_damage_active_flag]" -eq "1"|>_AddGDM;[*R:global_damage_name];[*R:global_damage_damage];[%3%];[*R:global_damage_critical_damage]
+  --Rnext| 
+  --?"[*R:global_damage_name]" -ne "NoRepeatingAttributeLoaded"|_GDM_Loop
+  --&[%2%]|[&_GDM_Temp] 
+  --<|
+  
+  --:_AddGDM| 
+  --&_GDM_Temp|+ + [%2%]# [&_obrac][%1%][&_cbrac] 
+  --?"[%3%]" -eq "1"|&_GDM_Temp;+ + [%4%]  [ CRIT [%1%] ]
+  --<|
+
+  --:Lib5E_FIND_ACTIVE_GLOBAL_SAVE_MODS|character_id;StringVariableToSet
+  --&_obrac|[ --&_cbrac|]
+  --&_GSM_Temp| 
+  --Rfirst|[%1%];repeating_savemod
+  --:_GSM_Loop|
+  --?"[*R:global_save_active_flag]" -eq "1"|>_AddGSM;[*R:global_save_name];[*R:global_save_roll]
+  --Rnext| 
+  --?"[*R:global_save_name]" -ne "NoRepeatingAttributeLoaded"|_GSM_Loop
+  --&[%2%]|[&_GSM_Temp] 
+  --<|
+
+    --:_AddGSM| 
+  --&_GSM_Temp|+ + [%2%]# [&_obrac][%1%][&_cbrac] 
+  --<|
+
+  --:Lib5E_FIND_ACTIVE_GLOBAL_AC_MODS|character_id;StringVariableToSet
+  --&_obrac|[ --&_cbrac|]
+  --&_GACM_Temp| 
+  --Rfirst|[%1%];repeating_acmod
+  --:_GACM_Loop|
+  --?"[*R:global_ac_active_flag]" -eq "1"|>_AddGACM;[*R:global_ac_name];[*R:global_ac_roll]
+  --Rnext| 
+  --?"[*R:global_ac_name]" -ne "NoRepeatingAttributeLoaded"|_GACM_Loop
+  --&[%2%]|[&_GACM_Temp] 
+  --<|
+
+  --:_AddGACM| 
+  --&_GACM_Temp|+ + [%2%]# [&_obrac][%1%][&_cbrac] 
+  --<|
+
+  --:Lib5E_FIND_ACTIVE_GLOBAL_SKILL_MODS|character_id;StringVariableToSet
+  --&_obrac|[ --&_cbrac|]
+  --&_GSKM_Temp| 
+  --Rfirst|[%1%];repeating_skillmod
+  --:_GSKM_Loop|
+  --?"[*R:global_skill_active_flag]" -eq "1"|>_AddGSKM;[*R:global_skill_name];[*R:global_skill_roll]
+  --Rnext| 
+  --?"[*R:global_ac_name]" -ne "NoRepeatingAttributeLoaded"|_GSKM_Loop
+  --&[%2%]|[&_GSKM_Temp] 
+  --<|
+
+  --:_AddGSKM| 
+  --&_GSKM_Temp|+ + [%2%]# [&_obrac][%1%][&_cbrac] 
+  --<|
 
 --:_Lib5E_THROW_ERROR|
 --\|[%1%]

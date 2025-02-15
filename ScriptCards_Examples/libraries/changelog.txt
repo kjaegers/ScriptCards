@@ -1,3 +1,6 @@
+5ELib - 0.0.8
+- Five new functions: Lib5E_FIND_ACTIVE_GLOBAL_ATTACK_MODS, Lib5E_FIND_ACTIVE_GLOBAL_DAMAGE_MODS, Lib5E_FIND_ACTIVE_GLOBAL_AC_MODS, Lib5E_FIND_ACTIVE_GLOBAL_SAVE_MODS, and Lib5E_FIND_ACTIVE_GLOBAL_SKILL_MODS
+
 System Neutral Library - 0.1.3
 - Added "LibSN_BUILD_QUERY_FROM_REPSECTION" to build a Roll20 query string from a repeating section.
 
