@@ -1,4 +1,4 @@
---/|ScriptCards Library: 5ELib version 0.0.8
+--/|ScriptCards Library: 5ELib version 0.0.8a
 --/|Provides various utility procedures for D&D 5E games
 --/|
 --/| Special Note: This is a "new" library for D&D 5E. The existing "dnd5elib" has been left unchanged to avoid breaking scripts that
@@ -187,7 +187,7 @@
   --&_GACM_Temp| 
   --Rfirst|[%1%];repeating_acmod
   --:_GACM_Loop|
-  --?"[*R:global_ac_active_flag]" -eq "1"|>_AddGACM;[*R:global_ac_name];[*R:global_ac_roll]
+  --?"[*R:global_ac_active_flag]" -eq "1"|>_AddGACM;[*R:global_ac_name];[*R:global_ac_val]
   --Rnext| 
   --?"[*R:global_ac_name]" -ne "NoRepeatingAttributeLoaded"|_GACM_Loop
   --&[%2%]|[&_GACM_Temp] 

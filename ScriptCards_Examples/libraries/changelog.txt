@@ -1,3 +1,6 @@
+5ELib = 0.0.18
+- Bug fix for Lib5E_FIND_ACTIVE_GLOBAL_AC_MODS - because it is _val instead of _roll in the char sheet :(
+
 5ELib - 0.0.8
 - Five new functions: Lib5E_FIND_ACTIVE_GLOBAL_ATTACK_MODS, Lib5E_FIND_ACTIVE_GLOBAL_DAMAGE_MODS, Lib5E_FIND_ACTIVE_GLOBAL_AC_MODS, Lib5E_FIND_ACTIVE_GLOBAL_SAVE_MODS, and Lib5E_FIND_ACTIVE_GLOBAL_SKILL_MODS
 
