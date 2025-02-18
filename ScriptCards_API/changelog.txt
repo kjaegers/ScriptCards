@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.35a:
+- Bug fix for broken chage:attribute:* triggers
+
 v 2.7.35:
 - Added "brtolinefeeds" to allow for the reversal of the "striplinefeeds" function in 2.7.34. Note that striplinefeeds now has an alias of linefeedstobr as well.
 
