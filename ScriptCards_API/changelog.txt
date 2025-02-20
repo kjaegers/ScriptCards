@@ -1,5 +1,28 @@
 ScriptCards Roll20 API Script Changelog
 
+v 2.7.36:
+- Added trigger support for "chat:message". This should be considered EXPERIMENTAL at this time. You can create attributes on your ScriptCards_Triggers mule with names beginning with "chat:message:" and then the text you want to watch for in a chat message. If a chat message show up containing your text, the related trigger will fire. There are some special considerations for chat:message triggers:
+  o The existence of chat:message triggers is checked when the sandbox starts. If you do not have any, and then add one, you will need to restart the Roll20 sandbox to enable the feature. Once enabled, you can add additional triggers without restarting. If you remove all chat:message triggers, the feature will still be enabled until the sandbox restarts.
+  o Space cannot be typed in ability names and get replaced with dashes. The code that detects the trigger match will replace dashes with spaces in both the chat content and the trigger name (only for the check - it won't change the actual content).
+  o Unlike other triggers, chat:message triggers MUST be ScriptCards, and MUST have a --/|TRIGGER_REPLACEMENTS section. This is because a hidden (invalid) HTML element is inserted in a --+ like to prevent a chat:message trigger from cascading if the script output contains the trigger phrase.
+  o The following replacements are made, though they may not all be useful:
+    &TriggerWho - The Display Name of the person that sent the message
+    &TriggerPlayerID - The ID of the sending player - note that for API messages, this may not be what you would think.
+    &TriggerType - The Roll20 message type (general, rollresult, gmrollresult, emote, whisper, desc, or api)
+    &TriggerContent - The full content of the message
+  o The phrase is CASE SENSITIVE
+  o Note that this is a very early experimental implementation. It needs to be tested and expanded.
+  
+  An example:
+  Ability Name: chat:message:FAILED-1-of-3
+  Action:
+  !script {{
+    --/|TRIGGER_REPLACEMENTS
+    --+Player [&TriggerWho]|failed their first death save!
+  }}
+
+  At the moment, Some messages may not be extremely useful, and if there is a need to do full inline roll parsing, that is something I'm going to have to look into and take some time to work on (and I can't promise it wil happen any time soon)
+
 v 2.7.35a:
 - Bug fix for broken chage:attribute:* triggers
 

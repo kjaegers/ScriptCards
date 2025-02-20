@@ -27,8 +27,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.35a";
-	const NUMERIC_VERSION = "207351"
+	const APIVERSION = "2.7.36";
+	const NUMERIC_VERSION = "207360"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -438,14 +438,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				const triggerCharID = findTriggerChar.id;
 				log(`ScriptCards Triggers Active. Trigger Character ID is ${triggerCharID}`);
 
+				log(`ScriptCards Message Triggers enabled? ${checkForMessageTriggers(triggerCharID)==true ? "Yes" : "No"}`)
+
 				on('change:campaign:turnorder', () => onChangeCampaignTurnorder(triggerCharID));
 
 				const handleAbilityTrigger = (eventName, replacementGenerator) => {
 					on(eventName, (obj, prev) => {
 						var newEventName = eventName;
+						//log(`Raw attribute trigger: ${newEventName}`)
 						if (eventName == "change:attribute") {
 							newEventName = eventName + ":" + prev.name
 						}
+						//log(`Parsed attribute trigger: ${newEventName}`)
 						const abilities = findObjs({ type: "ability", _characterid: triggerCharID, name: newEventName });
 						if (Array.isArray(abilities) && abilities.length > 0) {
 							const replacement = replacementGenerator(obj, prev);
@@ -456,6 +460,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 					});
 				};
+
+				if (checkForMessageTriggers(triggerCharID)) {
+					on('chat:message', function (msg) {
+						onChatMessagTrigger(triggerCharID, msg);
+					});
+				}
 
 				handleAbilityTrigger('change:campaign:playerpageid', (obj, prev) =>
 					` --&PreviousPageID|${prev.playerpageid} --&NewPageID|${obj.get("playerpageid")} `
@@ -7231,6 +7241,52 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			}
 		} catch (error) {
 			log(`Error in onChangeCampaignTurnorder: ${error.message}`);
+		}
+	}
+
+	function checkForMessageTriggers(triggerCharID) {
+		const abilities = findObjs({ type: "ability", _characterid: triggerCharID });
+		if (Array.isArray(abilities) && abilities.length > 0) {
+			for (let x = 0; x < abilities.length; x++) {
+				let abname = abilities[x].get("name")
+				if (abname) {
+					if (abname.startsWith("chat:message:")) {
+						return true;
+					}
+				}
+			}
+		}
+		return false;
+	}
+
+	function onChatMessagTrigger(triggerCharID, msg) {
+		if (msg && msg.content && msg.content.indexOf("SC_TRIGGER_GENERATED") < 0) {
+			const abilities = findObjs({ type: "ability", _characterid: triggerCharID });
+			if (Array.isArray(abilities) && abilities.length > 0) {
+				for (let x = 0; x < abilities.length; x++) {
+					let abname = abilities[x].get("name")
+					if (abname) {
+						if (abname.startsWith("chat:message:")) {
+							let testVal = abname.replace("chat:message:", "").replaceAll("-", " ");
+							if (msg.content.replace("-"," ").indexOf(testVal) >= 0) {
+								replacement = " --+|<SC_TRIGGER_GENERATED> "
+								replacement += `--&TriggerWho|${msg.who} `;
+								replacement += `--&TriggerPlayerID|${msg.playerid} `;
+								replacement += `--&TriggerType|${msg.type} `;
+								replacement += `--&TriggerContent|${msg.content}`;
+								const action = abilities[x].get("action");
+								if (action.indexOf("--/|TRIGGER_REPLACEMENTS") >= 0) {
+									const metacard = action.replace("--/|TRIGGER_REPLACEMENTS", replacement);
+									sendChat("API", metacard);
+									//log(msg)
+								} else {
+									log(`ScriptCards Error : message-based triggers MUST be ScriptCards with a replacement section`)
+								}
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 
