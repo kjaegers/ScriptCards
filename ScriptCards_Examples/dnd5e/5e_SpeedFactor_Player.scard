@@ -1,0 +1,96 @@
+!script {{
+    --#reentrant|SpeedFactor[&SendingPlayerID]
+    --#whisper|self
+    --#emotestate|0
+    --&DetectPlayersToken|1
+
+    -->BUILD_ACTION_LIST|ActionList
+
+    --/|This code is borrowed from the 5E Action Menu. It will use the selecte token if there is one. If not, it will look
+    --/|for any tokens on this page controlled by the player running the script. If it finds only one token, that token
+    --/|will be used.
+
+    --/|Determine if a token is selected or if we need to (and can based on config) automatically find a token for this player.
+    --?"[@SC_SelectedTokens()]" -eq "undefined array" -and [&DetectPlayersToken] -ne 1|REPORT_NEED_SELECTED_TOKEN
+    --?"[@SC_SelectedTokens()]" -ne "undefined array" -and "[@SC_SelectedTokens()]" -eq "1"|BEGIN_WITH_SC_SELECTED_TOKENS
+    --?"[@SC_SelectedTokens()]" -gt 1|REPORT_MULTIPLE_SELECTED_TOKEN
+    --?[&DetectPlayersToken] -ne 1 -and "[@SC_SelectedTokens()]" -ne "1"|REPORT_NEED_SELECTED_TOKEN
+    --?[&DetectPlayersToken] -ne 1 -and "[@SC_SelectedTokens()]" -eq "1"|BEGIN_WITH_SC_SELECTED_TOKENS
+    --?[&SendingPlayerIsGM] -eq 1 -and "[@SC_SelectedTokens()]" -ne "1"|REPORT_NEED_SELECTED_TOKEN
+
+    -->GET_CONTROLLED_TOKENS_FROM_PAGETOKENS|saveTokenID
+    --?"[&saveTokenID]" -eq ""|REPORT_NO_TOKENS_ON_PAGE
+    --?"[&saveTokenID]" -inc ","|REPORT_MULTIPLE_POSSIBLE_TOKENS
+    --^SKIP_SELECTED_TOKENS|
+
+    --:BEGIN_WITH_SC_SELECTED_TOKENS|
+    --&saveTokenID|[@SC_SelectedTokens(0)]
+    --:SKIP_SELECTED_TOKENS|
+
+    --#title|Speed Factor Initiative
+    --#sourcetoken|[&saveTokenID]
+    -->ACCOUNT_FOR_SIZE|[*S:id];SizeMod
+    --+|[c]Declare Your Action[/c]
+    --%loop|foreach;ActionList
+      --+|[c][rbutton][&loop]::ROLL_INIT;[&loop][/rbutton][/c]
+    --%|
+    --X|
+
+    --:ROLL_INIT|
+      --#whisper|self,gm
+      --&Action|[&reentryval(before,=)]
+      --&ActionMod|[&reentryval(after,=)]
+      --=InitRoll|1d20 + [*S:dexterity_mod] [DEX] + [&ActionMod] [Action] [&SizeMod]
+      --+Declared|[&Action]
+      --+Initiative Roll|[$InitRoll]
+      --~|turnorder;replacetoken;[&saveTokenID];[$InitRoll.Raw]
+    --X|
+
+    --:ACCOUNT_FOR_SIZE|charid;returnvar
+      --&[%2%]|
+      --&TokenSize|[*[%1%]:size]
+      --?[*S:npc] -eq 1|[
+        --&TokenSize|[*[%1%]:npc_type]
+        --&TokenSize|[&TokenSize(word,1)]
+      --]|
+      --?"[&TokenSize]" -eq "Tiny"|&[%2%];++5 [Tiny]
+      --?"[&TokenSize]" -eq "Small"|&[%2%];++2 [Small]
+      --?"[&TokenSize]" -eq "Medium"|&[%2%];++ 0 [Medium]
+      --?"[&TokenSize]" -eq "Large"|&[%2%];-2 [Large]
+      --?"[&TokenSize]" -eq "Huge"|&[%2%];-5 [Huge]
+      --?"[&TokenSize]" -eq "Gargantuan"|&[%2%];-8 [Gargantuan]
+    --<|
+
+    --:GET_CONTROLLED_TOKENS_FROM_PAGETOKENS|
+    --~|array;pagetokens;_FCT_Tokens;[*C:playerpageid];pc
+    --%_loop|0;[@_FCT_Tokens(maxindex)]
+      --&_FCT_TID|[@_FCT_Tokens([&_loop])]
+      --&_FCT_CHAR|[*[&_FCT_TID]:t-represents]
+      --?"[*O:[&_FCT_CHAR]:character:controlledby]" -ninc [&SendingPlayerID]|%
+      --?"[&[%1%]]" -eq ""|&[%1%];+[&_FCT_TID]|&[%1%];+,[&_FCT_TID]]
+    --%|
+    --<|
+
+    --:REPORT_NEED_SELECTED_TOKEN|
+    --#whisper|self
+    --+No Token Selected|You need to have a single token selected in order to roll initiative.
+    --X|
+
+    --:BUILD_ACTION_LIST|ReturnList
+      --~|array;add;[%1%];Melee, heavy weapon = -2
+      --~|array;add;[%1%];Melee, standard weapon = +0
+      --~|array;add;[%1%];Melee, light or finesse weapon = +2
+      --~|array;add;[%1%];Melee, two-handed weapon = -2
+      --~|array;add;[%1%];Ranged, loading weapon = -5
+      --~|array;add;[%1%];Spell - Level 1 = -1
+      --~|array;add;[%1%];Spell - Level 2 = -2
+      --~|array;add;[%1%];Spell - Level 3 = -3
+      --~|array;add;[%1%];Spell - Level 4 = -4
+      --~|array;add;[%1%];Spell - Level 5 = -5
+      --~|array;add;[%1%];Spell - Level 6 = -6
+      --~|array;add;[%1%];Spell - Level 7 = -7
+      --~|array;add;[%1%];Spell - Level 8 = -8
+      --~|array;add;[%1%];Spell - Level 9 = -9
+    --<|
+      
+}}

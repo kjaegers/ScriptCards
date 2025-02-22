@@ -1,0 +1,24 @@
+!script {{
+    --#reentrant|DMClearInit
+    --#whisper|gm
+
+    --#title|Clear Initiative
+    --+|[c][rbutton]Clear Tracker and Ask for Rolls::CLEARANDASK[/rbutton][/c]
+    --+|[c][rbutton]Clear Tracker (Combat Over)::CLEAR[/rbutton][/c]
+    --X|
+
+    --:CLEAR|
+    --~|turnorder;clear
+    --#whisper|gm
+    --+|[c]Turn order has been cleared[/c]
+    --X|
+
+    --:CLEARANDASK|
+    --~|turnorder;clear
+    --#wwhisper|
+    --=RountCount|[$RountCount.Raw] + 1
+    --#title|New Combat Round
+    --+|[c]A new combat round has begun.[/c]
+    --+|[c]Roll your initiative[/c]
+    --X|
+}}
