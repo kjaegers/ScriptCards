@@ -1,5 +1,8 @@
 !script {{
     --#reentrant|DMClearInit
+    
+    --&Config-ClearPCTokensOnly|1
+
     --#whisper|gm
 
     --#title|Clear Initiative
@@ -8,17 +11,31 @@
     --X|
 
     --:CLEAR|
-    --~|turnorder;clear
+    -->CLEAR_ALL_TOKENS|
     --#whisper|gm
     --+|[c]Turn order has been cleared[/c]
     --X|
 
     --:CLEARANDASK|
-    --~|turnorder;clear
+    --?"[&Config-ClearPCTokensOnly]" -eq "0"|>CLEAR_ALL_TOKENS
+    --?"[&Config-ClearPCTokensOnly]" -eq "1"|>CLEAR_PLAYER_TOKENS
     --#wwhisper|
     --=RountCount|[$RountCount.Raw] + 1
     --#title|New Combat Round
     --+|[c]A new combat round has begun.[/c]
     --+|[c]Roll your initiative[/c]
     --X|
+
+    --:CLEAR_ALL_TOKENS|
+    --~|turnorder;clear
+    --<|
+
+    --:CLEAR_PLAYER_TOKENS|
+    --~|array;pagetokens;Player_Tokens;[*C:playerpageid];pc
+    --%loop|foreach;Player_Tokens
+        --~|turnorder;removetoken;[&loop]
+    --%|
+    --<|
+
+    --:|
 }}
