@@ -1,5 +1,29 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.00 EXPERIMENTAL:
+- Restructured the script to run as an async construct. This is the *BIG* reason this is experimental. I've been testing with things like the 5E action menu successfully, but I'm sure there are edge cases I haven't though to test yet. If you run into issues with this version of ScriptCards impacting existing scripts/games please let me know.
+
+Ideally, everything should perform identically to the version2.7.36 for existing games and scripts.
+
+- Initial support for accessing/setting items on Beacon sheets. This is implemented with updates to existing structures as follows:
+  [*...:c-attribute] will use the new "getSheetItem" code implemented by TheAaron, which can access standard and beacon style attributes.
+  --tc:...|c-attibute:value will use the new "setSheetItem" code.
+
+  Please note that the [*...] code for c- items does not currently implement the ability to define defaults within the reference. Right now, all reads and sets apply to the "current" values for attributes (as opposed to "max"). Support for max values (or other types on beacon sheets if they are implemented) will be added in the future.
+
+  ALSO NOTE: Beacon sheets only have their attributes exposed when using the Experimental version of the Roll20 sandbox.
+
+Here is an example using these methods to read the "hp" attribute from a D&D 2024 sheet and setting the HP randomly from 1 to 20:
+
+!script {{
+  --&id|@{selected|character_id}
+  --+Current HP:[*[&id]:c-hp]
+  --=NewHP|1d20
+  --+Setting hp|to [$NewHP]
+  --!c:[&id]|c-hp:[$NewHP.Raw]
+  --+New HP:[*[&id]:c-hp]
+}}
+
 v 2.7.36:
 - Added trigger support for "chat:message". This should be considered EXPERIMENTAL at this time. You can create attributes on your ScriptCards_Triggers mule with names beginning with "chat:message:" and then the text you want to watch for in a chat message. If a chat message show up containing your text, the related trigger will fire. There are some special considerations for chat:message triggers:
   o The existence of chat:message triggers is checked when the sandbox starts. If you do not have any, and then add one, you will need to restart the Roll20 sandbox to enable the feature. Once enabled, you can add additional triggers without restarting. If you remove all chat:message triggers, the feature will still be enabled until the sandbox restarts.
