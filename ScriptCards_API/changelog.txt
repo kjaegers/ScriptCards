@@ -7,7 +7,7 @@ Ideally, everything should perform identically to the version2.7.36 for existing
 
 - Initial support for accessing/setting items on Beacon sheets. This is implemented with updates to existing structures as follows:
   [*...:c-attribute] will use the new "getSheetItem" code implemented by TheAaron, which can access standard and beacon style attributes.
-  --tc:...|c-attibute:value will use the new "setSheetItem" code.
+  --!c:...|c-attibute:value will use the new "setSheetItem" code.
 
   Please note that the [*...] code for c- items does not currently implement the ability to define defaults within the reference. Right now, all reads and sets apply to the "current" values for attributes (as opposed to "max"). Support for max values (or other types on beacon sheets if they are implemented) will be added in the future.
 
