@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.10 EXPERIMENTAL:
+- ScriptCards can now read and update bio, notes, and gmnotes fields
+
 v 3.0.00 EXPERIMENTAL:
 - Restructured the script to run as an async construct. This is the *BIG* reason this is experimental. I've been testing with things like the 5E action menu successfully, but I'm sure there are edge cases I haven't though to test yet. If you run into issues with this version of ScriptCards impacting existing scripts/games please let me know. Ideally, everything should perform identically to the version2.7.36 for existing games and scripts.
 

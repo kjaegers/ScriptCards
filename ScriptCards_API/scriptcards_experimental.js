@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.00 EXPERIMENTAL";
-	const NUMERIC_VERSION = "300000"
+	const APIVERSION = "3.0.10 EXPERIMENTAL";
+	const NUMERIC_VERSION = "300010"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1802,6 +1802,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 										}
 									}
 								} else {
+									attribute = await getBioField(character, attrName);
 									// Add URL Decoding?
 									/*
 									log("In else")
@@ -7278,6 +7279,14 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				}
 			}
 		}
+	}
+
+	async function getBioField(charobj, field) {
+		return new Promise((resolve) => {
+			charobj.get(field,function(resp) {
+				resolve(resp);
+			})
+		})
 	}
 
 	function extractKeyValuePairsFromJson(jsonString) {
