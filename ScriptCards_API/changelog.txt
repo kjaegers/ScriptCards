@@ -1,21 +1,17 @@
 ScriptCards Roll20 API Script Changelog
 
-v 3.0.10 EXPERIMENTAL:
-- ScriptCards can now read and update bio, notes, and gmnotes fields
+v 3.0.0:
+- Note - I removed the "experimental" changelog entries and summarized them here.
+- It is now possible to read bio, notes, and gmnotes fields. They behave inline as you would treat anything else. (This functionality is not dependant upon Beacon sheets or the Experimental sandbox)
+- Script has been converted to async code in order to support Beacon sheets.
+- Beacon (ie, D&D 2024) sheet fields can now be accessed through ScriptCards [*...] references by prefixing the name of the field with either "b-" or "c-" (similar to "t-" for token properties). For example, the source token's HP field can be accessed with [*S:c-hp]. Note that the "c-" stands for "computed", which is what the fields are called internally. The "b-" option is for Beacon, which may make more sense :)
+- Beacon fields can be set with --!c commands by specifying their names with either c- or b- in front of them. To set the source character's HP, for example: "--!c:[*S:id]|c-hp:10". You can use += and -= as with non-beacon values
 
-v 3.0.00 EXPERIMENTAL:
-- Restructured the script to run as an async construct. This is the *BIG* reason this is experimental. I've been testing with things like the 5E action menu successfully, but I'm sure there are edge cases I haven't though to test yet. If you run into issues with this version of ScriptCards impacting existing scripts/games please let me know. Ideally, everything should perform identically to the version2.7.36 for existing games and scripts.
+IMPORTANT NOTES ON BEACON SHEETS/FIELDS:
+- You MUST be using the "Experimental" sandbox for beacon fields to be exposed to the API. The Default sandbox will not have access to these fields.
+- Some Beacon sheet fields are read-only. You will see a message in the console log if you try to set a read-only field.
 
-- Initial support for accessing/setting items on Beacon sheets. This is implemented with updates to existing structures as follows:
-  [*...:c-attribute] will use the new "getSheetItem" code implemented by TheAaron, which can access standard and beacon style attributes.
-  --!c:...|c-attibute:value will use the new "setSheetItem" code.
-
-  Please note that the [*...] code for c- items does not currently implement the ability to define defaults within the reference. Right now, all reads and sets apply to the "current" values for attributes (as opposed to "max"). Support for max values (or other types on beacon sheets if they are implemented) will be added in the future.
-
-  ALSO NOTE: Beacon sheets only have their attributes exposed when using the Experimental version of the Roll20 sandbox.
-
-Here is an example using these methods to read the "hp" attribute from a D&D 2024 sheet and setting the HP randomly from 1 to 20:
-
+SIMPLE EXAMPLE with Beacon fields:
 !script {{
   --&id|@{selected|character_id}
   --+Current HP|[*[&id]:c-hp]

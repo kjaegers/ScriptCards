@@ -7,11 +7,11 @@
 if (typeof MarkStart === "function") MarkStart('ScriptCards');
 var API_Meta = API_Meta || {};
 API_Meta.ScriptCards = { offset: Number.MAX_SAFE_INTEGER, lineCount: -1 };
-{ try { throw new Error(''); } catch (e) { API_Meta.ScriptCards.offset = (parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/, '$1'), 10) - 7); } }
+{ try { throw new Error(''); } catch (e) { API_Meta.ScriptCards.offset = (parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/, '$1'), 10) - 10); } }
 
 var scriptCardsStashedScripts = {};
 
-const ScriptCards = (() => { // eslint-disable-line no-unused-vars
+const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	/*
 
 		ScriptCards implements a run-time scripting language interpreter for the Roll20 system. It contains no system-specific code, and can process scripts
@@ -27,35 +27,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "2.7.36";
-	const NUMERIC_VERSION = "207360"
+	const APIVERSION = "3.0.00";
+	const NUMERIC_VERSION = "300000"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
-
-	var sheetType = "classic";
-
-	const getAttribute = async (characterId, property) => {
-		const character = getObj("character", characterId);
-		//const sheetShortname = character.get("charactersheetname");
-		const sheetShortname = sheetType;
-		if (sheetShortname === "beacon") {
-			return await getComputed({ characterId, property });
-		}
-		return getAttrByName(characterId, property);
-	};
-
-	function getAttributeSync(characterId, property) {
-		let result;
-		getAttribute(characterId, property)
-			.then((value) => {
-				result = value;
-				console.log("Attribute value:", result); // Handle the resolved value
-			})
-			.catch((error) => {
-				console.error("Error fetching attribute:", error);
-			});
-		return result; // This will return undefined initially
-	}
 
 	const parameterAliases = {
 		"tablebackgroundcolor": "tablebgcolor",
@@ -438,7 +413,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				const triggerCharID = findTriggerChar.id;
 				log(`ScriptCards Triggers Active. Trigger Character ID is ${triggerCharID}`);
 
-				log(`ScriptCards Message Triggers enabled? ${checkForMessageTriggers(triggerCharID)==true ? "Yes" : "No"}`)
+				log(`ScriptCards Message Triggers enabled? ${checkForMessageTriggers(triggerCharID) == true ? "Yes" : "No"}`)
 
 				on('change:campaign:turnorder', () => onChangeCampaignTurnorder(triggerCharID));
 
@@ -633,7 +608,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		// !sc-deletestoredsettings - Delete a stored settings group
 		// !sc-resume - resume a card paused with --i
 		// !sc-reentrant - resume execution of a card at a particular label
-		on('chat:message', function (msg) {
+		on('chat:message', async function (msg) {
 			if (msg.type === "api") {
 				var apiCmdText = msg.content.toLowerCase().trim();
 				var processThisAPI = false;
@@ -992,8 +967,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					do {
 						while (lineCounter < cardLines.length) {
 
-							let thisTag = replaceVariableContent(getLineTag(cardLines[lineCounter], lineCounter, true), cardParameters, false);
-							let thisContent = replaceVariableContent(getLineContent(cardLines[lineCounter]), cardParameters, (thisTag.charAt(0) == "+" || thisTag.charAt(0) == "*" || thisTag.charAt(0) == "&"));
+							let thisTag = await replaceVariableContent(getLineTag(cardLines[lineCounter], lineCounter, true), cardParameters, false);
+							let thisContent = await replaceVariableContent(getLineContent(cardLines[lineCounter]), cardParameters, (thisTag.charAt(0) == "+" || thisTag.charAt(0) == "*" || thisTag.charAt(0) == "&"));
 
 							if (cardParameters.debug == 1) {
 								log(`Line Counter: ${lineCounter}, Tag:${thisTag}, Content:${thisContent}`);
@@ -1036,16 +1011,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								// *********** STARTHERE
 
 								switch (thisTag.charAt(0).toLowerCase()) {
-									case "!": handleObjectModificationCommands(thisTag, thisContent, cardParameters); break;
+									case "!": await handleObjectModificationCommands(thisTag, thisContent, cardParameters); break;
 									case "a": playJukeboxTrack(thisContent); break;
-									case "c": handleCaseCommand(thisTag, thisContent, cardParameters, cardLines); break;
+									case "c": await handleCaseCommand(thisTag, thisContent, cardParameters, cardLines); break;
 									case "d": handleDataReadCommands(thisTag); break;
 									case "e": handleEmoteCommands(thisTag, thisContent); break;
 									case "h": handleHasTableCommands(thisTag, hashTables, thisContent); break;
 									case "l": handleLoadCommands(thisTag, thisContent, cardParameters); break;
 									case "r": handleRepeatingAttributeCommands(thisTag, thisContent, cardParameters); break;
 									case "s": handleStashLines(thisTag, thisContent, cardParameters); break;
-									case "w": handleWaitStatements(thisTag, thisContent, cardParameters); break;
+									case "w": await handleWaitStatements(thisTag, thisContent, cardParameters); break;
 									case "v": handleVisualEffectsCommand(thisTag, thisContent, cardParameters); break;
 									case "x": {
 										if (cardParameters.functionbenchmarking == "1") { reportBenchmarkingData(); }
@@ -1053,13 +1028,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										lineCounter = cardLines.length + 1;
 									} break;
 									case "z": handleZOrderSettingCommands(thisTag, thisContent); break;
-									case "~": handleFunctionCommands(thisTag, thisContent, cardParameters, msg); break;
+									case "~": await handleFunctionCommands(thisTag, thisContent, cardParameters, msg); break;
 									case "^": if (lineLabels[thisTag.substring(1)]) { lineCounter = lineLabels[thisTag.substring(1)] } else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`) } break;
 									case "@": handleAPICallCommands(thisTag, thisContent, cardParameters, msg); break;
 									case "#": handleCardSettingsCommands(thisTag, thisContent, cardParameters); break;
-									case "+": case "*": handleOutputCommands(thisTag, thisContent, cardParameters); break;
-									case "=": handleRollVariableSetCommand(thisTag, thisContent, cardParameters); break;
-									case "&": setStringOrArrayElement(thisTag.substring(1), thisContent, cardParameters); break;
+									case "+": case "*": await handleOutputCommands(thisTag, thisContent, cardParameters); break;
+									case "=": await handleRollVariableSetCommand(thisTag, thisContent, cardParameters); break;
+									case "&": await setStringOrArrayElement(thisTag.substring(1), thisContent, cardParameters); break;
 									case "\\": handleConsoleLogs(thisTag, thisContent); break;
 									case "<": if (returnStack.length > 0) {
 										arrayVariables["args"] = [];
@@ -1073,7 +1048,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									} break;
 									case ">": handleGosubCommands(thisTag, thisContent, cardParameters); break;
 									case "]": handleBlockEndCommand(thisTag, thisContent, cardLines); break;
-									case "?": handleConditionalBlock(thisTag, thisContent, cardParameters, cardLines); break;
+									case "?": await handleConditionalBlock(thisTag, thisContent, cardParameters, cardLines); break;
 									//case "%": handleLoopStatements(thisTag, thisContent, cardParameters, cardLines); break;
 								}
 
@@ -1097,7 +1072,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (params.length === 2 && (params[0].toLowerCase().endsWith("while") || params[0].toLowerCase().endsWith("until"))) {
 											var originalContent = getLineContent(cardLines[lineCounter]);
 											var contentParts = originalContent.split(cardParameters.parameterdelimiter);
-											var isTrue = processFullConditional(replaceVariableContent(contentParts[1], cardParameters)) || params[0].toLowerCase().endsWith("until");
+											var isTrue = await processFullConditional(await replaceVariableContent(contentParts[1], cardParameters)) || params[0].toLowerCase().endsWith("until");
 											if (isTrue) {
 												loopControl[loopCounter] = { loopType: params[0].toLowerCase().endsWith("until") ? "until" : "while", initial: 0, current: 0, end: 999999, step: 1, nextIndex: lineCounter, condition: contentParts[1] }
 												stringVariables[loopCounter] = "true";
@@ -1149,14 +1124,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 														}
 														break;
 													case "while":
-														var isTrue = processFullConditional(replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
+														var isTrue = await processFullConditional(await replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
 														if (!isTrue) {
 															loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
 															loopControl[currentLoop].step = 1;
 														}
 														break;
 													case "until":
-														var isTrue = processFullConditional(replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
+														var isTrue = await processFullConditional(await replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
 														if (isTrue) {
 															loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
 															loopControl[currentLoop].step = 1;
@@ -1265,7 +1240,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						if (emoteLeft == "") { emoteLeft = "&nbsp;" }
 						if (emoteRight == "") { emoteRight = "&nbsp;" }
 						emote = "<div style='display: table; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal; background: " + cardParameters.emotebackground + "'>" + emoteLeft + "<div style='display: table-cell; width: 100%; " + " font-size: " + cardParameters.emotefontsize + "; font-weight: " + cardParameters.emotefontweight + "; color: " + cardParameters.emotefontcolor + "; font-family: " + cardParameters.emotefont + "; " + "vertical-align: middle; text-align: center; padding: 0px 2px;'>" + cardParameters.emotetext + "</div><div style='display: table-cell; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal;'>" + emoteRight + "</div></div>"
-						emote = replaceVariableContent(emote, cardParameters, false);
+						emote = await replaceVariableContent(emote, cardParameters, false);
 					}
 
 					var from = cardParameters.showfromfornonwhispers !== "0" ? msg.who : "";
@@ -1354,14 +1329,12 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return reference;
 	}
 
-	function replaceVariableContent(content, cardParameters, rollHilighting) {
+	async function replaceVariableContent(content, cardParameters, rollHilighting) {
 		var failCount = 0;
 		const failLimit = 1000;
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
 		content = content.replace(/\[&zwnj;/g, "[")
-		//		while (content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
-		//			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:])[^\[\]]*?(?!\.+[\[])(\])/g)[0];
 		while (content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:|\?])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
 			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:|\?])[^\[\]]*?(?!\.+[\[])(\])/g)[0];
 			var replacement = "";
@@ -1378,8 +1351,6 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								for (let x = 0; x < substringInfo.length; x++) {
 									substringInfo[x] = substringInfo[x].replace("\\", "")
 								}
-								//log(substringInfo)
-								//var substringInfo = TestMatch.match(/("[^"]*")|[^,]+/g)
 								if (isNaN(substringInfo[0])) {
 									switch (substringInfo[0].toLowerCase()) {
 										case "length": replacement = stringVariables[vName].length; break;
@@ -1554,7 +1525,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								}
 							} catch (e) {
 								log(e)
-								replcement = "Substring reference error."
+								replacement = "Substring reference error."
 							}
 						} else {
 							if (vName.startsWith("zwnj;")) {
@@ -1661,7 +1632,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						vName = thisMatch.substring(2, thisMatch.indexOf(":"));
 						rollFormula = thisMatch.substring(thisMatch.indexOf(":") + 1, thisMatch.length - 1);
 					}
-					rollVariables[vName] = parseDiceRoll(rollFormula, cardParameters);
+					rollVariables[vName] = await parseDiceRoll(rollFormula, cardParameters);
 					replacement = rollVariables[vName]["Total"]
 					break;
 
@@ -1720,7 +1691,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					// Replace inline conditional references
 					try {
 						let Pieces = (thisMatch.substring(2, thisMatch.length - 1)).split(cardParameters.inlineconditionseparator)
-						if (processFullConditional(Pieces[0])) {
+						if (await processFullConditional(Pieces[0])) {
 							replacement = Pieces[1]
 						} else {
 							replacement = Pieces[2]
@@ -1748,120 +1719,108 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					}
 					if (activeCharacter !== "") {
 						var workString = thisMatch;
-						if (workString == "this should never happen") {
-							//if (workString.indexOf(":") !== workString.lastIndexOf(":")) {
-							// Format to access a repeating value: [*S:r-section:index:attribute]
-							//let op = workString.split(":");
 
-						} else {
-							if (cardParameters.enableattributesubstitution !== "0") { workString = resolveAttributeSubstitution(activeCharacter, thisMatch); }
-							var token;
-							var attribute = "";
-							var defaultValue = null;
-							var useDefaultValue = false;
-							var hasSubFields = false;
-							var subfields = undefined;
-							var opType = "current";
-							var returnID = false;
+						if (cardParameters.enableattributesubstitution !== "0") { workString = resolveAttributeSubstitution(activeCharacter, thisMatch); }
+						var token;
+						var attribute = "";
+						var defaultValue = null;
+						var useDefaultValue = false;
+						var hasSubFields = false;
+						var subfields = undefined;
+						var opType = "current";
+						var returnID = false;
 
-							var attrName = workString.substring(workString.indexOf(":") + 1, workString.length - 1);
-							if (attrName.indexOf(":::") >= 0) {
-								defaultValue = attrName.substring(attrName.indexOf(":::") + 3, attrName.length);
-								attrName = attrName.substring(0, attrName.indexOf(":::"))
-								useDefaultValue = true;
+						var attrName = workString.substring(workString.indexOf(":") + 1, workString.length - 1);
+						if (attrName.indexOf(":::") >= 0) {
+							defaultValue = attrName.substring(attrName.indexOf(":::") + 3, attrName.length);
+							attrName = attrName.substring(0, attrName.indexOf(":::"))
+							useDefaultValue = true;
+						}
+						var character = getObj("character", activeCharacter);
+						if (character === undefined) {
+							token = getObj("graphic", activeCharacter);
+							if (token != null) {
+								character = getObj("character", token.get("represents"));
 							}
-							var character = getObj("character", activeCharacter);
-							if (character === undefined) {
-								token = getObj("graphic", activeCharacter);
-								if (token != null) {
-									character = getObj("character", token.get("represents"));
-								}
+						}
+						if (character != null) {
+							if (attrName.endsWith("^")) {
+								attrName = attrName.substring(0, attrName.length - 1);
+								opType = "max";
 							}
-							if (character != null) {
-								if (attrName.endsWith("^")) {
-									attrName = attrName.substring(0, attrName.length - 1);
-									opType = "max";
-								}
-								if (attrName.endsWith("*")) {
-									attrName = attrName.substring(0, attrName.length - 1);
-									returnID = "true";
-								}
+							if (attrName.endsWith("*")) {
+								attrName = attrName.substring(0, attrName.length - 1);
+								returnID = "true";
 							}
-							if (attrName.indexOf("->") >= 0) {
-								subfields = attrName.split("->");
-								hasSubFields = true;
-								attrName = subfields[0];
-							}
-							if (token != null && attrName.toLowerCase().startsWith("t-")) {
+						}
+						if (attrName.indexOf("->") >= 0) {
+							subfields = attrName.split("->");
+							hasSubFields = true;
+							attrName = subfields[0];
+						}
+						if (token != null && attrName.toLowerCase().startsWith("t-")) {
+							if (attrName.toLowerCase() == "t-bio" || attrName.toLowerCase() == "t-notes") {
+								attribute = getBioField(token, attrName.substring(2));
+							} else {
 								if (token.get(attrName.substring(2))) {
 									attribute = token.get(attrName.substring(2)).toString() || "";
 								}
 							}
-							if (character != null && (!attrName.toLowerCase().startsWith("t-"))) {
-								if (attrName !== "bio" && attrName !== "notes" && attrName !== "gmnotes") {
-									attribute = getAttrByName(character.id, attrName, opType);
-									//log(JSON.stringify(attribute))
-									if (attribute === undefined) {
-										if (returnID) {
-											attribute = attribute._id;
-										} else {
-											attribute = character.get(attrName);
-											if (hasSubFields && attribute) {
-												for (var sf = 1; sf < subfields.length; sf++) {
-													attribute = attribute[subfields[sf]];
-												}
-											}
-										}
+						}
+						if (character != null && (attrName.toLowerCase().startsWith("c-") || attrName.toLowerCase().startsWith("b-"))) {
+							attribute = await getSheetItem(character.id, attrName.substring(2), opType);
+						}
+						if (character != null && (!attrName.toLowerCase().startsWith("t-")) && (!attrName.toLowerCase().startsWith("c-") && (!attrName.toLowerCase().startsWith("b-")))) {
+							if (attrName.toLowerCase() !== "bio" && attrName.toLowerCase() !== "notes" && attrName.toLowerCase() !== "gmnotes") {
+								attribute = getAttrByName(character.id, attrName, opType);
+								if (attribute === undefined) {
+									if (returnID) {
+										attribute = attribute._id;
 									} else {
-										if (returnID) {
-											attribute = attribute._id;
-										} else {
-											if (hasSubFields && attribute) {
-												for (var sf = 1; sf < subfields.length; sf++) {
-													if (attribute[subfields[sf]]) {
-														attribute = attribute[subfields[sf]];
-													}
-												}
+										attribute = character.get(attrName);
+										if (hasSubFields && attribute) {
+											for (var sf = 1; sf < subfields.length; sf++) {
+												attribute = attribute[subfields[sf]];
 											}
 										}
 									}
 								} else {
-									// Add URL Decoding?
-									/*
-									log("In else")
-									const myFunc = async (character) => {
-										const charBio = await getNotes(attrName, character);
-										log(`Bio: ${charBio}`);
-										attribute = charBio;
-										log(`Atrr: ${attribute}`)
-										return $charBio
-									};
-									*/
-									//attribute = myFunc();
-									//attribute = new Promise((resolve, reject) => { character.get("bio", resolve); })
-									//Promise.resolve().then( () => { log(attribute) } )
+									if (returnID) {
+										attribute = attribute._id;
+									} else {
+										if (hasSubFields && attribute) {
+											for (var sf = 1; sf < subfields.length; sf++) {
+												if (attribute[subfields[sf]]) {
+													attribute = attribute[subfields[sf]];
+												}
+											}
+										}
+									}
 								}
-								if (cardParameters.attemptattributeparsing != 0) {
-									attribute = ParseCalculatedAttribute(attribute, character)
-								}
+							} else {
+								attribute = await getBioField(character, attrName);
 							}
-							if (token == undefined && character == undefined) {
-								// Try finding a Player object
-								var player = getObj("player", activeCharacter);
-								if (player != null) {
-									attribute = player.get(attrName) || "";
-								}
-							}
-							replacement = attribute;
-							if (useDefaultValue && (replacement == null || replacement == undefined || replacement == "")) {
-								replacement = defaultValue;
-							}
-							if (character != null) {
-								if (cardParameters.enableattributesubstitution !== "0") {
-									replacement = resolveAttributeSubstitution(character.get("_id"), replacement);
-								}
+							if (cardParameters.attemptattributeparsing != 0) {
+								attribute = ParseCalculatedAttribute(attribute, character)
 							}
 						}
+						if (token == undefined && character == undefined) {
+							// Try finding a Player object
+							var player = getObj("player", activeCharacter);
+							if (player != null) {
+								attribute = player.get(attrName) || "";
+							}
+						}
+						replacement = attribute;
+						if (useDefaultValue && (replacement == null || replacement == undefined || replacement == "")) {
+							replacement = defaultValue;
+						}
+						if (character != null) {
+							if (cardParameters.enableattributesubstitution !== "0") {
+								replacement = resolveAttributeSubstitution(character.get("_id"), replacement);
+							}
+						}
+
 					}
 
 					if (thisMatch.charAt(2).toLowerCase() == "g") {
@@ -2031,9 +1990,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 	}
 
 	// Take a "Roll Text" string (ie, "1d20 + 5 [Str] + 3 [Prof]") and execute the rolls.
-	function parseDiceRoll(rollText, cardParameters) {
+	async function parseDiceRoll(rollText, cardParameters) {
 		if (cardParameters.disablerollprocessing !== "0") { return content; }
-		rollText = replaceVariableContent(rollText, cardParameters, false);
+		rollText = await replaceVariableContent(rollText, cardParameters, false);
 		rollText = removeBRs(rollText);
 		rollText = removeTags(rollText);
 		rollText = cleanUpRollSpacing(rollText);
@@ -2319,7 +2278,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					componentHandled = true;
 					var thisKey = text.substring(2, text.length - 1);
 					//var thisValue = Number(inlineReplaceRollVariables(thisKey, cardParameters), cardParameters);
-					var thisValue = Number(replaceVariableContent(thisKey, cardParameters, false));
+					var thisValue = Number(await replaceVariableContent(thisKey, cardParameters, false));
 
 					if (rollVariables[thisKey]) {
 						rollResult.Text += `(${rollVariables[thisKey].Text}) `;
@@ -2433,7 +2392,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return `<span style='${tooltipStyle}' class='showtip tipsy' title='${tip.toString().replace(/\~/g, "")}'>${text}</span>`;
 	}
 
-	function processFullConditional(conditional, cardParameters) {
+	async function processFullConditional(conditional, cardParameters) {
 		// Remove multiple spaces
 		var trimmed = conditional.replace(/\s+/g, ' ').trim();
 		var parts = trimmed.match(/(?:[^\s"]+|"[^"]*")+/g);
@@ -2455,7 +2414,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		if (parts.length < 3) { return false; }
 		while (parts.length >= 3) {
 			var thisCondition = `${parts[0]} ${parts[1]} ${parts[2]}`;
-			var thisResult = evaluateConditional(thisCondition, cardParameters);
+			var thisResult = await evaluateConditional(thisCondition, cardParameters);
 			parts.shift();
 			parts.shift();
 			parts.shift();
@@ -2480,15 +2439,17 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		return overallResult;
 	}
 
-	function evaluateConditional(conditional, cardParameters) {
+	async function evaluateConditional(conditional, cardParameters) {
 		// /(?<![\\\\])\|/
 		var components = conditional.match(/(?:[^\s"]+|"[^"]*")+/g);
 		if (!components) { return false; }
 		if (components.length !== 3) {
 			return false;
 		}
-		var left = replaceVariableContent(components[0]).replace(/\"/g, "", cardParameters, false);
-		var right = replaceVariableContent(components[2]).replace(/\"/g, "", cardParameters, false);
+		var left = await replaceVariableContent(components[0])
+		left = left.replace(/\"/g, "", cardParameters, false);
+		var right = await replaceVariableContent(components[2])
+		right = right.replace(/\"/g, "", cardParameters, false);
 		if (!isNaN(left) && left !== "") { left = parseFloat(left); }
 		if (!isNaN(right) && right !== "") { right = parseFloat(right); }
 		switch (components[1]) {
@@ -3457,7 +3418,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 	const generateRowID = () => generateUUID().replace(/_/g, "Z");
 
-	function setStringOrArrayElement(varName, varValue, cardParameters) {
+	async function setStringOrArrayElement(varName, varValue, cardParameters) {
 		// Determine if the varName is a string or Array Element
 		if (varName.match(/(.*)\((-?\d*)\)/)) {
 			// It's an array element reference, split into a name and index
@@ -3488,7 +3449,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				varValue = (stringVariables[varName] || "") + varValue.substring(1);
 			}
 
-			stringVariables[varName] = replaceVariableContent(varValue, cardParameters, true);
+			stringVariables[varName] = await replaceVariableContent(varValue, cardParameters, true);
 		}
 	}
 
@@ -3660,6 +3621,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
+	/*
 	function storeRollVar(charid, prefix, varname) {
 		try {
 			let testObj = findObjs({ type: "attribute", characterid: charid, name: `SCR_${prefix}-${varname}` })[0]
@@ -3841,7 +3803,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			//log(`Attempted to load ${varname} setting, which does not exist`)
 		}
 	}
-
+*/
 	function handleEmoteCommands(thisTag, thisContent) {
 		/*
 		try {
@@ -3893,7 +3855,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
-	function handleWaitStatements(thisTag, thisContent, cardParameters) {
+	async function handleWaitStatements(thisTag, thisContent, cardParameters) {
 		try {
 			if (thisTag.length == 1) {
 				DelaySandboxExecution(thisContent);
@@ -3907,7 +3869,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (delayCommand.charAt(0) == "+" || delayCommand.charAt(0) == "*") {
 						hideInfo = "--#hidetitlecard|1"
 					}
-					setTimeout(delayFunction("", `!script {{ ${hideInfo} --${replaceVariableContent(delayCommand, cardParameters)}|${replaceVariableContent(thisContent, cardParameters)} }}`), parseFloat(delayLength) * 1000)
+					setTimeout(delayFunction("", `!script {{ ${hideInfo} --${await replaceVariableContent(delayCommand, cardParameters)}|${await replaceVariableContent(thisContent, cardParameters)} }}`), parseFloat(delayLength) * 1000)
 				}
 			}
 		} catch (e) {
@@ -3935,7 +3897,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 			if (params.length === 2 && (params[0].toLowerCase().endsWith("while") || params[0].toLowerCase().endsWith("until"))) {
 				let originalContent = getLineContent(cardLines[lineCounter]);
 				let contentParts = originalContent.split(cardParameters.parameterdelimiter);
-				let isTrue = processFullConditional(replaceVariableContent(contentParts[1], cardParameters)) || params[0].toLowerCase().endsWith("until");
+				let isTrue = await processFullConditional(await replaceVariableContent(contentParts[1], cardParameters)) || params[0].toLowerCase().endsWith("until");
 				if (isTrue) {
 					loopControl[loopCounter] = { loopType: params[0].toLowerCase().endsWith("until") ? "until" : "while", initial: 0, current: 0, end: 999999, step: 1, nextIndex: lineCounter, condition: contentParts[1] }
 					stringVariables[loopCounter] = "true";
@@ -3987,14 +3949,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 							break;
 						case "while":
-							var isTrue = processFullConditional(replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
+							var isTrue = await processFullConditional(await replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
 							if (!isTrue) {
 								loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
 								loopControl[currentLoop].step = 1;
 							}
 							break;
 						case "until":
-							var isTrue = processFullConditional(replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
+							var isTrue = await processFullConditional(await replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
 							if (isTrue) {
 								loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
 								loopControl[currentLoop].step = 1;
@@ -4176,7 +4138,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
-	function handleObjectModificationCommands(thisTag, thisContent, cardParameters) {
+	async function handleObjectModificationCommands(thisTag, thisContent, cardParameters) {
 		try {
 			if (thisTag.length > 1) {
 				if (thisTag.charAt(2) == ":" || thisTag.charAt(3) == ":") {
@@ -4480,9 +4442,17 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								for (var i = 0; i < settings.length; i++) {
 									var thisSetting = settings[i].split(":");
 									var settingName = thisSetting.shift();
+									let beacon = settingName.toLowerCase().startsWith("c-") || settingName.toLowerCase().startsWith("b-");
+									if (beacon) {
+										settingName = settingName.substring(2);
+									}
 									var settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");
 									if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
-										var currentValue = theCharacter.get(settingName);
+										var currentValue;
+										if (settingName.toLowerCase() == "bio" || settingName.toLowerCase() == "notes" || settingName.toLowerCase() == "gmnotes") {
+											currentValue = getbioField(theCharacter, settingName);
+										}
+										if (beacon) { currentValue = await getSheetItem(charID, settingName) } else { currentValue = theCharacter.get(settingName) }
 										var delta = settingValue.substring(2);
 										if (isNumber(currentValue) && isNumber(delta)) {
 											settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
@@ -4496,7 +4466,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 											setDefaultTokenForCharacter(theCharacter, theToken)
 										}
 									} else {
-										theCharacter.set(settingName, settingValue);
+										if (beacon) {
+											setSheetItem(charID, settingName, settingValue);
+										} else {
+											theCharacter.set(settingName, settingValue);
+										}
 									}
 								}
 							} else {
@@ -4715,10 +4689,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
-	function handleOutputCommands(thisTag, thisContent, cardParameters) {
+	async function handleOutputCommands(thisTag, thisContent, cardParameters) {
 		try {
-			let rowData = buildRowOutput(thisTag.substring(1), replaceVariableContent(thisContent.replace(/\[&zwnj;/g, "["), cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
-			let rawRowData = buildRawRowOutput(thisTag.substring(1), replaceVariableContent(thisContent.replace(/\[&zwnj;/g, "["), cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
+			let rowData = buildRowOutput(thisTag.substring(1), await replaceVariableContent(thisContent.replace(/\[&zwnj;/g, "["), cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
+			let rawRowData = buildRawRowOutput(thisTag.substring(1), await replaceVariableContent(thisContent.replace(/\[&zwnj;/g, "["), cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
 
 			tableLineCounter += 1;
 			if (tableLineCounter % 2 == 0) {
@@ -5072,7 +5046,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
-	function handleFunctionCommands(thisTag, thisContent, cardParameters, msg) {
+	async function handleFunctionCommands(thisTag, thisContent, cardParameters, msg) {
 		try {
 			var variableName = thisTag.substring(1);
 			var params = thisContent.split(cardParameters.parameterdelimiter);
@@ -5438,7 +5412,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 					}
-					rollVariables[variableName] = parseDiceRoll(result.toString(), cardParameters);
+					rollVariables[variableName] = await parseDiceRoll(result.toString(), cardParameters);
 					break;
 
 				case "euclideanpixel":
@@ -5462,7 +5436,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							}
 						}
 					}
-					rollVariables[variableName] = parseDiceRoll(result.toString(), cardParameters);
+					rollVariables[variableName] = await parseDiceRoll(result.toString(), cardParameters);
 					break;
 
 				case "getselected":
@@ -5472,10 +5446,10 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							stringVariables[variableName + (x + 1).toString()] = obj.get("id");
 						}
 						stringVariables[variableName + "Count"] = msg.selected.length.toString();
-						rollVariables[variableName + "Count"] = parseDiceRoll(msg.selected.length.toString(), cardParameters);
+						rollVariables[variableName + "Count"] = await parseDiceRoll(msg.selected.length.toString(), cardParameters);
 					} else {
 						stringVariables[variableName + "Count"] = "0";
-						rollVariables[variableName + "Count"] = parseDiceRoll("0", cardParameters);
+						rollVariables[variableName + "Count"] = await parseDiceRoll("0", cardParameters);
 					}
 					break;
 
@@ -5526,8 +5500,8 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						case "min":
 						case "max":
 							if (params.length == 4) {
-								let val1 = parseDiceRoll(params[2], cardParameters);
-								let val2 = parseDiceRoll(params[3], cardParameters);
+								let val1 = await parseDiceRoll(params[2], cardParameters);
+								let val2 = await parseDiceRoll(params[3], cardParameters);
 								rollVariables[variableName] = params[1].toLowerCase() == "min" ? (val1.Total <= val2.Total ? val1 : val2) :
 									val1.Total >= val2.Total ? val1 : val2;
 							}
@@ -5535,22 +5509,22 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 						case "abs":
 							if (params.length == 3 && !isNaN(parseFloat((params[2])))) {
-								rollVariables[variableName] = parseDiceRoll(Math.abs(parseFloat(params[2])), cardParameters)
+								rollVariables[variableName] = await parseDiceRoll(Math.abs(parseFloat(params[2])), cardParameters)
 							}
 							break;
 
 						case "sqrt":
 						case "squareroot":
 							if (params.length == 3 && !isNaN(parseFloat((params[2])))) {
-								rollVariables[variableName] = parseDiceRoll(Math.sqrt(parseFloat(params[2])), cardParameters)
+								rollVariables[variableName] = await parseDiceRoll(Math.sqrt(parseFloat(params[2])), cardParameters)
 							}
 							break;
 
 						case "clamp":
 							if (params.length == 5) {
-								let val = parseDiceRoll(params[2], cardParameters);
-								let lower = parseDiceRoll(params[3], cardParameters);
-								let upper = parseDiceRoll(params[4], cardParameters);
+								let val = await parseDiceRoll(params[2], cardParameters);
+								let lower = await parseDiceRoll(params[3], cardParameters);
+								let upper = await parseDiceRoll(params[4], cardParameters);
 								val.Total >= lower.Total && val.Total <= upper.Total ? rollVariables[variableName] = val :
 									val.Total < lower.Total ? rollVariables[variableName] = lower : rollVariables[variableName] = upper;
 							}
@@ -5559,13 +5533,13 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 
 					if (params.length == 3) {
 						if (params[1].toLowerCase() == "down" || params[1].toLowerCase() == "floor") {
-							rollVariables[variableName] = parseDiceRoll(Math.floor(Number(params[2])).toString(), cardParameters);
+							rollVariables[variableName] = await parseDiceRoll(Math.floor(Number(params[2])).toString(), cardParameters);
 						}
 						if (params[1].toLowerCase() == "up" || params[1].toLowerCase() == "ceil") {
-							rollVariables[variableName] = parseDiceRoll(Math.ceil(Number(params[2])).toString(), cardParameters);
+							rollVariables[variableName] = await parseDiceRoll(Math.ceil(Number(params[2])).toString(), cardParameters);
 						}
 						if (params[1].toLowerCase() == "closest" || params[1].toLowerCase() == "round") {
-							rollVariables[variableName] = parseDiceRoll(Math.round(Number(params[2])).toString(), cardParameters);
+							rollVariables[variableName] = await parseDiceRoll(Math.round(Number(params[2])).toString(), cardParameters);
 						}
 					}
 
@@ -5607,51 +5581,51 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							//stringfuncs;strlength;string
 							case "strlength":
 							case "length":
-								rollVariables[variableName] = parseDiceRoll((params[2].length.toString()), cardParameters)
+								rollVariables[variableName] = await parseDiceRoll((params[2].length.toString()), cardParameters)
 								break;
 
 							case "tolowercase":
-								setStringOrArrayElement(variableName, params[2].toLowerCase(), cardParameters)
+								await setStringOrArrayElement(variableName, params[2].toLowerCase(), cardParameters)
 								break;
 
 							case "touppercase":
-								setStringOrArrayElement(variableName, params[2].toUpperCase(), cardParameters)
+								await setStringOrArrayElement(variableName, params[2].toUpperCase(), cardParameters)
 								break;
 
 							case "striphtml":
-								setStringOrArrayElement(variableName, params[2].replace(/<[^>]*>?/gm, ''), cardParameters)
+								await setStringOrArrayElement(variableName, params[2].replace(/<[^>]*>?/gm, ''), cardParameters)
 								break;
 
 							case "striplinefeeds":
 							case "linefeedstobr":
 							case "linefeedstobrs":
-								setStringOrArrayElement(variableName, params[2].replace(/\r?\n/gm, "<br>"), cardParameters)
+								await setStringOrArrayElement(variableName, params[2].replace(/\r?\n/gm, "<br>"), cardParameters)
 								break;
 
 							case "brtolinefeed":
 							case "brtolinefeeds":
 							case "brstolinefeed":
 							case "brstolinefeeds":
-								setStringOrArrayElement(variableName, params[2].replace(/<br\s*\/?>/gi, '\n'), cardParameters)
+								await setStringOrArrayElement(variableName, params[2].replace(/<br\s*\/?>/gi, '\n'), cardParameters)
 								break;
 
 
 							case "trim":
-								setStringOrArrayElement(variableName, params[2].trim(), cardParameters)
+								await setStringOrArrayElement(variableName, params[2].trim(), cardParameters)
 								break;
 
 							case "onlynumbers":
 								var tempvalue = params[2].trim().startsWith("-") ? "-" : "";
 								tempvalue += params[2].replace(/\D/g, '')
-								setStringOrArrayElement(variableName, tempvalue, cardParameters)
+								await setStringOrArrayElement(variableName, tempvalue, cardParameters)
 								break;
 
 							case "nonumbers":
-								setStringOrArrayElement(variableName, params[2].replace(/\d/g, ''), cardParameters)
+								await setStringOrArrayElement(variableName, params[2].replace(/\d/g, ''), cardParameters)
 								break;
 
 							case "totitlecase":
-								setStringOrArrayElement(variableName,
+								await setStringOrArrayElement(variableName,
 									params[2].toLowerCase()
 										.split(' ')
 										.map(function (word) {
@@ -5674,7 +5648,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							//stringfuncs;split;delimeter;string
 							case "split":
 								var splits = params[3].split(params[2]);
-								rollVariables[variableName + "Count"] = parseDiceRoll(splits.length.toString(), cardParameters);
+								rollVariables[variableName + "Count"] = await parseDiceRoll(splits.length.toString(), cardParameters);
 								for (var x = 0; x < splits.length; x++) {
 									stringVariables[variableName + (x + 1).toString()] = splits[x];
 								}
@@ -5683,36 +5657,36 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							//stringfuncs;before;delimiter;string
 							case "before":
 								if (params[3].indexOf(params[2]) < 0) {
-									setStringOrArrayElement(variableName, params[3], cardParameters)
+									await setStringOrArrayElement(variableName, params[3], cardParameters)
 								} else {
-									setStringOrArrayElement(variableName, params[3].substring(0, params[3].indexOf(params[2])), cardParameters);
+									await setStringOrArrayElement(variableName, params[3].substring(0, params[3].indexOf(params[2])), cardParameters);
 								}
 								break;
 
 							//stringfuncs;after;delimeter;string
 							case "after":
 								if (params[3].indexOf(params[2]) < 0) {
-									setStringOrArrayElement(variableName, params[3], cardParameters)
+									await setStringOrArrayElement(variableName, params[3], cardParameters)
 								} else {
-									setStringOrArrayElement(variableName, params[3].substring(params[3].indexOf(params[2]) + params[2].length), cardParameters);
+									await setStringOrArrayElement(variableName, params[3].substring(params[3].indexOf(params[2]) + params[2].length), cardParameters);
 								}
 								break;
 
 							//stringfuncs;left;count;string
 							case "left":
 								if (params[3].length < Number(params[2])) {
-									setStringOrArrayElement(variableName, params[3], cardParameters)
+									await setStringOrArrayElement(variableName, params[3], cardParameters)
 								} else {
-									setStringOrArrayElement(variableName, params[3].substring(0, Number(params[2])), cardParameters);
+									await setStringOrArrayElement(variableName, params[3].substring(0, Number(params[2])), cardParameters);
 								}
 								break;
 
 							//stringfuncs;right;count;string
 							case "right":
 								if (params[3].length < Number(params[2])) {
-									setStringOrArrayElement(variableName, params[3], cardParameters)
+									await setStringOrArrayElement(variableName, params[3], cardParameters)
 								} else {
-									setStringOrArrayElement(variableName, params[3].substring(params[3].length - Number(params[2])), cardParameters);
+									await setStringOrArrayElement(variableName, params[3].substring(params[3].length - Number(params[2])), cardParameters);
 								}
 								break;
 
@@ -5723,7 +5697,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										str = str.replace(params[2].substring(i, i + 1), "")
 									}
 								}
-								setStringOrArrayElement(variableName, str, cardParameters);
+								await setStringOrArrayElement(variableName, str, cardParameters);
 								break;
 
 						}
@@ -5733,18 +5707,18 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						switch (params[1].toLowerCase()) {
 							//stringfuncs0;substring1;start2;length3;string4
 							case "substring":
-								setStringOrArrayElement(variableName, params[4].substring(Number(params[2]) - 1, Number(params[3]) + Number(params[2]) - 1), cardParameters);
+								await setStringOrArrayElement(variableName, params[4].substring(Number(params[2]) - 1, Number(params[3]) + Number(params[2]) - 1), cardParameters);
 								break;
 
 							case "replace":
-								setStringOrArrayElement(variableName, params[4].replace(params[2], params[3]), cardParameters);
+								await setStringOrArrayElement(variableName, params[4].replace(params[2], params[3]), cardParameters);
 								break;
 
 							case "replaceall":
 								if (!params[3].includes(params[2])) {
 									var str = params[4];
 									while (str.includes(params[2])) { str = str.replace(params[2], params[3]) }
-									setStringOrArrayElement(variableName, str, cardParameters);
+									await setStringOrArrayElement(variableName, str, cardParameters);
 								}
 								break;
 						}
@@ -5765,7 +5739,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										tempString = tempString.replaceAll(f.toLowerCase(), r);
 									}
 								}
-								if (variableName) { setStringOrArrayElement(variableName, tempString, cardParameters) }
+								if (variableName) { await setStringOrArrayElement(variableName, tempString, cardParameters) }
 								break;
 						}
 					}
@@ -6062,9 +6036,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 								if (params[3] != null && params[3] != null) {
 									sep = params[3];
 								}
-								setStringOrArrayElement(variableName, arrayVariables[params[2]].join(sep), cardParameters);
+								await setStringOrArrayElement(variableName, arrayVariables[params[2]].join(sep), cardParameters);
 							} else {
-								setStringOrArrayElement(variableName, "", cardParameters);
+								await setStringOrArrayElement(variableName, "", cardParameters);
 							}
 						}
 
@@ -6607,16 +6581,16 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
-	function handleRollVariableSetCommand(thisTag, thisContent, cardParameters) {
+	async function handleRollVariableSetCommand(thisTag, thisContent, cardParameters) {
 		try {
 			var rollIDName = thisTag.substring(1).trim();
 			if (rollIDName.indexOf('.') == -1) {
-				rollVariables[rollIDName] = parseDiceRoll(replaceVariableContent(thisContent, cardParameters), cardParameters, true);
+				rollVariables[rollIDName] = await parseDiceRoll(await replaceVariableContent(thisContent, cardParameters), cardParameters, true);
 			} else {
 				var parts = rollIDName.split(".");
 				if (parts[0] && rollVariables[parts[0]]) {
 					if (parts[1] && rollVariables[parts[0]][parts[1]]) {
-						rollVariables[parts[0]][parts[1]] = replaceVariableContent(thisContent, cardParameters);
+						rollVariables[parts[0]][parts[1]] = await replaceVariableContent(thisContent, cardParameters);
 					}
 				}
 			}
@@ -6735,9 +6709,9 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
-	function handleConditionalBlock(thisTag, thisContent, cardParameters, cardLines) {
+	async function handleConditionalBlock(thisTag, thisContent, cardParameters, cardLines) {
 		try {
-			var isTrue = processFullConditional(thisTag.substring(1));
+			var isTrue = await processFullConditional(thisTag.substring(1));
 			var trueDest = thisContent.trim();
 			var falseDest = undefined;
 			var varName = undefined;
@@ -6802,7 +6776,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 							if (jumpDest.indexOf(";") < 0) {
 								conditionalContent = "";
 							}
-							var rowData = buildRowOutput(conditionalTag.substring(1), replaceVariableContent(conditionalContent, cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
+							var rowData = buildRowOutput(conditionalTag.substring(1), await replaceVariableContent(conditionalContent, cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
 
 							tableLineCounter += 1;
 							if (tableLineCounter % 2 == 0) {
@@ -6843,11 +6817,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 						}
 						break;
 					case "rollset":
-						rollVariables[varName] = parseDiceRoll(replaceVariableContent(varValue, cardParameters, false), cardParameters);
+						rollVariables[varName] = await parseDiceRoll(await replaceVariableContent(varValue, cardParameters, false), cardParameters);
 						break;
 					case "stringset":
 						if (varName) {
-							setStringOrArrayElement(varName, varValue, cardParameters);
+							await setStringOrArrayElement(varName, varValue, cardParameters);
 						} else {
 							log(`ScriptCards Error: Variable name or value not specified in conditional on line ${lineCounter} (${thisTag}) ${thisContent}`);
 						}
@@ -6913,7 +6887,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 		}
 	}
 
-	function handleCaseCommand(thisTag, thisContent, cardParameters, cardLines) {
+	async function handleCaseCommand(thisTag, thisContent, cardParameters, cardLines) {
 		try {
 			var testvalue = thisTag.substring(1);
 			var cases = thisContent.split(/(?<![\\\\])\|/);
@@ -6971,7 +6945,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 										if (jumpDest.indexOf(";") < 0) {
 											conditionalContent = "";
 										}
-										var rowData = buildRowOutput(conditionalTag.substring(1), replaceVariableContent(conditionalContent, cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
+										var rowData = buildRowOutput(conditionalTag.substring(1), await replaceVariableContent(conditionalContent, cardParameters, true), cardParameters.outputtagprefix, cardParameters.outputcontentprefix);
 
 										tableLineCounter += 1;
 										if (tableLineCounter % 2 == 0) {
@@ -7013,11 +6987,11 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 									}
 									break;
 								case "rollset":
-									rollVariables[varName] = parseDiceRoll(replaceVariableContent(varValue, cardParameters), cardParameters, true);
+									rollVariables[varName] = await parseDiceRoll(await replaceVariableContent(varValue, cardParameters), cardParameters, true);
 									break;
 								case "stringset":
 									if (varName) {
-										setStringOrArrayElement(varName, varValue, cardParameters);
+										await setStringOrArrayElement(varName, varValue, cardParameters);
 									} else {
 										log(`ScriptCards Error: Variable name or value not specified in conditional on line ${lineCounter} (${thisTag}) ${thisContent}`);
 									}
@@ -7268,7 +7242,7 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 					if (abname) {
 						if (abname.startsWith("chat:message:")) {
 							let testVal = abname.replace("chat:message:", "").replaceAll("-", " ");
-							if (msg.content.replace("-"," ").indexOf(testVal) >= 0) {
+							if (msg.content.replace("-", " ").indexOf(testVal) >= 0) {
 								replacement = " --+|<SC_TRIGGER_GENERATED> "
 								replacement += `--&TriggerWho|${msg.who} `;
 								replacement += `--&TriggerPlayerID|${msg.playerid} `;
@@ -7288,6 +7262,14 @@ const ScriptCards = (() => { // eslint-disable-line no-unused-vars
 				}
 			}
 		}
+	}
+
+	async function getBioField(charobj, field) {
+		return new Promise((resolve) => {
+			charobj.get(field, function (resp) {
+				resolve(resp);
+			})
+		})
 	}
 
 	function extractKeyValuePairsFromJson(jsonString) {
