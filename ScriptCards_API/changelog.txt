@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.0a:
+- Table rolls (like [T#MyTable]) now include the items .tableEntryWeight which gets filled with the weight value of the weight field in the table entry line.
+
 v 3.0.0:
 - Note - I removed the "experimental" changelog entries and summarized them here.
 - It is now possible to read bio, notes, and gmnotes fields. They behave inline as you would treat anything else. (This functionality is not dependant upon Beacon sheets or the Experimental sandbox)

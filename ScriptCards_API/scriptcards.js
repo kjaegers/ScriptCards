@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.00";
-	const NUMERIC_VERSION = "300000"
+	const APIVERSION = "3.0.00a";
+	const NUMERIC_VERSION = "30001"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2011,6 +2011,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			tableEntryText: "",
 			tableEntryImgURL: "",
 			tableEntryValue: "",
+			tableEntryWeight: "",
 			RolledDice: [],
 			KeptDice: [],
 			DroppedDice: [],
@@ -2311,6 +2312,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 						rollResult.RollText = `[T#${rollTableName}]`;
 						rollResult.Text = tableResult[0];
 						rollResult.tableEntryValue = isNaN(rollResult.tableEntryText) ? 0 : parseInt(rollResult.tableEntryText);
+						rollResult.tableEntryWeight = tableResult[3];
 					}
 				}
 			}
@@ -2847,9 +2849,9 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				var tableRollResult = randomInteger(maxRoll);
 				try {
 					if (nonOneWeights == 0) {
-						return [tableItems[rollResults[tableRollResult]].get("name"), tableItems[rollResults[tableRollResult]].get("avatar"), tableRollResult];
+						return [tableItems[rollResults[tableRollResult]].get("name"), tableItems[rollResults[tableRollResult]].get("avatar"), tableRollResult, tableItems[rollResults[tableRollResult]].get("weight")];
 					} else {
-						return [tableItems[rollResults[tableRollResult]].get("name"), tableItems[rollResults[tableRollResult]].get("avatar"), 0];
+						return [tableItems[rollResults[tableRollResult]].get("name"), tableItems[rollResults[tableRollResult]].get("avatar"), 0, tableItems[rollResults[tableRollResult]].get("weight")];
 					}
 				} catch {
 					log(`ScriptCards: Exception while reading table results for table item ${tableRollResult}`)
