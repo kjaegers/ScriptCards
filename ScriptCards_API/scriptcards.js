@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.00a";
-	const NUMERIC_VERSION = "30001"
+	const APIVERSION = "3.0.00b";
+	const NUMERIC_VERSION = "30002"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -3623,189 +3623,36 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		}
 	}
 
-	/*
-	function storeRollVar(charid, prefix, varname) {
+	function loadVariable(charid, prefix, varname, type, cardParameters = null) {
 		try {
-			let testObj = findObjs({ type: "attribute", characterid: charid, name: `SCR_${prefix}-${varname}` })[0]
-			if (testObj) {
-				testObj.set("current", JSON.stringify(rollVariables[varname]))
-			} else {
-				createObj("attribute", {
-					name: `SCR_${prefix}-${varname}`,
-					current: JSON.stringify(rollVariables[varname]),
-					characterid: charid
-				})
+			let testname = "unknown"
+			switch (type) {
+				case "roll": testname = `SCR_${prefix}-${varname}`; break;
+				case "string": testname = `SCS_${prefix}-${varname}`; break;
+				case "array": testname = `SCA_${prefix}-${varname}`; break;
+				case "hash": testname = `SCH_${prefix}-${varname}`; break;
+				case "setting": testname = `SCT_${prefix}-${varname}`; break;
 			}
-		} catch (e) {
-			log(`Unable to store Roll ${varname} on ${charid}, error ${e} `)
-		}
-	}
-
-	function loadRollVar(charid, prefix, varname) {
-		try {
 			let charobj = getObj("character", charid)
 			if (charobj) {
-				let attr = findObjs({ type: "attribute", characterid: charid, name: `SCR_${prefix}-${varname}` })[0];
+				let attr = findObjs({ type: "attribute", characterid: charid, name: testname })[0];
 				if (attr) {
-					rollVariables[varname] = JSON.parse(attr.get("current"));
-				}
-			}
-		} catch (e) {
-			log(`Unable to load ${varname} on ${charid}, error ${e} `)
-		}
-	}
-
-	function storeStringVar(charid, prefix, varname) {
-		try {
-			let testObj = findObjs({ type: "attribute", characterid: charid, name: `SCS_${prefix}-${varname}` })[0]
-			if (testObj) {
-				testObj.set("current", stringVariables[varname])
-			} else {
-				createObj("attribute", {
-					name: `SCS_${prefix}-${varname}`,
-					current: stringVariables[varname],
-					characterid: charid
-				})
-			}
-		} catch (e) {
-			log(`Unable to store String ${varname} on ${charid}, error ${e} `)
-		}
-	}
-
-	function loadStringVar(charid, prefix, varname) {
-		try {
-			let charobj = getObj("character", charid)
-			if (charobj) {
-				let attr = findObjs({ type: "attribute", characterid: charid, name: `SCS_${prefix}-${varname}` })[0];
-				if (attr) {
-					stringVariables[varname] = attr.get("current");
-				}
-			}
-		} catch (e) {
-			log(`Unable to load ${varname} on ${charid}, error ${e} `)
-		}
-	}
-
-	function storeArray(charid, prefix, varname) {
-		try {
-			let testObj = findObjs({ type: "attribute", characterid: charid, name: `SCA_${prefix}-${varname}` })[0]
-			if (testObj) {
-				testObj.set("current", JSON.stringify(arrayVariables[varname]))
-			} else {
-				createObj("attribute", {
-					name: `SCA_${prefix}-${varname}`,
-					current: JSON.stringify(arrayVariables[varname]),
-					characterid: charid
-				})
-			}
-		} catch (e) {
-			log(`Unable to store Array ${varname} on ${charid}, error ${e} `)
-		}
-	}
-
-	function loadArray(charid, prefix, varname) {
-		try {
-			let charobj = getObj("character", charid)
-			if (charobj) {
-				let attr = findObjs({ type: "attribute", characterid: charid, name: `SCA_${prefix}-${varname}` })[0];
-				if (attr) {
-					arrayVariables[varname] = JSON.parse(attr.get("current"));
-				}
-			}
-		} catch (e) {
-			log(`Unable to load ${varname} on ${charid}, error ${e} `)
-		}
-	}
-
-	function storeHashTable(charid, prefix, varname) {
-		try {
-			// If saving an empty hash table, delete the attribute
-			if (hashTables[varname] && JSON.stringify(hashTables[varname]) == "{}") {
-				let testObj = findObjs({
-					type: "attribute",
-					characterid: charid,
-					name: `SCH_${prefix}-${varname}`
-				})[0];
-				if (testObj) { testObj.remove() }
-			} else {
-				let testObj = findObjs({
-					type: "attribute",
-					characterid: charid,
-					name: `SCH_${prefix}-${varname}`
-				})[0]
-				if (testObj) {
-					testObj.set("current", JSON.stringify(hashTables[varname]))
-				} else {
-					log(JSON.stringify(hashTables[varname]))
-					createObj("attribute", {
-						name: `SCH_${prefix}-${varname}`,
-						current: JSON.stringify(hashTables[varname]),
-						characterid: charid
-					})
-				}
-			}
-		} catch (e) {
-			log(`Unable to store Hash ${varname} on ${charid}, error ${e} `)
-		}
-	}
-
-	function loadHashTable(characterId, prefix, variableName) {
-		try {
-			let characterObject = getObj("character", characterId)
-			if (characterObject) {
-				let attribute = findObjs({ type: "attribute", characterid: characterId, name: `SCH_${prefix}-${variableName}` })[0];
-				if (attribute) {
-					hashTables[variableName] = JSON.parse(attribute.get("current"));
-				} else {
-					log(`Attribute not found for ${variableName} on ${characterId}`)
-				}
-			} else {
-				log(`Character not found for id ${characterId}`)
-			}
-		} catch (error) {
-			log(`Unable to load ${variableName} on ${characterId}, error ${error} `)
-		}
-	}
-
-	function storeSetting(charid, prefix, varname, cardParameters) {
-		if (cardParameters[varname] !== undefined) {
-			try {
-				let testObj = findObjs({ type: "attribute", characterid: charid, name: `SCT_${prefix}-${varname}` })[0]
-				if (testObj) {
-					testObj.set("current", cardParameters[varname])
-				} else {
-					createObj("attribute", {
-						name: `SCT_${prefix}-${varname}`,
-						current: cardParameters[varname],
-						characterid: charid
-					})
-				}
-			} catch (e) {
-				log(`Unable to store Setting ${varname} on ${charid}, error ${e} `)
-			}
-		} else {
-			log(`Attempted to store ${varname} setting, which does not exist`)
-		}
-	}
-
-	function loadSetting(charid, prefix, varname, cardParameters) {
-		if (cardParameters[varname] !== undefined) {
-			try {
-				let charobj = getObj("character", charid)
-				if (charobj) {
-					let attr = findObjs({ type: "attribute", characterid: charid, name: `SCT_${prefix}-${varname}` })[0];
-					if (attr) {
-						cardParameters[varname] = attr.get("current");
+					switch (type) {
+						case "roll": rollVariables[varname] = JSON.parse(attr.get("current")); break;
+						case "string": stringVariables[varname] = attr.get("current"); break;
+						case "array": arrayVariables[varname] = JSON.parse(attr.get("current")); break;
+						case "hash": hashTables[varname] = JSON.parse(attr.get("current")); break;
+						case "setting": cardParameters[varname] = attr.get("current"); break;
 					}
+				} else {
+					log(`ScriptCards: Attribute ${testname} not found on Storage Mule ${charid}`)
 				}
-			} catch (e) {
-				//log(`Unable to load ${varname} on ${charid}, error ${e} `)
 			}
-		} else {
-			//log(`Attempted to load ${varname} setting, which does not exist`)
+		} catch (e) {
+			log(`Unable to load ${varname} on ${charid}, error ${e} `)
 		}
 	}
-*/
+
 	function handleEmoteCommands(thisTag, thisContent) {
 		/*
 		try {
@@ -4975,42 +4822,38 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							}
 						}
 						break;
-				}
+				}				
 				if ("$&@#:".includes(thisTag.charAt(1))) {
-					let varType = thisTag.charAt(1)
-					let prefix = ""
+					var varType = thisTag.charAt(1)
+					var prefix = ""
 					if (thisTag.length > 2) {
 						prefix = thisTag.substring(2)
 					}
 					let varList = thisContent.split(cardParameters.parameterdelimiter)
-					//log(`Loading: ${varType}, Prefix: ${prefix}, varList: ${varList}`)
 					if (cardParameters.storagecharid && varList) {
-						if (varType == "$") {
-							varList.forEach((element) => loadRollVar(cardParameters.storagecharid, prefix, element));
+						var thisType = "unknown";
+						switch (varType) {
+							case "$": thisType = "roll"; break;
+							case "&": thisType = "string"; break;
+							case "@": thisType = "array"; break;
+							case ":": thisType = "hash"; break;
 						}
-						if (varType == "&") {
-							varList.forEach((element) => loadStringVar(cardParameters.storagecharid, prefix, element));
-						}
-						if (varType == "@") {
-							varList.forEach((element) => loadArray(cardParameters.storagecharid, prefix, element));
-						}
-						if (varType == ":") {
-							varList.forEach((element) => loadHashTable(cardParameters.storagecharid, prefix, element));
-						}
-						if (varType == "#") {
-							if (thisContent.toLowerCase().trim() == "allsettings") {
-								varList = [];
-								for (var key in cardParameters) {
-									if (key != "storagecharid") {
-										varList.push(key);
+						if (!(thisType === "unknown")) {
+							varList.forEach((element) => loadVariable(cardParameters.storagecharid, prefix, element, thisType, cardParameters));
+						} else {
+							if (varType == "#") {
+								thisType = "setting";
+								if (thisContent.toLowerCase().trim() == "allsettings") {
+									varList = [];
+									for (var key in cardParameters) {
+										if (key != "storagecharid") {
+											varList.push(key);
+										}
 									}
 								}
+								varList.forEach((element) => loadVariable(cardParameters.storagecharid, prefix, element, thisType, cardParameters));
 							}
-							varList.forEach((element) => loadSetting(cardParameters.storagecharid, prefix, element.toLowerCase(), cardParameters));
 						}
-						//if (varType == "#") {
-						//	varList.forEach((element) => loadSetting(cardParameters.storagecharid, prefix, element.toLowerCase(), cardParameters));
-						//}
 					}
 				}
 
@@ -5200,6 +5043,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					switch (params[1].toLowerCase()) {
 						case "sethilight":
 						case "sethighlight":
+						case "setrollhighlight":
 						case "sethighlightmode":
 						case "sethilightmode":
 							if (params[3].toLowerCase() == "none") {

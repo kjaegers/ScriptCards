@@ -1,5 +1,10 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.0b:
+- Fixed broken --l (loading) commands broken in a previous update
+- Added alias for "sethighlight" called "setrollhighlight"... Since that is was is in the changelog below :)
+- Updated the API_Meta script line at the top of the script to account for the three additional lint lines at the beginning so correct line offsets are reported in the console log on sandbox errors. (Thanks Timmaugh for pointing this out)
+
 v 3.0.0a:
 - Table rolls (like [T#MyTable]) now include the items .tableEntryWeight which gets filled with the weight value of the weight field in the table entry line.
 
