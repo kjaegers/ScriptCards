@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.6.6
+  --/|Version     : 2.6.7
   --/|Requires SC : 2.7.15+
   --/|Author      : Kurt Jaegers
 
@@ -50,7 +50,8 @@
   --/|this script for generic processing. This lets you define "special case" macros for non-standard spells.
   --/|The name of the ability on the spell mule needs to exactly match the spell name (case sensitive)
   --&spellmulename|Spell_Mule
-  
+
+  --/|NOTE: Shared Macro Mule functionality is currently broken due to API issues  
   --/|If you create a "shared macro mule" character and put its name here, you can define macros to be used
   --/|generally in your game and a can include a list of macros in a character ability on each character called
   --/|AMLIST that lists each of the mule's abilities that buttons should be created for the in the custom actions section.
@@ -319,6 +320,8 @@
   -->BUILD_BUTTON_LIST|[*S:character_id];repeating_npcaction-l;name;EXEC_NPC_LEGENDARY_ACTION;Legendary Actions;[&sharednpcmacromulename];0
   -->BUILD_SPELL_BUTTON_LIST|[*S:character_id];repeating_spell-cantrip;spellname;EXEC_PC_CANTRIP;Cantrips;[&sharednpcmacromulename];0
   --%levelCounter|1;9
+    --/\|repeating_spell repeating_spell-[&levelCounter]
+    --/\|Spellname-[&spellname]
     -->BUILD_SPELL_BUTTON_LIST|[*S:character_id];repeating_spell-[&levelCounter];spellname;EXEC_PC_SPELL;Level [&levelCounter] Spells;[&spellmulename];[&levelCounter]
   --%|
   --/|5E Sheet Specific END
@@ -345,6 +348,7 @@
   --#targettoken|[&action_target]
   --#leftsub|[*S:character_name]
   --#rightsub|
+  --
   --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]
   --#parameterdelimiter|$$$
   --Rfind|[*S:character_id]$$$[&action_name]$$$repeating_npcaction$$$name
@@ -600,6 +604,7 @@
   --~attack_target|string;after;|;[&reentryval]
   --#targettoken|[&attack_target]
   -->DETERMINE_NPC_STATUS_MODIFIERS|[*T:t-id];T
+  --/\|Emote in PC Attack|[*S:t-name] uses [&attack_name] against [*T:t-name]
   --#emotetext|[*S:t-name] uses [&attack_name] against [*T:t-name]
   -->Find_Active_Global_Attack_Modifiers|[*S:character_id];PC_GAM
   -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM
@@ -762,6 +767,7 @@
   --#whisper|
   --#emotestate|visible
   --#targettoken|[&cantrip_target]
+  --/\|Emote in PC Cantrip|[*S:t-name] uses [&attack_name] against [*T:t-name]
   --#emotetext|[*S:t-name] uses [&cantrip_name] against [*T:t-name]
   -->Find_Active_Global_Attack_Modifiers|[*S:character_id];PC_GAM
   -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM
@@ -834,6 +840,10 @@
 
   --:EXEC_PC_SPELL|spellInfo1=Spell Level, 2=SpellName, 3=Target ID, 4=Slot Level
   --/+|[hr #58180d]
+  --/\|Spell Level [%1%]
+  --/\|Spell Name [%2%]
+  --/\|Spell Target [%3%]
+  --/\|Spell Slot [%4%]
   --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender]||[
   --#whisper|self
   --]|[
@@ -859,6 +869,7 @@
   --#whisper|
   --#emotestate|visible
   --#targettoken|[&action_target]
+  --/\|Emote in PC Spell|[*S:t-name] uses [&attack_name] against [*T:t-name]
   --#emotetext|[*S:t-name] uses [&spellInfo2] against [*T:t-name]
   -->Find_Active_Global_Attack_Modifiers|[*S:character_id];PC_GAM
   -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM
@@ -1740,8 +1751,8 @@
   --^DONE_SHARED_MULE_BUTTONS|
 
   --/|Check for shared macro mule macros
-  -->GET_CHARACTER_ID_BY_NAME|[&sharedmacromulename];MacroMuleID
-  --?[&MacroMuleID] -eq 0|DONE_SHARED_MULE_BUTTONS
+  --\>GET_CHARACTER_ID_BY_NAME|[&sharedmacromulename];MacroMuleID
+  --?[&MacroMuleID] -eq ""|DONE_SHARED_MULE_BUTTONS
   --~|array;objects:ability;MuleButtonList;AM_SHARED_LIST;[%1%]
   --?"[@MuleButtonList(length)]" -eq 0|DONE_SHARED_MULE_BUTTONS
   --?[&muleButtonList] -eq "AbilityNotFound"|DONE_SHARED_MULE_BUTTONS
@@ -1832,6 +1843,8 @@
     --&AM_BUTTON_LIST|[br]
 
     --%spellloop|foreach;HashList
+      --/\|Loop: [&spellloop]
+
       --?[&skipPreppedSpellsCheck] -eq 1|SKIP_PREP_CHECK
       --?"[%7%]" -eq 0|SKIP_PREP_CHECK   
       --?"[&SorcererLevel]" -gt 0 -or "[&WarlockLevel]" -gt 0|SKIP_PREP_CHECK
@@ -1841,6 +1854,7 @@
       --&targetString|[&TB]target|token_id}
       --&DisplayName|[&spellloop]
       --&DisplayName|[&DisplayName(totitlecase)]
+      --/\|DisplayName [&DisplayName]
       --&thisSlotString|[&slotString]
       --?"[:BuiltButtonHash("[&spellloop]_spellritual")]" -ne "Yes"|SPELL_BUTTON_LIST_NOT_RITUAL
       --&thisSlotString|[&RitualslotString]
@@ -1860,7 +1874,7 @@
       --~testMule|system;findability;[&spellmulename];[&testName]
       --?[&testMule] -ne "AbilityNotFound"|SPELL_BUTTON_MULE
       --?"[:BuiltButtonHash("[&spellloop]_spelloutput")]" -eq ATTACK|SPELL_BUTTON_GENERATE_WITH_TARGET
-      --&AM_BUTTON_LIST|+[rbutton][&DisplayName]::[%4%];[&LevelString][&spellloop|NONE[&thisSlotString][/rbutton][&SPACE]
+      --&AM_BUTTON_LIST|+[rbutton][&DisplayName]::[%4%];[&LevelString][&spellloop]|NONE[&thisSlotString][/rbutton][&SPACE]
       --^SPELL_BUTTON_END_GENERATE|
       --:SPELL_BUTTON_GENERATE_WITH_TARGET|
       --&AM_BUTTON_LIST|+[rbutton][&DisplayName]::[%4%];[&LevelString][&spellloop]|[&targetString][&thisSlotString][/rbutton][&SPACE]
