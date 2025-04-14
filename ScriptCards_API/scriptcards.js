@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.00b";
-	const NUMERIC_VERSION = "30002"
+	const APIVERSION = "3.0.00c";
+	const NUMERIC_VERSION = "30003"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -4190,7 +4190,11 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							if (theToken) {
 								for (let i = 0; i < settings.length; i++) {
 									let thisSetting = settings[i].split(":");
+
 									let settingName = thisSetting.shift();
+									if (settingName.startsWith("t-")) {
+										settingName = settingName.substring(2);
+									}
 									let settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");
 
 									if (settingName.toLowerCase() == "night_vision_effect" && (settingValue.trim().toLowerCase() == "dimming")) {
@@ -4202,11 +4206,14 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 									if (settingName.toLowerCase() == "bar1_link" ||
 										settingName.toLowerCase() == "bar2_link" ||
 										settingName.toLowerCase() == "bar3_link") {
+										log(1)
 										let theChar = getObj("character", theToken.get("represents"));
 										if (theChar != null) {
+
 											try {
 												var theAttribute = findObjs({ _type: "attribute", _characterid: theChar.get("_id"), name: settingValue })[0];
 											} catch { log("Error setting bar link. Attribute not found.") }
+
 											if (theAttribute != null) {
 												settingValue = theAttribute.get("_id");
 											}
@@ -4239,7 +4246,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 										settingValue = processInlineFormatting(settingValue, cardParameters, false);
 									}
 
-									if (typeof (theToken.get(settingName)) == "boolean" && settingValue) {
+									if (theToken && typeof (theToken.get(settingName)) == "boolean" && settingValue) {
 										switch (settingValue.toLowerCase()) {
 											case "true": case "on": case "1": settingValue = true; break;
 											case "false": case "off": case "0": settingValue = false; break;
@@ -4263,6 +4270,11 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 										theToken.set(settingName, settingValue);
 										notifyObservers('tokenChange', theToken, prevTok);
 									}
+
+									if('undefined' !== typeof HealthColors && HealthColors.Update){
+										HealthColors.Update(theToken,prevTok);
+									}
+
 
 									forceLightUpdateOnPage();
 
@@ -4822,7 +4834,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							}
 						}
 						break;
-				}				
+				}
 				if ("$&@#:".includes(thisTag.charAt(1))) {
 					var varType = thisTag.charAt(1)
 					var prefix = ""

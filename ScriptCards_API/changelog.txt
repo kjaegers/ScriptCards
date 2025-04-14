@@ -1,5 +1,9 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.0c:
+- When using --!t to set token properties, you can use either names with or without the t- prefix. This was already true for creating tokens with --!ot
+-- If HealthColors is installed, --!t changes will trigger an update |
+
 v 3.0.0b:
 - Fixed broken --l (loading) commands broken in a previous update
 - Added alias for "sethighlight" called "setrollhighlight"... Since that is was is in the changelog below :)
