@@ -1,5 +1,8 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2025-04-16 - 5e Character Action Menu 2.6.27a
+- Skip SC version check. Temporary workaround for bad version number in 3.0.0c
+
 2025-04-05 - 5e Character Action Menu 2.6.7
 - Fixed a bug where spells that didn't have entries on a spell mule showed up as [&spellloop] with an error.
 

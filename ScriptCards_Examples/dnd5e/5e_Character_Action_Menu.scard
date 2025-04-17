@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.6.7
+  --/|Version     : 2.6.7a
   --/|Requires SC : 2.7.15+
   --/|Author      : Kurt Jaegers
 
@@ -721,8 +721,12 @@
   --?"[*R:atkname]" -inc "Adamantine"|&isAdamant;1
   --/+|Magic: [&isMagical], Silver: [&isSilver], Ad: [&isAdamant]
   --?"[*T:npc]" -ne "1" -or [&UseResistances] -eq 0|SKIP_CALC_DMG_MODS
-  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:dmgtype];[&isMagical];[&isSilver];[&isAdamant]
+  -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:dmgtype];[&isMagical];[&isSilver];[&isAdamant];PC_GDM_RES
   -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:dmg2type];[&isMagical];[&isSilver];[&isAdamant]
+  --~gdmlist|array;fromstring;GDM_RES;|;[&PC_GDM_RES]
+  --%gdmloop|foreach;GDM_RES
+    --\|[&gdmloop]
+  --%|
   --:SKIP_CALC_DMG_MODS|
   --=attackDamage|[&dmgroll] [&dmgModType1]
   --=attackDamage2|[&dmgroll2] [&dmgModType2]
@@ -874,6 +878,8 @@
   -->Find_Active_Global_Attack_Modifiers|[*S:character_id];PC_GAM
   -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM
   -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM_CRIT;1
+  -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM_RES
+  -->Find_Active_Global_Damage_Modifiers|[*S:character_id];PC_GDM_RES_CRIT;1
   -->Find_Active_Global_Save_Modifiers|[$cantrip_target];TARGET_GSM
   --Rfind|[*S:character_id];[&spellInfo2];repeating_spell-[&spellInfo1];spellname
   --#targettoken|[&spellInfo3]
@@ -909,6 +915,10 @@
   --&dmgModType2|
   -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:spelldamagetype];1;0;0
   -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:spelldamagetype2];1;0;0
+  --~gdmlist|array;fromstring;GDM_RES;|;[&PC_GDM_RES]
+  --%gdmloop|foreach;GDM_RES
+    --\|[&gdmloop]
+  --%|
   --:SKIP_PC_SPELL_RESIST|
   
   --&damageRoll|[*R:spelldamage]
@@ -1097,19 +1107,22 @@
   --&_GAM_Temp|+ + [%2%]# [&obrac][%1%][&cbrac] 
   --<|
 
-    --:Find_Active_Global_Damage_Modifiers|character_id;StringVariableToSet;isCrit(1=true)
+  --:Find_Active_Global_Damage_Modifiers|character_id;StringVariableToSet;isCrit(1=true);StringVar2forResistances
   --&_GDM_Temp| 
+  --&_GDM_Temp2|
   --Rfirst|[%1%];repeating_damagemod
   --:_GDM_Loop|
-  --?"[*R:global_damage_active_flag]" -eq "1"|>_AddGDM;[*R:global_damage_name];[*R:global_damage_damage];[%3%];[*R:global_damage_critical_damage]
+  --?"[*R:global_damage_active_flag]" -eq "1"|>_AddGDM;[*R:global_damage_name];[*R:global_damage_damage];[%3%];[*R:global_damage_critical_damage];[*R:global_damage_type]
   --Rnext| 
   --?"[*R:global_damage_name]" -ne "NoRepeatingAttributeLoaded"|_GDM_Loop
   --&[%2%]|[&_GDM_Temp] 
+  --&[%4%]|[&_GDM_Temp2] 
   --<|
   
   --:_AddGDM| 
-  --&_GDM_Temp|+ + [%2%]# [&obrac][%1%][&cbrac] 
+  --&_GDM_Temp|+ + [%2%]# [%5%] damage [&obrac][%1%][&cbrac] 
   --?"[%3%]" -eq "1"|&_GDM_Temp;+ + [%4%]  [ CRIT [%1%] ]
+  --&_GDM_Temp2|+[%2%]# [%5%] damage [&obrac][%1%][&cbrac][&vbar]
   --<|
 
   --:Find_Active_Global_Save_Modifiers|character_id;StringVariableToSet
@@ -2024,6 +2037,6 @@
   --X|  
 
   --:CHECK_VERSION_INFO|
-  --?"[&SC_VERSION_NUMERIC]" -eq "" -or "[&SC_VERSION_NUMERIC]" -lt 207150|REPORT_BAD_SC_VERSION
+  --/?"[&SC_VERSION_NUMERIC]" -eq "" -or "[&SC_VERSION_NUMERIC]" -lt 207150|REPORT_BAD_SC_VERSION
   --<|
 }}

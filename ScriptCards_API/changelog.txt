@@ -1,8 +1,11 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.01:
+- Fix bad value for &SC_VERSION_NUMERIC
+
 v 3.0.0c:
 - When using --!t to set token properties, you can use either names with or without the t- prefix. This was already true for creating tokens with --!ot
--- If HealthColors is installed, --!t changes will trigger an update |
+- If HealthColors is installed, --!t changes will trigger an update |
 
 v 3.0.0b:
 - Fixed broken --l (loading) commands broken in a previous update
@@ -57,7 +60,7 @@ v 2.7.36:
   At the moment, Some messages may not be extremely useful, and if there is a need to do full inline roll parsing, that is something I'm going to have to look into and take some time to work on (and I can't promise it wil happen any time soon)
 
 v 2.7.35a:
-- Bug fix for broken chage:attribute:* triggers
+- Bug fix for broken change:attribute:* triggers
 
 v 2.7.35:
 - Added "brtolinefeeds" to allow for the reversal of the "striplinefeeds" function in 2.7.34. Note that striplinefeeds now has an alias of linefeedstobr as well.
