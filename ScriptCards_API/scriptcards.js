@@ -1083,6 +1083,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 												for (line = lineCounter + 1; line < cardLines.length; line++) {
 													if (getLineTag(cardLines[line], line, "").trim() == "%") {
 														lineCounter = line;
+														break;
 													}
 												}
 												if (lineCounter > cardLines.length) {
