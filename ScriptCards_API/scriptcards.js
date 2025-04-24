@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.01";
-	const NUMERIC_VERSION = "300010"
+	const APIVERSION = "3.0.1";
+	const NUMERIC_VERSION = "300100"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1083,6 +1083,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 												for (line = lineCounter + 1; line < cardLines.length; line++) {
 													if (getLineTag(cardLines[line], line, "").trim() == "%") {
 														lineCounter = line;
+														break;
 													}
 												}
 												if (lineCounter > cardLines.length) {
@@ -1861,6 +1862,12 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 						let attrName = thisMatch.substring(4, thisMatch.length - 1);
 						if (attrName == "playerpage") { attrName = "playerpageid" }
 						replacement = Campaign().get(attrName) || "";
+						if (replacement  == "") {
+							switch (attrName.toLowerCase()) {
+								case "nodeversion":	replacement = Campaign().nodeVersion; break;
+								case "sandboxversion":	replacement = Campaign().sandboxVersion; break;
+							}
+						}
 					}
 
 					if (thisMatch.charAt(2).toLowerCase() == "o") {

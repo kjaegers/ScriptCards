@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.10:
+- Add support for the Campaign() properties "nodeVersion" and "sandboxVersion" to [*C:...]
+
 v 3.0.01:
 - Fix bad value for &SC_VERSION_NUMERIC
 
