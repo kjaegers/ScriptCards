@@ -1,3 +1,6 @@
+1.2.5
+- Bug fixes.
+
 1.2.2
 - Bug fix for encounters that were created when the objects were on the gmlayer. Will now assume "shown" objects that were saved when on the gmlayer should be moved to the objects layer. Encounters created with objects from the gmlayer will be saved as targeting the object layer.
 

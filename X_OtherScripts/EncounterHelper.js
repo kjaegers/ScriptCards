@@ -3,8 +3,8 @@
 /* eslint-disable no-redeclare *//*
 EcounterHelper.js
 Script Author : Kurt Jaegers
-Version       : 1.2.4
-Last Update   : 2024-05-16
+Version       : 1.2.5
+Last Update   : 2025-04-29
 
 Purpose       :	Provides a set of chat commands to manage "Encounters", or groups of tokens on a single
                 map page. A single command can be used to bring all of the tokens associated with an
@@ -965,7 +965,7 @@ const EncounterHelper = (() => {
                         if (theToken == undefined) {
                             theToken = getObj("path", mobid);
                         }
-                        if (thisObj === undefined) {
+                        if (theToken === undefined) {
                             theToken = getObj("text", mobid);
                         }
                         if (theToken !== undefined) {

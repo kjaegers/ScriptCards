@@ -1,3 +1,6 @@
+ActionMenuAddons
+- Changed caster level check to account for both long and short names for classes.
+
 5ELib = 0.0.18
 - Bug fix for Lib5E_FIND_ACTIVE_GLOBAL_AC_MODS - because it is _val instead of _roll in the char sheet :(
 

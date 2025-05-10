@@ -6,8 +6,7 @@
 --<|
 
 --:_LibAMA_SpellFumbleOrCrit|
-
---=_LibLevels|[&WizLevel] + [&SorcLevel] + [&BardLevel]
+--=_LibLevels|[&WizLevel] + [&SorcLevel] + [&BardLevel] + [&WizardLevel] + [&SorcererLevel]
 --?[$_LibLevels] -eq 0|<
 
 --=_libRoll|1d20
