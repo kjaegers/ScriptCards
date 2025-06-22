@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.1";
-	const NUMERIC_VERSION = "300100"
+	const APIVERSION = "3.0.12";
+	const NUMERIC_VERSION = "300120"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -185,6 +185,13 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		fumbled8: "1",
 		fumbled6: "1",
 		fumbled4: "1",
+	};
+
+	const bioFields = {
+		"bio": 1,
+		"gmnotes": 1,
+		"notes": 1,
+		"_defaulttoken": 1
 	};
 
 	const SettingsThatAreColors = [
@@ -1501,6 +1508,25 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 												replacment = stringVariables[vName]
 											break;
 
+										case "numbersonly":
+											replacement = stringVariables[vName].replace(/[^0-9]/g, "");
+											break;
+										
+										case "nonumbers":
+											replacement = stringVariables[vName].replace(/[0-9]/g, "");
+											break;
+										
+										case "numericonly":
+												replacement = stringVariables[vName].replace(/[^\-\.\d]/g, "");
+												break;											
+										case "alphaonly":
+											replacement = stringVariables[vName].replace(/[^a-zA-Z]/g, "");
+											break;
+
+										case "isnumeric":
+											replacement = /^\d+$/.test(stringVariables[vName]) ? "1" : "0";
+											break;
+
 									}
 								} else {
 									if (substringInfo.length == 1) {
@@ -1772,7 +1798,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							attribute = await getSheetItem(character.id, attrName.substring(2), opType);
 						}
 						if (character != null && (!attrName.toLowerCase().startsWith("t-")) && (!attrName.toLowerCase().startsWith("c-") && (!attrName.toLowerCase().startsWith("b-")))) {
-							if (attrName.toLowerCase() !== "bio" && attrName.toLowerCase() !== "notes" && attrName.toLowerCase() !== "gmnotes") {
+							//if (attrName.toLowerCase() !== "bio" && attrName.toLowerCase() !== "notes" && attrName.toLowerCase() !== "gmnotes" && attrName.toLowerCase() !== "_defaulttoken") {
+							if (!bioFields[attrName.toLowerCase()] == 1) {
 								attribute = getAttrByName(character.id, attrName, opType);
 								if (attribute === undefined) {
 									if (returnID) {
@@ -4317,7 +4344,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 									var settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");
 									if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
 										var currentValue;
-										if (settingName.toLowerCase() == "bio" || settingName.toLowerCase() == "notes" || settingName.toLowerCase() == "gmnotes") {
+										if (bioFields[settingName.toLowerCase()] == 1) {
 											currentValue = getbioField(theCharacter, settingName);
 										}
 										if (beacon) { currentValue = await getSheetItem(charID, settingName) } else { currentValue = theCharacter.get(settingName) }
@@ -4395,7 +4422,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 										characterid: characterObj.id,
 										name: settingName
 									}, { caseInsensitive: true })[0];
-									if (settingName.toLowerCase() !== "bio" && settingName.toLowerCase() !== "gmnotes" && settingName.toLowerCase() !== "notes") {
+									if (!bioFields[settingName.toLowerCase()] == 1) {
 										if (theAttribute) {
 											if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
 												var currentValue = theAttribute.get(setType);
@@ -5636,6 +5663,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 								log(`ScriptCards: Error encounted: ${e}`)
 							}
 						}
+
 						if (params[1].toLowerCase() == "fromobject") {
 							try {
 								let tableName = params[2];
@@ -5663,7 +5691,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 								//let jsonArray = Object.entries(theObject);
 								//let parts = extractKeyValuePairs(theObject)
 								let parts = extractKeyValuePairsFromJson(parse.join(""))
-								log(parts)
+								//log(parts)
 								for (let j = 0; j < parts.length; j++) {
 									let part = parts[j].split(": ")
 									hashTables[tableName][part[0]] = part[1]
@@ -5936,6 +5964,30 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 								if (playerIsGM(players[x].id)) {
 									arrayVariables[params[2]].push(players[x].id)
 								}
+							}
+						}
+
+						if (params[1].toLowerCase() == "pagedoors") {
+							arrayVariables[params[2]] = [];
+							var pageid = params[3];
+							var templateToken = getObj("graphic", params[3]);
+							var foundTokens = []
+							if (templateToken) {
+								pageid = templateToken.get("_pageid");
+							}
+							if (getObj("page", pageid)) {
+								foundTokens = findObjs({ _type: "door", _pageid: pageid });
+							}
+							arrayVariables[params[2]] = [];
+							for (let l = 0; l < foundTokens.length; l++) {
+								arrayVariables[params[2]].push(foundTokens[l].id);
+							}
+							if (foundTokens.length > 0) {
+								arrayIndexes[params[2]] = 0;
+								if (variableName) { stringVariables[variableName] = arrayVariables[params[2]].length; }
+							} else {
+								arrayVariables[params[2]] = [];
+								if (variableName) { stringVariables[variableName] = "0"; }
 							}
 						}
 
@@ -6570,7 +6622,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					break;
 			}
 		} catch (e) {
-			log(`Error processing Repeating Section command ${e.message}, thisTag: ${thisTag}, thisContent: ${thisContent}`)
+			log(`Error processing Repeating Section command ${e.message}, thisTag: ${thisTag}, thisContent: ${thisContent} line ${lineCounter}`)
 		}
 	}
 
@@ -6748,7 +6800,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				}
 			}
 		} catch (e) {
-			log(`Error processing conditional ${e.message}, thisTag: ${thisTag}, thisContent: ${thisContent}`)
+			log(`Error processing conditional ${e.message}, thisTag: ${thisTag}, thisContent: ${thisContent} line: ${lineCounter}`)
 		}
 	}
 
