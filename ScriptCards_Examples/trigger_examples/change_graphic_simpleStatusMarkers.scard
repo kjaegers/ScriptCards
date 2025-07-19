@@ -1,0 +1,42 @@
+!script {{
+  --/|change:graphic trigger to allow status marker commands to be accepted in the bar3 value.
+  --/|Edit bar3 to contain a ! followed by a code for a status marker (define those below). 
+  --/|The trigger will toggle the marker on or off (depending on current state) and then set
+  --/|the bar3 value back to what it was before the update.
+
+  --/|Requires SNLib (named snlib)
+
+  --#hidecard|1
+
+  +++snlib+++
+  --/|TRIGGER_REPLACEMENTS
+
+  --?"[&GraphicNewbar3_value]" -eq "[&Graphicoldbar3_value]"|DONE
+  --?"[&GraphicNewbar3_value(0,1)]" -eq "!"||DONE
+
+  --&Mode|ADD
+  --?"[&GraphicNewbar3_value(1,1)]" -eq "-"|&Mode;REMOVE
+  --&Marker|[&GraphicNewbar3_value(1)]
+  --?"[&Marker(0,1)" -eq "-"|&Marker;[&Marker(1)]
+  --?"[&Marker(0,1)" -eq "+"|&Marker;[&Marker(1)]
+
+  --&FinalMarker|
+  --/|Define your codes and markers here. Codes don't need to be 1 character
+
+  --?"[&Marker(tolowercase)]" -eq "s"|&FinalMarker;snail
+  --?"[&Marker(tolowercase)]" -eq "d"|&FinalMarker;skull
+  --?"[&Marker(tolowercase)]" -eq "u"|&FinalMarker;sleepy
+  
+  --/|Example of a custom status marker
+  --?"[&Marker(tolowercase)]" -eq "h"|&FinalMarker;headshot39108::50298
+
+  --?"[&FinalMarker]" -eq ""|DONE
+
+  -->LibSN_CHECK_STATUS_MARKER|[&GraphicNew_id];[&FinalMarker];mfound;mcount
+  --?[&mfound] -eq 1|&Mode;REMOVE|&Mode;ADD
+  -->LibSN_[&Mode]_STATUS_MARKER|[&GraphicNew_id];[&FinalMarker]
+
+  --/|Rest the bar value to what it was before the change
+  --!t:[&GraphicNew_id]|bar3_value:[&GraphicOldbar3_value]
+  --:DONE| 
+}}
