@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.6.7a
+  --/|Version     : 2.6.8
   --/|Requires SC : 2.7.15+
   --/|Author      : Kurt Jaegers
 
@@ -127,12 +127,13 @@
 
   --/|=========================================================================================================
   --/|Action Menu Addons Settings
+  --?[&UseAddons] -eq "1"|[
     --&PCPostSpellCastFunction|_LibAMA_SpellFumbleOrCrit
     --&PCPostCantripCastFunction|_LibAMA_SpellFumbleOrCrit
     --&PCPostAttackFunction|
     --&NPCPostAttackFunction|
-  --?[&UseAddons] -eq "1"|[
-    
+    --&PCSpellListCheck|_LibAMA_SHADOWDARK_SPELL_LIST_CHECK
+    --&UseAMAShadowdarkSystem|0
   --]|
   --/|Action Menu Addons Settings Area
   --/|=========================================================================================================
@@ -336,11 +337,9 @@
 
   --:EXEC_NPC_ACTION|action_name
   --?[&AMOriginalSendingPlayer] -ne [&SendingPlayerID]|YOU_CANNOT_DO_THAT
-  --?[&AllNPCActionsToSender] -eq 1|[
-  --#whisper|self
-  --]|[
-  --#whisper|
-  --]|
+  --&whisperTarget|
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1||&whisperTarget;self
+  --#whisper|[&whisperTarget]
   --#emotestate|visible
   --~action_name|string;before;|;[&reentryval]
   --&action_name|[&action_name(replace,-!-!-,;)]
@@ -443,11 +442,9 @@
   --:EXEC_NPC_BONUS_ACTION|action_name
   --~action_name|string;before;|;[&reentryval]
   --~action_target|string;after;|;[&reentryval]
-  --?[&AllNPCActionsToSender] -eq 1|[
-  --#whisper|self
-  --]|[
-  --#whisper|
-  --]|
+  --&whisperTarget|
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1||&whisperTarget;self
+  --#whisper|[&whisperTarget]
   --#emotestate|visible
   --#targettoken|[&action_target]
   --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]
@@ -461,11 +458,9 @@
   --:EXEC_NPC_REACTION|action_name
   --~action_name|string;before;|;[&reentryval]
   --~action_target|string;after;|;[&reentryval]
-  --?[&AllNPCActionsToSender] -eq 1|[
-  --#whisper|self
-  --]|[
-  --#whisper|
-  --]|
+  --&whisperTarget|
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1||&whisperTarget;self
+  --#whisper|[&whisperTarget]
   --#emotestate|visible
   --#targettoken|[&action_target]
   --#emotetext|[*S:t-name] uses [&action_name] against [*T:t-name]
@@ -477,11 +472,9 @@
   --X|
 
   --:EXEC_NPC_LEGENDARY_ACTION|action_name
-  --?[&AllNPCActionsToSender] -eq 1|[
-  --#whisper|self
-  --]|[
-  --#whisper|
-  --]|
+  --&whisperTarget|
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1||&whisperTarget;self
+  --#whisper|[&whisperTarget]
   --#emotestate|visible
   --~action_name|string;before;|;[&reentryval]
   --~action_target|string;after;|;[&reentryval]
@@ -515,6 +508,9 @@
   -->FIND_CLASS_LEVEL|Monk;MonkLevel
   -->FIND_CLASS_LEVEL|Rogue;RogueLevel
   -->FIND_CLASS_LEVEL|Artificer;ArtificerLevel
+  
+  --&WizLevel|[&WizardLevel]
+  --&SorcLevel|[&SorcererLevel]
     
   -->BuildCharacterSummary|[*S:character_id];CharSummaryText;ac
 
@@ -761,11 +757,10 @@
   --:EXEC_PC_CANTRIP|
   --?[&AMOriginalSendingPlayer] -ne [&SendingPlayerID]|YOU_CANNOT_DO_THAT
   --/+|[hr #58180d]
-  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender]||[
-  --#whisper|self
-  --]|[
-  --#whisper|
-  --]|
+  --&whisperTarget|
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1||&whisperTarget;self
+  --#whisper|[&whisperTarget]
+
   --~cantrip_name|string;before;|;[&reentryval]
   --~cantrip_target|string;after;|;[&reentryval]
   --#whisper|
@@ -839,7 +834,9 @@
   --:SKIP_CANTRIP_REPEAT|
   --+|[*R:spelldescription]
   --:PC_DONE_CANTRIP|
+  --\call|Calling PostCantrip
   --?"[&PCPostCantripCastFunction]" -ne ""|>[&PCPostCantripCastFunction]
+  --\done|Done PostCantrip
   --X|
 
   --:EXEC_PC_SPELL|spellInfo1=Spell Level, 2=SpellName, 3=Target ID, 4=Slot Level
@@ -848,15 +845,25 @@
   --/\|Spell Name [%2%]
   --/\|Spell Target [%3%]
   --/\|Spell Slot [%4%]
-  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender]||[
-  --#whisper|self
-  --]|[
-  --#whisper|
-  --]|
+  --&whisperTarget|
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1||&whisperTarget;self
+  --#whisper|[&whisperTarget]
   --~spellInfo|string;split;|;[&reentryval]
   --=UpCast|[&spellInfo4] - [&spellInfo1]
+  --?"[&UseAMAShadowdarkSystem]" -eq "1"|DO_SHADOWDARK_SPELL_CHECK
   --?[&trackPCSpellSlots] -eq 0|SKIP_CASTING_SLOT_CHECK
   --?"[&spellInfo4]" -eq "As Ritual"|SKIP_CASTING_SLOT_CHECK
+  --?"[&UseAMAShadowdarkSystem]" -ne "1"|CAST_SKIP_SHADOWDARK
+
+  --:DO_SHADOWDARK_SPELL_CHECK|
+  --/|Suport for optional Shadowdark system
+  --Rfind|[*S:character_id];[&spellInfo2];repeating_spell-[&spellInfo1];spellname
+  -->_LibAMA_SHADOWDARK_SPELLCAST_CHECK|[*R:spellprepared];[&spellInfo4];[*S:character_id];SD_Result;[*R>innate]
+  --?[&SD_Result] -eq 0|CAST_SKIP_SHADOWDARK
+  --#whisper|
+  --^PC_DONE_SPELL|
+  --:CAST_SKIP_SHADOWDARK|
+  
   -->GET_AVAILABLE_SPELL_SLOTS|[&spellInfo4];castSlotAvailable
   --?[&castSlotAvailable] -eq 0|NO_SLOTS_AVAILABLE
   -->DEDUCT_SPELL_SLOT|[&spellInfo4]
@@ -983,15 +990,15 @@
   --+|[*R:spelldescription]
 
   --:PC_DONE_SPELL|
+    --\|calling post
     --?"[&PCPostSpellCastFunction]" -ne ""|>[&PCPostSpellCastFunction]
+    --\|done post
   --X|
 
   --:SAVING_THROW|
-  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1|[
-  --#whisper|self
-  --]|[
-  --#whisper|
-  --]|
+  --&whisperTarget|
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1||&whisperTarget;self
+  --#whisper|[&whisperTarget]
   -->Find_Active_Global_Save_Modifiers|[*S:character_id];GSM_VALUES
   --~saveInfo|string;split;|;[&reentryval]
   --~saveType|string;tolowercase;[&saveInfo1]_save_bonus
@@ -1009,11 +1016,9 @@
   --X|
 
   --:SKILL_CHECK|
-  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1|[
-  --#whisper|self
-  --]|[
-  --#whisper|
-  --]|
+  --&whisperTarget|
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1||&whisperTarget;self
+  --#whisper|[&whisperTarget]
   --~skillInfo|string;split;|;[&reentryval]
   --~skillType|string;tolowercase;[&skillInfo1]_bonus
   --&rollType|[&skillInfo2]
@@ -1031,11 +1036,9 @@
   --X|
 
   --:TOOL_CHECK|
-  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1|[
-  --#whisper|self
-  --]|[
-  --#whisper|
-  --]|
+  --&whisperTarget|
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1||&whisperTarget;self
+  --#whisper|[&whisperTarget]
   --~toolInfo|string;split;|;[&reentryval]
   --&tool_base_roll|1d20
   --?[&toolInfo2] e-eq "Advantage"|&tool_base_roll;2d20kh1
@@ -1072,11 +1075,9 @@
   --:TOOL_ATTR_RETURN|
   --~toolAttrInfo|string;split;|;[&reentryval]
   --&toolattr|[&toolAttrInfo1]
-  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1|[
-  --#whisper|self
-  --]|[
-  --#whisper|
-  --]|
+  --&whisperTarget|
+  --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1||&whisperTarget;self
+  --#whisper|[&whisperTarget]
   --^DO_TOOL_ROLL|
   --?"[*R:toolname]" -eq "NoRepeatingAttributeLoaded"|BAD_TOOL_ROLL
   --X|
@@ -1656,6 +1657,10 @@
   -->RESET_HITPOINTS|
   -->RESET_SPELL_SLOTS|
   -->RESTORE_HIT_DICE|
+  --?"[&UseAMAShadowdarkSystem]" -ne "1"|LONG_REST_SKIP_SD
+  -->_LibAMA_SHADOWDARK_SPELL_CLEAR_INNATE|[*S:character_id]
+  --+|Rest: Failed spells restored
+  --:LONG_REST_SKIP_SD|
   --X|
 
   --:RESET_HITPOINTS|
@@ -1841,6 +1846,7 @@
     --&LevelString|[%7%]|
     --?"[%7%]" -eq 0|&LevelString; 
     --?"[%7%]" -eq 0|BEGIN_BUILDING_SPELL_BUTTONS
+    --?"[$UseAMAShadowdarkSystem]" -eq "1"|BEGIN_BUILDING_SPELL_BUTTONS
     --?"[%7%]" -gt 0|>BUILD_SLOT_LIST;[%7%];slotString;
     --?"[%7%]" -gt 0|>BUILD_SLOT_LIST;[%7%];RitualslotString;Yes
     --:BEGIN_BUILDING_SPELL_BUTTONS|
@@ -1859,11 +1865,13 @@
       --/\|Loop: [&spellloop]
 
       --?[&skipPreppedSpellsCheck] -eq 1|SKIP_PREP_CHECK
+      --?"" -eq "1"|SKIP_PREP_CHECK
       --?"[%7%]" -eq 0|SKIP_PREP_CHECK   
       --?"[&SorcererLevel]" -gt 0 -or "[&WarlockLevel]" -gt 0|SKIP_PREP_CHECK
       --?"[:BuiltButtonHash("[&spellloop]_spellprepared")]" -eq "1" -or "[:BuiltButtonHash("[&spellloop]_spellritual")]" -eq "Yes"|SKIP_PREP_CHECK
       --^SPELL_BUTTON_END_GENERATE|
       --:SKIP_PREP_CHECK|
+      --?"[&UseAMAShadowdarkSystem]" -eq "1" -and "[:BuiltButtonHash("[&spellloop]_innate")]" -eq 1|SPELL_BUTTON_END_GENERATE
       --&targetString|[&TB]target|token_id}
       --&DisplayName|[&spellloop]
       --&DisplayName|[&DisplayName(totitlecase)]

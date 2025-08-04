@@ -34,6 +34,8 @@
   --+Spell Check|[$_libRoll] - No additional effect
 --<|
 
+
+
 --:_CritFumbleDescMajor Catastrophic Failure|
 --+|The arcane energies explode, centering on the caster. Anyone within a 5' radius perspell level (self for cantrip) is in the blast zone.[br]1d2 hp for cantrip[br]1d4/spell level for utility spells[br]1d6/spell level for control spells[br]1d8/spell level for damage dealing spells[br]Save for half damage[br]Slot used
 --<|
@@ -94,3 +96,32 @@
 --+|The spell effect is amplified.  Damage, range, duration and effects are doubled. No saves, immunities and resistances are ignored. Maximum die plus exploding die rolls as applicable. Spell slot is retained. Concentration spells maintain on their own for 1d8 rounds. Spell slot of any castable level recovered or added (temporary).
 --<|
 
+--:_LibAMA_SHADOWDARK_SPELLCAST_CHECK|IsPrepared (0 or 1);Spell Level;CharacterID;ResultValue;SpellAttributeReference
+--=_SpellRoll|1d20
+--_spellMod|0
+--?"[%1%]" -eq "0"|=_spellMod;-3
+--=_SpellDC|10 + [%2%] + [$_spellMod]
+--?[$_SpellRoll] -ge [$_SpellDC]|_SD_SPELL_SUCCESS
+--+Spellcasting Check|[b]FAILED[/b] (Roll of [$_SpellRoll] vs DC of [$_SpellDC])
+--!a:[%3%]|![%5%]:1
+--&[%4$]|1
+--<|
+--:_SD_SPELL_SUCCESS|
+--+Spellcasting Check|[b]Succeeded[/b] (Roll of [$_SpellRoll] vs DC of [$_SpellDC])
+--&[%4$]|0
+--<|
+
+--:_LibAMA_SHADOWDARK_SPELL_CLEAR_INNATE|CharacterID
+  --%levelCounter|1;9
+    --rfirst|[%1%];repeating_spell-[&levelCounter]
+    --:_SD_REST_LOOP|
+    --?"[*R:spallname]" -eq "NoRepeatingAttributeLoaded"|_SD_REST_LOOP_END
+    --?"[*R:innate]" -ne "1"|_SD_SPELL_NEXT
+    --+Reset spell|[*R:spellname]
+    --!a:[%1%]|[*R>innate]:
+    --:_SD_SPELL_NEXT|
+    --rnext|
+    --?"[*R:spallname]" -ne "NoRepeatingAttributeLoaded"|_SD_REST_LOOP
+    --:_SD_REST_LOOP_END|
+  --%|
+--<|
