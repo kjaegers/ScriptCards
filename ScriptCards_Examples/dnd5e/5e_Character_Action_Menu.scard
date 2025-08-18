@@ -134,6 +134,8 @@
     --&NPCPostAttackFunction|
     --&PCSpellListCheck|_LibAMA_SHADOWDARK_SPELL_LIST_CHECK
     --&UseAMAShadowdarkSystem|0
+    --?"[&UseAMAShadowdarkSystem]" -eq "1"|&skipPreppedSpellsCheck;1
+    --?"[&UseAMAShadowdarkSystem]" -eq "1"|&showPCSpellSlotList;0
   --]|
   --/|Action Menu Addons Settings Area
   --/|=========================================================================================================
@@ -841,14 +843,11 @@
 
   --:EXEC_PC_SPELL|spellInfo1=Spell Level, 2=SpellName, 3=Target ID, 4=Slot Level
   --/+|[hr #58180d]
-  --/\|Spell Level [%1%]
-  --/\|Spell Name [%2%]
-  --/\|Spell Target [%3%]
-  --/\|Spell Slot [%4%]
   --&whisperTarget|
   --?[*S:npc] -eq 1 -and [&AllNPCActionsToSender] -eq 1||&whisperTarget;self
   --#whisper|[&whisperTarget]
   --~spellInfo|string;split;|;[&reentryval]
+
   --=UpCast|[&spellInfo4] - [&spellInfo1]
   --?"[&UseAMAShadowdarkSystem]" -eq "1"|DO_SHADOWDARK_SPELL_CHECK
   --?[&trackPCSpellSlots] -eq 0|SKIP_CASTING_SLOT_CHECK
@@ -858,7 +857,8 @@
   --:DO_SHADOWDARK_SPELL_CHECK|
   --/|Suport for optional Shadowdark system
   --Rfind|[*S:character_id];[&spellInfo2];repeating_spell-[&spellInfo1];spellname
-  -->_LibAMA_SHADOWDARK_SPELLCAST_CHECK|[*R:spellprepared];[&spellInfo4];[*S:character_id];SD_Result;[*R>innate]
+  --=SDCastMod|[*S:level] \ 2 {MAX:5} + [*S:intelligence_mod]
+  -->_LibAMA_SHADOWDARK_SPELLCAST_CHECK|[*R:spellprepared];[&spellInfo1];[*S:character_id];SD_Result;[*R>innate];[$SDCastMod.Raw]
   --?[&SD_Result] -eq 0|CAST_SKIP_SHADOWDARK
   --#whisper|
   --^PC_DONE_SPELL|
@@ -1846,7 +1846,7 @@
     --&LevelString|[%7%]|
     --?"[%7%]" -eq 0|&LevelString; 
     --?"[%7%]" -eq 0|BEGIN_BUILDING_SPELL_BUTTONS
-    --?"[$UseAMAShadowdarkSystem]" -eq "1"|BEGIN_BUILDING_SPELL_BUTTONS
+    --?"[&UseAMAShadowdarkSystem]" -eq "1"|BEGIN_BUILDING_SPELL_BUTTONS
     --?"[%7%]" -gt 0|>BUILD_SLOT_LIST;[%7%];slotString;
     --?"[%7%]" -gt 0|>BUILD_SLOT_LIST;[%7%];RitualslotString;Yes
     --:BEGIN_BUILDING_SPELL_BUTTONS|
