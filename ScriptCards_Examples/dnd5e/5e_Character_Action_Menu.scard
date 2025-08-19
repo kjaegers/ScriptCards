@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.6.8
+  --/|Version     : 2.6.9
   --/|Requires SC : 2.7.15+
   --/|Author      : Kurt Jaegers
 
@@ -849,12 +849,13 @@
   --~spellInfo|string;split;|;[&reentryval]
 
   --=UpCast|[&spellInfo4] - [&spellInfo1]
-  --?"[&UseAMAShadowdarkSystem]" -eq "1"|DO_SHADOWDARK_SPELL_CHECK
+  --?"[&UseAMAShadowdarkSystem]" -eq "1" -and "[*S:class]" -eq "Wizard"|DO_SHADOWDARK_SPELL_CHECK
   --?[&trackPCSpellSlots] -eq 0|SKIP_CASTING_SLOT_CHECK
   --?"[&spellInfo4]" -eq "As Ritual"|SKIP_CASTING_SLOT_CHECK
   --?"[&UseAMAShadowdarkSystem]" -ne "1"|CAST_SKIP_SHADOWDARK
 
   --:DO_SHADOWDARK_SPELL_CHECK|
+  --?"[*S:class]" -ne "Wizard"|CAST_SKIP_SHADOWDARK
   --/|Suport for optional Shadowdark system
   --Rfind|[*S:character_id];[&spellInfo2];repeating_spell-[&spellInfo1];spellname
   --=SDCastMod|[*S:level] \ 2 {MAX:5} + [*S:intelligence_mod]
@@ -1657,7 +1658,7 @@
   -->RESET_HITPOINTS|
   -->RESET_SPELL_SLOTS|
   -->RESTORE_HIT_DICE|
-  --?"[&UseAMAShadowdarkSystem]" -ne "1"|LONG_REST_SKIP_SD
+  --?"[&UseAMAShadowdarkSystem]" -ne "1" -or "[*S:class]" -ne "Wizard"|LONG_REST_SKIP_SD
   -->_LibAMA_SHADOWDARK_SPELL_CLEAR_INNATE|[*S:character_id]
   --+|Rest: Failed spells restored
   --:LONG_REST_SKIP_SD|
@@ -1846,7 +1847,7 @@
     --&LevelString|[%7%]|
     --?"[%7%]" -eq 0|&LevelString; 
     --?"[%7%]" -eq 0|BEGIN_BUILDING_SPELL_BUTTONS
-    --?"[&UseAMAShadowdarkSystem]" -eq "1"|BEGIN_BUILDING_SPELL_BUTTONS
+    --?"[&UseAMAShadowdarkSystem]" -eq "1" -and "[*S:class]" -eq "Wizard"|BEGIN_BUILDING_SPELL_BUTTONS
     --?"[%7%]" -gt 0|>BUILD_SLOT_LIST;[%7%];slotString;
     --?"[%7%]" -gt 0|>BUILD_SLOT_LIST;[%7%];RitualslotString;Yes
     --:BEGIN_BUILDING_SPELL_BUTTONS|
@@ -1871,7 +1872,7 @@
       --?"[:BuiltButtonHash("[&spellloop]_spellprepared")]" -eq "1" -or "[:BuiltButtonHash("[&spellloop]_spellritual")]" -eq "Yes"|SKIP_PREP_CHECK
       --^SPELL_BUTTON_END_GENERATE|
       --:SKIP_PREP_CHECK|
-      --?"[&UseAMAShadowdarkSystem]" -eq "1" -and "[:BuiltButtonHash("[&spellloop]_innate")]" -eq 1|SPELL_BUTTON_END_GENERATE
+      --?"[&UseAMAShadowdarkSystem]" -eq "1" -and "[*S:class]" -eq "Wizard" -and "[:BuiltButtonHash("[&spellloop]_innate")]" -eq 1|SPELL_BUTTON_END_GENERATE
       --&targetString|[&TB]target|token_id}
       --&DisplayName|[&spellloop]
       --&DisplayName|[&DisplayName(totitlecase)]
