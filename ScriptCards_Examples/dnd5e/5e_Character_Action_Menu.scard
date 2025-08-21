@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.6.9
+  --/|Version     : 2.6.9a
   --/|Requires SC : 2.7.15+
   --/|Author      : Kurt Jaegers
 
@@ -849,6 +849,7 @@
   --~spellInfo|string;split;|;[&reentryval]
 
   --=UpCast|[&spellInfo4] - [&spellInfo1]
+  --?"[&UseAMAShadowdarkSystem]" -eq "1" -and "[*S:class]" -eq "Wizard"|=UpCast;0
   --?"[&UseAMAShadowdarkSystem]" -eq "1" -and "[*S:class]" -eq "Wizard"|DO_SHADOWDARK_SPELL_CHECK
   --?[&trackPCSpellSlots] -eq 0|SKIP_CASTING_SLOT_CHECK
   --?"[&spellInfo4]" -eq "As Ritual"|SKIP_CASTING_SLOT_CHECK
