@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.6.9a
+  --/|Version     : 2.7.0
   --/|Requires SC : 2.7.15+
   --/|Author      : Kurt Jaegers
 
@@ -15,7 +15,7 @@
   --/|Includes the optional "ActionMenuAddons" library if it is being used
   +++ActionMenuAddons+++
   -->LibAMA_CHECK_FOR_LIBRARY|UseAddons
-
+1
   --/|=========================================================================================================
   --/|Settings Area - Customize the behavior of the script here
 
@@ -33,6 +33,7 @@
   --&showGlobalModifierButtons|1    --/|Show global modifiers (attack, damage, save, skill) buttons and allow players to toggle them on/off. Set to 0 to hide
   --&showBonusActionsAndReactions|1 --/|Show Bonus Actions and Reactions for characters. Set to 0 to disable
   --#functionbenchmarking|0         --/|If set to 1, the console will show performance info after the script is run
+  --&ReportResourceReset|y
 
   --/|Defaults: 1 for title buttons, 0 for icongraphic and "white-on-black" for icon set. These control how and if some text/images
   --/|            on the Action Menu are replaced with icons from game-icons.net, hosted on my github. In particular, the 
@@ -1649,6 +1650,7 @@
   --+Hit Dice|[$hitDiceUsed.Raw] expended to regain [$hitpointsRegained.Raw] HP
   --:SKIP_HDUSED|
   -->RESTORE_WARLOCK_SPELLSLOTS|
+  -->RESET_RESOURCES_ON_REST|[*S:character_id];s;[&ReportResourceReset]
   --X|
 
   --:DO_LONG_REST|
@@ -1663,6 +1665,7 @@
   -->_LibAMA_SHADOWDARK_SPELL_CLEAR_INNATE|[*S:character_id]
   --+|Rest: Failed spells restored
   --:LONG_REST_SKIP_SD|
+  -->RESET_RESOURCES_ON_REST|[*S:character_id];l;[&ReportResourceReset]
   --X|
 
   --:RESET_HITPOINTS|
@@ -2049,4 +2052,40 @@
   --:CHECK_VERSION_INFO|
   --/?"[&SC_VERSION_NUMERIC]" -eq "" -or "[&SC_VERSION_NUMERIC]" -lt 207150|REPORT_BAD_SC_VERSION
   --<|
+
+--:RESET_RESOURCES_ON_REST|CharacterID;RestType (S or L);Report? (y or n)
+--&_LIB_REST_TYPE|UNKNOWN
+--?"[%2%]" -eq "L" -or "[%2%]" -eq "l"|>RESET_RESOURCES_ON_REST;[%1%];s;[%3%]
+--?"[%2%]" -eq "S" -or "[%2%]" -eq "s"|&_LIB_REST_TYPE;short
+--?"[%2%]" -eq "L" -or "[%2%]" -eq "l"|&_LIB_REST_TYPE;long
+--?"[&_LIB_REST_TYPE]" -eq "UNKNOWN"|<
+
+--?"[*[%1%]:class_resource_reset]" -ne "[&_LIB_REST_TYPE]"|_LibAMA_RESET_SKIPCLASS
+--?"[*[%1%]:class_resource]" -eq "[*[%1%]:class_resource^]"|_LibAMA_RESET_SKIPCLASS
+--!a:[%1%]|class_resource:[*[%1%]:class_resource^]
+--?"[%3%]" -eq "y"|+;Resource [*[%1%]:class_resource_name] reset to [*[%1%]:class_resource^].
+--:_LibAMA_RESET_SKIPCLASS|
+--?"[*[%1%]:other_resource_reset]" -ne "[&_LIB_REST_TYPE]"|_LibAMA_RESET_SKIPOTHER
+--?"[*[%1%]:other_resource]" -eq "[*[%1%]:other_resource^]"|_LibAMA_RESET_SKIPOTHER
+--!a:[%1%]|other_resource:[*[%1%]:other_resource^]
+--?"[%3%]" -eq "y"|+;Resource [*[%1%]:other_resource_name] reset to [*[%1%]:other_resource^].
+--:_LibAMA_RESET_SKIPOTHER|
+
+--Rfirst|[%1%];repeating_resource
+--?"[*R:resource_left_name]" -eq "NoRepeatingAttributeLoaded"|<
+--:_LibAMA_RESET_REPEAT|
+--?"[*R:resource_left_reset]" -ne "[&_LIB_REST_TYPE]"|_LIB_AMA_RESET_SKIP_LEFT
+--?"[*R:resource_left]" -eq "[*R:resource_left^]"|_LIB_AMA_RESET_SKIP_LEFT
+--!a:[%1%]|[*R>resource_left]:[*R:resource_left^] 
+--?"[%3%]" -eq "y"|+;Resource [*R:resource_left_name] reset to [*R:resource_left^].
+--:_LIB_AMA_RESET_SKIP_LEFT|
+--?"[*R:resource_right_reset]" -ne "[&_LIB_REST_TYPE]"|_LIB_AMA_RESET_SKIP_RIGHT
+--?"[*R:resource_right]" -eq "[*R:resource_right^]"|_LIB_AMA_RESET_SKIP_RIGHT
+--!a:[%1%]|[*R>resource_right]:[*R:resource_right^]
+--?"[%3%]" -eq "y"|+;Resource [*R:resource_right_name] reset to [*R:resource_right^].
+--:_LIB_AMA_RESET_SKIP_RIGHT|
+--Rnext|
+--?"[*R:resource_left_name]" -ne "NoRepeatingAttributeLoaded"|_LibAMA_RESET_REPEAT
+--<|
+
 }}
