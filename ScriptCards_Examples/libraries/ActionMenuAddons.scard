@@ -1,4 +1,4 @@
---/|ScriptCards Library: ActionMenuAddons version 0.0.2
+--/|ScriptCards Library: ActionMenuAddons version 0.0.3
 --/|Provides a way to extend the functionality of the action menu without having to modify the core script.
 
 --:LibAMA_CHECK_FOR_LIBRARY|ReturnString
@@ -6,6 +6,7 @@
 --<|
 
 --:_LibAMA_SpellFumbleOrCrit|
+--?"[&UseAMASpellCastCheck]" -ne "1"|<
 --=_LibLevels|[&WizLevel] + [&SorcLevel] + [&BardLevel] + [&WizardLevel] + [&SorcererLevel]
 --?[$_LibLevels] -eq 0|<
 
@@ -125,3 +126,4 @@
     --:_SD_REST_LOOP_END|
   --%|
 --<|
+

@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.13:
+- Added support for bar4 and its related properties in --!t commands and bar4_link handling
+
 v 3.0.12:
 - Added "_defaulttoken" to the list of fields treated like "bio" fields.
 - New string inline functions: numbersonly, nonumbers, alphaonly, numericonly. 

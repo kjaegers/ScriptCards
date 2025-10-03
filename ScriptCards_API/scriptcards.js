@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.12";
-	const NUMERIC_VERSION = "300120"
+	const APIVERSION = "3.0.13";
+	const NUMERIC_VERSION = "300130"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -4239,7 +4239,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 									if (settingName.toLowerCase() == "bar1_link" ||
 										settingName.toLowerCase() == "bar2_link" ||
-										settingName.toLowerCase() == "bar3_link") {
+										settingName.toLowerCase() == "bar3_link" ||
+										settingName.toLowerCase() == "bar4_link") {
 										log(1)
 										let theChar = getObj("character", theToken.get("represents"));
 										if (theChar != null) {
@@ -4288,7 +4289,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 										}
 									}
 
-									if (cardParameters.limitmaxbarvalues !== "0" && (settingName.toLowerCase() == "bar1_value" || settingName.toLowerCase() == "bar2_value" || settingName.toLowerCase() == "bar3_value")) {
+									if (cardParameters.limitmaxbarvalues !== "0" && (settingName.toLowerCase() == "bar1_value" || settingName.toLowerCase() == "bar2_value" || settingName.toLowerCase() == "bar3_value" || settingName.toLowerCase() == "bar4_value")) {
 										let sMaxname = settingName.toLowerCase().replace("value", "max");
 										if (theToken.get(sMaxname) && settingValue > theToken.get(sMaxname)) {
 											settingValue = theToken.get(sMaxname);
@@ -6998,9 +6999,9 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		// Convert boolean properties
 		const booleanProps = [
 			"isdrawing", "flipv", "fliph", "aura1_square", "aura2_square", "showname",
-			"showplayers_name", "showplayers_bar1", "showplayers_bar2", "showplayers_bar3",
+			"showplayers_name", "showplayers_bar1", "showplayers_bar2", "showplayers_bar3", "showplayers_bar4",
 			"showplayers_aura1", "showplayers_aura2", "playersedit_name", "playersedit_bar1",
-			"playersedit_bar2", "playersedit_bar3", "playersedit_aura1", "playersedit_aura2",
+			"playersedit_bar2", "playersedit_bar3", "playersedit_bar4", "playersedit_aura1", "playersedit_aura2",
 			"light_otherplayers", "light_hassight", "lockmovement"
 		];
 		if (booleanProps.includes(propName)) {
