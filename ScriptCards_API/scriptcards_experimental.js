@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.14 EXPERIMENTAL";
-	const NUMERIC_VERSION = "300143"
+	const APIVERSION = "3.0.15 EXPERIMENTAL";
+	const NUMERIC_VERSION = "300150"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2054,7 +2054,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		if (line.match(/(?<!\\)\|/)) {
 			return line.substring(line.search(/(?<!\\\\)\|/) + 1).replaceAll("\\\\|", "|").trim();
 		} else {
-			return "/Error - No Line Content Specified";
+			return `/Error - No Line Content Specified - ${line}`;
 		}
 	}
 
@@ -2322,27 +2322,36 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		let value1 = 0;
 		let value2 = 0;
 		
-		// Extract parameters for functions that need them
-		if (operation.toLowerCase().startsWith("round:")) {
-			precision = Math.min(6, parseInt(operation.substring(6)));
-			operation = "ROUND:";
-		} else if (operation.toLowerCase().startsWith("pad:")) {
-			value1 = parseFloat(operation.substring(4));
-			operation = "PAD";
-		} else if (operation.toLowerCase().startsWith("min:")) {
-			value1 = parseFloat(operation.substring(4));
-			operation = "MIN";
-		} else if (operation.toLowerCase().startsWith("max:")) {
-			value1 = parseFloat(operation.substring(4));
-			operation = "MAX";
-		} else if (operation.toLowerCase().startsWith("clamp:")) {
-			const range = operation.substring(6);
-			if (range.indexOf(":") > 0) {
-				value1 = parseInt(range.split(":")[0]);
-				value2 = parseInt(range.split(":")[1]);
-				operation = "CLAMP";
+			// Normalize inputs and extract parameters for functions that need them
+			if (!operation) return;
+			const originalOp = operation.toString();
+			let opLower = originalOp.toLowerCase();
+			// Ensure rollResult.Total is numeric for operations
+			if (typeof rollResult.Total === 'string') {
+				const maybeNum = Number(rollResult.Total);
+				rollResult.Total = isNaN(maybeNum) ? 0 : maybeNum;
 			}
-		}
+
+			if (opLower.startsWith("round:")) {
+				precision = Math.min(6, parseInt(opLower.substring(6)) || 0);
+				opLower = "round";
+			} else if (opLower.startsWith("pad:")) {
+				value1 = parseInt(opLower.substring(4)) || 0;
+				opLower = "pad";
+			} else if (opLower.startsWith("min:")) {
+				value1 = parseFloat(originalOp.substring(4));
+				opLower = "min";
+			} else if (opLower.startsWith("max:")) {
+				value1 = parseFloat(originalOp.substring(4));
+				opLower = "max";
+			} else if (opLower.startsWith("clamp:")) {
+				const range = originalOp.substring(6);
+				if (range.indexOf(":") > 0) {
+					value1 = parseFloat(range.split(":")[0]);
+					value2 = parseFloat(range.split(":")[1]);
+					opLower = "clamp";
+				}
+			}
 		
 		// Apply mathematical operations using a lookup table for better performance
 		const mathOps = {
@@ -2351,7 +2360,6 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			"squareroot": () => { rollResult.Total = Math.sqrt(rollResult.Total); rollResult.Text += "{SQRT}"; },
 			"ceil": () => { rollResult.Total = Math.ceil(rollResult.Total); rollResult.Text += "{CEIL}"; },
 			"floor": () => { rollResult.Total = Math.floor(rollResult.Total); rollResult.Text += "{FLOOR}"; },
-			"round": () => { rollResult.Total = Math.round(rollResult.Total); rollResult.Text += "{ROUND}"; },
 			"neg": () => { rollResult.Total = rollResult.Total * -1; rollResult.Text += "{NEGATE}"; },
 			"negate": () => { rollResult.Total = rollResult.Total * -1; rollResult.Text += "{NEGATE}"; },
 			"sin": () => { rollResult.Total = Math.sin(rollResult.Total); rollResult.Text += "{SIN}"; },
@@ -2365,26 +2373,33 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			"cubed": () => { rollResult.Total = rollResult.Total * rollResult.Total * rollResult.Total; rollResult.Text += "{CUBE}"; },
 			"cbrt": () => { rollResult.Total = Math.cbrt(rollResult.Total); rollResult.Text += "{CUBEROOT}"; },
 			"cuberoot": () => { rollResult.Total = Math.cbrt(rollResult.Total); rollResult.Text += "{CUBEROOT}"; },
-			"ROUND:": () => { rollResult.Total = rollResult.Total.toFixed(precision); },
-			"PAD": () => { rollResult.PaddingDigits = value1; },
-			"MIN": () => { 
+			"round": () => { 
+				if (Number.isFinite(precision) && precision >= 0) {
+					rollResult.Total = Number(Number(rollResult.Total).toFixed(precision));
+				} else {
+					rollResult.Total = Math.round(rollResult.Total);
+				}
+				rollResult.Text += "{ROUND}";
+			},
+			"pad": () => { rollResult.PaddingDigits = value1; },
+			"min": () => { 
 				if (rollResult.Total < value1) rollResult.Total = value1;
 				rollResult.Text += `{MIN:${value1}}`;
 			},
-			"MAX": () => { 
+			"max": () => { 
 				if (rollResult.Total > value1) rollResult.Total = value1;
 				rollResult.Text += `{MAX:${value1}}`;
 			},
-			"CLAMP": () => { 
+			"clamp": () => { 
 				if (rollResult.Total < value1) rollResult.Total = value1;
 				if (rollResult.Total > value2) rollResult.Total = value2;
 				rollResult.Text += `{CLAMP:${value1}:${value2}}`;
 			}
 		};
-		
-		const mathOp = mathOps[operation.toLowerCase()];
+        
+		const mathOp = mathOps[opLower];
 		if (mathOp) {
-			mathOp();
+			try { mathOp(); } catch (e) { /* fail silently */ }
 		}
 	}
 
