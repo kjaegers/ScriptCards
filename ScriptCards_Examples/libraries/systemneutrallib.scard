@@ -344,8 +344,22 @@
   --#parameterdelimiter|$
   --~newConditions|string$replaceall$;$,$[&newConditions]
   --#parameterdelimiter|;
-  --!t:[%1%]|statusmarkers:[&newConditions]
---<|  
+  --+Before|[*[%1%]:t-statusmarkers]
+    --!t:[%1%]|statusmarkers:
+  --+Wasting|1000 cycles
+  --%_wastetime|1;1000
+    --=_wastetime|1d100
+  --%|
+  --+curent|[*[%1%]:t-statusmarkers]
+  ---->LibSN_CLEAR_STATUS_MARKERS|[%1%]
+  --%_wastetime|1;5000
+    --=_wastetime|1d100
+  --%|
+  --w5:--!t:[%1%]|statusmarkers:[&newConditions]
+  --/!t:[%1%]|statusmarkers:[&newConditions]
+  --+after|[*[%1%]:t-statusmarkers]
+  
+--<| 
 
 --:LibSN_REMOVE_STATUS_MARKER_SET|Token_ID;Status Marker1;Status Marker 2;...
   --%_libmarkerloop|1;[@args(maxindex)]
@@ -364,9 +378,13 @@
   --?[&_DEC_EXIST] -eq 0|<
   --?[&_DEC_COUNT] -eq 0 -and "X[%3%]" -eq "X"|<
   -->LibSN_REMOVE_STATUS_MARKER|[%1%];[%2%]
+  --%_wasteTime|1;500
+    --=_wastetime|1d100
+  --%|
   --?[&_DEC_COUNT] -eq 1 -and "X[%3%]" -eq "X1"|<
   --?[&_DEC_COUNT] -eq 0 -and "X[%3%]" -eq "X0"|<
   --?[&_DEC_COUNT] -gt 1|>LibSN_ADD_STATUS_MARKER;[%1%];[%2%];[=[&_DEC_COUNT]-1]
+  --?[&_DEC_COUNT] -eq 1|>LibSN_REMOVE_STATUS_MARKER;[%1%];[%2%]
   --?[&_DEC_COUNT] -eq 1|>LibSN_ADD_STATUS_MARKER;[%1%];[%2%]
 --<|
 
@@ -556,11 +574,9 @@
 --:LibSN_CHECK_TOKEN_OVERLAP|Token1ID;Token2ID;ReturnStringVar
 -->LibSN_GET_TOKEN_COORDS|[%1%];_lib_L1X;_lib_L1Y;_lib_R1X;_lib_R1Y;1
 -->LibSN_GET_TOKEN_COORDS|[%2%];_lib_L2X;_lib_L2Y;_lib_R2X;_lib_R2Y;1
---?[$_lib_L1X] -gt [$_lib_R2X] -or [$_lib_L2X] -gt [$_lib_R1X]|&[%3%];0
---?[&[%3%]] -eq 0|<
---?[$_lib_L1Y] -gt [$_lib_R2Y] -or [$_lib_L2Y] -gt [$_lib_R1Y]|&[%3%];0
---?[&[%3%]] -eq 0|<
 --&[%3%]|1
+--?[$_lib_L1X] -gt [$_lib_R2X] -or [$_lib_L2X] -gt [$_lib_R1X]|&[%3%];0
+--?[$_lib_L1Y] -gt [$_lib_R2Y] -or [$_lib_L2Y] -gt [$_lib_R1Y]|&[%3%];0
 --<|
 
 --:LibSN_CHECK_TOKEN_OVERLAP_CIRCLE|Token1ID;Token2ID;ReturnStringVar
