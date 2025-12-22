@@ -1,4 +1,4 @@
---/|ScriptCards Library: systemneutrallib (snlib) version 0.1.3
+--/|ScriptCards Library: systemneutrallib (snlib) version 0.1.4
 --/|Provides various utility procedures for general Roll20 stuff
 
 --/|This library consolidates functions from a number of the sample scripts on the ScriptCards github into a single library
@@ -344,22 +344,8 @@
   --#parameterdelimiter|$
   --~newConditions|string$replaceall$;$,$[&newConditions]
   --#parameterdelimiter|;
-  --+Before|[*[%1%]:t-statusmarkers]
-    --!t:[%1%]|statusmarkers:
-  --+Wasting|1000 cycles
-  --%_wastetime|1;1000
-    --=_wastetime|1d100
-  --%|
-  --+curent|[*[%1%]:t-statusmarkers]
-  ---->LibSN_CLEAR_STATUS_MARKERS|[%1%]
-  --%_wastetime|1;5000
-    --=_wastetime|1d100
-  --%|
-  --w5:--!t:[%1%]|statusmarkers:[&newConditions]
-  --/!t:[%1%]|statusmarkers:[&newConditions]
-  --+after|[*[%1%]:t-statusmarkers]
-  
---<| 
+  --!t:[%1%]|statusmarkers:[&newConditions]
+--<|  
 
 --:LibSN_REMOVE_STATUS_MARKER_SET|Token_ID;Status Marker1;Status Marker 2;...
   --%_libmarkerloop|1;[@args(maxindex)]
