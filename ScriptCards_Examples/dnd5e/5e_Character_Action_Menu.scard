@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.7.4
+  --/|Version     : 2.7.5
   --/|Requires SC : 2.7.15+
   --/|Author      : Kurt Jaegers
 
@@ -723,7 +723,7 @@
   --&isAdamant|0
   --?"[*R:atkname]" -inc "Adamantine"|&isAdamant;1
   --/+|Magic: [&isMagical], Silver: [&isSilver], Ad: [&isAdamant]
-  --?"[*T:npc]" -ne "1" -or [&UseResistances] -eq 0|SKIP_CALC_DMG_MODS
+  --?[&UseResistances] -eq 0|SKIP_CALC_DMG_MODS
   -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:dmgtype];[&isMagical];[&isSilver];[&isAdamant];PC_GDM_RES
   -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:dmg2type];[&isMagical];[&isSilver];[&isAdamant]
   --~gdmlist|array;fromstring;GDM_RES;|;[&PC_GDM_RES]
@@ -814,7 +814,7 @@
   --?[$cantrip_crit] -eq 1|&damageRoll;+ + [&damageRoll]
   --?[$cantrip_crit] -eq 1|&damageRoll;+ [&PC_GDM_CRIT]|&damageRoll;+ [&PC_GDM]
   --&dmgModType1|
-  --?"[*T:npc]" -ne "1" -or [&UseResistances] -eq 0|SKIP_PC_CANTRIP_RESIST
+  --?[&UseResistances] -eq 0|SKIP_PC_CANTRIP_RESIST
   -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:spelldamagetype];1;0;0
   --:SKIP_PC_CANTRIP_RESIST|
   --=cantripDamage|[&damageRoll] [&dmgModType1]
@@ -1844,7 +1844,7 @@
     --?"[&loop]" -inc "_sectionid"|&HashList(99999);[&loop(replace,_sectionid,)]
   --%|
 
-  &AM_BUTTON_LIST|[br]
+  --&AM_BUTTON_LIST|[br]
   --%atkloop|foreach;HashList
     --&DisplayName|[&atkloop]
     --&ActionName|[&DisplayName(replace,;,-!-!-)]
