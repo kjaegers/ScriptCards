@@ -1,5 +1,12 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2026-01-03 - 5e Character Action Menu 2.7.4
+- Implemented a caching mechanism to store ability information on the sheet to speed up CAM performance
+- Fixed two bugs where resistance mods were not being properly applied. Thanks Farsidegallery!.
+
+2025-10-03 - 5e Character Action Menu 2.7.2
+- Fixed a bug where PC saves and skills would be whispered to the player instead of shown to everyone.
+
 2025-04-16 - 5e Character Action Menu 2.6.27a
 - Skip SC version check. Temporary workaround for bad version number in 3.0.0c
 
