@@ -36,7 +36,7 @@
   --?[&mfound] -eq 1|&Mode;REMOVE|&Mode;ADD
   -->LibSN_[&Mode]_STATUS_MARKER|[&GraphicNew_id];[&FinalMarker]
 
-  --/|Rest the bar value to what it was before the change
+  --/|Reset the bar value to what it was before the change
   --!t:[&GraphicNew_id]|bar3_value:[&GraphicOldbar3_value]
   --:DONE| 
 }}

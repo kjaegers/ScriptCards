@@ -1,0 +1,20 @@
+!script {{
+  --/|Script Name : Encounter Helper
+  --/|Version     : 1.0.0
+  --/|Requires SC : 3.0.0+
+  --/|Author      : Kurt Jaegers
+
+  --/|IMPORTANT NOTE: Updating this macro via the in-game editor will cause it to exhibit strange behavior. If you wish
+  --/|to make settings changes, make them in an external editor (like NOTEPAD) and copy/paste the whole
+  --/|macro into the Roll20 editor.
+
+  --/|This script is a re-write of the standalone Encounter Helper API script as a ScriptCard. This has a few advantages
+  --/|in that it can used some of the advanced features of ScriptCards like Hash Tables and storage mules. It also means
+  --/|that the script can be customized more easily by users.
+
+  --:FIND_EH_STORAGE|Return Character ID
+  --/| Locates the ScriptCards_EncounterHelper storage mule. If it doesn't exist, it creates one.
+  --~|array;objects:character;CharacterList;;@{selected|character_id}
+
+
+}}

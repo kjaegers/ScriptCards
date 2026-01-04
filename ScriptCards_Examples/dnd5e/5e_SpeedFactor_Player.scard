@@ -31,9 +31,11 @@
     --#sourcetoken|[&saveTokenID]
     -->ACCOUNT_FOR_SIZE|[*S:id];SizeMod
     --+|[c]Declare Your Action[/c]
+    --&buttons|
     --%loop|foreach;ActionList
-      --+|[c][rbutton][&loop]::ROLL_INIT;[&loop][/rbutton][/c]
+      --&buttons|+[rbutton][&loop]::ROLL_INIT;[&loop][/rbutton] &nbsp;
     --%|
+    --+|[c][&buttons][/c]
     --X|
 
     --:ROLL_INIT|
@@ -82,15 +84,16 @@
       --~|array;add;[%1%];Melee, light or finesse weapon = +2
       --~|array;add;[%1%];Melee, two-handed weapon = -2
       --~|array;add;[%1%];Ranged, loading weapon = -5
-      --~|array;add;[%1%];Spell - Level 1 = -1
-      --~|array;add;[%1%];Spell - Level 2 = -2
-      --~|array;add;[%1%];Spell - Level 3 = -3
-      --~|array;add;[%1%];Spell - Level 4 = -4
-      --~|array;add;[%1%];Spell - Level 5 = -5
-      --~|array;add;[%1%];Spell - Level 6 = -6
-      --~|array;add;[%1%];Spell - Level 7 = -7
-      --~|array;add;[%1%];Spell - Level 8 = -8
-      --~|array;add;[%1%];Spell - Level 9 = -9
+      --~|array;add;[%1%];Cantrip = 0
+      --~|array;add;[%1%];L1 Spell = -1
+      --~|array;add;[%1%];L2 Spell = -2
+      --~|array;add;[%1%];L3 Spell = -3
+      --~|array;add;[%1%];L4 Spell = -4
+      --~|array;add;[%1%];L5 Spell = -5
+      --~|array;add;[%1%];L6 Spell = -6
+      --~|array;add;[%1%];L7 Spell = -7
+      --~|array;add;[%1%];L8 Spell = -8
+      --~|array;add;[%1%];L9 Spell = -9
     --<|
       
 }}

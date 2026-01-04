@@ -18,7 +18,7 @@
 --/|      character indicated by (characterid). If the character has no levels in that class, the return value will be 0
 --/|
 --/|   Lib5E_FIND_RESOURCE|characterid;resourceName;resourceReturnNameStringVariable;ResourceReturnValueStringVariable
---/|      Examing the repeating resource section of character (characterid) looking for a given value (resourceName).
+--/|      Examine the repeating resource section of character (characterid) looking for a given value (resourceName).
 --/|
 --/|   Lib5E_CHECK_DAMAGE_MODS|characterid;damageType;damageVariableName
 --/|      Checks npc (characterid) and looks for resistant, vulnerable, or immue on (damagetype) damage and returns the result in

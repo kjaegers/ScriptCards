@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.7.5
+  --/|Version     : 2.7.6
   --/|Requires SC : 2.7.15+
   --/|Author      : Kurt Jaegers
 
@@ -388,9 +388,14 @@
     --=ToHit|[&rollType] + [*R:attack_tohit] [&ANPC_ATKMOD]
     --&dmgModType1|
     --&dmgModType2|
-    --?[&UseResistances] -eq 0|SKIP_NPC_DMG_MODS
+    --?"[*T:npc]" -ne 1 -or "[&UseResistances]" -eq 0|SKIP_NPC_DMG_MODS
+    --?"[*T:NPC]" -ne 1|NPCA_VS_PC
     -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:attack_damagetype];0;0;0;T
     -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:attack_damagetype2];0;0;0;T
+    --^SKIP_NPC_DMG_MODS|
+    --:NPCA_VS_PC|
+    -->CheckDamageModifiersPC|[*T:character_id];dmgModType1;[*R:attack_damagetype];0;0;0;T
+    -->CheckDamageModifiersPC|[*T:character_id];dmgModType2;[*R:attack_damagetype2];0;0;0;T
     --:SKIP_NPC_DMG_MODS|
     --=AC|[*T:ac]
     --?"[*T:npc_ac]" -ne ""|=AC;[*T:npc_ac]
@@ -723,12 +728,12 @@
   --&isAdamant|0
   --?"[*R:atkname]" -inc "Adamantine"|&isAdamant;1
   --/+|Magic: [&isMagical], Silver: [&isSilver], Ad: [&isAdamant]
-  --?[&UseResistances] -eq 0|SKIP_CALC_DMG_MODS
+  --?"[*T:npc]" -ne 1 -or "[&UseResistances]" -eq 0|SKIP_CALC_DMG_MODS
   -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:dmgtype];[&isMagical];[&isSilver];[&isAdamant];PC_GDM_RES
   -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:dmg2type];[&isMagical];[&isSilver];[&isAdamant]
   --~gdmlist|array;fromstring;GDM_RES;|;[&PC_GDM_RES]
   --%gdmloop|foreach;GDM_RES
-    --\|[&gdmloop]
+    --/||[&gdmloop]
   --%|
   --:SKIP_CALC_DMG_MODS|
   --=attackDamage|[&dmgroll] [&dmgModType1]
@@ -814,7 +819,7 @@
   --?[$cantrip_crit] -eq 1|&damageRoll;+ + [&damageRoll]
   --?[$cantrip_crit] -eq 1|&damageRoll;+ [&PC_GDM_CRIT]|&damageRoll;+ [&PC_GDM]
   --&dmgModType1|
-  --?[&UseResistances] -eq 0|SKIP_PC_CANTRIP_RESIST
+  --?"[*T:npc]" -ne 1 -or "[&UseResistances]" -eq 0|SKIP_PC_CANTRIP_RESIST
   -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:spelldamagetype];1;0;0
   --:SKIP_PC_CANTRIP_RESIST|
   --=cantripDamage|[&damageRoll] [&dmgModType1]
@@ -841,9 +846,7 @@
   --:SKIP_CANTRIP_REPEAT|
   --+|[*R:spelldescription]
   --:PC_DONE_CANTRIP|
-  --\call|Calling PostCantrip
   --?"[&PCPostCantripCastFunction]" -ne ""|>[&PCPostCantripCastFunction]
-  --\done|Done PostCantrip
   --X|
 
   --:EXEC_PC_SPELL|spellInfo1=Spell Level, 2=SpellName, 3=Target ID, 4=Slot Level
@@ -924,14 +927,14 @@
   --?[$attackRoll.Total] -lt [$AC]|SPELL_ATTACK_MISS
 
   --:SPELL_DONE_ATTACK_ROLL|
-  --?"[*T:npc]" -ne "1" -or [&UseResistances] -eq 0|SKIP_PC_SPELL_RESIST
   --&dmgModType1|
   --&dmgModType2|
+  --?"[*T:npc]" -ne 1 -or "[&UseResistances]" -eq 0|SKIP_PC_SPELL_RESIST
+  --?"[*R:spellhealing]" -ne ""|SKIP_PC_SPELL_RESIST
   -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:spelldamagetype];1;0;0
   -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:spelldamagetype2];1;0;0
   --~gdmlist|array;fromstring;GDM_RES;|;[&PC_GDM_RES]
   --%gdmloop|foreach;GDM_RES
-    --\|[&gdmloop]
   --%|
   --:SKIP_PC_SPELL_RESIST|
   
@@ -952,7 +955,7 @@
   --]|
   --&spell_heal|0
   --?"[*R:spellhealing]" -ne ""|&spell_heal;1
-  --?"[*R:spellhealing]" -ne ""|&damageRoll;[*R:spellhealing]
+  --?"[*R:spellhealing]" -ne ""|&damageRoll;[*R:spellhealing] [&ability_bonus]
   --&damageToApply|-
   --?[$UpCast] -eq 0|NO_UPCAST
   --=upcastDice|[$UpCast.Raw] * [*R:spellhldie]
@@ -997,9 +1000,7 @@
   --+|[*R:spelldescription]
 
   --:PC_DONE_SPELL|
-    --\|calling post
     --?"[&PCPostSpellCastFunction]" -ne ""|>[&PCPostSpellCastFunction]
-    --\|done post
   --X|
 
   --:SAVING_THROW|
@@ -1793,7 +1794,7 @@
   --^DONE_SHARED_MULE_BUTTONS|
 
   --/|Check for shared macro mule macros
-  --\>GET_CHARACTER_ID_BY_NAME|[&sharedmacromulename];MacroMuleID
+  --/>GET_CHARACTER_ID_BY_NAME|[&sharedmacromulename];MacroMuleID
   --?[&MacroMuleID] -eq ""|DONE_SHARED_MULE_BUTTONS
   --~|array;objects:ability;MuleButtonList;AM_SHARED_LIST;[%1%]
   --?"[@MuleButtonList(length)]" -eq 0|DONE_SHARED_MULE_BUTTONS

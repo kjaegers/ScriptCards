@@ -11,6 +11,8 @@
 // !clearchat - Writes a bunch of linebreaks to the chat window to push the current contents off the top
 // !rolltable tablename - Rolls on the specified table and outputs the result (respects weighting)
 // !turnorder - dumps information on the entries in the turn tracker to the API log
+// !getallattrs - dumps information about all attributes for the selected token to the API log
+// !getbeaconattr attrname - dumps information about the specified beacon attribute for the selected token to the API log
 
 const QuickTest = (() => {
     on('chat:message', function (msg) {

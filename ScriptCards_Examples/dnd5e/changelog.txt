@@ -1,5 +1,9 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2026-01-03 - 5e Character Action Menu 2.7.6
+- Fixed additional resistance issues where healing vs NPC was always 0 [Immune]
+- Fixed a bug where healing spells were not applying ability modifiers to the healing amount.
+
 2026-01-03 - 5e Character Action Menu 2.7.5
 - Additional resistance fixes. Thanks Timmothy B.
 
