@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.7.6
+  --/|Version     : 2.7.8
   --/|Requires SC : 2.7.15+
   --/|Author      : Kurt Jaegers
 
@@ -388,14 +388,14 @@
     --=ToHit|[&rollType] + [*R:attack_tohit] [&ANPC_ATKMOD]
     --&dmgModType1|
     --&dmgModType2|
-    --?"[*T:npc]" -ne 1 -or "[&UseResistances]" -eq 0|SKIP_NPC_DMG_MODS
+    --?"[&UseResistances]" -eq 0|SKIP_NPC_DMG_MODS
     --?"[*T:NPC]" -ne 1|NPCA_VS_PC
     -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:attack_damagetype];0;0;0;T
     -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:attack_damagetype2];0;0;0;T
     --^SKIP_NPC_DMG_MODS|
     --:NPCA_VS_PC|
-    -->CheckDamageModifiersPC|[*T:character_id];dmgModType1;[*R:attack_damagetype];0;0;0;T
-    -->CheckDamageModifiersPC|[*T:character_id];dmgModType2;[*R:attack_damagetype2];0;0;0;T
+    -->CheckDamageModifiersNPC|[*T:character_id];dmgModType1;[*R:attack_damagetype];0;0;0;T
+    -->CheckDamageModifiersNPC|[*T:character_id];dmgModType2;[*R:attack_damagetype2];0;0;0;T
     --:SKIP_NPC_DMG_MODS|
     --=AC|[*T:ac]
     --?"[*T:npc_ac]" -ne ""|=AC;[*T:npc_ac]
@@ -404,10 +404,11 @@
       --*[*R:atkname] Attack|rolled [$ToHit] vs AC [b][$AC.Raw][/b]
     --]|[
       --+[*R:atkname] Attack|rolled [$ToHit] vs AC [b][$AC.Raw][/b][br][br]
-    --]|    
-    --?[$ToHit.Base] -eq 20|NPCA_CRIT
-    --?[$ToHit.Base] -eq 1|NPCA_MISS
-    --?[$ToHit.Total] -lt [$AC]|NPCA_MISS
+    --]|
+    --/+Roll|[$ToHit.Base]
+    --?"[$ToHit.Base]" -eq "20"|NPCA_CRIT
+    --?"[$ToHit.Base]" -eq "1"|NPCA_MISS
+    --?"[$ToHit.Total]" -lt [$AC]|NPCA_MISS
     --?"[*R:attack_damage2]" -ne ""|NPCA_HIT_TWODAMAGE
     --=Damage|[*R:attack_damage] [&ANPC_DMGMOD] [&dmgModType1]
     --+Hit|[$Damage] [*R:attack_damagetype]
@@ -425,19 +426,21 @@
 
     --:NPCA_CRIT|
     --?"[*R:attack_damage2]" -ne ""|NPCA_CRIT_TWODAMAGE
-    --=Damage|[*R:attack_damage] + [*R:attack_crit] [&ANPC_DMGMOD] [&dmgModType1]
+    --/|Old line: =Damage|[*R:attack_damage] + [*R:attack_crit] [&ANPC_DMGMOD] [&dmgModType1]
+    --=Damage|[*R:attack_damage] + [*R:attack_damage] [&ANPC_DMGMOD] [&dmgModType1]
     -->[&damageRoutine]|[&action_target];[&hitPointsBar];-[$Damage.Raw]
     --+Critical|[$Damage] [*R:attack_damagetype]
     --+|[*R:description]
     --^NPCA_DONE|
     
     --:NPCA_CRIT_TWODAMAGE|
-    --=Damage|[*R:attack_damage] + [*R:attack_crit] [&ANPC_DMGMOD] [&dmgModType1]
-    --=Damage2|[*R:attack_damage2] + [*R:attack_crit2] [&ANPC_DMGMOD] [&dmgModType2]
+    --=Damage|[*R:attack_damage] + [*R:attack_damage] [&ANPC_DMGMOD] [&dmgModType1]
+    --=Damage2|[*R:attack_damage2] + [*R:attack_damage2] [&ANPC_DMGMOD] [&dmgModType2]
     --=TotalDamage|[$Damage.Raw] + [$Damage2.Raw]    
     --+Critical|[$Damage] [*R:attack_damagetype] and [$Damage2] [*R:attack_damagetype2]
     --+|[*R:description]
     -->[&damageRoutine]|[&action_target];[&hitPointsBar];-[$TotalDamage.Raw]
+    --^NPCA_DONE|
 
     --:NPCA_MISS|
     --+Miss|The attack missed.
@@ -1490,8 +1493,10 @@
   --X|
 
   --:CLEAR_CHARACTER_CACHE|
+  --!a:[*S:character_id]|5ECAM_CACHE_Actions:|5ECAM_CACHE_Legendary Actions:
+  --!a:[*S:character_id]|5ECAM_CACHE_Legendary Actions:
   --!a:[*S:character_id]|5ECAM_CACHE_Attacks and Actions:
-  --!a:[*S:character_id]|5ECAM_CACHE_Cantrips_0
+  --!a:[*S:character_id]|5ECAM_CACHE_Cantrips_0:
   --!a:[*S:character_id]|5ECAM_CACHE_Level 1 Spells_1:
   --!a:[*S:character_id]|5ECAM_CACHE_Level 2 Spells_2:
   --!a:[*S:character_id]|5ECAM_CACHE_Level 3 Spells_3:
@@ -1826,6 +1831,8 @@
 
   --:BUILD_BUTTON_LIST|Character ID;Repeating_section_name;repeating field for name;reentrant point;section header;mule char name/id;filter out spells
   --/|See if we have a cached version of the button list
+  --/|Note that we are not using a cache for the "Actions" group for NPCs because it breaks multiattack detection
+  --?[%5%] -eq "Actions"|DO_BUILD_BUTTON_LIST
   --&AM_CACHED_BUTTON_LIST|[*[%1%]:5ECAM_CACHE_[%5%]]
   --?"[&AM_CACHED_BUTTON_LIST]" -eq "undefined"|DO_BUILD_BUTTON_LIST
   --?"[&AM_CACHED_BUTTON_LIST]" -eq ""|DO_BUILD_BUTTON_LIST
@@ -1850,7 +1857,7 @@
     --&DisplayName|[&atkloop]
     --&ActionName|[&DisplayName(replace,;,-!-!-)]
     --/|5E SPECIFIC START 
-    --?"[&DisplayName(contains,Multiattack)]" -eq 1|>SHOW_MULTIATTACK;[&atkloop]_description
+    --?"[&DisplayName(contains,Multiattack)]" -eq 1|>SHOW_MULTIATTACK;[:BuiltButtonHash("[&atkloop]_description")]
     --?"[&DisplayName(contains,Multiattack)]" -eq 1|AM_LIST_CONTINUE
     --?[%8%] -eq 0|SKIP_BUTTON_LIST_SPELL_CHECK
     --&keepSpell|N
@@ -1970,7 +1977,7 @@
   --<|
 
   --:SHOW_MULTIATTACK|description
-  --+Multiattack|[:PCAttacks("[%1%]")]
+  --+Multiattack|[%1%] [br][br]
   --<|
 
   --:BUILD_SLOT_LIST|Spell Level;return string;is ritual (Yes for true)

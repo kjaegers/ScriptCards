@@ -1,5 +1,13 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2026-01-25 - 5e Character Action Menu 2.7.8
+- Fixed a bug where Action and Legendary Actions for NPCs caches were not being Cleared
+- Fixed a bug were Multiattack descriptions were not being displayed correctly.
+- Fixed and issue (thanks to Farsidegallery) where resistances were not being applied when attacking PCs. The script assumes that
+  players will create npc_resistances, npc_immunities, and npc_vulnerabilities attributes on their character sheets to define 
+  these values since there isn't a PC equivalent on the 5E OGL sheet.
+- Correcte a bug where an NPC that crit with two damage types in their attack would display the damage and then a "Missed" message
+
 2026-01-03 - 5e Character Action Menu 2.7.6
 - Fixed additional resistance issues where healing vs NPC was always 0 [Immune]
 - Fixed a bug where healing spells were not applying ability modifiers to the healing amount.
