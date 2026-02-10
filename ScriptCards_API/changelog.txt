@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.15:
+- Added support for the #buttonwidth parameter (default is "auto"). Specify in px (ie, 300px) or in percentage (25%) or any other valid CSS measurement
+
 v 3.0.14:
 - Fixed bug that was adding incorrect values to .Base values for roll variables
 - Added support for triggers for change:pin add:pin and destroy:pin.

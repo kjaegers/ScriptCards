@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.14";
-	const NUMERIC_VERSION = "300140"
+	const APIVERSION = "3.0.15";
+	const NUMERIC_VERSION = "300150"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -154,6 +154,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		gmoutputtarget: "gm",
 		storagecharid: "",
 		beaconsheet: "0",
+		buttonwidth: "auto",
 		styleTableTag: " border-collapse:separate; border: solid black 2px; border-radius: 6px; -moz-border-radius: 6px; ",
 		stylenone: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; ",
 		stylenormal: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolornormal}; border-color: #87850A; color: #000000;",
@@ -343,7 +344,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	var htmlTemplateHiddenTitle = `<div style="display: table; border: !{tableborder}; background-color: !{tablebgcolor}; width: 100%; text-align: left; border-radius: !{tableborderradius}; border-collapse: separate; box-shadow: !{tableshadow};"><div style="display: table-row-group; background-image:!{bodybackgroundimage};">`;
 	var htmlRowTemplate = `<div style="display: table-row; =X=ROWBG=X=;"><div style="display: table-cell; padding: 0px 0px; font-family: !{bodyfontface}; font-style: normal; font-weight:normal; font-size: !{bodyfontsize}; "><span style="line-height: !{lineheight}; color: =X=FONTCOLOR=X=;">=X=ROWDATA=X=</span></div></div>`;
 	var htmlTemplateEnd = `</div></div><br />`;
-	var buttonStyle = 'background-color:!{buttonbackground}; padding:!{buttonpadding}; background-image:!{buttonbackgroundimage}; color: !{buttontextcolor}; text-align: center; vertical-align:middle; border-radius: 5px; border-color:!{buttonbordercolor}; font-family: !{buttonfontface}; font-size:!{buttonfontsize};';
+	var buttonStyle = 'display:inline-block; background-color:!{buttonbackground}; padding:!{buttonpadding}; background-image:!{buttonbackgroundimage}; color: !{buttontextcolor}; text-align: center; vertical-align:middle; border-radius: 5px; border-color:!{buttonbordercolor}; font-family: !{buttonfontface}; font-size:!{buttonfontsize}; width:!{buttonwidth};';
 	var gradientStyle = "linear-gradient(rgba(255, 255, 255, .3), rgba(255, 255, 255, 0))";
 
 	// Objects to hold various variables and things we could need while running a script.
@@ -2762,6 +2763,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		if (customBackgroundColor) { thisButtonStyle = thisButtonStyle.replace("!{buttonbackground}", customBackgroundColor) }
 		if (customfontsize) { thisButtonStyle = thisButtonStyle.replace("!{buttonfontsize}", customfontsize) }
 		if (customHoverText) { thisHoverText = ` title="${customHoverText}" ` }
+		if (parameters.buttonwidth !== "auto") { thisButtonStyle = thisButtonStyle.replace("!{buttonwidth}", `${parameters.buttonwidth}`); }
 		return `<a style="${replaceStyleInformation(thisButtonStyle, parameters)}" ${thisHoverText}" href="${removeTags(removeBRs(url))}">${removeBRs(title)}</a>`;
 	}
 
