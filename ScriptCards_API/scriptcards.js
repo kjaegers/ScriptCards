@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.15";
-	const NUMERIC_VERSION = "300150"
+	const APIVERSION = "3.0.16";
+	const NUMERIC_VERSION = "300160"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -560,7 +560,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 						}
 					}
 					return replacement;
-				});				
+				});
 
 				handleAbilityTrigger('add:door', (obj) =>
 					` ${getSafeTriggerString("DoorAdded", obj.id)} `
@@ -1537,14 +1537,14 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 										case "numbersonly":
 											replacement = stringVariables[vName].replace(/[^0-9]/g, "");
 											break;
-										
+
 										case "nonumbers":
 											replacement = stringVariables[vName].replace(/[0-9]/g, "");
 											break;
-										
+
 										case "numericonly":
-												replacement = stringVariables[vName].replace(/[^\-\.\d]/g, "");
-												break;											
+											replacement = stringVariables[vName].replace(/[^\-\.\d]/g, "");
+											break;
 										case "alphaonly":
 											replacement = stringVariables[vName].replace(/[^a-zA-Z]/g, "");
 											break;
@@ -1915,10 +1915,10 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 						let attrName = thisMatch.substring(4, thisMatch.length - 1);
 						if (attrName == "playerpage") { attrName = "playerpageid" }
 						replacement = Campaign().get(attrName) || "";
-						if (replacement  == "") {
+						if (replacement == "") {
 							switch (attrName.toLowerCase()) {
-								case "nodeversion":	replacement = Campaign().nodeVersion; break;
-								case "sandboxversion":	replacement = Campaign().sandboxVersion; break;
+								case "nodeversion": replacement = Campaign().nodeVersion; break;
+								case "sandboxversion": replacement = Campaign().sandboxVersion; break;
 							}
 						}
 					}
@@ -2373,6 +2373,22 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 						rollResult.Text = tableResult[0];
 						rollResult.tableEntryValue = isNaN(rollResult.tableEntryText) ? 0 : parseInt(rollResult.tableEntryText);
 						rollResult.tableEntryWeight = tableResult[3];
+					}
+				}
+
+				if (text.match(/\\[[Tt]\@.+?\]/g)) {
+					componentHandled = true;
+					var rollArrayName = text.substring(3, text.length - 1);
+					var arrayResult = rollFromArray(rollArrayName);
+					if (arrayResult) {
+						rollResult.tableEntryText = arrayResult[0];
+						rollResult.tableEntryImgURL = "";
+						rollResult.Total = arrayResult[2];
+						rollResult.Base = arrayResult[2];
+						rollResult.RollText = `[T@${rollArrayName}]`;
+						rollResult.Text = arrayResult[0];
+						rollResult.tableEntryValue = isNaN(rollResult.tableEntryText) ? 0 : parseInt(rollResult.tableEntryText);
+						rollResult.tableEntryWeight = arrayResult[3];
 					}
 				}
 			}
@@ -2921,6 +2937,15 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			} else {
 				return ["", ""];
 			}
+		}
+	}
+
+	function rollFromArray(arrayName) {
+		if (theTable != arrayVariables[arrayName]) {
+			var rolledItem = randomInteger(arrayVariables[arrayName].length);
+			return [arrayVariables[arrayName][rolledItem - 1], "", rolledItem, rolledItem];
+		} else {
+			return ["", ""];
 		}
 	}
 
@@ -4316,8 +4341,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 										}
 									}
 
-									if (cardParameters.limitmaxbarvalues !== "0" && (settingName.toLowerCase() == "bar1_value" || 
-									    settingName.toLowerCase() == "bar2_value" || settingName.toLowerCase() == "bar3_value" || 
+									if (cardParameters.limitmaxbarvalues !== "0" && (settingName.toLowerCase() == "bar1_value" ||
+										settingName.toLowerCase() == "bar2_value" || settingName.toLowerCase() == "bar3_value" ||
 										settingName.toLowerCase() == "bar4_value")) {
 										let sMaxname = settingName.toLowerCase().replace("value", "max");
 										if (theToken.get(sMaxname) && settingValue > theToken.get(sMaxname)) {
@@ -4335,8 +4360,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 										notifyObservers('tokenChange', theToken, prevTok);
 									}
 
-									if('undefined' !== typeof HealthColors && HealthColors.Update){
-										HealthColors.Update(theToken,prevTok);
+									if ('undefined' !== typeof HealthColors && HealthColors.Update) {
+										HealthColors.Update(theToken, prevTok);
 									}
 
 
@@ -7030,7 +7055,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			"isdrawing", "flipv", "fliph", "aura1_square", "aura2_square", "showname",
 			"showplayers_name", "showplayers_bar1", "showplayers_bar2", "showplayers_bar3", "showplayers_bar4",
 			"showplayers_aura1", "showplayers_aura2", "playersedit_name", "playersedit_bar1",
-			"playersedit_bar2", "playersedit_bar3", "playersedit_bar4",, "playersedit_aura1", "playersedit_aura2",
+			"playersedit_bar2", "playersedit_bar3", "playersedit_bar4", , "playersedit_aura1", "playersedit_aura2",
 			"light_otherplayers", "light_hassight", "lockmovement"
 		];
 		if (booleanProps.includes(propName)) {

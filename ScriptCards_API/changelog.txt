@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.16:
+- Internal changes to prep for a new roll type.
+
 v 3.0.15:
 - Added support for the #buttonwidth parameter (default is "auto"). Specify in px (ie, 300px) or in percentage (25%) or any other valid CSS measurement
 
