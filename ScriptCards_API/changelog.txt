@@ -17,6 +17,52 @@ v 3.0.17:
 
   This (admittedly trivial) example reads the name of the selected character into a pointer variable called TestPtr, and then sets the tooltip of the targeted token to that name.
 
+  Here is a more robust example that builds a menu of abilities to copy from one character to another:
+
+  !script {{
+  --#reentrant|CopyAbilities-[&SendingPlayerID]
+  --&id|@{selected|character_id}
+  --&tid|@{target|character_id}
+  --#title|Ability Copy
+  --#leftsub|From [*[&id]:name]
+  --#rightsub|To [*[&tid]:name]
+  --+|[c][b]Click abilities to copy[/b][/c]
+  --~dummy|array;abilities;ability_list;[&id]
+  --%abils|foreach;ability_list
+    --&Name|[*O:[&abils]:ability:name]
+    --+|[c][rbutton][&Name]::COPY;[&abils][/rbutton][/c]
+  --%|
+  --+|[br]
+  --+|[c][rbutton]COPY ALL ABILITIES::COPYALL[/rbutton][/c]
+  --+|[br]
+  --+|[c][b]Copying abilities may create duplicates that need to be manually cleaned up.[/b][/c]
+  --X|
+
+  --:COPY|
+    --&Name|[*O:[&reentryval]:ability:name]
+    --&Desc|[*O:[&reentryval]:ability:description]
+    --&IsAction|[*O:[&reentryval]:ability:istokenaction]
+    --Pread|ActionPointer::[&reentryval]::action
+    --+|Name: [&Name], Desc: [&Desc], IsAction: [&IsAction]
+    --!ob:NewID:[&tid]:[&Name]:[&isAction]|temp
+    --Pset|ActionPointer::[&NewID]::action
+    --+|Copied action [&Name] from [*[&id]:name] to [*[&tid]:name]
+  --X|
+
+  --:COPYALL|
+  --%abils|foreach;ability_list
+    --+Abil|[&abils], 
+    --&Name|[*O:[&abils]:ability:name]
+    --&Desc|[*O:[&abils]:ability:description]
+    --&IsAction|[*O:[&abils]:ability:istokenaction]
+    --Pread|ActionPointer::[&abils]::action
+    --+|Name: [&Name], Desc: [&Desc], IsAction: [&IsAction]
+    --!ob:NewID:[&tid]:[&Name]:[&isAction]|temp
+    --Pset|ActionPointer::[&NewID]::action
+  --%|
+  --X|
+}}
+
 v 3.0.16:
 - Internal changes to prep for a new roll type.
 
