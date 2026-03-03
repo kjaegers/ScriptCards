@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.16";
-	const NUMERIC_VERSION = "300160"
+	const APIVERSION = "3.0.17";
+	const NUMERIC_VERSION = "300170"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -356,6 +356,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	var tokenMarkerURLs = [];
 	var templates = {};
 	var benchmarks = {};
+	var pointerVariables = {};
 
 	//We use several variables to track repeating section (--R) commands
 	var repeatingSection = undefined;
@@ -819,6 +820,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					arrayVariables = {};
 					arrayIndexes = {};
 					hashTables = {};
+					pointerVariables = {};
 
 					loopControl = {};
 					loopStack = [];
@@ -1051,6 +1053,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 									case "e": handleEmoteCommands(thisTag, thisContent); break;
 									case "h": handleHasTableCommands(thisTag, hashTables, thisContent); break;
 									case "l": handleLoadCommands(thisTag, thisContent, cardParameters); break;
+									case "p": handlePointerCommand(thisTag, thisContent); break;
 									case "r": handleRepeatingAttributeCommands(thisTag, thisContent, cardParameters); break;
 									case "s": handleStashLines(thisTag, thisContent, cardParameters); break;
 									case "w": await handleWaitStatements(thisTag, thisContent, cardParameters); break;
@@ -3763,6 +3766,67 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		}
 	}
 
+	function handlePointerCommand(thisTag, thisContent) {
+		try {
+			var pointerArgs = thisContent.split("::");
+			const objTypes = ["graphic", "text", "path", "graphic", "card", "character", "handout", "ability", "attribute"];
+			if (thisTag.charAt(1).toLowerCase() == "r") {
+				let found = false;
+				let exitLoop = false;
+				let i = 0;
+				do {
+					var thisObj = getObj(objTypes[i], pointerArgs[1]);
+					if (thisObj) {
+						found = true;
+						exitLoop = true;
+					} else {
+						i++;
+						if (i >= objTypes.length) {
+							exitLoop = true;
+						}
+					}
+				} while (!found && !exitLoop);
+				if (thisObj) {
+					let thisProperty = thisObj.get(pointerArgs[2]);
+					if (thisProperty !== undefined) {
+						pointerVariables[pointerArgs[0]] = thisProperty;
+					} else {
+						log(`ScriptCards: Property ${pointerArgs[2]} not found on object ${pointerArgs[1]}`);
+					}
+				} else {
+					log(`ScriptCards: Unable to read object ${pointerArgs[1]} property ${pointerArgs[2]} into pointer variable ${pointerArgs[0]}. Object not found.`);
+				}
+			}
+			if (thisTag.charAt(1).toLowerCase() == "s") {
+				let found = false;
+				let exitLoop = false;
+				let i = 0;
+				do {
+					var thisObj = getObj(objTypes[i], pointerArgs[1]);
+					if (thisObj) {
+						found = true;
+						exitLoop = true;
+					} else {
+						i++;
+						if (i >= objTypes.length) {
+							exitLoop = true;
+						}
+					}
+				} while (!found && !exitLoop);
+				if (thisObj && pointerVariables[pointerArgs[0]] !== undefined) {
+					{
+						thisObj.set(pointerArgs[2], pointerVariables[pointerArgs[0]]);
+					}
+				} else {
+					log(`ScriptCards: Unable to set object ${pointerArgs[1]} property ${pointerArgs[2]} to value of pointer variable ${pointerArgs[0]}. Object or pointer variable not found.`);
+				}
+			}
+		} catch (e) {
+			log(`Error generating pointer variable: ${e}. thisTag: ${thisTag}, thisContent: ${thisContent}`)
+		}
+
+	}
+
 	function handleConsoleLogs(thisTag, thisContent) {
 		try {
 			log(thisContent);
@@ -6256,6 +6320,25 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 								}
 							} catch (e) { log(e); }
 						}
+
+						if (params[1].toLowerCase() == "abilities") {
+							// Note P1=abilities, P2=array name, P3=character id, P4=Name Starts with
+							try {
+								var foundAbilities = findObjs({ type: "ability", characterid: params[3] });
+								if (foundAbilities && foundAbilities[0]) {
+									arrayVariables[params[2]] = []
+									for (let x = 0; x < foundAbilities.length; x++) {
+										if (params[4]) {
+											if (foundAbilities[x].get("name").startsWith(params[4])) {
+												arrayVariables[params[2]].push(foundAbilities[x].id)
+											}
+										} else {
+											arrayVariables[params[2]].push(foundAbilities[x].id)
+										}
+									}
+								}
+							} catch (e) { log(e); }
+						}						
 
 						if (params[1].toLowerCase() == "selectedtokens") {
 							if (msg.selected) {
