@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.17a:
+- Pointer variables are now included in stashed scripts when using the #reentrant option or --i statements.
+
 v 3.0.17:
 - Added new array function: abilities. Like attributes, this builds an array containing the object IDs of all abilities on a character. The syntax is:
   --~|array;abilities;ArrayName;CharacterID

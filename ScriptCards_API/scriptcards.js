@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.17";
-	const NUMERIC_VERSION = "300170"
+	const APIVERSION = "3.0.17a";
+	const NUMERIC_VERSION = "300171"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -865,6 +865,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 						if (scriptCardsStashedScripts[stashIndex].cardParameters) { cardParameters = JSON.parse(scriptCardsStashedScripts[stashIndex].cardParameters); }
 						if (scriptCardsStashedScripts[stashIndex].stringVariables) { stringVariables = JSON.parse(scriptCardsStashedScripts[stashIndex].stringVariables); }
 						if (scriptCardsStashedScripts[stashIndex].rollVariables) { rollVariables = JSON.parse(scriptCardsStashedScripts[stashIndex].rollVariables); }
+						if (scriptCardsStashedScripts[stashIndex].pointerVariables) { pointerVariables = JSON.parse(scriptCardsStashedScripts[stashIndex].pointerVariables); }
 						if (scriptCardsStashedScripts[stashIndex].arrayVariables) { arrayVariables = JSON.parse(scriptCardsStashedScripts[stashIndex].arrayVariables); }
 						if (scriptCardsStashedScripts[stashIndex].arrayIndexes) { arrayIndexes = JSON.parse(scriptCardsStashedScripts[stashIndex].arrayIndexes); }
 						if (scriptCardsStashedScripts[stashIndex].hashTables) { hashTables = JSON.parse(scriptCardsStashedScripts[stashIndex].hashTables); }
@@ -2995,6 +2996,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		scriptCardsStashedScripts[stashIndex].rollVariables = JSON.stringify(rollVariables);
 		scriptCardsStashedScripts[stashIndex].arrayVariables = JSON.stringify(arrayVariables);
 		scriptCardsStashedScripts[stashIndex].arrayIndexes = JSON.stringify(arrayIndexes);
+		scriptCardsStashedScripts[stashIndex].pointerVariables = JSON.stringify(pointerVariables);
 		scriptCardsStashedScripts[stashIndex].hashTables = JSON.stringify(hashTables);
 		scriptCardsStashedScripts[stashIndex].returnStack = JSON.stringify(returnStack);
 		scriptCardsStashedScripts[stashIndex].parameterStack = JSON.stringify(parameterStack);
