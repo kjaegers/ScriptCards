@@ -4,7 +4,7 @@
 
 AuraTriggers is currently **experimental**.
 
-- API version: `0.1`
+- API version: `0.2`
 - Author: Kurt Jaegers
 - Runtime warning from script: not ready for live/production games yet
 
@@ -22,15 +22,20 @@ The script reads aura behavior rules from each aura token's `gmnotes` JSON.
 ## How It Works
 
 1. On `ready`, the script initializes state and registers listeners.
-2. On `change:graphic`:
+2. On startup (`ready`), it builds aura caches for all pages.
+3. On `add:graphic`:
+	 - Rebuilds aura cache for the token page.
+	 - Immediately evaluates overlap for the new token.
+4. On `change:graphic`:
 	 - If aura settings or `gmnotes` changed, it rebuilds the active aura list for that page.
+	 - If the changed token is an aura source token, it rechecks all tokens on that page.
 	 - If token position changed, it checks overlap against active auras.
-3. Overlap checks determine one of four events:
+5. Overlap checks determine one of four events:
 	 - `enter`
 	 - `inside`
 	 - `exit`
 	 - `none`
-4. Based on event + aura config, it updates status markers and optionally sends chat actions.
+6. Based on event + aura config, it updates status markers and optionally sends chat actions.
 
 ## Chat Commands
 
@@ -41,6 +46,10 @@ Rebuilds aura caches for all pages and whispers total active aura count to GM.
 ### `!at-clearallauras`
 
 Sets `aura1_radius` and `aura2_radius` to `0` on all graphics across all pages, then rebuilds aura lists.
+
+### `!at-checkall`
+
+Forces overlap checks for all graphic tokens on all pages.
 
 ## Aura Configuration in `gmnotes`
 
@@ -57,6 +66,7 @@ Use one object per color definition:
 		"toPCs": true,
 		"toNPCs": true,
 		"toGraphics": false,
+		"applySelf": false,
 		"removeOnExit": true,
 		"chatActionOnEnter": "/em [TNAME] enters [ANAME]",
 		"chatActionWhileInside": "!script --target [TID] --aura [ANAME]",
@@ -73,6 +83,7 @@ Use one object per color definition:
 - `toPCs` (boolean, default `true`): Apply to player-controlled character tokens.
 - `toNPCs` (boolean, default `true`): Apply to non-player-controlled character tokens.
 - `toGraphics` (boolean, default `false`): Apply to non-character graphics.
+- `applySelf` (boolean, default `false`): Apply the aura effect to the aura source token itself.
 - `removeOnExit` (boolean, default `true`): Remove status marker when token exits aura.
 - `chatActionOnEnter` (string, default `""`): Sent once when token enters.
 - `chatActionWhileInside` (string, default `""`): Sent on movement checks while token remains inside.
@@ -84,6 +95,7 @@ Use one object per color definition:
 - A JSON aura entry is used only if its `color` matches one of the token's aura colors.
 - Effective radius in pixels is computed from Roll20 aura radius units using page scale.
 - Circular and square checks include token width when determining overlap.
+- Aura source detection uses an internal helper (`tokenHasActiveAura`) against cached page aura data.
 
 ## Event Variables for Chat Actions
 
@@ -108,14 +120,13 @@ Use `toPCs`, `toNPCs`, and `toGraphics` to control targeting.
 
 ## Defaults and Safety Behavior
 
-- Missing/invalid `gmnotes` JSON does not crash the script; parsing errors are logged.
+- Missing/invalid `gmnotes` JSON does not crash the script; invalid JSON entries are ignored.
 - If a field is omitted, defaults listed above are used.
 - Status markers are added idempotently (no duplicates).
 
 ## Known Limitations (Current Build)
 
-- The script references `applySelf` internally, but it is not currently populated from JSON, so self-application is effectively unavailable in this version.
-- Aura caching rebuilds based on `change:graphic` events and manual commands; newly created edge cases may require `!at-rebuild`.
+- Aura caching rebuilds based on `add:graphic`, `change:graphic`, startup, and manual commands; unusual edge cases may still require `!at-rebuild`.
 - Marked as in development/testing by author.
 
 ## Minimal Setup Checklist

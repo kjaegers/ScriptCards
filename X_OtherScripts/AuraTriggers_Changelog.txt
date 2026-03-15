@@ -1,3 +1,12 @@
 Changelog for AuraTriggers API Mod
 
-V 0.1 - Initial development and testing. Not ready for use in live games yet.
+V 0.2 
+- Moving tokens with auras now triggers an aura check for all tokens on the same page.
+- Removed lots of debugging messages
+- Added a manual !at-checkall command to trigger an aura check for all tokens on all pages.
+- Added a call to build all aura lists on API ready.
+- Added applySelf option to allow tokens to trigger their own auras.
+- Now handle add:graphic events to ensure new tokens are checked for aura overlap.
+
+V 0.1 
+- Initial development and testing. Not ready for use in live games yet.
