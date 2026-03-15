@@ -1,0 +1,490 @@
+/* eslint-disable no-undef */
+/* eslint-disable no-useless-escape */
+/* eslint-disable no-redeclare */
+// Github:   
+// By:       Kurt Jaegers
+// Contact:  https://app.roll20.net/users/2365448/kurt-j
+if (typeof MarkStart === "function") MarkStart('AuraTriggers');
+var API_Meta = API_Meta || {};
+API_Meta.AuraTriggers = { offset: Number.MAX_SAFE_INTEGER, lineCount: -1 };
+{ try { throw new Error(''); } catch (e) { API_Meta.AuraTriggers.offset = (parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/, '$1'), 10) - 10); } }
+const AuraTriggers = (() => {
+
+    // Used for the state storage system so it is transportable between API scripts.
+    const APINAME = "AuraTriggers";
+    
+    const APIAUTHOR = "Kurt Jaegers";
+
+    // Configuration schema version. This represents the last time changes were made to the configuration values
+    // saved between sessions, and is not necessarially the same as the API version number.
+    const APIVERSION = "0.1";
+
+    var APILANGUAGE = "english";
+
+    var configSettings = {
+        // "groupinit_include_players": { type: "toggle", name: "GroupInit Players?", defaultValue: false },
+        // "show_button_help_on_list": { type: "toggle", name: "Show button help text on Encounter List?", defaultValue: false },
+        // "override_oneclick_settings": { type: "toggle", name: "Override OneClick Settings?", defaultValue: false },
+        // "columns": { type: "string", name: "column_values", defaultValue: "bar|HP|3;attr|AC|npc_ac" },
+        // "resetValues": { type: "string", name: "Values to save for reset", defaultValue: "left;top;width;height;bar3_value;bar3_max;statusmarkers" },
+        // "include_drawings": { type: "toggle", name: "Include drawing objects when creating encounters", defaultValue: false },
+    }
+
+    const tokensInAuras = new Map();
+
+    var activeAuras = {};
+
+    on('ready', function () {
+        // Check if the state object for this API script has been initialized, and if not, initialize it.
+        if (!state[APINAME]) {
+            initializeState();
+        }
+
+        log(`-=> ${APINAME} - ${APIVERSION} by ${APIAUTHOR} Ready <=- Meta Offset : ${API_Meta.AuraTriggers.offset}`);
+        sendChat("AuraTriggers", `${APINAME} v${APIVERSION} is loaded, but this API Mod is in development/testing and NOT ready for prime time. DO NOT USE in your live game yet!.`);
+
+        // Monitor for changes to Graphics objects (includes tokens)
+        on('change:graphic', function (obj, prev) {
+            // If the aura list on this page is empty, build it.
+            if (activeAuras[obj.get("_pageid")] === undefined) {
+                BuildAuraList(obj.get("_pageid"));
+            }
+
+            // If the aura radius has changed, rebuild the aura list for this page.
+            if ((obj.get("aura1_radius") !== prev.aura1_radius) || (obj.get("aura2_radius") !== prev.aura2_radius) ||
+                (obj.get("aura1_color") !== prev.aura1_color) || (obj.get("aura2_color") !== prev.aura2_color) ||
+                (obj.get("aura1_square") !== prev.aura1_square) || (obj.get("aura2_square") !== prev.aura2_square) ||
+                (obj.get("gmnotes") !== prev.gmnotes)) {
+                log("Aura changed for: " + obj.get("name"));
+                BuildAuraList(obj.get("_pageid"));
+            };
+
+            // If the token has moved, check for aura overlap with this token.
+            if ((obj.get("left") !== prev.left) || (obj.get("top") !== prev.top)) {
+                if (obj.get("aura1_radius") !== 0 || obj.get("aura2_radius") !== 0) {
+                    BuildAuraList(obj.get("_pageid"));
+                }
+                checkAuraOverlap(obj.get("_id"));
+            }
+        });
+
+        on('chat:message', function (msg) {
+            if (msg.type == "api" && msg.content.indexOf("!at-clearallauras") === 0) {
+                log("Clearing all auras on all pages.");
+                let objList = findObjs({ _type: "graphic" });
+                _.each(objList, function (obj) {
+                    obj.set("aura1_radius", 0);
+                    obj.set("aura2_radius", 0);
+                });
+                let pageList = findObjs({ _type: "page" });
+                _.each(pageList, function (page) {
+                    BuildAuraList(page.get("_id"));
+                });
+            }
+            if (msg.type == "api" && (msg.content.indexOf("!at-rebuild") === 0)) {
+                log("Rebuilding aura lists for all pages.");
+                let auraCount = 0;
+                let pageList = findObjs({ _type: "page" });
+                _.each(pageList, function (page) {
+                    BuildAuraList(page.get("_id"));
+                    auraCount += activeAuras[page.get("_id")].length;
+                });
+                sendChat("AuraTriggers", "/w gm Aura lists rebuilt for all pages. Total active auras: " + auraCount);
+            }
+        });
+    });
+
+    function BuildAuraList(pageId) {
+        let pageGraphics = findObjs({ _type: "graphic", _pageid: pageId });
+        activeAuras[pageId] = [];
+        let scale = 1.0
+        let mapIncrement = 5;
+
+        if (pageGraphics.length !== 0) {
+            scale = pageGraphics[0].get("snapping_increment") || 1;
+            mapIncrement = pageGraphics[0].get("scale_number") || 5;
+        }
+
+        _.each(pageGraphics, function (graphic) {
+            if ((graphic.get("aura1_radius") !== 0) || (graphic.get("aura2_radius") !== 0)) {
+                auraInfo = (decodeAndStripHtmlSimple(graphic.get("gmnotes")))
+                let auraParsed = undefined;
+                if (auraInfo) {
+                    try {
+                        auraParsed = JSON.parse(auraInfo);
+                        //log("Parsed aura info for " + graphic.get("name") + ": " + JSON.stringify(auraParsed));
+                    } catch (e) {
+                        log("Error parsing JSON: " + e.message)
+                    }
+                }
+
+                let auraActions = []
+
+                if ((Math.abs(graphic.get("aura1_radius")) > 0) && getAuraByColor(auraParsed, graphic.get("aura1_color"))) {
+                    auraActions.push(getAuraByColor(auraParsed, graphic.get("aura1_color")))
+                }
+                if ((Math.abs(graphic.get("aura2_radius")) > 0) && getAuraByColor(auraParsed, graphic.get("aura2_color"))) {
+                    auraActions.push(getAuraByColor(auraParsed, graphic.get("aura2_color")))
+                }
+
+                _.each(auraActions, function (auraAction) {
+                    let workRadius = undefined;
+                    let workSquare = false;
+                    let workIcon = undefined;
+                    let c1 = graphic.get("aura1_color");
+                    let c2 = graphic.get("aura2_color");
+                    if (auraAction.color == graphic.get("aura1_color")) {
+                        workRadius = graphic.get("aura1_radius");
+                        workSquare = graphic.get("aura1_square");
+                        workIcon = auraAction.icon;
+                    }
+                    if (auraAction.color == graphic.get("aura2_color")) {
+                        workRadius = graphic.get("aura2_radius");
+                        workSquare = graphic.get("aura2_square");
+                        workIcon = auraAction.icon;
+                    }
+
+                    let thisTokenAura = {
+                        tokenId: graphic.get("_id"),
+                        aura_active: true,
+                        aura_radius: workRadius / mapIncrement * 70,
+                        aura_square: workSquare,
+                        auraCoords: getTokenCoordsPixel(graphic),
+                        auraTokenName: graphic.get("name"),
+                        auraName: auraAction.name,
+                        auraToNPCs: (auraAction.toNPCs !== undefined) ? auraAction.toNPCs : true,
+                        auraToPCs: (auraAction.toPCs !== undefined) ? auraAction.toPCs : true,
+                        auraToGraphics: (auraAction.toGraphics !== undefined) ? auraAction.toGraphics : false,
+                        removeOnExit: (auraAction.removeOnExit !== undefined) ? auraAction.removeOnExit : true,
+                        aura_icon: workIcon,
+                        aura_id: graphic.get("_id") + "_" + auraAction.color,
+                        aura_chataction_enter: (auraAction.chatActionOnEnter !== undefined) ? auraAction.chatActionOnEnter : "",
+                        aura_chataction_exit: (auraAction.chatActionOnExit !== undefined) ? auraAction.chatActionOnExit : "",
+                        aura_chataction_inside: (auraAction.chatActionWhileInside !== undefined) ? auraAction.chatActionWhileInside : "",
+                    }
+                    activeAuras[pageId].push(thisTokenAura);
+                }
+                );
+
+                log("Active Auras on page " + pageId + ": " + activeAuras[pageId].length);
+            }
+        });
+    }
+
+    function checkAuraOverlap(tokenId) {
+        let token = getObj("graphic", tokenId);
+        let isCharacter = token.get("represents") ? true : false;
+        let theCharacter = getObj("character", token.get("represents"));
+        let isPC = theCharacter ? (theCharacter.get("controlledby") !== "") : false;
+
+        let pageId = token.get("_pageid");
+
+        let t1 = getTokenCoordsPixel(token)
+
+        //log("Checking auras for token: " + token.get("name") + " against " + activeAuras[pageId].length + " active auras on page.");
+        _.each(activeAuras[pageId], function (auraInfo) {
+            let checkAura = false;
+
+            if (auraInfo.tokenId == tokenId && auraInfo.applySelf) { checkAura = true; }
+            if (auraInfo.tokenId !== tokenId && isCharacter && !isPC && auraInfo.auraToNPCs) { checkAura = true; }
+            if (auraInfo.tokenId !== tokenId && isPC && auraInfo.auraToPCs) { checkAura = true; }
+            if (auraInfo.tokenId !== tokenId && !isCharacter && auraInfo.auraToGraphics) { checkAura = true; }
+
+            if (checkAura) {
+
+                let event = "none";
+                if (auraInfo.aura_active && !auraInfo.aura_square && auraInfo.aura_icon) {
+                    if (isWithinAura(t1, auraInfo.auraCoords, auraInfo.aura_radius)) {
+                        event = updateTokenAuraMembership(tokensInAuras, tokenId, auraInfo.aura_id, true);
+                        if (auraInfo.aura_icon) {
+                            AddTokenStatusMarker(token, auraInfo.aura_icon);
+                        }
+                    } else {
+                        event = updateTokenAuraMembership(tokensInAuras, tokenId, auraInfo.aura_id, false);
+                        if (auraInfo.aura_icon && auraInfo.removeOnExit) {
+                            RemoveTokenStatusMarker(token, auraInfo.aura_icon);
+                        }
+                    }
+                }
+
+                if (auraInfo.aura_active && auraInfo.aura_square && auraInfo.aura_icon) {
+                    if (isWithinSquareAura(t1, auraInfo.auraCoords, auraInfo.aura_radius)) {
+                        event = updateTokenAuraMembership(tokensInAuras, tokenId, auraInfo.aura_id, true);
+                        AddTokenStatusMarker(token, auraInfo.aura_icon);
+                    } else {
+                        event = updateTokenAuraMembership(tokensInAuras, tokenId, auraInfo.aura_id, false);
+                        if (auraInfo.aura_icon && auraInfo.removeOnExit) {
+                            RemoveTokenStatusMarker(token, auraInfo.aura_icon);
+                        }
+                    }
+                }
+                if (event == "enter" && auraInfo.aura_chataction_enter) {
+                    sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_enter, auraInfo, token));
+                }
+                if (event == "exit" && auraInfo.aura_chataction_exit) {
+                    sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_exit, auraInfo, token));
+                }
+                if (event == "inside" && auraInfo.aura_chataction_inside) {
+                    sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_inside, auraInfo, token));
+                }
+                log("Checked aura '" + auraInfo.auraName + "' for token '" + token.get("name") + "'. Event: " + event);
+            }
+        });
+    }
+
+    function initializeState() {
+        if (APINAME == undefined || APINAME == "") {
+            // Abort because APINAME isn't defined and we don't want to
+            // mess up the game state object.
+            return;
+        }
+
+        state[APINAME] = {
+            module: APINAME,
+            schemaVersion: APIVERSION,
+            config: {},
+        }
+
+        // Set the defaults for configuration items.
+        _.each(configSettings, function (item, key) {
+            state[APINAME].config[key] = item.defaultValue;
+        });
+    }
+
+    function getTokenCoords(token, scale) {
+        try {
+            const left = token.get("left");
+            const top = token.get("top");
+            const scaledLeft = left / (scale * 70);
+            const scaledTop = top / (scale * 70);
+            return { x: scaledLeft, y: scaledTop };
+        } catch (error) {
+            log(`Error in getTokenCoords for token ID ${token.id}: ${error.message}`);
+            return { x: 0, y: 0 };
+        }
+    }
+
+    function getTokenCoordsPixel(token) {
+        try {
+            return { x: token.get("left"), y: token.get("top"), width: token.get("width") };
+        } catch (error) {
+            log(`Error in getTokenCoordsPixel for token ID ${token.id}: ${error.message}`);
+            return { x: 0, y: 0, width: 0 };
+        }
+    }
+
+    function AddTokenStatusMarker(token, marker) {
+        let currentMarkers = token.get("statusmarkers");
+        let markerList = currentMarkers ? currentMarkers.split(",") : [];
+        if (!markerList.includes(marker)) {
+            markerList.push(marker);
+            token.set("statusmarkers", markerList.join(","));
+        }
+    }
+
+    function RemoveTokenStatusMarker(token, marker) {
+        let currentMarkers = token.get("statusmarkers");
+        let markerList = currentMarkers ? currentMarkers.split(",") : [];
+        if (markerList.includes(marker)) {
+            markerList = markerList.filter(m => m !== marker);
+            token.set("statusmarkers", markerList.join(","));
+        }
+    }
+
+    function isWithinAura(t1, t2, aura_radius) {
+        const dx = t1.x - t2.x;
+        const dy = t1.y - t2.y;
+
+        const distanceSquared = dx * dx + dy * dy;
+
+        const r1 = t1.width / 2;
+        const r2 = t2.width / 2;
+        const maxDistance = Math.floor(r2 + aura_radius + r1);
+
+        log(`Checking distance for circular aura: Token '${t1.tokenName}' to Aura '${t2.auraTokenName}'. Distance squared: ${distanceSquared}, Max distance squared: ${maxDistance * maxDistance}`);
+        return distanceSquared < (maxDistance * maxDistance);
+    }
+
+    function isWithinSquareAura(t1, t2, aura_radius) {
+        const r1 = t1.width / 2;
+        const r2 = t2.width / 2;
+
+        const auraLeft = t2.x - r2 - aura_radius;
+        const auraRight = t2.x + r2 + aura_radius;
+        const auraTop = t2.y - r2 - aura_radius;
+        const auraBottom = t2.y + r2 + aura_radius;
+
+        const closestX = Math.max(auraLeft, Math.min(t1.x, auraRight));
+        const closestY = Math.max(auraTop, Math.min(t1.y, auraBottom));
+
+        const dx = t1.x - closestX;
+        const dy = t1.y - closestY;
+
+        return (dx * dx + dy * dy) < (r1 * r1);
+    }
+
+    function decodeAndStripHtmlSimplx(input) {
+        if (typeof input !== "string") {
+            return "";
+        }
+
+        let decoded = input;
+
+        try {
+            decoded = decodeURIComponent(input);
+        } catch (e) {
+            decoded = input;
+        }
+
+        return decoded.replace(/<[^>]*>/g, "");
+    }
+
+    function decodeAndStripHtmlSimple(input) {
+        if (typeof input !== "string") {
+            return "";
+        }
+
+        let decoded = input;
+
+        try {
+            decoded = decodeURIComponent(input);
+        } catch (e) {
+            decoded = input;
+        }
+
+        decoded = decoded.replace(/<[^>]*>/g, "");
+
+        const htmlEntities = {
+            nbsp: " ",
+            amp: "&",
+            lt: "<",
+            gt: ">",
+            quot: '"',
+            apos: "'",
+            "#39": "'"
+        };
+
+        decoded = decoded.replace(/&(#\d+|#x[0-9a-fA-F]+|[a-zA-Z]+);/g, (match, entity) => {
+            const lower = entity.toLowerCase();
+
+            if (htmlEntities[lower] !== undefined) {
+                return htmlEntities[lower];
+            }
+
+            if (lower.startsWith("#x")) {
+                const code = parseInt(lower.slice(2), 16);
+                return isNaN(code) ? "" : String.fromCharCode(code);
+            }
+
+            if (lower.startsWith("#")) {
+                const code = parseInt(lower.slice(1), 10);
+                return isNaN(code) ? "" : String.fromCharCode(code);
+            }
+
+            return "";
+        });
+
+        return decoded;
+    }
+
+    function getAuraByColor(auras, color) {
+        if (!Array.isArray(auras)) {
+            return null;
+        }
+
+        return auras.find(a => a.color === color) || null;
+    }
+
+    function ensureTokenAuraSet(state, tokenId) {
+        if (!state.has(tokenId)) {
+            state.set(tokenId, new Set());
+        }
+        return state.get(tokenId);
+    }
+
+    function addTokenToAura(state, tokenId, auraId) {
+        const auraSet = ensureTokenAuraSet(state, tokenId);
+        auraSet.add(auraId);
+    }
+
+    function removeTokenFromAura(state, tokenId, auraId) {
+        const auraSet = state.get(tokenId);
+        if (!auraSet) {
+            return;
+        }
+
+        auraSet.delete(auraId);
+
+        if (auraSet.size === 0) {
+            state.delete(tokenId);
+        }
+    }
+
+    function isTokenInAuraSet(state, tokenId, auraId) {
+        const auraSet = state.get(tokenId);
+        return auraSet ? auraSet.has(auraId) : false;
+    }
+
+    function updateTokenAuraMembership(state, tokenId, auraId, isCurrentlyInside) {
+        const wasInside = isTokenInAuraSet(state, tokenId, auraId);
+
+        if (isCurrentlyInside && !wasInside) {
+            addTokenToAura(state, tokenId, auraId);
+            return "enter";
+        }
+
+        if (!isCurrentlyInside && wasInside) {
+            removeTokenFromAura(state, tokenId, auraId);
+            return "exit";
+        }
+
+        if (isCurrentlyInside && wasInside) {
+            return "inside";
+        }
+
+        return "none";
+    }
+
+    function replaceVariables(text, auraInfo, token) {
+        if (typeof text !== "string") {
+            return "";
+        }
+
+        const result = replaceTemplateVars(text, {
+            TNAME: token.get("name"),
+            ANAME: auraInfo.auraTokenName,
+            TID: token.get("_id"),
+            ATID: auraInfo.tokenId
+        });
+
+        return result;
+    }
+
+    function replaceTemplateVars(text, values) {
+        if (typeof text !== "string") {
+            return "";
+        }
+
+        if (!values || typeof values !== "object") {
+            return text;
+        }
+
+        return text.replace(/\[([A-Z0-9_]+)\]/gi, (match, key) => {
+            const normalizedKey = key.toUpperCase();
+
+            if (Object.prototype.hasOwnProperty.call(values, normalizedKey)) {
+                const value = values[normalizedKey];
+                return value === null || value === undefined ? "" : String(value);
+            }
+
+            return match;
+        });
+    }
+
+})();
+
+// Meta marker for the end of AuraTriggers
+{ try { throw new Error(''); } catch (e) { API_Meta.AuraTriggers.lineCount = (parseInt(e.stack.split(/\n/)[1].replace(/^.*:(\d+):.*$/, '$1'), 10) - API_Meta.AuraTriggers.offset); } }
+
+// Support for AirBag Crash Handler (if installed)
+if (typeof MarkStop === "function") MarkStop('AuraTriggers');
