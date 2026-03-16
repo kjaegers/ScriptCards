@@ -19,7 +19,7 @@ const AuraTriggers = (() => {
 
     // Configuration schema version. This represents the last time changes were made to the configuration values
     // saved between sessions, and is not necessarially the same as the API version number.
-    const APIVERSION = "0.3";
+    const APIVERSION = "0.4";
 
     var APILANGUAGE = "english";
 
@@ -51,6 +51,14 @@ const AuraTriggers = (() => {
             checkAuraOverlap(obj.get("_id"));
         });
 
+        on('destroy:graphic', function (obj) {
+            cleanupDestroyedTokenAuras(obj);
+            removeTokenFromAllAuras(tokensInAuras, obj.get("_id"));
+            setTimeout(function () {
+                BuildAuraList(obj.get("_pageid"));
+            }, 200);
+        });
+
         // Monitor for changes to Graphics objects (includes tokens)
         on('change:graphic', function (obj, prev) {
             // If the aura list on this page is empty, build it.
@@ -63,6 +71,8 @@ const AuraTriggers = (() => {
                 (obj.get("aura1_color") !== prev.aura1_color) || (obj.get("aura2_color") !== prev.aura2_color) ||
                 (obj.get("aura1_square") !== prev.aura1_square) || (obj.get("aura2_square") !== prev.aura2_square) ||
                 (obj.get("gmnotes") !== prev.gmnotes)) {
+                // Clean up any auras that have been disabled without re-triggering enter actions
+                cleanupDisabledAuras(obj, prev);
                 BuildAuraList(obj.get("_pageid"));
             };
 
@@ -156,10 +166,12 @@ const AuraTriggers = (() => {
                 let auraActions = []
 
                 if (Math.abs(graphic.get("aura1_radius")) > 0) {
-                    auraActions.push.apply(auraActions, getAurasByColor(auraParsed, graphic.get("aura1_color")));
+                    let aura1Matches = getAurasByColor(auraParsed, graphic.get("aura1_color"));
+                    auraActions.push.apply(auraActions, aura1Matches);
                 }
                 if (Math.abs(graphic.get("aura2_radius")) > 0) {
-                    auraActions.push.apply(auraActions, getAurasByColor(auraParsed, graphic.get("aura2_color")));
+                    let aura2Matches = getAurasByColor(auraParsed, graphic.get("aura2_color"));
+                    auraActions.push.apply(auraActions, aura2Matches);
                 }
 
                 _.each(auraActions, function (auraAction) {
@@ -192,7 +204,7 @@ const AuraTriggers = (() => {
                         auraToGraphics: (auraAction.toGraphics !== undefined) ? auraAction.toGraphics : false,
                         removeOnExit: (auraAction.removeOnExit !== undefined) ? auraAction.removeOnExit : true,
                         aura_icon: workIcon,
-                        aura_id: graphic.get("_id") + "_" + auraAction.color,
+                        aura_id: graphic.get("_id") + "_" + auraAction.color + "_" + (auraAction._jsonIndex !== undefined ? auraAction._jsonIndex : "0"),
                         aura_chataction_enter: (auraAction.chatActionOnEnter !== undefined) ? auraAction.chatActionOnEnter : "",
                         aura_chataction_exit: (auraAction.chatActionOnExit !== undefined) ? auraAction.chatActionOnExit : "",
                         aura_chataction_inside: (auraAction.chatActionWhileInside !== undefined) ? auraAction.chatActionWhileInside : "",
@@ -274,6 +286,151 @@ const AuraTriggers = (() => {
         });
     }
 
+    function cleanupDestroyedTokenAuras(token) {
+        if (!token) {
+            return;
+        }
+
+        let pageId = token.get("_pageid");
+        let tokenAuras = getTokenActiveAuras(token.get("_id"), pageId);
+
+        if (tokenAuras.length === 0) {
+            return;
+        }
+
+        _.each(tokenAuras, function (auraInfo) {
+            _.each(Array.from(tokensInAuras.entries()), function (entry) {
+                let targetTokenId = entry[0];
+                let auraSet = entry[1];
+
+                if (!auraSet.has(auraInfo.aura_id)) {
+                    return;
+                }
+
+                let targetToken = getObj("graphic", targetTokenId);
+                if (targetToken) {
+                    processAuraExit(targetToken, auraInfo);
+                }
+
+                removeTokenFromAura(tokensInAuras, targetTokenId, auraInfo.aura_id);
+            });
+        });
+    }
+
+    function processAuraExit(token, auraInfo) {
+        if (!token || !auraInfo) {
+            return;
+        }
+
+        if (auraInfo.aura_icon && auraInfo.removeOnExit) {
+            RemoveTokenStatusMarker(token, auraInfo.aura_icon);
+        }
+
+        if (auraInfo.aura_chataction_exit) {
+            sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_exit, auraInfo, token));
+        }
+    }
+
+    function cleanupDisabledAuras(newTokenObj, prevTokenObj) {
+        if (!newTokenObj || !prevTokenObj) {
+            return;
+        }
+
+        let pageId = newTokenObj.get("_pageid");
+        let tokenId = newTokenObj.get("_id");
+        let oldAuras = getOldAuraList(prevTokenObj, pageId, tokenId);
+        let newAuras = getNewAuraList(newTokenObj, pageId, tokenId);
+
+        // Find auras that existed before but don't exist now
+        let disabledAuras = oldAuras.filter(function (oldAura) {
+            return !newAuras.some(function (newAura) {
+                return oldAura.aura_id === newAura.aura_id;
+            });
+        });
+
+        // Clean up each disabled aura
+        _.each(disabledAuras, function (disabledAura) {
+            _.each(Array.from(tokensInAuras.entries()), function (entry) {
+                let targetTokenId = entry[0];
+                let auraSet = entry[1];
+
+                if (!auraSet.has(disabledAura.aura_id)) {
+                    return;
+                }
+
+                let targetToken = getObj("graphic", targetTokenId);
+                if (targetToken) {
+                    processAuraExit(targetToken, disabledAura);
+                }
+
+                removeTokenFromAura(tokensInAuras, targetTokenId, disabledAura.aura_id);
+            });
+        });
+    }
+
+    function getOldAuraList(prevObj, pageId, tokenId) {
+        let auras = [];
+        let pageAuras = activeAuras[pageId];
+        if (!pageAuras) {
+            return auras;
+        }
+
+        // Filter for auras from this token
+        return pageAuras.filter(function (aura) {
+            return aura.tokenId === tokenId;
+        });
+    }
+
+    function getNewAuraList(newTokenObj, pageId, tokenId) {
+        let auras = [];
+        let gmnotes = decodeAndStripHtmlSimple(newTokenObj.get("gmnotes"));
+        let auraParsed = undefined;
+        if (gmnotes) {
+            try {
+                auraParsed = JSON.parse(gmnotes);
+            } catch (e) {
+                // Invalid JSON, no auras
+            }
+        }
+
+        // Check aura1
+        if (newTokenObj.get("aura1_radius") !== 0) {
+            let aura1Matches = getAurasByColor(auraParsed, newTokenObj.get("aura1_color"));
+            _.each(aura1Matches, function (auraAction) {
+                auras.push({
+                    aura_id: tokenId + "_" + auraAction.color + "_" + (auraAction._jsonIndex !== undefined ? auraAction._jsonIndex : "0"),
+                    name: auraAction.name,
+                    aura_icon: auraAction.icon,
+                    removeOnExit: (auraAction.removeOnExit !== undefined) ? auraAction.removeOnExit : true,
+                    aura_chataction_exit: (auraAction.chatActionOnExit !== undefined) ? auraAction.chatActionOnExit : "",
+                    auraTokenName: newTokenObj.get("name"),
+                    auraName: auraAction.name
+                });
+            });
+        }
+
+        // Check aura2
+        if (newTokenObj.get("aura2_radius") !== 0) {
+            let aura2Matches = getAurasByColor(auraParsed, newTokenObj.get("aura2_color"));
+            _.each(aura2Matches, function (auraAction) {
+                auras.push({
+                    aura_id: tokenId + "_" + auraAction.color + "_" + (auraAction._jsonIndex !== undefined ? auraAction._jsonIndex : "0"),
+                    name: auraAction.name,
+                    aura_icon: auraAction.icon,
+                    removeOnExit: (auraAction.removeOnExit !== undefined) ? auraAction.removeOnExit : true,
+                    aura_chataction_exit: (auraAction.chatActionOnExit !== undefined) ? auraAction.chatActionOnExit : "",
+                    auraTokenName: newTokenObj.get("name"),
+                    auraName: auraAction.name
+                });
+            });
+        }
+
+        return auras;
+    }
+
+    // Compares old aura IDs to new ones to identify which were disabled.
+    // Uses aura_id for stable comparison.
+    
     // Returns true if the given token (by id) is the source of at least one active aura on its page.
     function tokenHasActiveAura(tokenId) {
         let token = getObj("graphic", tokenId);
@@ -282,6 +439,17 @@ const AuraTriggers = (() => {
         let pageAuras = activeAuras[pageId];
         if (!pageAuras || pageAuras.length === 0) { return false; }
         return pageAuras.some(function (aura) {
+            return aura.tokenId === tokenId && aura.aura_active;
+        });
+    }
+
+    function getTokenActiveAuras(tokenId, pageId) {
+        let pageAuras = activeAuras[pageId];
+        if (!pageAuras || pageAuras.length === 0) {
+            return [];
+        }
+
+        return pageAuras.filter(function (aura) {
             return aura.tokenId === tokenId && aura.aura_active;
         });
     }
@@ -417,7 +585,7 @@ const AuraTriggers = (() => {
             return [];
         }
 
-        return auras.filter(a => a.color === color);
+        return auras.map((a, index) => a.color === color ? Object.assign({}, a, { _jsonIndex: index }) : null).filter(a => a !== null);
     }
 
     function ensureTokenAuraSet(state, tokenId) {
@@ -443,6 +611,14 @@ const AuraTriggers = (() => {
         if (auraSet.size === 0) {
             state.delete(tokenId);
         }
+    }
+
+    function removeTokenFromAllAuras(state, tokenId) {
+        if (!state.has(tokenId)) {
+            return;
+        }
+
+        state.delete(tokenId);
     }
 
     function isTokenInAuraSet(state, tokenId, auraId) {

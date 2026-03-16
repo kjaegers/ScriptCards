@@ -26,16 +26,21 @@ The script reads aura behavior rules from each aura token's `gmnotes` JSON.
 3. On `add:graphic`:
 	 - Rebuilds aura cache for the token page.
 	 - Immediately evaluates overlap for the new token.
-4. On `change:graphic`:
+4. On `destroy:graphic`:
+	 - Checks whether the deleted token was the source of any active auras.
+	 - Cleans up affected tokens by removing tracked membership for those auras.
+	 - Runs exit chat actions and removes status markers when `removeOnExit` is enabled.
+	 - Rebuilds the aura cache for the token page.
+5. On `change:graphic`:
 	 - If aura settings or `gmnotes` changed, it rebuilds the active aura list for that page.
 	 - If the changed token is an aura source token, it rechecks all tokens on that page.
 	 - If token position changed, it checks overlap against active auras.
-5. Overlap checks determine one of four events:
+6. Overlap checks determine one of four events:
 	 - `enter`
 	 - `inside`
 	 - `exit`
 	 - `none`
-6. Based on event + aura config, it updates status markers and optionally sends chat actions.
+7. Based on event + aura config, it updates status markers and optionally sends chat actions.
 
 ## Chat Commands
 
@@ -93,7 +98,8 @@ Example:
 - `toPCs` (boolean, default `true`): Apply to player-controlled character tokens.
 - `toNPCs` (boolean, default `true`): Apply to non-player-controlled character tokens.
 - `toGraphics` (boolean, default `false`): Apply to non-character graphics.
-- `toLayers` (comma separated string, default `objects`): Restrict affected targets to specific Roll20 layers.
+- `toLayers` (string or array, default `objects`): Restrict affected targets to specific Roll20 layers.
+- Examples: `"objects,gmlayer"` or `["objects", "gmlayer"]`.
 - Supported layer values: `objects` (alias `token`), `gmlayer`, `map`, `walls`, `foreground`.
 - `applySelf` (boolean, default `false`): Apply the aura effect to the aura source token itself.
 - `removeOnExit` (boolean, default `true`): Remove status marker when token exits aura.
@@ -140,10 +146,11 @@ Use `toPCs`, `toNPCs`, and `toGraphics` to control targeting.
 - Missing/invalid `gmnotes` JSON does not crash the script; invalid JSON entries are ignored.
 - If a field is omitted, defaults listed above are used.
 - Status markers are added idempotently (no duplicates).
+- If an aura source token is deleted, impacted tokens are cleaned up using tracked aura membership data.
 
 ## Known Limitations (Current Build)
 
-- Aura caching rebuilds based on `add:graphic`, `change:graphic`, startup, and manual commands; unusual edge cases may still require `!at-rebuild`.
+- Aura caching rebuilds based on `add:graphic`, `destroy:graphic`, `change:graphic`, startup, and manual commands; unusual edge cases may still require `!at-rebuild`.
 - Marked as in development/testing by author.
 
 ## Minimal Setup Checklist
