@@ -1,5 +1,12 @@
 Changelog for AuraTriggers API Mod
 
+V 0.3 
+- Added layer-based targeting via the aura `toLayers` setting.
+- Added support for multiple aura definitions sharing the same color; all matching entries are now loaded and processed.
+- Updated chat action variable replacement so `[ANAME]` resolves to the aura effect name and `[ATNAME]` resolves to the aura source token name.
+- Added internal active-aura source detection helper logic used when rechecking page-wide overlaps.
+- Removed unused placeholder config settings from the script.
+
 V 0.2 
 - Moving tokens with auras now triggers an aura check for all tokens on the same page.
 - Removed lots of debugging messages

@@ -19,17 +19,12 @@ const AuraTriggers = (() => {
 
     // Configuration schema version. This represents the last time changes were made to the configuration values
     // saved between sessions, and is not necessarially the same as the API version number.
-    const APIVERSION = "0.2";
+    const APIVERSION = "0.3";
 
     var APILANGUAGE = "english";
 
+    // No config settings defined at this time
     var configSettings = {
-        // "groupinit_include_players": { type: "toggle", name: "GroupInit Players?", defaultValue: false },
-        // "show_button_help_on_list": { type: "toggle", name: "Show button help text on Encounter List?", defaultValue: false },
-        // "override_oneclick_settings": { type: "toggle", name: "Override OneClick Settings?", defaultValue: false },
-        // "columns": { type: "string", name: "column_values", defaultValue: "bar|HP|3;attr|AC|npc_ac" },
-        // "resetValues": { type: "string", name: "Values to save for reset", defaultValue: "left;top;width;height;bar3_value;bar3_max;statusmarkers" },
-        // "include_drawings": { type: "toggle", name: "Include drawing objects when creating encounters", defaultValue: false },
     }
 
     const tokensInAuras = new Map();
@@ -42,6 +37,7 @@ const AuraTriggers = (() => {
             initializeState();
         }
 
+        // Display API info in the console log
         log(`-=> ${APINAME} - ${APIVERSION} by ${APIAUTHOR} Ready <=- Meta Offset : ${API_Meta.AuraTriggers.offset}`);
         sendChat("AuraTriggers", `${APINAME} v${APIVERSION} is loaded, but this API Mod is in development/testing and NOT ready for prime time. DO NOT USE in your live game yet!.`);
         let pageList = findObjs({ _type: "page" });
@@ -49,8 +45,8 @@ const AuraTriggers = (() => {
             BuildAuraList(page.get("_id"));
         }); 
 
+        // Monitor for new Graphics objects (includes tokens)
         on('add:graphic', function (obj) {
-            // If the aura list on this page is empty, build it.
             BuildAuraList(obj.get("_pageid"));
             checkAuraOverlap(obj.get("_id"));
         });
@@ -62,18 +58,18 @@ const AuraTriggers = (() => {
                 BuildAuraList(obj.get("_pageid"));
             }
 
-            // If the aura radius has changed, rebuild the aura list for this page.
+            // If the aura information has changed, rebuild the aura list for this page.
             if ((obj.get("aura1_radius") !== prev.aura1_radius) || (obj.get("aura2_radius") !== prev.aura2_radius) ||
                 (obj.get("aura1_color") !== prev.aura1_color) || (obj.get("aura2_color") !== prev.aura2_color) ||
                 (obj.get("aura1_square") !== prev.aura1_square) || (obj.get("aura2_square") !== prev.aura2_square) ||
                 (obj.get("gmnotes") !== prev.gmnotes)) {
-                log("Aura changed for: " + obj.get("name"));
                 BuildAuraList(obj.get("_pageid"));
             };
 
+            // If the modified token is on the aura list, check all tokens on the page for overlaps
+            // To allow time for Roll20 to update the token's position, this is done with a slight delay.
             if (tokenHasActiveAura(obj.get("_id"))) {
                 setTimeout(function () {
-                    //sendChat("AuraTriggers", "!at-checkall");
                     let pageTokens = findObjs({ _type: "graphic", _pageid: obj.get("_pageid") });
                     _.each(pageTokens, function (token) {
                         checkAuraOverlap(token.get("_id"));
@@ -81,7 +77,7 @@ const AuraTriggers = (() => {
                 }, 200);
             }
 
-            // If the token has moved, check for aura overlap with this token.
+            // If the token has moved, check for aura overlaps with this token.
             if ((obj.get("left") !== prev.left) || (obj.get("top") !== prev.top)) {
                 if (obj.get("aura1_radius") !== 0 || obj.get("aura2_radius") !== 0) {
                     BuildAuraList(obj.get("_pageid"));
@@ -90,7 +86,9 @@ const AuraTriggers = (() => {
             }
         });
 
+        // Handle direct API commands for utilities and testing
         on('chat:message', function (msg) {
+            // Clears ALL auras on ALL tokens in the game. Use with caution!
             if (msg.type == "api" && msg.content.indexOf("!at-clearallauras") === 0) {
                 log("Clearing all auras on all pages.");
                 let objList = findObjs({ _type: "graphic" });
@@ -103,6 +101,8 @@ const AuraTriggers = (() => {
                     BuildAuraList(page.get("_id"));
                 });
             }
+
+            // Rebuilds the aura lists for all pages.
             if (msg.type == "api" && (msg.content.indexOf("!at-rebuild") === 0)) {
                 log("Rebuilding aura lists for all pages.");
                 let auraCount = 0;
@@ -114,6 +114,7 @@ const AuraTriggers = (() => {
                 sendChat("AuraTriggers", "/w gm Aura lists rebuilt for all pages. Total active auras: " + auraCount);
             }
 
+            // Check for overlaps on all tokens on all pages.
             if (msg.type == "api" && msg.content.indexOf("!at-checkall") === 0) {
                 let pages = findObjs({ _type: "page" });
                 _.each(pages, function (page) {
@@ -126,9 +127,12 @@ const AuraTriggers = (() => {
         });
     });
 
+    // Scan all tokens on the page to find tokens with auras. If the aura is referenced in the gmnotes, add it to the
+    // activeAuras list for the page and cache its information.
     function BuildAuraList(pageId) {
         let pageGraphics = findObjs({ _type: "graphic", _pageid: pageId });
         activeAuras[pageId] = [];
+        
         let scale = 1.0
         let mapIncrement = 5;
 
@@ -144,7 +148,6 @@ const AuraTriggers = (() => {
                 if (auraInfo) {
                     try {
                         auraParsed = JSON.parse(auraInfo);
-                        //log("Parsed aura info for " + graphic.get("name") + ": " + JSON.stringify(auraParsed));
                     } catch (e) {
                         //log("Error parsing JSON: " + e.message)
                     }
@@ -152,11 +155,11 @@ const AuraTriggers = (() => {
 
                 let auraActions = []
 
-                if ((Math.abs(graphic.get("aura1_radius")) > 0) && getAuraByColor(auraParsed, graphic.get("aura1_color"))) {
-                    auraActions.push(getAuraByColor(auraParsed, graphic.get("aura1_color")))
+                if (Math.abs(graphic.get("aura1_radius")) > 0) {
+                    auraActions.push.apply(auraActions, getAurasByColor(auraParsed, graphic.get("aura1_color")));
                 }
-                if ((Math.abs(graphic.get("aura2_radius")) > 0) && getAuraByColor(auraParsed, graphic.get("aura2_color"))) {
-                    auraActions.push(getAuraByColor(auraParsed, graphic.get("aura2_color")))
+                if (Math.abs(graphic.get("aura2_radius")) > 0) {
+                    auraActions.push.apply(auraActions, getAurasByColor(auraParsed, graphic.get("aura2_color")));
                 }
 
                 _.each(auraActions, function (auraAction) {
@@ -194,12 +197,15 @@ const AuraTriggers = (() => {
                         aura_chataction_exit: (auraAction.chatActionOnExit !== undefined) ? auraAction.chatActionOnExit : "",
                         aura_chataction_inside: (auraAction.chatActionWhileInside !== undefined) ? auraAction.chatActionWhileInside : "",
                         aura_applySelf: (auraAction.applySelf !== undefined) ? auraAction.applySelf : false,
+                        onObjectLayer : auraAction.toLayers ? auraAction.toLayers.includes("objects") || auraAction.toLayers.includes("token") : true,
+                        onGMLayer : auraAction.toLayers ? auraAction.toLayers.includes("gmlayer") : false,
+                        onMapLayer : auraAction.toLayers ? auraAction.toLayers.includes("map") : false,
+                        onWallLayer : auraAction.toLayers ? auraAction.toLayers.includes("walls") : false,
+                        onForegroundLayer : auraAction.toLayers ? auraAction.toLayers.includes("foreground") : false,
                     }
                     activeAuras[pageId].push(thisTokenAura);
                 }
                 );
-
-                //log("Active Auras on page " + pageId + ": " + activeAuras[pageId].length);
             }
         });
     }
@@ -213,8 +219,7 @@ const AuraTriggers = (() => {
         let pageId = token.get("_pageid");
 
         let t1 = getTokenCoordsPixel(token)
-
-        //log("Checking auras for token: " + token.get("name") + " against " + activeAuras[pageId].length + " active auras on page.");
+        
         _.each(activeAuras[pageId], function (auraInfo) {
             let checkAura = false;
 
@@ -222,6 +227,11 @@ const AuraTriggers = (() => {
             if (auraInfo.tokenId !== tokenId && isCharacter && !isPC && auraInfo.auraToNPCs) { checkAura = true; }
             if (auraInfo.tokenId !== tokenId && isPC && auraInfo.auraToPCs) { checkAura = true; }
             if (auraInfo.tokenId !== tokenId && !isCharacter && auraInfo.auraToGraphics) { checkAura = true; }
+            if (token.get("layer") === "objects" && !auraInfo.onObjectLayer) { checkAura = false; }
+            if (token.get("layer") === "gmlayer" && !auraInfo.onGMLayer) { checkAura = false; }
+            if (token.get("layer") === "map" && !auraInfo.onMapLayer) { checkAura = false; }
+            if (token.get("layer") === "walls" && !auraInfo.onWallLayer) { checkAura = false; }
+            if (token.get("layer") === "foreground" && !auraInfo.onForegroundLayer) { checkAura = false; }
 
             if (checkAura) {
 
@@ -260,7 +270,6 @@ const AuraTriggers = (() => {
                 if (event == "inside" && auraInfo.aura_chataction_inside) {
                     sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_inside, auraInfo, token));
                 }
-                //log("Checked aura '" + auraInfo.auraName + "' for token '" + token.get("name") + "'. Event: " + event);
             }
         });
     }
@@ -294,19 +303,6 @@ const AuraTriggers = (() => {
         _.each(configSettings, function (item, key) {
             state[APINAME].config[key] = item.defaultValue;
         });
-    }
-
-    function getTokenCoords(token, scale) {
-        try {
-            const left = token.get("left");
-            const top = token.get("top");
-            const scaledLeft = left / (scale * 70);
-            const scaledTop = top / (scale * 70);
-            return { x: scaledLeft, y: scaledTop };
-        } catch (error) {
-            log(`Error in getTokenCoords for token ID ${token.id}: ${error.message}`);
-            return { x: 0, y: 0 };
-        }
     }
 
     function getTokenCoordsPixel(token) {
@@ -368,22 +364,6 @@ const AuraTriggers = (() => {
         return (dx * dx + dy * dy) < (r1 * r1);
     }
 
-    function decodeAndStripHtmlSimplx(input) {
-        if (typeof input !== "string") {
-            return "";
-        }
-
-        let decoded = input;
-
-        try {
-            decoded = decodeURIComponent(input);
-        } catch (e) {
-            decoded = input;
-        }
-
-        return decoded.replace(/<[^>]*>/g, "");
-    }
-
     function decodeAndStripHtmlSimple(input) {
         if (typeof input !== "string") {
             return "";
@@ -432,12 +412,12 @@ const AuraTriggers = (() => {
         return decoded;
     }
 
-    function getAuraByColor(auras, color) {
+    function getAurasByColor(auras, color) {
         if (!Array.isArray(auras)) {
-            return null;
+            return [];
         }
 
-        return auras.find(a => a.color === color) || null;
+        return auras.filter(a => a.color === color);
     }
 
     function ensureTokenAuraSet(state, tokenId) {
@@ -497,7 +477,8 @@ const AuraTriggers = (() => {
 
         const result = replaceTemplateVars(text, {
             TNAME: token.get("name"),
-            ANAME: auraInfo.auraTokenName,
+            ANAME: auraInfo.auraName,
+            ATNAME: auraInfo.auraTokenName,
             TID: token.get("_id"),
             ATID: auraInfo.tokenId
         });

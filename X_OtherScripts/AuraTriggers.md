@@ -4,7 +4,7 @@
 
 AuraTriggers is currently **experimental**.
 
-- API version: `0.2`
+- API version: `0.3`
 - Author: Kurt Jaegers
 - Runtime warning from script: not ready for live/production games yet
 
@@ -55,7 +55,9 @@ Forces overlap checks for all graphic tokens on all pages.
 
 AuraTriggers expects `gmnotes` on the aura token to decode into a JSON array.
 
-Use one object per color definition:
+You can define one or more objects for the same aura color. Every matching entry for `aura1_color` and `aura2_color` is loaded and processed.
+
+Example:
 
 ```json
 [
@@ -66,11 +68,19 @@ Use one object per color definition:
 		"toPCs": true,
 		"toNPCs": true,
 		"toGraphics": false,
+		"toLayers": "objects,gmlayer",
 		"applySelf": false,
 		"removeOnExit": true,
 		"chatActionOnEnter": "/em [TNAME] enters [ANAME]",
 		"chatActionWhileInside": "!script --target [TID] --aura [ANAME]",
 		"chatActionOnExit": "/em [TNAME] leaves [ANAME]"
+	},
+	{
+		"name": "Blessing Field Visual",
+		"color": "#00ff00",
+		"icon": "angel-outfit",
+		"toGraphics": true,
+		"toLayers": ["map", "objects"]
 	}
 ]
 ```
@@ -83,26 +93,33 @@ Use one object per color definition:
 - `toPCs` (boolean, default `true`): Apply to player-controlled character tokens.
 - `toNPCs` (boolean, default `true`): Apply to non-player-controlled character tokens.
 - `toGraphics` (boolean, default `false`): Apply to non-character graphics.
+- `toLayers` (comma separated string, default `objects`): Restrict affected targets to specific Roll20 layers.
+- Supported layer values: `objects` (alias `token`), `gmlayer`, `map`, `walls`, `foreground`.
 - `applySelf` (boolean, default `false`): Apply the aura effect to the aura source token itself.
 - `removeOnExit` (boolean, default `true`): Remove status marker when token exits aura.
 - `chatActionOnEnter` (string, default `""`): Sent once when token enters.
 - `chatActionWhileInside` (string, default `""`): Sent on movement checks while token remains inside.
 - `chatActionOnExit` (string, default `""`): Sent once when token exits.
 
+If multiple objects use the same `color`, all of them are applied.
+
 ## Matching Rules
 
 - Aura entries are loaded only for tokens with non-zero `aura1_radius` and/or `aura2_radius`.
-- A JSON aura entry is used only if its `color` matches one of the token's aura colors.
+- Every JSON aura entry whose `color` matches one of the token's aura colors is used.
+- Multiple entries with the same color are all applied; the script does not stop at the first match.
 - Effective radius in pixels is computed from Roll20 aura radius units using page scale.
 - Circular and square checks include token width when determining overlap.
 - Aura source detection uses an internal helper (`tokenHasActiveAura`) against cached page aura data.
+- Layer filters are applied after token-type checks (`toPCs`, `toNPCs`, `toGraphics`).
 
 ## Event Variables for Chat Actions
 
 These placeholders are replaced inside chat action strings:
 
 - `[TNAME]` -> moving token name
-- `[ANAME]` -> aura source token name
+- `[ANAME]` -> aura effect name from JSON `name`
+- `[ATNAME]` -> aura source token name
 - `[TID]` -> moving token id
 - `[ATID]` -> aura source token id
 
@@ -148,6 +165,7 @@ Use `toPCs`, `toNPCs`, and `toGraphics` to control targeting.
 	- Verify `removeOnExit` is `true`.
 - Wrong targets affected:
 	- Verify `toPCs`, `toNPCs`, `toGraphics` flags.
+	- Verify `toLayers` includes the moving token's layer.
 - Script appears stale:
 	- Run `!at-rebuild`.
 
