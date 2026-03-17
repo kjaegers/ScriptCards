@@ -4,7 +4,7 @@
 
 AuraTriggers is currently **experimental**.
 
-- API version: `0.3`
+- API version: `0.5`
 - Author: Kurt Jaegers
 - Runtime warning from script: not ready for live/production games yet
 
@@ -32,7 +32,7 @@ The script reads aura behavior rules from each aura token's `gmnotes` JSON.
 	 - Runs exit chat actions and removes status markers when `removeOnExit` is enabled.
 	 - Rebuilds the aura cache for the token page.
 5. On `change:graphic`:
-	 - If aura settings or `gmnotes` changed, it rebuilds the active aura list for that page.
+	 - If aura settings or `gmnotes` changed, it cleans up disabled auras first, then rebuilds the active aura list for that page.
 	 - If the changed token is an aura source token, it rechecks all tokens on that page.
 	 - If token position changed, it checks overlap against active auras.
 6. Overlap checks determine one of four events:
@@ -55,6 +55,10 @@ Sets `aura1_radius` and `aura2_radius` to `0` on all graphics across all pages, 
 ### `!at-checkall`
 
 Forces overlap checks for all graphic tokens on all pages.
+
+### `!at-report`
+
+Logs all currently cached active auras via `log()`, including page id, aura name, and configured `attributeFilter` (or `(none)`).
 
 ## Aura Configuration in `gmnotes`
 
@@ -93,27 +97,54 @@ Example:
 ### Field Reference
 
 - `name` (string): Display/logical name for the aura effect.
-- `color` (string): Must exactly match the aura color on token (`aura1_color` or `aura2_color`).
+- `color` (string): Must exactly match the aura color on token, with the # sign (`aura1_color` or `aura2_color`).
 - `icon` (string): Roll20 status marker key to apply while in aura.
 - `toPCs` (boolean, default `true`): Apply to player-controlled character tokens.
 - `toNPCs` (boolean, default `true`): Apply to non-player-controlled character tokens.
 - `toGraphics` (boolean, default `false`): Apply to non-character graphics.
-- `toLayers` (string or array, default `objects`): Restrict affected targets to specific Roll20 layers.
-- Examples: `"objects,gmlayer"` or `["objects", "gmlayer"]`.
-- Supported layer values: `objects` (alias `token`), `gmlayer`, `map`, `walls`, `foreground`.
+- `toLayers` (string, default `objects`): Restrict affected targets to specific Roll20 layers. 
+    Examples: `"objects,gmlayer"`.
+    Supported layer values: `objects` (alias `token`), `gmlayer`, `map`, `walls`, `foreground`.
 - `applySelf` (boolean, default `false`): Apply the aura effect to the aura source token itself.
 - `removeOnExit` (boolean, default `true`): Remove status marker when token exits aura.
-- `chatActionOnEnter` (string, default `""`): Sent once when token enters.
-- `chatActionWhileInside` (string, default `""`): Sent on movement checks while token remains inside.
-- `chatActionOnExit` (string, default `""`): Sent once when token exits.
+- `chatActionOnEnter` (string, default `""`): Sent once when token enters an aura.
+- `chatActionWhileInside` (string, default `""`): Sent on movement checks while token remains inside an aura.
+- `chatActionOnExit` (string, default `""`): Sent once when token exits an aura.
+- `attributeFilter` (string, optional): Additional character-attribute condition(s) required for the aura to apply.
 
-If multiple objects use the same `color`, all of them are applied.
+If multiple aura entries use the same `color`, all of them are applied.
+
+### `attributeFilter` Syntax
+
+- Multiple conditions can be chained with `|`.
+- Each condition is parsed as: `<attrName> <operator> <value>`.
+- The first token is always the attribute name.
+- The second token is always the comparison operator.
+- All remaining tokens are joined as the value (so values can include spaces).
+- Note that "name" and "character_name" are special-cased to check the character's name instead of an attribute, and "token_name" checks the token name.
+
+Supported operators:
+
+- `-eq` (equals)
+- `-ne` (not equals)
+- `-lt` (less than, numeric)
+- `-gt` (greater than, numeric)
+- `-le` (less than or equal, numeric)
+- `-ge` (greater than or equal, numeric)
+- `-inc` (contains)
+- `-ninc` (does not contain)
+- `-startswith`
+- `-endswith`
+
+Example:
+- "attributeFilter": "class -eq wizard"
 
 ## Matching Rules
 
 - Aura entries are loaded only for tokens with non-zero `aura1_radius` and/or `aura2_radius`.
 - Every JSON aura entry whose `color` matches one of the token's aura colors is used.
 - Multiple entries with the same color are all applied; the script does not stop at the first match.
+- Internal aura tracking uses a unique composite id format: `tokenId_color_jsonIndex`.
 - Effective radius in pixels is computed from Roll20 aura radius units using page scale.
 - Circular and square checks include token width when determining overlap.
 - Aura source detection uses an internal helper (`tokenHasActiveAura`) against cached page aura data.
@@ -147,6 +178,7 @@ Use `toPCs`, `toNPCs`, and `toGraphics` to control targeting.
 - If a field is omitted, defaults listed above are used.
 - Status markers are added idempotently (no duplicates).
 - If an aura source token is deleted, impacted tokens are cleaned up using tracked aura membership data.
+- Missing character attributes used by `attributeFilter` are treated as empty strings instead of causing runtime errors.
 
 ## Known Limitations (Current Build)
 

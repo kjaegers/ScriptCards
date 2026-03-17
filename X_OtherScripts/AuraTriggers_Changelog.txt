@@ -1,5 +1,11 @@
 Changelog for AuraTriggers API Mod
 
+V 0.5
+- Added `!at-report` command to log cached active auras, including aura name and attribute filter values.
+- Added `attributeFilter` support in aura JSON to gate aura application based on character attributes.
+- Added `NewGetAttrByName` helper (using `findObjs`) to avoid `Error: No attribute or sheet field found for character_id` log spam.
+- Fixed runtime errors when filtered attributes are missing by safely normalizing undefined/null attribute values.
+
 V 0.4
 - Added cleanup for destroyed aura-source tokens so impacted tokens can process exit actions and status-marker removal.
 - Fixed aura tracking to correctly handle multiple same-color aura definitions by including JSON record index in aura_id.

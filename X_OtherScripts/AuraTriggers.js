@@ -19,7 +19,7 @@ const AuraTriggers = (() => {
 
     // Configuration schema version. This represents the last time changes were made to the configuration values
     // saved between sessions, and is not necessarially the same as the API version number.
-    const APIVERSION = "0.4";
+    const APIVERSION = "0.5";
 
     var APILANGUAGE = "english";
 
@@ -43,7 +43,7 @@ const AuraTriggers = (() => {
         let pageList = findObjs({ _type: "page" });
         _.each(pageList, function (page) {
             BuildAuraList(page.get("_id"));
-        }); 
+        });
 
         // Monitor for new Graphics objects (includes tokens)
         on('add:graphic', function (obj) {
@@ -112,6 +112,30 @@ const AuraTriggers = (() => {
                 });
             }
 
+            // Report all active auras
+            if (msg.type == "api" && msg.content.indexOf("!at-report") === 0) {
+                let pageIds = Object.keys(activeAuras);
+                let totalAuras = 0;
+
+                if (pageIds.length === 0) {
+                    log("AuraTriggers Report: No cached aura data found. Run !at-rebuild first if needed.");
+                    return;
+                }
+
+                _.each(pageIds, function (pageId) {
+                    let pageAuras = activeAuras[pageId] || [];
+                    totalAuras += pageAuras.length;
+
+                    _.each(pageAuras, function (auraInfo) {
+                        let filterText = auraInfo.aura_attribute_filter ? auraInfo.aura_attribute_filter : "(none)";
+                        log(`AuraTriggers Report | Page: ${pageId} | Aura: ${auraInfo.auraName || "(unnamed)"} | Attribute Filter: ${filterText}`);
+                    });
+                });
+
+                log(`AuraTriggers Report Complete | Total Auras: ${totalAuras}`);
+            }
+
+
             // Rebuilds the aura lists for all pages.
             if (msg.type == "api" && (msg.content.indexOf("!at-rebuild") === 0)) {
                 log("Rebuilding aura lists for all pages.");
@@ -142,7 +166,7 @@ const AuraTriggers = (() => {
     function BuildAuraList(pageId) {
         let pageGraphics = findObjs({ _type: "graphic", _pageid: pageId });
         activeAuras[pageId] = [];
-        
+
         let scale = 1.0
         let mapIncrement = 5;
 
@@ -158,6 +182,7 @@ const AuraTriggers = (() => {
                 if (auraInfo) {
                     try {
                         auraParsed = JSON.parse(auraInfo);
+                        //log(`Parsed GM Notes for token '${graphic.get("name")}': ${JSON.stringify(auraParsed)}`);
                     } catch (e) {
                         //log("Error parsing JSON: " + e.message)
                     }
@@ -175,6 +200,7 @@ const AuraTriggers = (() => {
                 }
 
                 _.each(auraActions, function (auraAction) {
+                    //log(`Processing aura action for token '${graphic.get("name")}' with aura name '${auraAction.name}' and color '${auraAction.color}'`);
                     let workRadius = undefined;
                     let workSquare = false;
                     let workIcon = undefined;
@@ -191,6 +217,8 @@ const AuraTriggers = (() => {
                         workIcon = auraAction.icon;
                     }
 
+                    //log(auraAction.attributeFilter);
+
                     let thisTokenAura = {
                         tokenId: graphic.get("_id"),
                         aura_active: true,
@@ -204,16 +232,17 @@ const AuraTriggers = (() => {
                         auraToGraphics: (auraAction.toGraphics !== undefined) ? auraAction.toGraphics : false,
                         removeOnExit: (auraAction.removeOnExit !== undefined) ? auraAction.removeOnExit : true,
                         aura_icon: workIcon,
+                        aura_attribute_filter: auraAction.attributeFilter || null,
                         aura_id: graphic.get("_id") + "_" + auraAction.color + "_" + (auraAction._jsonIndex !== undefined ? auraAction._jsonIndex : "0"),
                         aura_chataction_enter: (auraAction.chatActionOnEnter !== undefined) ? auraAction.chatActionOnEnter : "",
                         aura_chataction_exit: (auraAction.chatActionOnExit !== undefined) ? auraAction.chatActionOnExit : "",
                         aura_chataction_inside: (auraAction.chatActionWhileInside !== undefined) ? auraAction.chatActionWhileInside : "",
                         aura_applySelf: (auraAction.applySelf !== undefined) ? auraAction.applySelf : false,
-                        onObjectLayer : auraAction.toLayers ? auraAction.toLayers.includes("objects") || auraAction.toLayers.includes("token") : true,
-                        onGMLayer : auraAction.toLayers ? auraAction.toLayers.includes("gmlayer") : false,
-                        onMapLayer : auraAction.toLayers ? auraAction.toLayers.includes("map") : false,
-                        onWallLayer : auraAction.toLayers ? auraAction.toLayers.includes("walls") : false,
-                        onForegroundLayer : auraAction.toLayers ? auraAction.toLayers.includes("foreground") : false,
+                        onObjectLayer: auraAction.toLayers ? auraAction.toLayers.includes("objects") || auraAction.toLayers.includes("token") : true,
+                        onGMLayer: auraAction.toLayers ? auraAction.toLayers.includes("gmlayer") : false,
+                        onMapLayer: auraAction.toLayers ? auraAction.toLayers.includes("map") : false,
+                        onWallLayer: auraAction.toLayers ? auraAction.toLayers.includes("walls") : false,
+                        onForegroundLayer: auraAction.toLayers ? auraAction.toLayers.includes("foreground") : false,
                     }
                     activeAuras[pageId].push(thisTokenAura);
                 }
@@ -231,7 +260,7 @@ const AuraTriggers = (() => {
         let pageId = token.get("_pageid");
 
         let t1 = getTokenCoordsPixel(token)
-        
+
         _.each(activeAuras[pageId], function (auraInfo) {
             let checkAura = false;
 
@@ -244,6 +273,66 @@ const AuraTriggers = (() => {
             if (token.get("layer") === "map" && !auraInfo.onMapLayer) { checkAura = false; }
             if (token.get("layer") === "walls" && !auraInfo.onWallLayer) { checkAura = false; }
             if (token.get("layer") === "foreground" && !auraInfo.onForegroundLayer) { checkAura = false; }
+            if (auraInfo.aura_attribute_filter && isCharacter) {
+                //log(`Checking attribute filter for token '${token.get("name")}' against aura '${auraInfo.auraName}' with filter '${auraInfo.aura_attribute_filter}'`);
+                let attrCheck = true;
+                let attrList = auraInfo.aura_attribute_filter.split("|").map(s => s.trim().toLowerCase());
+                //log(`Parsed attribute filter list: ${JSON.stringify(attrList)}`);
+                _.each(attrList, function (attr) {
+                    let attrParts = attr.trim().split(/\s+/);
+                    let attrName = attrParts[0];
+                    let attrComp = attrParts[1];
+                    let attrValue = attrParts.slice(2).join(" ");
+
+                    if (!attrName || !attrComp || attrValue === "") {
+                        attrCheck = false;
+                        return;
+                    }
+
+                    let rawAttrValue = NewGetAttrByName(theCharacter.id, attrName);
+                    if (attrName.toLowerCase() == "name" || attrName.toLowerCase() == "character_name") { rawAttrValue = theCharacter.get("name"); }
+                    if (attrName.toLowerCase() == "token_name") { rawAttrValue = token.get("name"); }
+                    if (rawAttrValue) { rawAttrValue = String(rawAttrValue).trim().toLowerCase(); }
+                    let curValue = (rawAttrValue === undefined || rawAttrValue === null) ? "" : String(rawAttrValue).trim().toLowerCase();
+                    let testRes = false;
+                    switch (attrComp) {
+                        case "-eq":
+                            testRes = curValue == attrValue;
+                            break;
+                        case "-lt":
+                            testRes = parseFloat(curValue) < parseFloat(attrValue);
+                            break;
+                        case "-gt":
+                            testRes = parseFloat(curValue) > parseFloat(attrValue);
+                            break;
+                        case "-le":
+                            testRes = parseFloat(curValue) <= parseFloat(attrValue);
+                            break;
+                        case "-ge":
+                            testRes = parseFloat(curValue) >= parseFloat(attrValue);
+                            break;
+                        case "-ne":
+                            testRes = curValue != attrValue;
+                            break;
+                        case "-inc":
+                            testRes = curValue.includes(attrValue);
+                            break;
+                        case "-ninc":
+                            testRes = !curValue.includes(attrValue);
+                            break;
+                        case "-startswith":
+                            testRes = curValue.startsWith(attrValue);
+                            break;
+                        case "-endswith":
+                            testRes = curValue.endsWith(attrValue);
+                            break;  
+                        default:
+                            testRes = false;
+                    }
+                    attrCheck = testRes;
+                });
+                if (!attrCheck) { checkAura = false; }
+            }
 
             if (checkAura) {
 
@@ -430,7 +519,7 @@ const AuraTriggers = (() => {
 
     // Compares old aura IDs to new ones to identify which were disabled.
     // Uses aura_id for stable comparison.
-    
+
     // Returns true if the given token (by id) is the source of at least one active aura on its page.
     function tokenHasActiveAura(tokenId) {
         let token = getObj("graphic", tokenId);
@@ -580,6 +669,33 @@ const AuraTriggers = (() => {
         return decoded;
     }
 
+    function NewGetAttrByName(characterId, attrName, valueType) {
+        if (!characterId || !attrName) {
+            return undefined;
+        }
+
+        let attrs = findObjs({
+            _type: "attribute",
+            _characterid: characterId
+        }) || [];
+
+        let targetName = String(attrName).toLowerCase();
+        let attrObj = attrs.find(function (attr) {
+            let name = attr.get("name");
+            return name && String(name).toLowerCase() === targetName;
+        });
+
+        if (!attrObj) {
+            return undefined;
+        }
+
+        if (valueType && String(valueType).toLowerCase() === "max") {
+            return attrObj.get("max");
+        }
+
+        return attrObj.get("current");
+    }
+
     function getAurasByColor(auras, color) {
         if (!Array.isArray(auras)) {
             return [];
@@ -682,6 +798,8 @@ const AuraTriggers = (() => {
             return match;
         });
     }
+
+    
 
 })();
 
