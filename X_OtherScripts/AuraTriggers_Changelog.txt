@@ -1,5 +1,10 @@
 Changelog for AuraTriggers API Mod
 
+V 0.6:
+- Add VFX to applied/removed auras, potentiallly on the aura token and on the affected token.
+- Add sound playback to applied/removed auras.
+- Registers with both ScriptCards and TokenMod for observer support.
+
 V 0.5
 - Added `!at-report` command to log cached active auras, including aura name and attribute filter values.
 - Added `attributeFilter` support in aura JSON to gate aura application based on character attributes.

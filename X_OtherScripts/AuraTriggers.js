@@ -19,7 +19,7 @@ const AuraTriggers = (() => {
 
     // Configuration schema version. This represents the last time changes were made to the configuration values
     // saved between sessions, and is not necessarially the same as the API version number.
-    const APIVERSION = "0.5";
+    const APIVERSION = "0.6";
 
     var APILANGUAGE = "english";
 
@@ -31,10 +31,87 @@ const AuraTriggers = (() => {
 
     var activeAuras = {};
 
+    function handleObservedTokenChange(obj) {
+        if (!obj || typeof obj.get !== "function") {
+            return;
+        }
+
+        const tokenId = obj.get("_id");
+        const pageId = obj.get("_pageid") || obj.get("_pageId");
+        const gmnotes = decodeAndStripHtmlSimple(obj.get("gmnotes"));
+        const hasValidJson = (() => {
+            try {
+                JSON.parse(gmnotes || "[]");
+                return true;
+            } catch (e) {
+                return false;
+            }
+        })();
+
+        if (hasValidJson && pageId) {
+            BuildAuraList(pageId);
+        }
+
+        if (tokenId) {
+            checkAuraOverlap(tokenId);
+        }
+    }
+
+    function registerScriptCardsObserver(attempt) {
+        const maxAttempts = 50;
+        const retryDelayMs = 200;
+        const tryCount = attempt || 0;
+
+        if (typeof ScriptCards === "undefined") {
+            if (tryCount < maxAttempts) {
+                setTimeout(function () {
+                    registerScriptCardsObserver(tryCount + 1);
+                }, retryDelayMs);
+            }
+            return;
+        }
+
+        // ScriptCards exports an async module Promise.
+        if (ScriptCards && typeof ScriptCards.then === "function") {
+            ScriptCards.then(function (api) {
+                if (api && typeof api.ObserveTokenChange === "function") {
+                    api.ObserveTokenChange(function (obj) {
+                        handleObservedTokenChange(obj);
+                    });
+                }
+            }).catch(function (e) {
+                log(`${APINAME}: Unable to register ScriptCards observer: ${e.message}`);
+            });
+            return;
+        }
+
+        // Backward-compatible fallback if ScriptCards is an object export.
+        if (typeof ScriptCards.ObserveTokenChange === "function") {
+            ScriptCards.ObserveTokenChange(function (obj) {
+                handleObservedTokenChange(obj);
+            });
+            return;
+        }
+
+        if (tryCount < maxAttempts) {
+            setTimeout(function () {
+                registerScriptCardsObserver(tryCount + 1);
+            }, retryDelayMs);
+        }
+    }
+
     on('ready', function () {
         // Check if the state object for this API script has been initialized, and if not, initialize it.
         if (!state[APINAME]) {
             initializeState();
+        }
+
+        registerScriptCardsObserver(0);
+
+        if (typeof TokenMod !== 'undefined' && TokenMod.ObserveTokenChange) {
+            TokenMod.ObserveTokenChange((obj, _prev) => {
+                handleObservedTokenChange(obj);
+            });            
         }
 
         // Display API info in the console log
@@ -182,9 +259,8 @@ const AuraTriggers = (() => {
                 if (auraInfo) {
                     try {
                         auraParsed = JSON.parse(auraInfo);
-                        //log(`Parsed GM Notes for token '${graphic.get("name")}': ${JSON.stringify(auraParsed)}`);
                     } catch (e) {
-                        //log("Error parsing JSON: " + e.message)
+                        log(`${APINAME}: Error parsing JSON on token '${graphic.get("name")}': ${e.message}`);
                     }
                 }
 
@@ -200,7 +276,6 @@ const AuraTriggers = (() => {
                 }
 
                 _.each(auraActions, function (auraAction) {
-                    //log(`Processing aura action for token '${graphic.get("name")}' with aura name '${auraAction.name}' and color '${auraAction.color}'`);
                     let workRadius = undefined;
                     let workSquare = false;
                     let workIcon = undefined;
@@ -216,8 +291,6 @@ const AuraTriggers = (() => {
                         workSquare = graphic.get("aura2_square");
                         workIcon = auraAction.icon;
                     }
-
-                    //log(auraAction.attributeFilter);
 
                     let thisTokenAura = {
                         tokenId: graphic.get("_id"),
@@ -243,6 +316,12 @@ const AuraTriggers = (() => {
                         onMapLayer: auraAction.toLayers ? auraAction.toLayers.includes("map") : false,
                         onWallLayer: auraAction.toLayers ? auraAction.toLayers.includes("walls") : false,
                         onForegroundLayer: auraAction.toLayers ? auraAction.toLayers.includes("foreground") : false,
+                        aura_sourcevfx_onenter: auraAction.sourceVfxOnEnter || null,
+                        aura_sourcevfx_onexit: auraAction.sourceVfxOnExit || null,
+                        aura_targetvfx_onenter: auraAction.targetVfxOnEnter || null,
+                        aura_targetvfx_onexit: auraAction.targetVfxOnExit || null,
+                        aura_sound_onenter: auraAction.soundOnEnter || null,
+                        aura_sound_onexit: auraAction.soundOnExit || null
                     }
                     activeAuras[pageId].push(thisTokenAura);
                 }
@@ -274,10 +353,8 @@ const AuraTriggers = (() => {
             if (token.get("layer") === "walls" && !auraInfo.onWallLayer) { checkAura = false; }
             if (token.get("layer") === "foreground" && !auraInfo.onForegroundLayer) { checkAura = false; }
             if (auraInfo.aura_attribute_filter && isCharacter) {
-                //log(`Checking attribute filter for token '${token.get("name")}' against aura '${auraInfo.auraName}' with filter '${auraInfo.aura_attribute_filter}'`);
                 let attrCheck = true;
                 let attrList = auraInfo.aura_attribute_filter.split("|").map(s => s.trim().toLowerCase());
-                //log(`Parsed attribute filter list: ${JSON.stringify(attrList)}`);
                 _.each(attrList, function (attr) {
                     let attrParts = attr.trim().split(/\s+/);
                     let attrName = attrParts[0];
@@ -325,7 +402,7 @@ const AuraTriggers = (() => {
                             break;
                         case "-endswith":
                             testRes = curValue.endsWith(attrValue);
-                            break;  
+                            break;
                         default:
                             testRes = false;
                     }
@@ -362,12 +439,25 @@ const AuraTriggers = (() => {
                         }
                     }
                 }
+
+                let sourceToken = getObj("graphic", auraInfo.tokenId);
+
                 if (event == "enter" && auraInfo.aura_chataction_enter) {
                     sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_enter, auraInfo, token));
+                    if (auraInfo.aura_sourcevfx_onenter) { playVFX(sourceToken, auraInfo.aura_sourcevfx_onenter); }
+                    if (auraInfo.aura_targetvfx_onenter) { playVFX(token, auraInfo.aura_targetvfx_onenter); }
+
+                    if (auraInfo.aura_sound_onenter) { playJukeboxTrack(auraInfo.aura_sound_onenter); }
                 }
+
                 if (event == "exit" && auraInfo.aura_chataction_exit) {
                     sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_exit, auraInfo, token));
+                    if (auraInfo.aura_sourcevfx_onexit) { playVFX(sourceToken, auraInfo.aura_sourcevfx_onexit); }
+                    if (auraInfo.aura_targetvfx_onexit) { playVFX(token, auraInfo.aura_targetvfx_onexit); }
+
+                    if (auraInfo.aura_sound_onexit) { playJukeboxTrack(auraInfo.aura_sound_onexit); }
                 }
+
                 if (event == "inside" && auraInfo.aura_chataction_inside) {
                     sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_inside, auraInfo, token));
                 }
@@ -566,7 +656,7 @@ const AuraTriggers = (() => {
         try {
             return { x: token.get("left"), y: token.get("top"), width: token.get("width") };
         } catch (error) {
-            log(`Error in getTokenCoordsPixel for token ID ${token.id}: ${error.message}`);
+            log(`${APINAME}: Error in getTokenCoordsPixel for token ID ${token.id}: ${error.message}`);
             return { x: 0, y: 0, width: 0 };
         }
     }
@@ -599,7 +689,6 @@ const AuraTriggers = (() => {
         const r2 = t2.width / 2;
         const maxDistance = Math.floor(r2 + aura_radius + r1);
 
-        //log(`Checking distance for circular aura: Token '${t1.tokenName}' to Aura '${t2.auraTokenName}'. Distance squared: ${distanceSquared}, Max distance squared: ${maxDistance * maxDistance}`);
         return distanceSquared < (maxDistance * maxDistance);
     }
 
@@ -799,7 +888,46 @@ const AuraTriggers = (() => {
         });
     }
 
-    
+    function playJukeboxTrack(trackname) {
+        let track = findObjs({ type: 'jukeboxtrack', title: trackname })[0];
+        if (track) {
+            track.set('softstop', false);
+            track.set('playing', true);
+        } else {
+            log(`${APINAME}: Jukebox track ${trackname} not found in game.`);
+        }
+    }
+
+    function playVFX(token, vfx) {
+        try {
+
+            if (token) {
+                var x = token.get("left");
+                var y = token.get("top");
+                var pid = token.get("_pageid");
+                if (vfx.toLowerCase() == "ping" || vfx.toLowerCase() == "pingall") {
+                    sendPing(x, y, pid, APINAME, (vfx.toLowerCase() == "pingall"));
+                } else {
+                    let effectInfo = findObjs({
+                        _type: "custfx",
+                        name: vfx.trim()
+                    });
+                    if (!_.isEmpty(effectInfo)) {
+                        spawnFxWithDefinition(x, y, effectInfo[0].get('definition'), pid);
+                    } else {
+                        let t = vfx.trim();
+                        if (t !== "" && t !== "none") {
+                            spawnFx(x, y, t, pid);
+                        }
+                    }
+                }
+            }
+
+        } catch (e) {
+            log(`${APINAME}: Error creating VFX ${e.message} ${vfx}`)
+        }
+    }
+
 
 })();
 

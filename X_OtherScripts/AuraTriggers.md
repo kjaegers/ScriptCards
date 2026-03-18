@@ -4,7 +4,7 @@
 
 AuraTriggers is currently **experimental**.
 
-- API version: `0.5`
+- API version: `0.6`
 - Author: Kurt Jaegers
 - Runtime warning from script: not ready for live/production games yet
 
@@ -15,6 +15,7 @@ AuraTriggers watches token movement and aura changes, then:
 - Detects when tokens enter, remain inside, or exit configured auras
 - Adds/removes status markers when configured
 - Fires optional chat actions for enter/inside/exit events
+- Can trigger optional source/target VFX and jukebox sounds on enter/exit
 - Supports circular and square aura geometry (matching Roll20 aura shape)
 
 The script reads aura behavior rules from each aura token's `gmnotes` JSON.
@@ -41,6 +42,7 @@ The script reads aura behavior rules from each aura token's `gmnotes` JSON.
 	 - `exit`
 	 - `none`
 7. Based on event + aura config, it updates status markers and optionally sends chat actions.
+8. On enter/exit events, optional VFX and sound effects can also be triggered.
 
 ## Chat Commands
 
@@ -62,7 +64,9 @@ Logs all currently cached active auras via `log()`, including page id, aura name
 
 ## Aura Configuration in `gmnotes`
 
-AuraTriggers expects `gmnotes` on the aura token to decode into a JSON array.
+AuraTriggers expects `gmnotes` on the aura token to decode into a JSON array. The JSON must be an array of objects, where each object defines one aura behavior configuration. Each object must include a `color` field that exactly matches the token's `aura1_color` or `aura2_color` to be applied.
+
+Strict JSON parsing is used, so formatting errors will cause the entire `gmnotes` entry to be ignored. The script logs parsing errors to the API console. I recommend using a JSON linter (such as https://jsonlint.com/) to validate your config before pasting it into the gmnotes field. Always paste as plain text (CTRL-Shift-V).
 
 You can define one or more objects for the same aura color. Every matching entry for `aura1_color` and `aura2_color` is loaded and processed.
 
@@ -110,6 +114,12 @@ Example:
 - `chatActionOnEnter` (string, default `""`): Sent once when token enters an aura.
 - `chatActionWhileInside` (string, default `""`): Sent on movement checks while token remains inside an aura.
 - `chatActionOnExit` (string, default `""`): Sent once when token exits an aura.
+- `sourceVfxOnEnter` (string, optional): VFX played at aura source token on enter event.
+- `targetVfxOnEnter` (string, optional): VFX played at affected token on enter event.
+- `sourceVfxOnExit` (string, optional): VFX played at aura source token on exit event.
+- `targetVfxOnExit` (string, optional): VFX played at affected token on exit event.
+- `soundOnEnter` (string, optional): Jukebox track title to play on enter event.
+- `soundOnExit` (string, optional): Jukebox track title to play on exit event.
 - `attributeFilter` (string, optional): Additional character-attribute condition(s) required for the aura to apply.
 
 If multiple aura entries use the same `color`, all of them are applied.
@@ -179,6 +189,7 @@ Use `toPCs`, `toNPCs`, and `toGraphics` to control targeting.
 - Status markers are added idempotently (no duplicates).
 - If an aura source token is deleted, impacted tokens are cleaned up using tracked aura membership data.
 - Missing character attributes used by `attributeFilter` are treated as empty strings instead of causing runtime errors.
+- Enter/exit VFX and sound effects are processed in the same branch as enter/exit chat actions.
 
 ## Known Limitations (Current Build)
 
