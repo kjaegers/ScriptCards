@@ -1,5 +1,9 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.18:
+- New Setting: titletextalign (default: center). This controls the text-align CSS property for title text. Note that this only applies to title text, not subtitle or body text. Valid values are any valid CSS text-align value, such as left, right, center, justify, etc.
+- New Setting: disablevariableexpansion (default: 0). When set to 1, variable expansion will be disabled for all variables.
+
 v 3.0.17a:
 - Pointer variables are now included in stashed scripts when using the #reentrant option or --i statements.
 

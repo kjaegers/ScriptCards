@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.17a";
-	const NUMERIC_VERSION = "300171"
+	const APIVERSION = "3.0.18";
+	const NUMERIC_VERSION = "300180"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -161,6 +161,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		stylefumble: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolorfumble}; border-color: #660000; color: #660000;",
 		stylecrit: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolorcrit}; border-color: #004400; color: #004400;",
 		styleboth: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolorboth}; border-color: #061539; color: #061539;",
+		titletextalign: "center",
+		disablevariableexpansion: 0,
 
 		// These settings can be used freely and are stored with the format storage commands
 		usersetting0: "",
@@ -340,7 +342,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 	// HTML Templates for the various pieces of the output card. Replaced sections are marked with
 	// !{...} syntax, and will have values substituted in them when the output line is built.
-	var htmlTemplate = `<div style="display: table; border: !{tableborder}; background-color: !{tablebgcolor}; width: 100%; text-align: left; border-radius: !{tableborderradius}; border-collapse: separate; box-shadow: !{tableshadow};"><div style="display: table-header-group; background-color: !{titlecardbackground}; background-image: !{titlecardbackgroundimage}; border-bottom: !{titlecardbottomborder}"><div style="display: table-row;"><div style="display: table-cell; padding: 2px 2px; text-align: center;"><span style="font-family: !{titlefontface}; font-style:!{titlefontstyle}; font-size: !{titlefontsize}; line-height: !{titlefontlineheight}; font-weight: !{titlefontweight}; color: !{titlefontcolor}; text-shadow: !{titlefontshadow}">=X=TITLE=X=</span><br /><span style="font-family: !{subtitlefontface}; font-variant: normal; font-size: !{subtitlefontsize}; font-style:normal; font-weight: bold; color: !{subtitlefontcolor}; ">=X=SUBTITLE=X=</span></div></div></div><div style="display: table-row-group; background-image:!{bodybackgroundimage};">`;
+	var htmlTemplate = `<div style="display: table; border: !{tableborder}; background-color: !{tablebgcolor}; width: 100%; text-align: left; border-radius: !{tableborderradius}; border-collapse: separate; box-shadow: !{tableshadow};"><div style="display: table-header-group; background-color: !{titlecardbackground}; background-image: !{titlecardbackgroundimage}; border-bottom: !{titlecardbottomborder}"><div style="display: table-row;"><div style="display: table-cell; padding: 2px 2px; text-align: !{titletextalign};"><span style="font-family: !{titlefontface}; font-style:!{titlefontstyle}; font-size: !{titlefontsize}; line-height: !{titlefontlineheight}; font-weight: !{titlefontweight}; color: !{titlefontcolor}; text-shadow: !{titlefontshadow}">=X=TITLE=X=</span><br /><span style="font-family: !{subtitlefontface}; font-variant: normal; font-size: !{subtitlefontsize}; font-style:normal; font-weight: bold; color: !{subtitlefontcolor}; ">=X=SUBTITLE=X=</span></div></div></div><div style="display: table-row-group; background-image:!{bodybackgroundimage};">`;
 	var htmlTemplateHiddenTitle = `<div style="display: table; border: !{tableborder}; background-color: !{tablebgcolor}; width: 100%; text-align: left; border-radius: !{tableborderradius}; border-collapse: separate; box-shadow: !{tableshadow};"><div style="display: table-row-group; background-image:!{bodybackgroundimage};">`;
 	var htmlRowTemplate = `<div style="display: table-row; =X=ROWBG=X=;"><div style="display: table-cell; padding: 0px 0px; font-family: !{bodyfontface}; font-style: normal; font-weight:normal; font-size: !{bodyfontsize}; "><span style="line-height: !{lineheight}; color: =X=FONTCOLOR=X=;">=X=ROWDATA=X=</span></div></div>`;
 	var htmlTemplateEnd = `</div></div><br />`;
@@ -1368,6 +1370,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	}
 
 	async function replaceVariableContent(content, cardParameters, rollHilighting) {
+		if (cardParameters.disablevariableexpansion == 1) { return content }
 		var failCount = 0;
 		const failLimit = 1000;
 		if (content === undefined) { return content }
@@ -2560,7 +2563,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			"titlefontface", "bodyfontface", "subtitlefontface", "buttonbackground", "buttonpadding", "buttonbackgroundimage", "buttontextcolor", "buttonbordercolor",
 			"dicefontcolor", "dicefontsize", "lineheight", "buttonfontsize", "buttonfontface", "titlecardbackgroundimage", "bodybackgroundimage",
 			"rollhilightlineheight", "rollhilightcolornormal", "rollhilightcolorfumble", "rollhilightcolorcrit", "rollhilightcolorboth",
-			"titlefontweight", "titlefontstyle"
+			"titletextalign", "titlefontweight", "titlefontstyle",
 		];
 
 		for (var x = 0; x < styleList.length; x++) {
@@ -3826,7 +3829,6 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		} catch (e) {
 			log(`Error generating pointer variable: ${e}. thisTag: ${thisTag}, thisContent: ${thisContent}`)
 		}
-
 	}
 
 	function handleConsoleLogs(thisTag, thisContent) {
@@ -6340,7 +6342,42 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 									}
 								}
 							} catch (e) { log(e); }
-						}						
+						}
+
+						// Return the names of all properties associated with an object.
+						if (params[1].toLowerCase() == "properties") {
+							// Note P1=properties, P2=array name, P3=object id, P4=Name Starts with
+							const objTypes = ["graphic", "text", "path", "graphic", "card", "character", "handout", "ability", "attribute"];
+							try {
+								let found = false;
+								let objIndex = 0;
+								log(objTypes[objIndex])
+								while (!found && objIndex < objTypes.length) {
+									//log(`looking for ${objTypes[objIndex]} with id ${params[3]}`)
+									var properties = findObjs({ type: objTypes[objIndex], _id: params[3] });
+									if (properties && properties[0]) {
+										found = true;
+										//log(`Found object of type ${objTypes[objIndex]} with id ${params[3]}`)
+									} else {
+										objIndex++;
+									}
+								}
+								if (properties && properties[0]) {
+									arrayVariables[params[2]] = []
+									log(properties[0].attributes)
+									var objProps = Object.keys(properties[0]);
+									for (let x = 0; x < objProps.length; x++) {
+										if (params[4]) {
+											if (objProps[x].startsWith(params[4])) {
+												arrayVariables[params[2]].push(objProps[x])
+											}
+										} else {
+											arrayVariables[params[2]].push(objProps[x])
+										}
+									}
+								}
+							} catch (e) { log(`properties error: ${e}`); }
+						}
 
 						if (params[1].toLowerCase() == "selectedtokens") {
 							if (msg.selected) {
@@ -7365,7 +7402,6 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 		return result;
 	}
-
 })();
 
 // log(`Error setting z-order ${e.message}, thisTag: ${thisTag}, thisContent: ${thisContent}`)
