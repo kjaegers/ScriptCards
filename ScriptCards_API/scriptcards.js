@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.18";
-	const NUMERIC_VERSION = "300180"
+	const APIVERSION = "3.0.18a";
+	const NUMERIC_VERSION = "300181"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1370,7 +1370,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	}
 
 	async function replaceVariableContent(content, cardParameters, rollHilighting) {
-		if (cardParameters.disablevariableexpansion == 1) { return content }
+		if (cardParameters && cardParameters.disablevariableexpansion && cardParameters.disablevariableexpansion == 1) { return content }
 		var failCount = 0;
 		const failLimit = 1000;
 		if (content === undefined) { return content }
@@ -2531,7 +2531,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		if (components.length !== 3) {
 			return false;
 		}
-		var left = await replaceVariableContent(components[0])
+		var left = await replaceVariableContent(components[0], cardParameters)
 		left = left.replace(/\"/g, "", cardParameters, false);
 		var right = await replaceVariableContent(components[2])
 		right = right.replace(/\"/g, "", cardParameters, false);
