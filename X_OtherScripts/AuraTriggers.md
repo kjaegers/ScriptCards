@@ -4,18 +4,21 @@
 
 AuraTriggers is currently **experimental**.
 
-- API version: `0.6`
+- API version: `0.7`
 - Author: Kurt Jaegers
 - Runtime warning from script: not ready for live/production games yet
 
 ## What It Does
 
-AuraTriggers watches token movement and aura changes, then:
+AuraTriggers watches token movement, aura changes, and turn order, then:
 
 - Detects when tokens enter, remain inside, or exit configured auras
+- Detects when tokens start or end their turn while in configured auras
 - Adds/removes status markers when configured
 - Fires optional chat actions for enter/inside/exit events
-- Can trigger optional source/target VFX and jukebox sounds on enter/exit
+- Fires optional chat actions when starting or ending turn in an aura
+- Can trigger optional source/target VFX on enter/exit/inside/start turn/end turn events
+- Can trigger jukebox sounds on enter/exit events
 - Supports circular and square aura geometry (matching Roll20 aura shape)
 
 The script reads aura behavior rules from each aura token's `gmnotes` JSON.
@@ -36,13 +39,17 @@ The script reads aura behavior rules from each aura token's `gmnotes` JSON.
 	 - If aura settings or `gmnotes` changed, it cleans up disabled auras first, then rebuilds the active aura list for that page.
 	 - If the changed token is an aura source token, it rechecks all tokens on that page.
 	 - If token position changed, it checks overlap against active auras.
-6. Overlap checks determine one of four events:
+6. On `change:campaign:turnorder`:
+	 - Monitors turn order changes to detect when turn passes from one token to another.
+	 - When a token starts its turn while in any aura(s), fires `chatActionOnStartTurn` and optional VFX for each applicable aura.
+	 - When a token ends its turn while in any aura(s), fires `chatActionOnEndTurn` and optional VFX for each applicable aura.
+7. Overlap checks determine one of four events:
 	 - `enter`
 	 - `inside`
 	 - `exit`
 	 - `none`
-7. Based on event + aura config, it updates status markers and optionally sends chat actions.
-8. On enter/exit events, optional VFX and sound effects can also be triggered.
+8. Based on event + aura config, it updates status markers and optionally sends chat actions.
+9. VFX and sound effects can be triggered on enter/exit/inside/start turn/end turn events as configured.
 
 ## Chat Commands
 
@@ -85,8 +92,10 @@ Example:
 		"applySelf": false,
 		"removeOnExit": true,
 		"chatActionOnEnter": "/em [TNAME] enters [ANAME]",
-		"chatActionWhileInside": "!script --target [TID] --aura [ANAME]",
-		"chatActionOnExit": "/em [TNAME] leaves [ANAME]"
+		"chatActionWhileInside": "!script {{ --+target|[TID] --+aura|[ANAME] }}",
+		"chatActionOnExit": "/em [TNAME] leaves [ANAME]",
+		"chatActionOnStartTurn": "/em [TNAME] starts their turn in [ANAME]",
+		"chatActionOnEndTurn": "/em [TNAME] ends their turn in [ANAME]"
 	},
 	{
 		"name": "Blessing Field Visual",
@@ -114,12 +123,23 @@ Example:
 - `chatActionOnEnter` (string, default `""`): Sent once when token enters an aura.
 - `chatActionWhileInside` (string, default `""`): Sent on movement checks while token remains inside an aura.
 - `chatActionOnExit` (string, default `""`): Sent once when token exits an aura.
+- `chatActionOnStartTurn` (string, default `""`): Sent when token starts its turn while inside an aura.
+- `chatActionOnEndTurn` (string, default `""`): Sent when token ends its turn while inside an aura.
 - `sourceVfxOnEnter` (string, optional): VFX played at aura source token on enter event.
 - `targetVfxOnEnter` (string, optional): VFX played at affected token on enter event.
 - `sourceVfxOnExit` (string, optional): VFX played at aura source token on exit event.
 - `targetVfxOnExit` (string, optional): VFX played at affected token on exit event.
+- `sourceVfxWhileInside` (string, optional): VFX played at aura source token while affected token remains inside.
+- `targetVfxWhileInside` (string, optional): VFX played at affected token while it remains inside an aura.
+- `sourceVfxOnStartTurn` (string, optional): VFX played at aura source token when affected token starts turn in aura.
+- `targetVfxOnStartTurn` (string, optional): VFX played at affected token when it starts turn in aura.
+- `sourceVfxOnEndTurn` (string, optional): VFX played at aura source token when affected token ends turn in aura.
+- `targetVfxOnEndTurn` (string, optional): VFX played at affected token when it ends turn in aura.
 - `soundOnEnter` (string, optional): Jukebox track title to play on enter event.
 - `soundOnExit` (string, optional): Jukebox track title to play on exit event.
+- `soundWhileInside` (string, optional): Jukebox track title to play while token remains inside an aura.
+- `soundOnStartTurn` (string, optional): Jukebox track title to play when token starts turn in aura.
+- `soundOnEndTurn` (string, optional): Jukebox track title to play when token ends turn in aura.
 - `attributeFilter` (string, optional): Additional character-attribute condition(s) required for the aura to apply.
 
 If multiple aura entries use the same `color`, all of them are applied.
@@ -162,12 +182,12 @@ Example:
 
 ## Event Variables for Chat Actions
 
-These placeholders are replaced inside chat action strings:
+These placeholders are replaced inside chat action strings (including enter/exit/inside/start turn/end turn actions):
 
-- `[TNAME]` -> moving token name
+- `[TNAME]` -> affected token name (moving token or token whose turn it is)
 - `[ANAME]` -> aura effect name from JSON `name`
 - `[ATNAME]` -> aura source token name
-- `[TID]` -> moving token id
+- `[TID]` -> affected token id (moving token or token whose turn it is)
 - `[ATID]` -> aura source token id
 
 Unknown placeholders are left unchanged.
@@ -189,7 +209,12 @@ Use `toPCs`, `toNPCs`, and `toGraphics` to control targeting.
 - Status markers are added idempotently (no duplicates).
 - If an aura source token is deleted, impacted tokens are cleaned up using tracked aura membership data.
 - Missing character attributes used by `attributeFilter` are treated as empty strings instead of causing runtime errors.
-- Enter/exit VFX and sound effects are processed in the same branch as enter/exit chat actions.
+- VFX and sound effects are processed alongside their corresponding chat actions for all event types (enter/exit/inside/start turn/end turn).
+- Comprehensive null checks prevent crashes from deleted tokens, missing objects, or malformed data.
+- Array operations validate data before iteration to avoid undefined access errors.
+- Division by zero is prevented when calculating aura radius from map scale.
+- All Roll20 API object access includes validation checks before calling `.get()` or `.set()` methods.
+- Enhanced error logging helps diagnose issues without breaking script execution.
 
 ## Known Limitations (Current Build)
 
@@ -203,7 +228,8 @@ Use `toPCs`, `toNPCs`, and `toGraphics` to control targeting.
 3. Set aura radius/color (`aura1` and/or `aura2`) on that token.
 4. Put JSON config in that token's `gmnotes` using matching `color` values.
 5. Move a target token into/out of aura to test enter/inside/exit behavior.
-6. Use `!at-rebuild` after major token/aura edits.
+6. (Optional) Use turn order to test `chatActionOnStartTurn` and `chatActionOnEndTurn` events.
+7. Use `!at-rebuild` after major token/aura edits.
 
 ## Troubleshooting
 
@@ -211,6 +237,10 @@ Use `toPCs`, `toNPCs`, and `toGraphics` to control targeting.
 	- Confirm aura radius is non-zero.
 	- Confirm `gmnotes` JSON parses correctly.
 	- Confirm JSON `color` exactly matches token aura color.
+- Turn actions not triggering:
+	- Confirm token is in the turn tracker.
+	- Confirm token is inside the aura when its turn starts/ends.
+	- Check that `chatActionOnStartTurn` or `chatActionOnEndTurn` is configured.
 - Marker never removed:
 	- Verify `removeOnExit` is `true`.
 - Wrong targets affected:

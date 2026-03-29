@@ -19,7 +19,7 @@ const AuraTriggers = (() => {
 
     // Configuration schema version. This represents the last time changes were made to the configuration values
     // saved between sessions, and is not necessarially the same as the API version number.
-    const APIVERSION = "0.6";
+    const APIVERSION = "0.7";
 
     var APILANGUAGE = "english";
 
@@ -118,17 +118,60 @@ const AuraTriggers = (() => {
         log(`-=> ${APINAME} - ${APIVERSION} by ${APIAUTHOR} Ready <=- Meta Offset : ${API_Meta.AuraTriggers.offset}`);
         sendChat("AuraTriggers", `${APINAME} v${APIVERSION} is loaded, but this API Mod is in development/testing and NOT ready for prime time. DO NOT USE in your live game yet!.`);
         let pageList = findObjs({ _type: "page" });
-        _.each(pageList, function (page) {
-            BuildAuraList(page.get("_id"));
-        });
+        if (pageList && Array.isArray(pageList)) {
+            _.each(pageList, function (page) {
+                if (page && typeof page.get === "function") {
+                    BuildAuraList(page.get("_id"));
+                }
+            });
+        }
 
         // Monitor for new Graphics objects (includes tokens)
         on('add:graphic', function (obj) {
-            BuildAuraList(obj.get("_pageid"));
-            checkAuraOverlap(obj.get("_id"));
+            if (obj && typeof obj.get === "function") {
+                BuildAuraList(obj.get("_pageid"));
+                checkAuraOverlap(obj.get("_id"));
+            }
+        });
+
+        on('change:campaign:turnorder', function(obj, prev) {
+            if (obj.get("turnorder") === prev.turnorder) { return }
+            if (obj.get("turnorder") === "") { return }
+            
+            let turnorder, oldTurnOrder;
+            try {
+                turnorder = JSON.parse(obj.get("turnorder"));
+                oldTurnOrder = JSON.parse(prev.turnorder || "[]");
+            } catch (e) {
+                log(`AuraTriggers: Error parsing turnorder JSON - ${e.message}`);
+                return;
+            }
+            
+            if (!Array.isArray(turnorder) || !Array.isArray(oldTurnOrder)) {
+                log(`AuraTriggers: Turnorder is not an array`);
+                return;
+            }
+            
+            if (turnorder.length === 0 || oldTurnOrder.length === 0) { return }
+            let currentTurn = turnorder[0];
+            let previousTurn = oldTurnOrder[0];
+            if (currentTurn.id === previousTurn.id) { return }
+            let currentToken = getObj("graphic", currentTurn.id);
+            let previousToken = getObj("graphic", previousTurn.id);
+            if (currentToken && tokensInAuras.has(currentTurn.id)) {
+                // Starting turn in an aura   
+                processStartTurnInAura(currentToken);
+            }
+            if (previousToken && tokensInAuras.has(previousTurn.id)) {
+                // Ended turn in an aura
+                processEndTurnInAura(previousToken);
+            }
         });
 
         on('destroy:graphic', function (obj) {
+            if (!obj || typeof obj.get !== "function") {
+                return;
+            }
             cleanupDestroyedTokenAuras(obj);
             removeTokenFromAllAuras(tokensInAuras, obj.get("_id"));
             setTimeout(function () {
@@ -138,6 +181,9 @@ const AuraTriggers = (() => {
 
         // Monitor for changes to Graphics objects (includes tokens)
         on('change:graphic', function (obj, prev) {
+            if (!obj || typeof obj.get !== "function") {
+                return;
+            }
             // If the aura list on this page is empty, build it.
             if (activeAuras[obj.get("_pageid")] === undefined) {
                 BuildAuraList(obj.get("_pageid"));
@@ -158,9 +204,13 @@ const AuraTriggers = (() => {
             if (tokenHasActiveAura(obj.get("_id"))) {
                 setTimeout(function () {
                     let pageTokens = findObjs({ _type: "graphic", _pageid: obj.get("_pageid") });
-                    _.each(pageTokens, function (token) {
-                        checkAuraOverlap(token.get("_id"));
-                    });
+                    if (pageTokens && Array.isArray(pageTokens)) {
+                        _.each(pageTokens, function (token) {
+                            if (token && typeof token.get === "function") {
+                                checkAuraOverlap(token.get("_id"));
+                            }
+                        });
+                    }
                 }, 200);
             }
 
@@ -179,14 +229,22 @@ const AuraTriggers = (() => {
             if (msg.type == "api" && msg.content.indexOf("!at-clearallauras") === 0) {
                 log("Clearing all auras on all pages.");
                 let objList = findObjs({ _type: "graphic" });
-                _.each(objList, function (obj) {
-                    obj.set("aura1_radius", 0);
-                    obj.set("aura2_radius", 0);
-                });
+                if (objList && Array.isArray(objList)) {
+                    _.each(objList, function (obj) {
+                        if (obj && typeof obj.set === "function") {
+                            obj.set("aura1_radius", 0);
+                            obj.set("aura2_radius", 0);
+                        }
+                    });
+                }
                 let pageList = findObjs({ _type: "page" });
-                _.each(pageList, function (page) {
-                    BuildAuraList(page.get("_id"));
-                });
+                if (pageList && Array.isArray(pageList)) {
+                    _.each(pageList, function (page) {
+                        if (page && typeof page.get === "function") {
+                            BuildAuraList(page.get("_id"));
+                        }
+                    });
+                }
             }
 
             // Report all active auras
@@ -218,22 +276,37 @@ const AuraTriggers = (() => {
                 log("Rebuilding aura lists for all pages.");
                 let auraCount = 0;
                 let pageList = findObjs({ _type: "page" });
-                _.each(pageList, function (page) {
-                    BuildAuraList(page.get("_id"));
-                    auraCount += activeAuras[page.get("_id")].length;
-                });
+                if (pageList && Array.isArray(pageList)) {
+                    _.each(pageList, function (page) {
+                        if (page && typeof page.get === "function") {
+                            BuildAuraList(page.get("_id"));
+                            // Safety check in case BuildAuraList didn't initialize properly
+                            if (activeAuras[page.get("_id")] && Array.isArray(activeAuras[page.get("_id")])) {
+                                auraCount += activeAuras[page.get("_id")].length;
+                            }
+                        }
+                    });
+                }
                 sendChat("AuraTriggers", "/w gm Aura lists rebuilt for all pages. Total active auras: " + auraCount);
             }
 
             // Check for overlaps on all tokens on all pages.
             if (msg.type == "api" && msg.content.indexOf("!at-checkall") === 0) {
                 let pages = findObjs({ _type: "page" });
-                _.each(pages, function (page) {
-                    let pageTokens = findObjs({ _type: "graphic", _pageid: page.get("_id") });
-                    _.each(pageTokens, function (token) {
-                        checkAuraOverlap(token.get("_id"));
+                if (pages && Array.isArray(pages)) {
+                    _.each(pages, function (page) {
+                        if (page && typeof page.get === "function") {
+                            let pageTokens = findObjs({ _type: "graphic", _pageid: page.get("_id") });
+                            if (pageTokens && Array.isArray(pageTokens)) {
+                                _.each(pageTokens, function (token) {
+                                    if (token && typeof token.get === "function") {
+                                        checkAuraOverlap(token.get("_id"));
+                                    }
+                                });
+                            }
+                        }
                     });
-                });
+                }
             }
         });
     });
@@ -244,6 +317,12 @@ const AuraTriggers = (() => {
         let pageGraphics = findObjs({ _type: "graphic", _pageid: pageId });
         activeAuras[pageId] = [];
 
+        // Safety check for pageGraphics
+        if (!pageGraphics || !Array.isArray(pageGraphics)) {
+            log(`AuraTriggers: pageGraphics is not an array for page ${pageId}`);
+            return;
+        }
+
         let scale = 1.0
         let mapIncrement = 5;
 
@@ -253,6 +332,9 @@ const AuraTriggers = (() => {
         }
 
         _.each(pageGraphics, function (graphic) {
+            if (!graphic || typeof graphic.get !== "function") {
+                return;
+            }
             if ((graphic.get("aura1_radius") !== 0) || (graphic.get("aura2_radius") !== 0)) {
                 auraInfo = (decodeAndStripHtmlSimple(graphic.get("gmnotes")))
                 let auraParsed = undefined;
@@ -295,7 +377,7 @@ const AuraTriggers = (() => {
                     let thisTokenAura = {
                         tokenId: graphic.get("_id"),
                         aura_active: true,
-                        aura_radius: workRadius / mapIncrement * 70,
+                        aura_radius: (mapIncrement !== 0) ? (workRadius / mapIncrement * 70) : 0,
                         aura_square: workSquare,
                         auraCoords: getTokenCoordsPixel(graphic),
                         auraTokenName: graphic.get("name"),
@@ -310,6 +392,8 @@ const AuraTriggers = (() => {
                         aura_chataction_enter: (auraAction.chatActionOnEnter !== undefined) ? auraAction.chatActionOnEnter : "",
                         aura_chataction_exit: (auraAction.chatActionOnExit !== undefined) ? auraAction.chatActionOnExit : "",
                         aura_chataction_inside: (auraAction.chatActionWhileInside !== undefined) ? auraAction.chatActionWhileInside : "",
+                        aura_chataction_startturn: (auraAction.chatActionOnStartTurn !== undefined) ? auraAction.chatActionOnStartTurn : "",
+                        aura_chataction_endturn: (auraAction.chatActionOnEndTurn !== undefined) ? auraAction.chatActionOnEndTurn : "",
                         aura_applySelf: (auraAction.applySelf !== undefined) ? auraAction.applySelf : false,
                         onObjectLayer: auraAction.toLayers ? auraAction.toLayers.includes("objects") || auraAction.toLayers.includes("token") : true,
                         onGMLayer: auraAction.toLayers ? auraAction.toLayers.includes("gmlayer") : false,
@@ -318,10 +402,19 @@ const AuraTriggers = (() => {
                         onForegroundLayer: auraAction.toLayers ? auraAction.toLayers.includes("foreground") : false,
                         aura_sourcevfx_onenter: auraAction.sourceVfxOnEnter || null,
                         aura_sourcevfx_onexit: auraAction.sourceVfxOnExit || null,
+                        aura_sourcevfx_whileinside: auraAction.sourceVfxWhileInside || null,
+                        aura_sourcevfx_onstartturn: auraAction.sourceVfxOnStartTurn || null,
+                        aura_sourcevfx_onendturn: auraAction.sourceVfxOnEndTurn || null,
                         aura_targetvfx_onenter: auraAction.targetVfxOnEnter || null,
                         aura_targetvfx_onexit: auraAction.targetVfxOnExit || null,
+                        aura_targetvfx_whileinside: auraAction.targetVfxWhileInside || null,
+                        aura_targetvfx_onstartturn: auraAction.targetVfxOnStartTurn || null,
+                        aura_targetvfx_onendturn: auraAction.targetVfxOnEndTurn || null,
                         aura_sound_onenter: auraAction.soundOnEnter || null,
-                        aura_sound_onexit: auraAction.soundOnExit || null
+                        aura_sound_onexit: auraAction.soundOnExit || null,
+                        aura_sound_whileinside: auraAction.soundWhileInside || null,
+                        aura_sound_onstartturn: auraAction.soundOnStartTurn || null,
+                        aura_sound_onendturn: auraAction.soundOnEndTurn || null
                     }
                     activeAuras[pageId].push(thisTokenAura);
                 }
@@ -332,6 +425,11 @@ const AuraTriggers = (() => {
 
     function checkAuraOverlap(tokenId) {
         let token = getObj("graphic", tokenId);
+        if (!token) {
+            log(`AuraTriggers: Cannot check aura overlap - token ${tokenId} not found`);
+            return;
+        }
+        
         let isCharacter = token.get("represents") ? true : false;
         let theCharacter = getObj("character", token.get("represents"));
         let isPC = theCharacter ? (theCharacter.get("controlledby") !== "") : false;
@@ -339,6 +437,17 @@ const AuraTriggers = (() => {
         let pageId = token.get("_pageid");
 
         let t1 = getTokenCoordsPixel(token)
+
+        // Ensure the active auras list exists for this page
+        if (!activeAuras[pageId]) {
+            BuildAuraList(pageId);
+        }
+        
+        // Additional safety check in case BuildAuraList failed
+        if (!activeAuras[pageId] || !Array.isArray(activeAuras[pageId])) {
+            log(`AuraTriggers: activeAuras[${pageId}] is not properly initialized`);
+            return;
+        }
 
         _.each(activeAuras[pageId], function (auraInfo) {
             let checkAura = false;
@@ -352,7 +461,7 @@ const AuraTriggers = (() => {
             if (token.get("layer") === "map" && !auraInfo.onMapLayer) { checkAura = false; }
             if (token.get("layer") === "walls" && !auraInfo.onWallLayer) { checkAura = false; }
             if (token.get("layer") === "foreground" && !auraInfo.onForegroundLayer) { checkAura = false; }
-            if (auraInfo.aura_attribute_filter && isCharacter) {
+            if (auraInfo.aura_attribute_filter && isCharacter && theCharacter) {
                 let attrCheck = true;
                 let attrList = auraInfo.aura_attribute_filter.split("|").map(s => s.trim().toLowerCase());
                 _.each(attrList, function (attr) {
@@ -444,22 +553,26 @@ const AuraTriggers = (() => {
 
                 if (event == "enter" && auraInfo.aura_chataction_enter) {
                     sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_enter, auraInfo, token));
-                    if (auraInfo.aura_sourcevfx_onenter) { playVFX(sourceToken, auraInfo.aura_sourcevfx_onenter); }
-                    if (auraInfo.aura_targetvfx_onenter) { playVFX(token, auraInfo.aura_targetvfx_onenter); }
+                    if (auraInfo.aura_sourcevfx_onenter && sourceToken) { playVFX(sourceToken, auraInfo.aura_sourcevfx_onenter); }
+                    if (auraInfo.aura_targetvfx_onenter && token) { playVFX(token, auraInfo.aura_targetvfx_onenter); }
 
                     if (auraInfo.aura_sound_onenter) { playJukeboxTrack(auraInfo.aura_sound_onenter); }
                 }
 
                 if (event == "exit" && auraInfo.aura_chataction_exit) {
                     sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_exit, auraInfo, token));
-                    if (auraInfo.aura_sourcevfx_onexit) { playVFX(sourceToken, auraInfo.aura_sourcevfx_onexit); }
-                    if (auraInfo.aura_targetvfx_onexit) { playVFX(token, auraInfo.aura_targetvfx_onexit); }
+                    if (auraInfo.aura_sourcevfx_onexit && sourceToken) { playVFX(sourceToken, auraInfo.aura_sourcevfx_onexit); }
+                    if (auraInfo.aura_targetvfx_onexit && token) { playVFX(token, auraInfo.aura_targetvfx_onexit); }
 
                     if (auraInfo.aura_sound_onexit) { playJukeboxTrack(auraInfo.aura_sound_onexit); }
                 }
 
                 if (event == "inside" && auraInfo.aura_chataction_inside) {
                     sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_inside, auraInfo, token));
+                    if (auraInfo.aura_sourcevfx_whileinside && sourceToken) { playVFX(sourceToken, auraInfo.aura_sourcevfx_whileinside); }
+                    if (auraInfo.aura_targetvfx_whileinside && token) { playVFX(token, auraInfo.aura_targetvfx_whileinside); }
+                    
+                    if (auraInfo.aura_sound_whileinside) { playJukeboxTrack(auraInfo.aura_sound_whileinside); }
                 }
             }
         });
@@ -473,7 +586,7 @@ const AuraTriggers = (() => {
         let pageId = token.get("_pageid");
         let tokenAuras = getTokenActiveAuras(token.get("_id"), pageId);
 
-        if (tokenAuras.length === 0) {
+        if (!tokenAuras || !Array.isArray(tokenAuras) || tokenAuras.length === 0) {
             return;
         }
 
@@ -482,11 +595,14 @@ const AuraTriggers = (() => {
                 let targetTokenId = entry[0];
                 let auraSet = entry[1];
 
-                if (!auraSet.has(auraInfo.aura_id)) {
+                if (!auraSet || !auraSet.has(auraInfo.aura_id)) {
                     return;
                 }
 
                 let targetToken = getObj("graphic", targetTokenId);
+                if (!targetToken) {
+                    return;
+                }
                 if (targetToken) {
                     processAuraExit(targetToken, auraInfo);
                 }
@@ -508,6 +624,84 @@ const AuraTriggers = (() => {
         if (auraInfo.aura_chataction_exit) {
             sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_exit, auraInfo, token));
         }
+    }
+
+    function processStartTurnInAura(token) {
+        if (!token || typeof token.get !== "function") {
+            return;
+        }
+
+        let tokenId = token.get("_id");
+        let pageId = token.get("_pageid");
+
+        // Check if this token is in any auras
+        if (!tokensInAuras.has(tokenId)) {
+            return;
+        }
+
+        // Get the set of aura IDs this token is in
+        let auraSet = tokensInAuras.get(tokenId);
+        if (!auraSet || auraSet.size === 0) {
+            return;
+        }
+
+        // Get the active auras for this page
+        let pageAuras = activeAuras[pageId];
+        if (!pageAuras || !Array.isArray(pageAuras)) {
+            return;
+        }
+
+        // For each aura the token is in, check if it has a start turn action
+        _.each(pageAuras, function (auraInfo) {
+            if (auraSet.has(auraInfo.aura_id) && auraInfo.aura_chataction_startturn) {
+                sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_startturn, auraInfo, token));
+                
+                let sourceToken = getObj("graphic", auraInfo.tokenId);
+                if (auraInfo.aura_sourcevfx_onstartturn && sourceToken) { playVFX(sourceToken, auraInfo.aura_sourcevfx_onstartturn); }
+                if (auraInfo.aura_targetvfx_onstartturn && token) { playVFX(token, auraInfo.aura_targetvfx_onstartturn); }
+                
+                if (auraInfo.aura_sound_onstartturn) { playJukeboxTrack(auraInfo.aura_sound_onstartturn); }
+            }
+        });
+    }
+
+    function processEndTurnInAura(token) {
+        if (!token || typeof token.get !== "function") {
+            return;
+        }
+
+        let tokenId = token.get("_id");
+        let pageId = token.get("_pageid");
+
+        // Check if this token is in any auras
+        if (!tokensInAuras.has(tokenId)) {
+            return;
+        }
+
+        // Get the set of aura IDs this token is in
+        let auraSet = tokensInAuras.get(tokenId);
+        if (!auraSet || auraSet.size === 0) {
+            return;
+        }
+
+        // Get the active auras for this page
+        let pageAuras = activeAuras[pageId];
+        if (!pageAuras || !Array.isArray(pageAuras)) {
+            return;
+        }
+
+        // For each aura the token is in, check if it has an end turn action
+        _.each(pageAuras, function (auraInfo) {
+            if (auraSet.has(auraInfo.aura_id) && auraInfo.aura_chataction_endturn) {
+                sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_endturn, auraInfo, token));
+                
+                let sourceToken = getObj("graphic", auraInfo.tokenId);
+                if (auraInfo.aura_sourcevfx_onendturn && sourceToken) { playVFX(sourceToken, auraInfo.aura_sourcevfx_onendturn); }
+                if (auraInfo.aura_targetvfx_onendturn && token) { playVFX(token, auraInfo.aura_targetvfx_onendturn); }
+                
+                if (auraInfo.aura_sound_onendturn) { playJukeboxTrack(auraInfo.aura_sound_onendturn); }
+            }
+        });
     }
 
     function cleanupDisabledAuras(newTokenObj, prevTokenObj) {
@@ -533,11 +727,14 @@ const AuraTriggers = (() => {
                 let targetTokenId = entry[0];
                 let auraSet = entry[1];
 
-                if (!auraSet.has(disabledAura.aura_id)) {
+                if (!auraSet || !auraSet.has(disabledAura.aura_id)) {
                     return;
                 }
 
                 let targetToken = getObj("graphic", targetTokenId);
+                if (!targetToken) {
+                    return;
+                }
                 if (targetToken) {
                     processAuraExit(targetToken, disabledAura);
                 }
@@ -662,6 +859,9 @@ const AuraTriggers = (() => {
     }
 
     function AddTokenStatusMarker(token, marker) {
+        if (!token || typeof token.get !== "function" || !marker) {
+            return;
+        }
         let currentMarkers = token.get("statusmarkers");
         let markerList = currentMarkers ? currentMarkers.split(",") : [];
         if (!markerList.includes(marker)) {
@@ -671,6 +871,9 @@ const AuraTriggers = (() => {
     }
 
     function RemoveTokenStatusMarker(token, marker) {
+        if (!token || typeof token.get !== "function" || !marker) {
+            return;
+        }
         let currentMarkers = token.get("statusmarkers");
         let markerList = currentMarkers ? currentMarkers.split(",") : [];
         if (markerList.includes(marker)) {
@@ -856,6 +1059,10 @@ const AuraTriggers = (() => {
             return "";
         }
 
+        if (!token || typeof token.get !== "function" || !auraInfo) {
+            return text;
+        }
+
         const result = replaceTemplateVars(text, {
             TNAME: token.get("name"),
             ANAME: auraInfo.auraName,
@@ -889,8 +1096,12 @@ const AuraTriggers = (() => {
     }
 
     function playJukeboxTrack(trackname) {
-        let track = findObjs({ type: 'jukeboxtrack', title: trackname })[0];
-        if (track) {
+        if (!trackname) {
+            return;
+        }
+        let trackList = findObjs({ type: 'jukeboxtrack', title: trackname });
+        let track = (trackList && Array.isArray(trackList) && trackList.length > 0) ? trackList[0] : null;
+        if (track && typeof track.set === "function") {
             track.set('softstop', false);
             track.set('playing', true);
         } else {
@@ -900,6 +1111,9 @@ const AuraTriggers = (() => {
 
     function playVFX(token, vfx) {
         try {
+            if (!token || typeof token.get !== "function" || !vfx) {
+                return;
+            }
 
             if (token) {
                 var x = token.get("left");

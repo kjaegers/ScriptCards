@@ -1,5 +1,17 @@
 Changelog for AuraTriggers API Mod
 
+Potential ToDos:
+- Add color override such as "On:Auraname" or "Off:AuraName" to allow the aura to not be tied to a Roll20 Aura value.
+- Add radius overrides
+- Aura library handout? Instead of GMNotes field?
+
+V 0.7:
+- Added comprehensive error handling throughout the script to prevent crashes from undefined or null object access.
+- Enhanced error logging throughout for better debugging without breaking script execution.
+- Added validation for findObjs results before accessing array elements.
+- Added chatActonOnStartTurn and chatActionOnEndTurn triggers for effects that trigger based on these events.
+- Added corresponding VFX and sound effect support for start turn/end turn events as well as while inside events.
+
 V 0.6:
 - Add VFX to applied/removed auras, potentiallly on the aura token and on the affected token.
 - Add sound playback to applied/removed auras.
