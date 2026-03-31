@@ -19,7 +19,7 @@ const AuraTriggers = (() => {
 
     // Configuration schema version. This represents the last time changes were made to the configuration values
     // saved between sessions, and is not necessarially the same as the API version number.
-    const APIVERSION = "0.7";
+    const APIVERSION = "0.8";
 
     var APILANGUAGE = "english";
 
@@ -29,6 +29,7 @@ const AuraTriggers = (() => {
 
     const tokensInAuras = new Map();
 
+    var usePathMath = false;
     var activeAuras = {};
 
     function handleObservedTokenChange(obj) {
@@ -106,12 +107,16 @@ const AuraTriggers = (() => {
             initializeState();
         }
 
+        usePathMath = (typeof PathMath !== "undefined") ? true : false;
+
+        log(`PathMath detected: ${usePathMath}`);
+
         registerScriptCardsObserver(0);
 
         if (typeof TokenMod !== 'undefined' && TokenMod.ObserveTokenChange) {
             TokenMod.ObserveTokenChange((obj, _prev) => {
                 handleObservedTokenChange(obj);
-            });            
+            });
         }
 
         // Display API info in the console log
@@ -134,10 +139,10 @@ const AuraTriggers = (() => {
             }
         });
 
-        on('change:campaign:turnorder', function(obj, prev) {
+        on('change:campaign:turnorder', function (obj, prev) {
             if (obj.get("turnorder") === prev.turnorder) { return }
             if (obj.get("turnorder") === "") { return }
-            
+
             let turnorder, oldTurnOrder;
             try {
                 turnorder = JSON.parse(obj.get("turnorder"));
@@ -146,12 +151,12 @@ const AuraTriggers = (() => {
                 log(`AuraTriggers: Error parsing turnorder JSON - ${e.message}`);
                 return;
             }
-            
+
             if (!Array.isArray(turnorder) || !Array.isArray(oldTurnOrder)) {
                 log(`AuraTriggers: Turnorder is not an array`);
                 return;
             }
-            
+
             if (turnorder.length === 0 || oldTurnOrder.length === 0) { return }
             let currentTurn = turnorder[0];
             let previousTurn = oldTurnOrder[0];
@@ -232,8 +237,8 @@ const AuraTriggers = (() => {
                 if (objList && Array.isArray(objList)) {
                     _.each(objList, function (obj) {
                         if (obj && typeof obj.set === "function") {
-                            obj.set("aura1_radius", 0);
-                            obj.set("aura2_radius", 0);
+                            obj.set("aura1_radius", "");
+                            obj.set("aura2_radius", "");
                         }
                     });
                 }
@@ -366,12 +371,12 @@ const AuraTriggers = (() => {
                     if (auraAction.color == graphic.get("aura1_color")) {
                         workRadius = graphic.get("aura1_radius");
                         workSquare = graphic.get("aura1_square");
-                        workIcon = auraAction.icon;
+                        workIcon = auraAction.icon || undefined;
                     }
                     if (auraAction.color == graphic.get("aura2_color")) {
                         workRadius = graphic.get("aura2_radius");
                         workSquare = graphic.get("aura2_square");
-                        workIcon = auraAction.icon;
+                        workIcon = auraAction.icon || undefined;
                     }
 
                     let thisTokenAura = {
@@ -386,7 +391,7 @@ const AuraTriggers = (() => {
                         auraToPCs: (auraAction.toPCs !== undefined) ? auraAction.toPCs : true,
                         auraToGraphics: (auraAction.toGraphics !== undefined) ? auraAction.toGraphics : false,
                         removeOnExit: (auraAction.removeOnExit !== undefined) ? auraAction.removeOnExit : true,
-                        aura_icon: workIcon,
+                        aura_icon: workIcon || undefined,
                         aura_attribute_filter: auraAction.attributeFilter || null,
                         aura_id: graphic.get("_id") + "_" + auraAction.color + "_" + (auraAction._jsonIndex !== undefined ? auraAction._jsonIndex : "0"),
                         aura_chataction_enter: (auraAction.chatActionOnEnter !== undefined) ? auraAction.chatActionOnEnter : "",
@@ -414,7 +419,8 @@ const AuraTriggers = (() => {
                         aura_sound_onexit: auraAction.soundOnExit || null,
                         aura_sound_whileinside: auraAction.soundWhileInside || null,
                         aura_sound_onstartturn: auraAction.soundOnStartTurn || null,
-                        aura_sound_onendturn: auraAction.soundOnEndTurn || null
+                        aura_sound_onendturn: auraAction.soundOnEndTurn || null,
+                        ignoreWalls: auraAction.ignoreWalls || false
                     }
                     activeAuras[pageId].push(thisTokenAura);
                 }
@@ -429,7 +435,9 @@ const AuraTriggers = (() => {
             log(`AuraTriggers: Cannot check aura overlap - token ${tokenId} not found`);
             return;
         }
-        
+
+        let walls = getPageWalls(token.get("_pageid"));
+
         let isCharacter = token.get("represents") ? true : false;
         let theCharacter = getObj("character", token.get("represents"));
         let isPC = theCharacter ? (theCharacter.get("controlledby") !== "") : false;
@@ -442,7 +450,7 @@ const AuraTriggers = (() => {
         if (!activeAuras[pageId]) {
             BuildAuraList(pageId);
         }
-        
+
         // Additional safety check in case BuildAuraList failed
         if (!activeAuras[pageId] || !Array.isArray(activeAuras[pageId])) {
             log(`AuraTriggers: activeAuras[${pageId}] is not properly initialized`);
@@ -522,9 +530,11 @@ const AuraTriggers = (() => {
 
             if (checkAura) {
 
+                let blockedByWall = (usePathMath && testWallInteraction(walls, auraInfo.tokenId, tokenId) && !auraInfo.ignoreWalls)
+
                 let event = "none";
-                if (auraInfo.aura_active && !auraInfo.aura_square && auraInfo.aura_icon) {
-                    if (isWithinAura(t1, auraInfo.auraCoords, auraInfo.aura_radius)) {
+                if (auraInfo.aura_active && !auraInfo.aura_square) {
+                    if (isWithinAura(t1, auraInfo.auraCoords, auraInfo.aura_radius) && !blockedByWall) {
                         event = updateTokenAuraMembership(tokensInAuras, tokenId, auraInfo.aura_id, true);
                         if (auraInfo.aura_icon) {
                             AddTokenStatusMarker(token, auraInfo.aura_icon);
@@ -537,8 +547,8 @@ const AuraTriggers = (() => {
                     }
                 }
 
-                if (auraInfo.aura_active && auraInfo.aura_square && auraInfo.aura_icon) {
-                    if (isWithinSquareAura(t1, auraInfo.auraCoords, auraInfo.aura_radius)) {
+                if (auraInfo.aura_active && auraInfo.aura_square) {
+                    if (isWithinSquareAura(t1, auraInfo.auraCoords, auraInfo.aura_radius) && !blockedByWall) {
                         event = updateTokenAuraMembership(tokensInAuras, tokenId, auraInfo.aura_id, true);
                         AddTokenStatusMarker(token, auraInfo.aura_icon);
                     } else {
@@ -571,7 +581,7 @@ const AuraTriggers = (() => {
                     sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_inside, auraInfo, token));
                     if (auraInfo.aura_sourcevfx_whileinside && sourceToken) { playVFX(sourceToken, auraInfo.aura_sourcevfx_whileinside); }
                     if (auraInfo.aura_targetvfx_whileinside && token) { playVFX(token, auraInfo.aura_targetvfx_whileinside); }
-                    
+
                     if (auraInfo.aura_sound_whileinside) { playJukeboxTrack(auraInfo.aura_sound_whileinside); }
                 }
             }
@@ -655,11 +665,11 @@ const AuraTriggers = (() => {
         _.each(pageAuras, function (auraInfo) {
             if (auraSet.has(auraInfo.aura_id) && auraInfo.aura_chataction_startturn) {
                 sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_startturn, auraInfo, token));
-                
+
                 let sourceToken = getObj("graphic", auraInfo.tokenId);
                 if (auraInfo.aura_sourcevfx_onstartturn && sourceToken) { playVFX(sourceToken, auraInfo.aura_sourcevfx_onstartturn); }
                 if (auraInfo.aura_targetvfx_onstartturn && token) { playVFX(token, auraInfo.aura_targetvfx_onstartturn); }
-                
+
                 if (auraInfo.aura_sound_onstartturn) { playJukeboxTrack(auraInfo.aura_sound_onstartturn); }
             }
         });
@@ -694,11 +704,11 @@ const AuraTriggers = (() => {
         _.each(pageAuras, function (auraInfo) {
             if (auraSet.has(auraInfo.aura_id) && auraInfo.aura_chataction_endturn) {
                 sendChat("AuraTriggers", replaceVariables(auraInfo.aura_chataction_endturn, auraInfo, token));
-                
+
                 let sourceToken = getObj("graphic", auraInfo.tokenId);
                 if (auraInfo.aura_sourcevfx_onendturn && sourceToken) { playVFX(sourceToken, auraInfo.aura_sourcevfx_onendturn); }
                 if (auraInfo.aura_targetvfx_onendturn && token) { playVFX(token, auraInfo.aura_targetvfx_onendturn); }
-                
+
                 if (auraInfo.aura_sound_onendturn) { playJukeboxTrack(auraInfo.aura_sound_onendturn); }
             }
         });
@@ -913,6 +923,24 @@ const AuraTriggers = (() => {
         return (dx * dx + dy * dy) < (r1 * r1);
     }
 
+    function doLinesIntersect(x1, y1, x2, y2, x3, y3, x4, y4) {
+        // Calculate the denominator for the line intersection formula
+        const denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4);
+
+        // If denominator is 0, lines are parallel (or coincident)
+        if (denominator === 0) {
+            return false;
+        }
+
+        // Calculate the intersection parameters t and u
+        const t = ((x1 - x3) * (y3 - y4) - (y1 - y3) * (x3 - x4)) / denominator;
+        const u = -((x1 - x2) * (y1 - y3) - (y1 - y2) * (x1 - x3)) / denominator;
+
+        // Check if intersection point lies on both line segments
+        // Both t and u must be in range [0, 1]
+        return (t >= 0 && t <= 1 && u >= 0 && u <= 1);
+    }
+
     function decodeAndStripHtmlSimple(input) {
         if (typeof input !== "string") {
             return "";
@@ -1095,6 +1123,74 @@ const AuraTriggers = (() => {
         });
     }
 
+    function getPageWalls(pageId) {
+        let pageInfo = getObj("page", pageId);
+
+        if (!pageInfo || pageInfo.get("dynamic_lighting_enabled") === false) {
+            return [];
+        }
+
+        let walls = findObjs({
+            _type: "pathv2",
+            barrierType: "wall",
+            _pageid: pageId
+        });
+
+        //walls = walls.concat(findObjs({_type:"path", _pageid: pageId, layer: "walls"}));
+
+        return walls || [];
+    }
+
+    function testWallInteraction(walls, auratokenid, targettokenid) {
+        if (!usePathMath) { return false; }
+
+        let blocked = false;
+        let points = [];
+        let auratoken = getObj("graphic", auratokenid);
+        let targettoken = getObj("graphic", targettokenid);
+        let t1 = getTokenCoordsPixel(auratoken);
+        let t2 = getTokenCoordsPixel(targettoken);
+        //log(`T1: (${t1.x}, ${t1.y}), T2: (${t2.x}, ${t2.y})`);
+        //log(`Testing wall interactions between token ${auratokenid} and token ${targettokenid} with ${walls.length} walls on the page.`);
+
+        _.each(walls, function (wall) {
+            switch (wall.get("_type")) {
+                case "pathv2":
+                    points = JSON.parse(wall.get("points"));
+                    points = PathMath.toSegments(wall)
+                    for (let seg = 0; seg < points.length; seg++) {
+                        for (let i = 0; i < points[seg].length - 1; i++) {
+                            let p1 = { x: points[seg][i][0], y: points[seg][i][1] };
+                            let p2 = { x: points[seg][i + 1][0], y: points[seg][i + 1][1] };
+                            if (doLinesIntersect(t1.x, t1.y, t2.x, t2.y, p1.x, p1.y, p2.x, p2.y)) {
+                                blocked = true;
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                case "path":
+                    points = JSON.parse(wall.get("path"));
+                    points = JSON.parse(wall.get("points"));
+                    points = PathMath.toSegments(wall)
+                    for (let seg = 0; seg < points.length; seg++) {
+                        for (let i = 0; i < points[seg].length - 1; i++) {
+                            let p1 = { x: points[seg][i][0], y: points[seg][i][1] };
+                            let p2 = { x: points[seg][i + 1][0], y: points[seg][i + 1][1] };
+                            if (doLinesIntersect(t1.x, t1.y, t2.x, t2.y, p1.x, p1.y, p2.x, p2.y)) {
+                                blocked = true;
+                                break;
+                            }
+                        }
+                    }
+                    break;
+            }
+        });
+
+        return blocked;
+
+    }
+
     function playJukeboxTrack(trackname) {
         if (!trackname) {
             return;
@@ -1141,8 +1237,6 @@ const AuraTriggers = (() => {
             log(`${APINAME}: Error creating VFX ${e.message} ${vfx}`)
         }
     }
-
-
 })();
 
 // Meta marker for the end of AuraTriggers

@@ -5,6 +5,12 @@ Potential ToDos:
 - Add radius overrides
 - Aura library handout? Instead of GMNotes field?
 
+V 0.8:
+- Properly handles an icon not being specified. Previously an aura without and icon was being ignored.
+- Added support for walls blocking auras using Path Math and "pathv2" lighting objects. Legacy "path" objects are not supported.
+- Added "ignoreWalls" option to aura definitions to allow certain auras to bypass wall blocking even if Path Math is enabled.
+- Minor code cleanup and bug fixes.
+
 V 0.7:
 - Added comprehensive error handling throughout the script to prevent crashes from undefined or null object access.
 - Enhanced error logging throughout for better debugging without breaking script execution.

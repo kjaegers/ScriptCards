@@ -4,7 +4,7 @@
 
 AuraTriggers is currently **experimental**.
 
-- API version: `0.7`
+- API version: `0.8`
 - Author: Kurt Jaegers
 - Runtime warning from script: not ready for live/production games yet
 
@@ -18,8 +18,10 @@ AuraTriggers watches token movement, aura changes, and turn order, then:
 - Fires optional chat actions for enter/inside/exit events
 - Fires optional chat actions when starting or ending turn in an aura
 - Can trigger optional source/target VFX on enter/exit/inside/start turn/end turn events
-- Can trigger jukebox sounds on enter/exit events
+- Can trigger jukebox sounds on enter/exit/inside/start turn/end turn events
 - Supports circular and square aura geometry (matching Roll20 aura shape)
+- Supports Path Math if installed to allow walls to block aura effects
+- Can optionally ignore wall blocking on a per-aura basis using the `ignoreWalls` setting
 
 The script reads aura behavior rules from each aura token's `gmnotes` JSON.
 
@@ -91,6 +93,7 @@ Example:
 		"toLayers": "objects,gmlayer",
 		"applySelf": false,
 		"removeOnExit": true,
+		"ignoreWalls": false,
 		"chatActionOnEnter": "/em [TNAME] enters [ANAME]",
 		"chatActionWhileInside": "!script {{ --+target|[TID] --+aura|[ANAME] }}",
 		"chatActionOnExit": "/em [TNAME] leaves [ANAME]",
@@ -102,7 +105,8 @@ Example:
 		"color": "#00ff00",
 		"icon": "angel-outfit",
 		"toGraphics": true,
-		"toLayers": ["map", "objects"]
+		"toLayers": ["map", "objects"],
+		"ignoreWalls": true
 	}
 ]
 ```
@@ -120,6 +124,7 @@ Example:
     Supported layer values: `objects` (alias `token`), `gmlayer`, `map`, `walls`, `foreground`.
 - `applySelf` (boolean, default `false`): Apply the aura effect to the aura source token itself.
 - `removeOnExit` (boolean, default `true`): Remove status marker when token exits aura.
+- `ignoreWalls` (boolean, default `false`): When PathMath is installed, setting to `true` will allow the aura to ignore wall blocking.
 - `chatActionOnEnter` (string, default `""`): Sent once when token enters an aura.
 - `chatActionWhileInside` (string, default `""`): Sent on movement checks while token remains inside an aura.
 - `chatActionOnExit` (string, default `""`): Sent once when token exits an aura.
