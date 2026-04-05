@@ -1,5 +1,15 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.19:
+- Implements message queuing for processing multiple ScriptCard messages in rapid succession. This prevents the scripts from running simultaneously and causing issues with shared variables. Each message will be processed in the order received, and the next message won't start processing until the previous one has finished. 
+- Added new setting: dontnotifyobservers. Defaults to 0. If set to 1, your script won't inform other APIs that are watching of token changes.
+- Added the ability to create (--!oh:NewHandoutID) and modify (--!h:ExistingHandoutID) handouts. When creating a handout, you can specify properties to set on the handout in the content section of the line, using the format PropertyName:Value. Separate multiple properties with | characters. If a value contains spaces, enclose the value in quotes. If a value contains a | character, escape it with \\. (ex: name:My Handout|notes:"This is a note with a \\| character in it"). When modifying an existing handout, you can use the same format to specify properties to change on the handout. 
+
+When creating handouts, the ID of the new handout will be returned in the string variable listed after the "oh:" in the tag.
+
+Creation Example: --!oh:HandoutID|name:"Modified Handout"|notes:"This is a handout note from ScriptCards"
+Update Example: --!h:[&HandoutID]|gmnotes:"This note was added after creation"
+
 v 3.0.18a:
 - Fixed a problem with disablevariableexpansion that cause conditionals to fail.
 

@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.18a";
-	const NUMERIC_VERSION = "300181"
+	const APIVERSION = "3.0.19";
+	const NUMERIC_VERSION = "300190"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -163,6 +163,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		styleboth: " text-align: center; font-size: 100%; display: inline-block; font-weight: bold; height: !{rollhilightlineheight}; min-width: 1.75em; margin-top: -1px; margin-bottom: 1px; padding: 0px 2px; border: 1px solid; border-radius: 3px; background-color: !{rollhilightcolorboth}; border-color: #061539; color: #061539;",
 		titletextalign: "center",
 		disablevariableexpansion: 0,
+		dontnotifyobservers: 0,
 
 		// These settings can be used freely and are stored with the format storage commands
 		usersetting0: "",
@@ -398,6 +399,743 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 	// Used for storing parameters passed to a subroutine with --> or --?|> lines
 	var callParamList = {};
+
+	// Message queue system to prevent concurrent processing
+	var messageQueue = [];
+	var isProcessingQueue = false;
+
+	// Process messages from the queue sequentially
+	async function processMessageQueue() {
+		if (isProcessingQueue || messageQueue.length === 0) {
+			return;
+		}
+		
+		isProcessingQueue = true;
+		
+		while (messageQueue.length > 0) {
+			const msg = messageQueue.shift();
+			try {
+				await handleChatMessage(msg);
+			} catch (error) {
+				log(`ScriptCards Error processing message: ${error.message}`);
+				if (error.stack) log(error.stack);
+			}
+		}
+		
+		isProcessingQueue = false;
+	}
+
+	// Handle a single chat message
+	async function handleChatMessage(msg) {
+		if (msg.type === "api") {
+			var apiCmdText = msg.content.toLowerCase().trim();
+			var processThisAPI = false;
+			var isResume = false;
+			var isReentrant = false;
+			var resumeArgs;
+			var cardContent;
+
+			// !sc-liststoredsettings creates a new scriptcard and sends it to
+			// chat. With no parameters, it reports a list of all of the stored settings
+			// groups. If a stored settings group name is passed, it will list all of the
+			// customized settings for that group.
+			if (apiCmdText.startsWith("!sc-liststoredsettings")) {
+				var metaCard = "!scriptcard {{ ";
+				metaCard += "--#title|Stored Settings Report ";
+				if (apiCmdText.split(" ").length == 1) {
+					metaCard += "--#leftsub|Settings List "
+					var stored = state[APINAME].storedSettings;
+					for (const key in stored) {
+						metaCard += `--+${key}|[r][button]Show::!sc-liststoredsettings ${key}[/button] [button]Delete::!sc-deletestoredsettings ${key}[/button][/r]`;
+					}
+				} else {
+					var settingName = msg.content.substring(msg.content.indexOf(" ")).trim();
+					if (settingName) {
+						metaCard += `--#leftsub|Setting List --#rightsub|${settingName} `;
+						var stored = state[APINAME].storedSettings[settingName];
+						for (const key in stored) {
+							if (stored[key] !== defaultParameters[key]) {
+								metaCard += `--+${key}|${stored[key]} [r][button]Edit::!sc-editstoredsetting ${settingName}|${key}|?{New Value|${stored[key]}}[/button] [button]Delete::!sc-deleteindividualstoredsetting ${settingName}|${key}[/button][/r]`;
+							}
+						}
+						metaCard += `--+|[c][button]Add Setting::!sc-addstoredsetting ${settingName}|?{Setting Name?}|?{Setting Value?}[/button][/c]`
+					}
+				}
+				metaCard += " }};"
+				sendChat("API", metaCard);
+			}
+
+			if (apiCmdText.startsWith("!sc-reloadtemplates")) {
+				reload_template_mule();
+				sendChat("ScriptCards", `/w ${msg.who} Templates mule reloaded. ${Object.keys(templates).length} defined templates.`)
+			}
+
+			if (apiCmdText.startsWith("!sc-deletestoredsettings ")) {
+				var settingName = msg.content.substring(msg.content.indexOf(" ")).trim();
+				if (state[APINAME].storedSettings[settingName]) {
+					delete state[APINAME].storedSettings[settingName];
+					metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingName} --+|The setting group ${settingName} has been deleted. }} `;
+					sendChat("API", metaCard);
+				} else {
+					metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingName} --+|No stored settings group named ${settingName} was found. }} `;
+					sendChat("API", metaCard);
+				}
+			}
+
+			if (apiCmdText.startsWith("!sc-deleteindividualstoredsetting ")) {
+				try {
+					var settingSet = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[0];
+					var settingName = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[1];
+
+					if (state[APINAME].storedSettings[settingSet] && state[APINAME].storedSettings[settingSet][settingName]) {
+						delete state[APINAME].storedSettings[settingSet][settingName];
+						metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingSet} --#rightsub|${settingName} --+|The setting ${settingName} has been deleted from the stored setting set ${settingSet}. }} `;
+						sendChat("API", metaCard);
+					} else {
+						metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingName} --#rightsub|${settingName} --+|No stored setting named ${settingName} found in group ${settingSet}. }} `;
+						sendChat("API", metaCard);
+					}
+				} catch { log(`An error occured processing deleteindividualstoredsetting request for ${msg.content}`) }
+			}
+
+			if (apiCmdText.startsWith("!sc-editstoredsetting ")) {
+				try {
+					var settingSet = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[0];
+					var settingName = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[1];
+					var newValue = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[2];
+
+					if (state[APINAME].storedSettings[settingSet] && state[APINAME].storedSettings[settingSet][settingName]) {
+						state[APINAME].storedSettings[settingSet][settingName] = newValue;
+						metaCard = `!scriptcard {{ --#title|Edit Stored Setting --#leftsub|${settingSet} --#rightsub|${settingName} --+|The setting ${settingName} in set ${settingSet} has been updated to ${newValue}. }} `;
+						sendChat("API", metaCard);
+					} else {
+						metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingName} --#rightsub|${settingName} --+|No stored setting named ${settingName} found in group ${settingSet}. }} `;
+						sendChat("API", metaCard);
+					}
+				} catch { log(`An error occured processing editstoredsetting request for ${msg.content}`) }
+			}
+
+			if (apiCmdText.startsWith("!sc-addstoredsetting ")) {
+				try {
+					var settingSet = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[0];
+					var settingName = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[1];
+					var newValue = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[2];
+
+					if (state[APINAME].storedSettings[settingSet] && !(state[APINAME].storedSettings[settingSet][settingName])) {
+						state[APINAME].storedSettings[settingSet][settingName] = newValue;
+						metaCard = `!scriptcard {{ --#title|Add Stored Setting --#leftsub|${settingSet} --#rightsub|${settingName} --+|The setting ${settingName} in set ${settingSet} has been updated to ${newValue}. }} `;
+						sendChat("API", metaCard);
+					} else {
+						metaCard = `!scriptcard {{ --#title|Add Stored Setting --#leftsub|${settingName} --#rightsub|${settingName} --+|Either ${settingSet} group does not exist, or a setting named ${settingName} is already defined in the group. }} `;
+						sendChat("API", metaCard);
+					}
+				} catch { log(`An error occured processing addstoredsetting request for ${msg.content}`) }
+			}
+
+			if (apiCmdText.startsWith("!sc-purgestoredsettings")) {
+				delete state[APINAME].storedSettings
+				state[APINAME].storedSettings = {}
+			}
+
+			if (apiCmdText.startsWith("!sc-resume ")) {
+				var resumeString = msg.content.substring(11);
+				resumeArgs = resumeString.split("-|-");
+				if (scriptCardsStashedScripts[resumeArgs[0]]) {
+					isResume = true;
+					processThisAPI = true;
+				}
+			}
+
+			if (apiCmdText.startsWith("!sc-reentrant ")) {
+				var resumeString = msg.content.substring(14);
+				resumeArgs = resumeString.split("-|-");
+				if (scriptCardsStashedScripts[resumeArgs[0]]) {
+					isResume = true;
+					isReentrant = true;
+					processThisAPI = true;
+				}
+			}
+
+			if (apiCmdText.startsWith("!sc-purgestachedscripts")) {
+				scriptCardsStashedScripts = {};
+			}
+
+			if (apiCmdText.startsWith("!scriptcards ")) { processThisAPI = true; }
+			if (apiCmdText.startsWith("!scriptcard ")) { processThisAPI = true; }
+			if (apiCmdText.startsWith("!script ")) { processThisAPI = true; }
+			if (apiCmdText.startsWith("!scriptcards{{")) { processThisAPI = true; }
+			if (apiCmdText.startsWith("!scriptcard{{")) { processThisAPI = true; }
+			if (apiCmdText.startsWith("!script{{")) { processThisAPI = true; }
+			if (processThisAPI) {
+				var cardParameters = {};
+				Object.assign(cardParameters, defaultParameters);
+				if (storageCharID) {
+					cardParameters.storagecharid = storageCharID
+				}
+				if (state[APINAME].storedSettings["Default"] != null) {
+					newSettings = state[APINAME].storedSettings["Default"];
+					for (var key in newSettings) {
+						cardParameters[key] = newSettings[key];
+					}
+				}
+				msg.content = processInlinerolls(msg);
+
+				scriptStartTimestamp = Date.now();
+
+				outputLines = [];
+				bareoutputLines = [];
+				gmonlyLines = [];
+				lineCounter = 1;
+
+				// Store labels and their corresponding line numbers for branching
+				lineLabels = {};
+				labelChecking = {};
+
+				benchmarks = {};
+
+				// The returnStack stores the line number to return to after a gosub, while the parameter stack stores parameter lists for nexted gosubs
+				returnStack = [];
+				parameterStack = [];
+				tableLineCounter = 0;
+
+				// Clear out any pre-existing roll variables
+				rollVariables = {};
+				stringVariables = {};
+				arrayVariables = {};
+				arrayIndexes = {};
+				hashTables = {};
+				pointerVariables = {};
+
+				loopControl = {};
+				loopStack = [];
+
+				scriptData = [];
+				saveScriptData = [];
+				lastBlockAction = "";
+				executionCounter = 0;
+
+				stringVariables["ScriptCards_Version"] = APIVERSION;
+				stringVariables["SC_VERSION_NUMERIC"] = NUMERIC_VERSION
+
+				if (msg.playerid) {
+					var sendingPlayer = getObj("player", msg.playerid);
+					if (sendingPlayer) {
+						stringVariables["SendingPlayerID"] = msg.playerid;
+						stringVariables["OriginalSendingPlayerID"] = msg.playerid;
+						lastExecutedByID = msg.playerid;
+						stringVariables["SendingPlayerName"] = sendingPlayer.get("_displayname");
+						stringVariables["OriginalSendingPlayerName"] = sendingPlayer.get("_displayname");
+						lastExecutedDisplayName = sendingPlayer.get("_displayname");
+						stringVariables["SendingPlayerColor"] = sendingPlayer.get("color");
+						stringVariables["OriginalSendingPlayerColor"] = sendingPlayer.get("color");
+						stringVariables["SendingPlayerSpeakingAs"] = sendingPlayer.get("speakingas");
+						stringVariables["OriginalSendingPlayerSpeakingAs"] = sendingPlayer.get("speakingas");
+						stringVariables["SendingPlayerIsGM"] = playerIsGM(msg.playerid) ? "1" : "0";
+						stringVariables["OriginalSendingPlayerIsGM"] = playerIsGM(msg.playerid) ? "1" : "0";
+					}
+				}
+
+				if (msg.selected) {
+					arrayVariables["SC_SelectedTokens"] = [];
+					for (let x = 0; x < msg.selected.length; x++) {
+						arrayVariables["SC_SelectedTokens"].push(msg.selected[x]._id);
+						arrayIndexes["SC_SelectedTokens"] = 0;
+					}
+				}
+
+				if (isResume) {
+					var stashIndex = resumeArgs[0];
+					if (scriptCardsStashedScripts[stashIndex].scriptContent) { cardLines = JSON.parse(scriptCardsStashedScripts[stashIndex].scriptContent); }
+					if (scriptCardsStashedScripts[stashIndex].cardParameters) { cardParameters = JSON.parse(scriptCardsStashedScripts[stashIndex].cardParameters); }
+					if (scriptCardsStashedScripts[stashIndex].stringVariables) { stringVariables = JSON.parse(scriptCardsStashedScripts[stashIndex].stringVariables); }
+					if (scriptCardsStashedScripts[stashIndex].rollVariables) { rollVariables = JSON.parse(scriptCardsStashedScripts[stashIndex].rollVariables); }
+					if (scriptCardsStashedScripts[stashIndex].pointerVariables) { pointerVariables = JSON.parse(scriptCardsStashedScripts[stashIndex].pointerVariables); }
+					if (scriptCardsStashedScripts[stashIndex].arrayVariables) { arrayVariables = JSON.parse(scriptCardsStashedScripts[stashIndex].arrayVariables); }
+					if (scriptCardsStashedScripts[stashIndex].arrayIndexes) { arrayIndexes = JSON.parse(scriptCardsStashedScripts[stashIndex].arrayIndexes); }
+					if (scriptCardsStashedScripts[stashIndex].hashTables) { hashTables = JSON.parse(scriptCardsStashedScripts[stashIndex].hashTables); }
+					if (scriptCardsStashedScripts[stashIndex].returnStack) { returnStack = JSON.parse(scriptCardsStashedScripts[stashIndex].returnStack); }
+					if (scriptCardsStashedScripts[stashIndex].parameterStack) { parameterStack = JSON.parse(scriptCardsStashedScripts[stashIndex].parameterStack); }
+					if (scriptCardsStashedScripts[stashIndex].outputLines) { outputLines = JSON.parse(scriptCardsStashedScripts[stashIndex].outputLines); }
+					if (scriptCardsStashedScripts[stashIndex].bareoutputLines) { bareoutputLines = JSON.parse(scriptCardsStashedScripts[stashIndex].bareoutputLines); }
+					if (scriptCardsStashedScripts[stashIndex].gmonlyLines) { gmonlyLines = JSON.parse(scriptCardsStashedScripts[stashIndex].gmonlyLines); }
+					if (scriptCardsStashedScripts[stashIndex].repeatingSectionIDs) { repeatingSectionIDs = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingSectionIDs); }
+					if (scriptCardsStashedScripts[stashIndex].repeatingSection) { repeatingSection = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingSection); }
+					if (scriptCardsStashedScripts[stashIndex].repeatingCharAttrs) { repeatingCharAttrs = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingCharAttrs); }
+					if (scriptCardsStashedScripts[stashIndex].loopControl) { loopControl = scriptCardsStashedScripts[stashIndex].loopControl; }
+					if (scriptCardsStashedScripts[stashIndex].loopStack) { loopStack = scriptCardsStashedScripts[stashIndex].loopStack; }
+					//if (scriptCardsStashedScripts[stashIndex].loopCounter) {loopCounter = scriptCardsStashedScripts[stashIndex].loopCounter; }
+					repeatingCharID = scriptCardsStashedScripts[stashIndex].repeatingCharID;
+					repeatingSectionName = scriptCardsStashedScripts[stashIndex].repeatingSectionName;
+					repeatingIndex = scriptCardsStashedScripts[stashIndex].repeatingIndex;
+					lineCounter = scriptCardsStashedScripts[stashIndex].programCounter;
+
+					if (cardParameters.sourcetoken) {
+						var charLookup = getObj("graphic", cardParameters.sourcetoken);
+						if (charLookup != null && charLookup.get("represents") !== "") {
+							cardParameters.sourcecharacter = getObj("character", charLookup.get("represents"));
+						} else {
+							cardParameters.sourcecharacter = undefined;
+						}
+					}
+
+					if (cardParameters.targettoken) {
+						var charLookup = getObj("graphic", cardParameters.targettoken);
+						if (charLookup != null && charLookup.get("represents") !== "") {
+							cardParameters.targetcharacter = getObj("character", charLookup.get("represents"));
+						} else {
+							cardParameters.targetcharacter = undefined;
+						}
+					}
+
+					if (msg.selected) {
+						arrayVariables["SC_SelectedTokens"] = [];
+						for (let x = 0; x < msg.selected.length; x++) {
+							arrayVariables["SC_SelectedTokens"].push(msg.selected[x]._id);
+							arrayIndexes["SC_SelectedTokens"] = 0;
+						}
+					}
+
+					if (!isReentrant) {
+						for (var x = 1; x < resumeArgs.length; x++) {
+							var thisInfo = resumeArgs[x].split(cardParameters.parameterdelimiter);
+							stringVariables[thisInfo[0].trim()] = thisInfo[1].trim();
+						}
+					}
+					if (!isReentrant && scriptCardsStashedScripts[resumeArgs[0]]) { delete scriptCardsStashedScripts[resumeArgs[0]]; }
+
+					if (msg.playerid) {
+						var sendingPlayer = getObj("player", msg.playerid);
+						if (sendingPlayer) {
+							stringVariables["SendingPlayerID"] = msg.playerid;
+							lastExecutedByID = msg.playerid;
+							stringVariables["SendingPlayerName"] = sendingPlayer.get("_displayname");
+							lastExecutedDisplayName = sendingPlayer.get("_displayname");
+							stringVariables["SendingPlayerColor"] = sendingPlayer.get("color");
+							stringVariables["SendingPlayerSpeakingAs"] = sendingPlayer.get("speakingas");
+							stringVariables["SendingPlayerIsGM"] = playerIsGM(msg.playerid) ? "1" : "0";
+						}
+					}
+
+				} else {
+					// Strip out all newlines in the input text
+					cardContent = msg.content.replace(/(\r\n|\n|\r)/gm, " ");
+					cardContent = cardContent.replace(/(<br ?\/?>)*/g, "");
+					cardContent = cardContent.replace(/\}\}/g, " }}");
+					cardContent = cardContent.replace(/\\\\\[/g, "[");
+					cardContent = cardContent.replace(/\\\\\]/g, "]");
+					cardContent = cardContent.trim();
+					if (cardContent.charAt(cardContent.length - 1) !== "}") {
+						if (cardContent.charAt(cardContent.length - 2) !== "}") {
+							cardContent += "}";
+						}
+						cardContent += "}";
+					}
+
+					var libraries = cardContent.match(/\+\+\+.+?\+\+\+/g);
+					if (libraries) {
+						cardContent = insertLibraryContent(cardContent, libraries[0].replace(/\+\+\+/g, ""));
+						cardContent = cardContent.replace(/\+\+\+.+?\+\+\+/g, "")
+					}
+
+					// Split the card into an array of tag-based (--) lines
+					let cardWork = cardContent.match(/\{\{(.*?)\}\}/gis)
+					if (cardWork && cardWork[0]) {
+						var cardLines = cardWork[0].substring(2, cardWork[0].length - 3).split("--")
+					}
+					//var cardLines = cardContent.match(/\{\{(.*?)\}\}/gis) ? (" " + cardContent.match(/\{\{(.*?)\}\}/gis)[0]).substring(2,-2).split("--") : []
+				}
+
+				// pre-parse line labels and store line numbers for branching and for data lines to store in the data structure
+				for (let x = 0; x < cardLines.length; x++) {
+					let thisTag = getLineTag(cardLines[x], x, false)
+					let isRedef = false;
+					if (thisTag.charAt(0) == ":") {
+						if (lineLabels[thisTag.substring(1)]) {
+							log(`ScriptCards Warning: redefined label ${thisTag.substring(1)}`);
+							isRedef = true;
+						}
+						if (labelChecking[thisTag.substring(1).toLowerCase()] && !isRedef) {
+							log(`ScriptCards Warning: Similar labels ${labelChecking[thisTag.substring(1).toLowerCase()]} and ${thisTag.substring(1)}`);
+						}
+						lineLabels[thisTag.substring(1)] = x;
+						labelChecking[thisTag.substring(1).toLowerCase()] = thisTag.substring(1);
+					}
+					if (thisTag.toLowerCase() === "d!") {
+						var thisData = CSVtoArray(getLineContent(cardLines[x]));
+						while (thisData.length > 0) {
+							let dataElement = thisData.shift();
+							scriptData.push(dataElement);
+							saveScriptData.push(dataElement);
+						}
+					}
+				}
+
+				if (isReentrant) {
+					outputLines = [];
+					bareoutputLines = [];
+					gmonlyLines = [];
+					var entryLabel = resumeArgs[1].split(";")[0];
+					stringVariables["reentryval"] = resumeArgs[1].split(";")[1];
+					if (lineLabels[entryLabel]) {
+						lineCounter = lineLabels[entryLabel]
+					} else {
+						log(`ScriptCards Error: Label ${resumeArgs[1]} is not defined for reentrant script`)
+					}
+				}
+
+				// Process card lines starting with the first line (cardLines[0] will contain an empty string due to the split)
+				do {
+					while (lineCounter < cardLines.length) {
+
+						let thisTag = await replaceVariableContent(getLineTag(cardLines[lineCounter], lineCounter, true), cardParameters, false);
+						let thisContent = await replaceVariableContent(getLineContent(cardLines[lineCounter]), cardParameters, (thisTag.charAt(0) == "+" || thisTag.charAt(0) == "*" || thisTag.charAt(0) == "&"));
+
+						if (cardParameters.debug == 1) {
+							log(`Line Counter: ${lineCounter}, Tag:${thisTag}, Content:${thisContent}`);
+						}
+
+						if (thisTag.charAt(0) !== "/") {
+
+							// Handle Stashing and asking for info
+							if (thisTag.charAt(0).toLowerCase() == "i") {
+								var myGuid = uuidv4();
+								var stashType = thisTag.substring(1);
+								var stashList = thisContent.split("||");
+								var buildLine = "";
+								var varList = "";
+								for (var x = 0; x < stashList.length; x++) {
+									var theseParams = stashList[x].split(";");
+									if (theseParams[0].toLowerCase() == "t") {
+										if (buildLine !== "") { buildLine += "-|-"; varList += ";"; }
+										buildLine += theseParams[1] + ";&#64;{target|" + theseParams[2] + "|token_id}";
+										varList += theseParams[1];
+									}
+									if (theseParams[0].toLowerCase() == "q") {
+										if (buildLine !== "") { buildLine += "-|-"; varList += cardParameters.parameterdelimiter; }
+										buildLine += theseParams[1] + cardParameters.parameterdelimiter + "?{" + theseParams[2] + "}";
+										varList += theseParams[1];
+									}
+								}
+								var flavorText = stashType.split(";")[0];
+								if (cardParameters.formatinforequesttext !== "0") {
+									flavorText = processInlineFormatting(flavorText, cardParameters, false);
+								}
+								var buttonLabel = stashType.split(";")[1];
+
+								stashAScript(myGuid, cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, "", "X", arrayVariables, arrayIndexes, gmonlyLines, bareoutputLines);
+								lineCounter = cardLines.length + 100;
+								cardParameters.hidecard = "1";
+								sendChat(msg.who, `/w ${msg.who} ${flavorText}` + makeButton(buttonLabel, `!sc-resume ${myGuid}-|-${buildLine}`, cardParameters));
+							}
+
+							// *********** STARTHERE
+
+							switch (thisTag.charAt(0).toLowerCase()) {
+								case "!": await handleObjectModificationCommands(thisTag, thisContent, cardParameters); break;
+								case "a": playJukeboxTrack(thisContent); break;
+								case "c": await handleCaseCommand(thisTag, thisContent, cardParameters, cardLines); break;
+								case "d": handleDataReadCommands(thisTag); break;
+								case "e": handleEmoteCommands(thisTag, thisContent); break;
+								case "h": handleHasTableCommands(thisTag, hashTables, thisContent); break;
+								case "l": handleLoadCommands(thisTag, thisContent, cardParameters); break;
+								case "p": handlePointerCommand(thisTag, thisContent); break;
+								case "r": handleRepeatingAttributeCommands(thisTag, thisContent, cardParameters); break;
+								case "s": handleStashLines(thisTag, thisContent, cardParameters); break;
+								case "w": await handleWaitStatements(thisTag, thisContent, cardParameters); break;
+								case "v": handleVisualEffectsCommand(thisTag, thisContent, cardParameters); break;
+								case "x": {
+									if (cardParameters.functionbenchmarking == "1") { reportBenchmarkingData(); }
+									(cardParameters["reentrant"] !== 0) ? stashAScript(cardParameters["reentrant"], cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, varList, "X", arrayVariables, arrayIndexes, gmonlyLines, bareoutputLines) : null
+									lineCounter = cardLines.length + 1;
+								} break;
+								case "z": handleZOrderSettingCommands(thisTag, thisContent); break;
+								case "~": await handleFunctionCommands(thisTag, thisContent, cardParameters, msg); break;
+								case "^": if (lineLabels[thisTag.substring(1)]) { lineCounter = lineLabels[thisTag.substring(1)] } else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`) } break;
+								case "@": handleAPICallCommands(thisTag, thisContent, cardParameters, msg); break;
+								case "#": handleCardSettingsCommands(thisTag, thisContent, cardParameters); break;
+								case "+": case "*": await handleOutputCommands(thisTag, thisContent, cardParameters); break;
+								case "=": await handleRollVariableSetCommand(thisTag, thisContent, cardParameters); break;
+								case "&": await setStringOrArrayElement(thisTag.substring(1), thisContent, cardParameters); break;
+								case "\\": handleConsoleLogs(thisTag, thisContent); break;
+								case "<": if (returnStack.length > 0) {
+									arrayVariables["args"] = [];
+									callParamList = parameterStack.pop();
+									if (callParamList) {
+										for (const value of Object.values(callParamList)) {
+											arrayVariables["args"].push(value.toString().trim());
+										}
+									}
+									lineCounter = returnStack.pop();
+								} break;
+								case ">": handleGosubCommands(thisTag, thisContent, cardParameters); break;
+								case "]": handleBlockEndCommand(thisTag, thisContent, cardLines); break;
+								case "?": await handleConditionalBlock(thisTag, thisContent, cardParameters, cardLines); break;
+								//case "%": handleLoopStatements(thisTag, thisContent, cardParameters, cardLines); break;
+							}
+
+							// Handle looping statements
+							if (thisTag.charAt(0) === "%") {
+								var loopCounter = thisTag.substring(1);
+								if (loopCounter && loopCounter !== "!") {
+									if (loopControl[loopCounter]) { log(`ScriptCards: Warning - loop counter ${loopCounter} reused inside itself on line ${lineCounter}.`); }
+									var params = thisContent.split(cardParameters.parameterdelimiter);
+									if (params.length === 2 && params[0].toLowerCase().endsWith("each")) {
+										// This will be a for-each loop, so the first (and only) parameter must be an array name
+										if (arrayVariables[params[1]] && arrayVariables[params[1]].length > 0) {
+											loopControl[loopCounter] = { loopType: "foreach", initial: 0, current: 0, end: arrayVariables[params[1]].length - 1, step: 1, nextIndex: lineCounter, arrayName: params[1] }
+											stringVariables[loopCounter] = arrayVariables[params[1]][0];
+											loopStack.push(loopCounter);
+											if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
+										} else {
+											log(`ScriptCards For...Each loop without a defined array or with empty array on line ${lineCounter}`)
+										}
+									}
+									if (params.length === 2 && (params[0].toLowerCase().endsWith("while") || params[0].toLowerCase().endsWith("until"))) {
+										var originalContent = getLineContent(cardLines[lineCounter]);
+										var contentParts = originalContent.split(cardParameters.parameterdelimiter);
+										var isTrue = await processFullConditional(await replaceVariableContent(contentParts[1], cardParameters)) || params[0].toLowerCase().endsWith("until");
+										if (isTrue) {
+											loopControl[loopCounter] = { loopType: params[0].toLowerCase().endsWith("until") ? "until" : "while", initial: 0, current: 0, end: 999999, step: 1, nextIndex: lineCounter, condition: contentParts[1] }
+											stringVariables[loopCounter] = "true";
+											loopStack.push(loopCounter);
+											if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
+										} else {
+											var line = lineCounter;
+											for (line = lineCounter + 1; line < cardLines.length; line++) {
+												if (getLineTag(cardLines[line], line, "").trim() == "%") {
+													lineCounter = line;
+													break;
+												}
+											}
+											if (lineCounter > cardLines.length) {
+												log(`ScriptCards: Warning - no end block marker found for loop block started ${loopCounter}`);
+												lineCounter = cardLines.length + 1;
+											}
+										}
+									}
+									if (params.length === 2 && (!params[0].toLowerCase().endsWith("each")) && (!params[0].toLowerCase().endsWith("until")) && (!params[0].toLowerCase().endsWith("while"))) { params.push("1"); } // Add a "1" as the assumed step value if only two parameters
+									if (params.length === 3) {
+										if (isNumeric(params[0]) && isNumeric(params[1]) && isNumeric(params[2]) && parseInt(params[2]) != 0) {
+											loopControl[loopCounter] = { loopType: "fornext", initial: parseInt(params[0]), current: parseInt(params[0]), end: parseInt(params[1]), step: parseInt(params[2]), nextIndex: lineCounter }
+											stringVariables[loopCounter] = params[0];
+											loopStack.push(loopCounter);
+											if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
+										} else {
+											if (parseInt(params[2] == 0)) {
+												log(`ScriptCards: Error - cannot use loop step of 0 at line ${lineCounter}`)
+											} else {
+												log(`ScriptCards: Error - loop initialization contains non-numeric values on line ${lineCounter}`)
+											}
+										}
+									}
+								} else {
+									if (loopStack.length >= 1) {
+										var currentLoop = loopStack[loopStack.length - 1];
+										if (loopControl[currentLoop]) {
+											loopControl[currentLoop].current += loopControl[currentLoop].step;
+											switch (loopControl[currentLoop].loopType) {
+												case "fornext":
+													stringVariables[currentLoop] = loopControl[currentLoop].current.toString();
+													break;
+												case "foreach":
+													try {
+														var beforeLoopEnded = stringVariables[currentLoop]
+														stringVariables[currentLoop] = arrayVariables[loopControl[currentLoop].arrayName][loopControl[currentLoop].current]
+													} catch {
+														stringVariables[currentLoop] = "ArrayError"
+													}
+													break;
+												case "while":
+													var isTrue = await processFullConditional(await replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
+													if (!isTrue) {
+														loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
+														loopControl[currentLoop].step = 1;
+													}
+													break;
+												case "until":
+													var isTrue = await processFullConditional(await replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
+													if (isTrue) {
+														loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
+														loopControl[currentLoop].step = 1;
+													}
+													break;
+
+											}
+											if ((loopControl[currentLoop].step > 0 && loopControl[currentLoop].current > loopControl[currentLoop].end) ||
+												(loopControl[currentLoop].step < 0 && loopControl[currentLoop].current < loopControl[currentLoop].end) ||
+												loopCounter == "!") {
+												stringVariables[currentLoop] = beforeLoopEnded;
+												loopStack.pop();
+												delete loopControl[currentLoop];
+												if (cardParameters.debug == 1) { log(`ScriptCards: Info - End of loop ${currentLoop}`) }
+												if (loopCounter == "!") {
+													var line = lineCounter;
+													for (line = lineCounter + 1; line < cardLines.length; line++) {
+														if (getLineTag(cardLines[line], line, "").trim() == "%") {
+															lineCounter = line;
+															break;
+														}
+													}
+													if (lineCounter > cardLines.length) {
+														log(`ScriptCards: Warning - no end block marker found for loop block started ${loopCounter}`);
+														lineCounter = cardLines.length + 1;
+													}
+												}
+											} else {
+												lineCounter = loopControl[currentLoop].nextIndex;
+											}
+										}
+									} else {
+										log(`ScriptCards: Error - Loop end statement without an active loop on line ${lineCounter}`);
+									}
+								}
+							}
+						}
+
+						executionCounter++;
+
+						if (executionCounter > cardParameters.executionlimit) {
+							log("ScriptCards Error: Execution Limit Reached. Terminating Script;")
+							lineCounter = cardLines.length + 1;
+						}
+						lineCounter++;
+					}
+				} while (repeatScriptCard)
+
+				var subtitle = "";
+				if ((cardParameters.leftsub !== "") && (cardParameters.rightsub !== "")) {
+					subtitle = cardParameters.leftsub + cardParameters.subtitleseparator + cardParameters.rightsub;
+				}
+				if ((cardParameters.leftsub !== "") && (cardParameters.rightsub == "")) {
+					subtitle = cardParameters.leftsub;
+				}
+				if ((cardParameters.leftsub == "") && (cardParameters.rightsub !== "")) {
+					subtitle = cardParameters.rightsub;
+				}
+
+				subtitle = processInlineFormatting(subtitle, cardParameters, (cardParameters.overridetemplate.toLowerCase() !== "none"));
+
+				var gmoutput = (gmonlyLines.length > 0) ? gmoutput = htmlTemplateHiddenTitle.replace("=X=TITLE=X=", cardParameters.title).replace("=X=SUBTITLE=X=", subtitle) : ""
+
+				var cardOutput = (cardParameters.hidetitlecard == "0") ? (htmlTemplate.replace("=X=TITLE=X=", cardParameters.title).replace("=X=SUBTITLE=X=", subtitle))
+					: htmlTemplateHiddenTitle.replace("=X=TITLE=X=", cardParameters.title).replace("=X=SUBTITLE=X=", subtitle);
+
+				cardOutput += outputLines.join("")
+				gmoutput += gmonlyLines.join("")
+
+				cardOutput += htmlTemplateEnd;
+				cardOutput = replaceStyleInformation(cardOutput, cardParameters);
+
+				if (gmonlyLines.length > 0) {
+					gmoutput += htmlTemplateEnd;
+					gmoutput = replaceStyleInformation(gmoutput, cardParameters);
+				}
+
+				var emote = "";
+				var emoteLeft = "";
+				var emoteRight = "";
+
+				if (cardParameters.emotestate == "visible") {
+					if (cardParameters.sourcetoken !== "") {
+						var thisToken = getObj("graphic", cardParameters.sourcetoken.trim());
+						if (thisToken != null && thisToken.get("imgsrc") !== "") {
+							emoteLeft = `<img src=${thisToken.get("imgsrc")} style='height: ${cardParameters.emotesourcetokensize}px; min-width: ${cardParameters.emotesourcetokensize}px; float: left;'></img>`;
+						}
+					}
+					if (cardParameters.targettoken !== "") {
+						var thisToken = getObj("graphic", cardParameters.targettoken.trim());
+						if (thisToken != null && thisToken.get("imgsrc") !== "") {
+							emoteRight = `<img src=${thisToken.get("imgsrc")} style='height: ${cardParameters.emotetargettokensize}px; min-width: ${cardParameters.emotetargettokensize}px; float: left;'></img>`;
+						}
+					}
+				}
+
+				if (cardParameters.emotesourcetokenoverride !== "0") {
+					emoteLeft = `<img src=${cardParameters.emotesourcetokenoverride} style='height: ${cardParameters.emotesourcetokensize}px; min-width: ${cardParameters.emotesourcetokensize}px; float: left;'></img>`;
+				}
+
+				if (cardParameters.emotetargettokenoverride !== "0") {
+					emoteRight = `<img src=${cardParameters.emotetargettokenoverride} style='height: ${cardParameters.emotesourcetokensize}px; min-width: ${cardParameters.emotesourcetokensize}px; float: left;'></img>`;
+				}
+
+				if (cardParameters.emotetext !== "" || emoteLeft !== "" || emoteRight !== "") {
+					if (emoteLeft == "") { emoteLeft = "&nbsp;" }
+					if (emoteRight == "") { emoteRight = "&nbsp;" }
+					emote = "<div style='display: table; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal; background: " + cardParameters.emotebackground + "'>" + emoteLeft + "<div style='display: table-cell; width: 100%; " + " font-size: " + cardParameters.emotefontsize + "; font-weight: " + cardParameters.emotefontweight + "; color: " + cardParameters.emotefontcolor + "; font-family: " + cardParameters.emotefont + "; " + "vertical-align: middle; text-align: center; padding: 0px 2px;'>" + cardParameters.emotetext + "</div><div style='display: table-cell; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal;'>" + emoteRight + "</div></div>"
+					emote = await replaceVariableContent(emote, cardParameters, false);
+				}
+
+				var from = cardParameters.showfromfornonwhispers !== "0" ? msg.who : "";
+
+				cardOutput = removeInlineRolls(cardOutput, cardParameters);
+				emote = removeInlineRolls(emote, cardParameters);
+
+				if (cardParameters.overridetemplate.toLowerCase() !== "none") {
+					var textCode = templates[cardParameters.overridetemplate].textcode;
+					if (textCode && textCode.indexOf("font-style:") == -1) {
+						textCode = textCode.slice(0, textCode.lastIndexOf(";")) + "; font-style: normal;" + textCode.slice(textCode.lastIndexOf(";") + 1)
+					}
+					var titleCode = templates[cardParameters.overridetemplate].titlecode
+					if (titleCode && titleCode.indexOf("font-style:") == -1) {
+						titleCode = titleCode.slice(0, titleCode.lastIndexOf(";")) + "; font-style: normal;" + titleCode.slice(titleCode.lastIndexOf(";") + 1)
+					}
+					var boxCode = templates[cardParameters.overridetemplate].boxcode
+					if (boxCode && boxCode.indexOf("font-style:") == -1) {
+						boxCode = boxCode.slice(0, boxCode.lastIndexOf(";")) + "; font-style: normal;" + boxCode.slice(boxCode.lastIndexOf(";") + 1)
+					}
+					cardOutput = boxCode + titleCode + cardParameters.title + textCode;
+					if (subtitle != "") {
+						cardOutput += `<div align=center ${FillTemplateStyle("subtitlestyle", cardParameters, true)}> ${subtitle}</div>`
+					}
+					for (var x = 0; x < outputLines.length; x++) {
+						cardOutput += bareoutputLines[x];
+					}
+					cardOutput += templates[cardParameters.overridetemplate].buttonwrapper
+					cardOutput += '</div></div></div>' + templates[cardParameters.overridetemplate].footer + "</div>"
+					cardOutput = replaceStyleInformation(cardOutput, cardParameters);
+					cardOutput = removeInlineRolls(cardOutput, cardParameters);
+				}
+
+				if (cardParameters.hidecard == "0") {
+					if (emote !== "") {
+						if (cardParameters.whisper == "" || cardParameters.whisper == "0") {
+							sendChat(from, "/desc " + emote + " " + cardOutput);
+						} else {
+							var whispers = cardParameters.whisper.split(",");
+							for (var w in whispers) {
+								var WhisperTarget = whispers[w].trim();
+								if (WhisperTarget == "self") {
+									WhisperTarget = getObj("player", msg.playerid).get("displayname");
+								}
+								sendChat(msg.who, `/w "${WhisperTarget}" ${emote} ${cardOutput}`);
+							}
+						}
+					} else {
+						if (cardParameters.whisper == "" || cardParameters.whisper == "0") {
+							sendChat(from, "/desc " + cardOutput);
+						} else {
+							var whispers = cardParameters.whisper.split(",");
+							for (var w in whispers) {
+								var WhisperTarget = whispers[w].trim();
+								if (WhisperTarget == "self") {
+									WhisperTarget = getObj("player", msg.playerid).get("displayname");
+								}
+								sendChat(msg.who, `/w "${WhisperTarget}" ${cardOutput}`);
+							}
+						}
+					}
+				}
+
+				if (gmonlyLines.length > 0) {
+					var gmWhisperTarget = cardParameters.gmoutputtarget
+					if (gmWhisperTarget == "self") {
+						gmWhisperTarget = getObj("player", msg.playerid).get("displayname");
+					}
+					sendChat("API", "/w " + gmWhisperTarget + " " + gmoutput);
+				}
+			}
+		}
+	}
 
 	on('ready', function () {
 		// if ScriptCards has never been run in this game, create state information to store
@@ -644,715 +1382,10 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		// !sc-deletestoredsettings - Delete a stored settings group
 		// !sc-resume - resume a card paused with --i
 		// !sc-reentrant - resume execution of a card at a particular label
-		on('chat:message', async function (msg) {
-			if (msg.type === "api") {
-				var apiCmdText = msg.content.toLowerCase().trim();
-				var processThisAPI = false;
-				var isResume = false;
-				var isReentrant = false;
-				var resumeArgs;
-				var cardContent;
-
-				// !sc-liststoredsettings creates a new scriptcard and sends it to
-				// chat. With no parameters, it reports a list of all of the stored settings
-				// groups. If a stored settings group name is passed, it will list all of the
-				// customized settings for that group.
-				if (apiCmdText.startsWith("!sc-liststoredsettings")) {
-					var metaCard = "!scriptcard {{ ";
-					metaCard += "--#title|Stored Settings Report ";
-					if (apiCmdText.split(" ").length == 1) {
-						metaCard += "--#leftsub|Settings List "
-						var stored = state[APINAME].storedSettings;
-						for (const key in stored) {
-							metaCard += `--+${key}|[r][button]Show::!sc-liststoredsettings ${key}[/button] [button]Delete::!sc-deletestoredsettings ${key}[/button][/r]`;
-						}
-					} else {
-						var settingName = msg.content.substring(msg.content.indexOf(" ")).trim();
-						if (settingName) {
-							metaCard += `--#leftsub|Setting List --#rightsub|${settingName} `;
-							var stored = state[APINAME].storedSettings[settingName];
-							for (const key in stored) {
-								if (stored[key] !== defaultParameters[key]) {
-									metaCard += `--+${key}|${stored[key]} [r][button]Edit::!sc-editstoredsetting ${settingName}|${key}|?{New Value|${stored[key]}}[/button] [button]Delete::!sc-deleteindividualstoredsetting ${settingName}|${key}[/button][/r]`;
-								}
-							}
-							metaCard += `--+|[c][button]Add Setting::!sc-addstoredsetting ${settingName}|?{Setting Name?}|?{Setting Value?}[/button][/c]`
-						}
-					}
-					metaCard += " }};"
-					sendChat("API", metaCard);
-				}
-
-				if (apiCmdText.startsWith("!sc-reloadtemplates")) {
-					reload_template_mule();
-					sendChat("ScriptCards", `/w ${msg.who} Templates mule reloaded. ${Object.keys(templates).length} defined templates.`)
-				}
-
-				if (apiCmdText.startsWith("!sc-deletestoredsettings ")) {
-					var settingName = msg.content.substring(msg.content.indexOf(" ")).trim();
-					if (state[APINAME].storedSettings[settingName]) {
-						delete state[APINAME].storedSettings[settingName];
-						metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingName} --+|The setting group ${settingName} has been deleted. }} `;
-						sendChat("API", metaCard);
-					} else {
-						metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingName} --+|No stored settings group named ${settingName} was found. }} `;
-						sendChat("API", metaCard);
-					}
-				}
-
-				if (apiCmdText.startsWith("!sc-deleteindividualstoredsetting ")) {
-					try {
-						var settingSet = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[0];
-						var settingName = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[1];
-
-						if (state[APINAME].storedSettings[settingSet] && state[APINAME].storedSettings[settingSet][settingName]) {
-							delete state[APINAME].storedSettings[settingSet][settingName];
-							metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingSet} --#rightsub|${settingName} --+|The setting ${settingName} has been deleted from the stored setting set ${settingSet}. }} `;
-							sendChat("API", metaCard);
-						} else {
-							metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingName} --#rightsub|${settingName} --+|No stored setting named ${settingName} found in group ${settingSet}. }} `;
-							sendChat("API", metaCard);
-						}
-					} catch { log(`An error occured processing deleteindividualstoredsetting request for ${msg.content}`) }
-				}
-
-				if (apiCmdText.startsWith("!sc-editstoredsetting ")) {
-					try {
-						var settingSet = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[0];
-						var settingName = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[1];
-						var newValue = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[2];
-
-						if (state[APINAME].storedSettings[settingSet] && state[APINAME].storedSettings[settingSet][settingName]) {
-							state[APINAME].storedSettings[settingSet][settingName] = newValue;
-							metaCard = `!scriptcard {{ --#title|Edit Stored Setting --#leftsub|${settingSet} --#rightsub|${settingName} --+|The setting ${settingName} in set ${settingSet} has been updated to ${newValue}. }} `;
-							sendChat("API", metaCard);
-						} else {
-							metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingName} --#rightsub|${settingName} --+|No stored setting named ${settingName} found in group ${settingSet}. }} `;
-							sendChat("API", metaCard);
-						}
-					} catch { log(`An error occured processing editstoredsetting request for ${msg.content}`) }
-				}
-
-				if (apiCmdText.startsWith("!sc-addstoredsetting ")) {
-					try {
-						var settingSet = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[0];
-						var settingName = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[1];
-						var newValue = msg.content.substring(msg.content.indexOf(" ")).trim().split("|")[2];
-
-						if (state[APINAME].storedSettings[settingSet] && !(state[APINAME].storedSettings[settingSet][settingName])) {
-							state[APINAME].storedSettings[settingSet][settingName] = newValue;
-							metaCard = `!scriptcard {{ --#title|Add Stored Setting --#leftsub|${settingSet} --#rightsub|${settingName} --+|The setting ${settingName} in set ${settingSet} has been updated to ${newValue}. }} `;
-							sendChat("API", metaCard);
-						} else {
-							metaCard = `!scriptcard {{ --#title|Add Stored Setting --#leftsub|${settingName} --#rightsub|${settingName} --+|Either ${settingSet} group does not exist, or a setting named ${settingName} is already defined in the group. }} `;
-							sendChat("API", metaCard);
-						}
-					} catch { log(`An error occured processing addstoredsetting request for ${msg.content}`) }
-				}
-
-				if (apiCmdText.startsWith("!sc-purgestoredsettings")) {
-					delete state[APINAME].storedSettings
-					state[APINAME].storedSettings = {}
-				}
-
-				if (apiCmdText.startsWith("!sc-resume ")) {
-					var resumeString = msg.content.substring(11);
-					resumeArgs = resumeString.split("-|-");
-					if (scriptCardsStashedScripts[resumeArgs[0]]) {
-						isResume = true;
-						processThisAPI = true;
-					}
-				}
-
-				if (apiCmdText.startsWith("!sc-reentrant ")) {
-					var resumeString = msg.content.substring(14);
-					resumeArgs = resumeString.split("-|-");
-					if (scriptCardsStashedScripts[resumeArgs[0]]) {
-						isResume = true;
-						isReentrant = true;
-						processThisAPI = true;
-					}
-				}
-
-				if (apiCmdText.startsWith("!sc-purgestachedscripts")) {
-					scriptCardsStashedScripts = {};
-				}
-
-				if (apiCmdText.startsWith("!scriptcards ")) { processThisAPI = true; }
-				if (apiCmdText.startsWith("!scriptcard ")) { processThisAPI = true; }
-				if (apiCmdText.startsWith("!script ")) { processThisAPI = true; }
-				if (apiCmdText.startsWith("!scriptcards{{")) { processThisAPI = true; }
-				if (apiCmdText.startsWith("!scriptcard{{")) { processThisAPI = true; }
-				if (apiCmdText.startsWith("!script{{")) { processThisAPI = true; }
-				if (processThisAPI) {
-					var cardParameters = {};
-					Object.assign(cardParameters, defaultParameters);
-					if (storageCharID) {
-						cardParameters.storagecharid = storageCharID
-					}
-					if (state[APINAME].storedSettings["Default"] != null) {
-						newSettings = state[APINAME].storedSettings["Default"];
-						for (var key in newSettings) {
-							cardParameters[key] = newSettings[key];
-						}
-					}
-					msg.content = processInlinerolls(msg);
-
-					scriptStartTimestamp = Date.now();
-
-					outputLines = [];
-					bareoutputLines = [];
-					gmonlyLines = [];
-					lineCounter = 1;
-
-					// Store labels and their corresponding line numbers for branching
-					lineLabels = {};
-					labelChecking = {};
-
-					benchmarks = {};
-
-					// The returnStack stores the line number to return to after a gosub, while the parameter stack stores parameter lists for nexted gosubs
-					returnStack = [];
-					parameterStack = [];
-					tableLineCounter = 0;
-
-					// Clear out any pre-existing roll variables
-					rollVariables = {};
-					stringVariables = {};
-					arrayVariables = {};
-					arrayIndexes = {};
-					hashTables = {};
-					pointerVariables = {};
-
-					loopControl = {};
-					loopStack = [];
-
-					scriptData = [];
-					saveScriptData = [];
-					lastBlockAction = "";
-					executionCounter = 0;
-
-					stringVariables["ScriptCards_Version"] = APIVERSION;
-					stringVariables["SC_VERSION_NUMERIC"] = NUMERIC_VERSION
-
-					if (msg.playerid) {
-						var sendingPlayer = getObj("player", msg.playerid);
-						if (sendingPlayer) {
-							stringVariables["SendingPlayerID"] = msg.playerid;
-							stringVariables["OriginalSendingPlayerID"] = msg.playerid;
-							lastExecutedByID = msg.playerid;
-							stringVariables["SendingPlayerName"] = sendingPlayer.get("_displayname");
-							stringVariables["OriginalSendingPlayerName"] = sendingPlayer.get("_displayname");
-							lastExecutedDisplayName = sendingPlayer.get("_displayname");
-							stringVariables["SendingPlayerColor"] = sendingPlayer.get("color");
-							stringVariables["OriginalSendingPlayerColor"] = sendingPlayer.get("color");
-							stringVariables["SendingPlayerSpeakingAs"] = sendingPlayer.get("speakingas");
-							stringVariables["OriginalSendingPlayerSpeakingAs"] = sendingPlayer.get("speakingas");
-							stringVariables["SendingPlayerIsGM"] = playerIsGM(msg.playerid) ? "1" : "0";
-							stringVariables["OriginalSendingPlayerIsGM"] = playerIsGM(msg.playerid) ? "1" : "0";
-						}
-					}
-
-					if (msg.selected) {
-						arrayVariables["SC_SelectedTokens"] = [];
-						for (let x = 0; x < msg.selected.length; x++) {
-							arrayVariables["SC_SelectedTokens"].push(msg.selected[x]._id);
-							arrayIndexes["SC_SelectedTokens"] = 0;
-						}
-					}
-
-					if (isResume) {
-						var stashIndex = resumeArgs[0];
-						if (scriptCardsStashedScripts[stashIndex].scriptContent) { cardLines = JSON.parse(scriptCardsStashedScripts[stashIndex].scriptContent); }
-						if (scriptCardsStashedScripts[stashIndex].cardParameters) { cardParameters = JSON.parse(scriptCardsStashedScripts[stashIndex].cardParameters); }
-						if (scriptCardsStashedScripts[stashIndex].stringVariables) { stringVariables = JSON.parse(scriptCardsStashedScripts[stashIndex].stringVariables); }
-						if (scriptCardsStashedScripts[stashIndex].rollVariables) { rollVariables = JSON.parse(scriptCardsStashedScripts[stashIndex].rollVariables); }
-						if (scriptCardsStashedScripts[stashIndex].pointerVariables) { pointerVariables = JSON.parse(scriptCardsStashedScripts[stashIndex].pointerVariables); }
-						if (scriptCardsStashedScripts[stashIndex].arrayVariables) { arrayVariables = JSON.parse(scriptCardsStashedScripts[stashIndex].arrayVariables); }
-						if (scriptCardsStashedScripts[stashIndex].arrayIndexes) { arrayIndexes = JSON.parse(scriptCardsStashedScripts[stashIndex].arrayIndexes); }
-						if (scriptCardsStashedScripts[stashIndex].hashTables) { hashTables = JSON.parse(scriptCardsStashedScripts[stashIndex].hashTables); }
-						if (scriptCardsStashedScripts[stashIndex].returnStack) { returnStack = JSON.parse(scriptCardsStashedScripts[stashIndex].returnStack); }
-						if (scriptCardsStashedScripts[stashIndex].parameterStack) { parameterStack = JSON.parse(scriptCardsStashedScripts[stashIndex].parameterStack); }
-						if (scriptCardsStashedScripts[stashIndex].outputLines) { outputLines = JSON.parse(scriptCardsStashedScripts[stashIndex].outputLines); }
-						if (scriptCardsStashedScripts[stashIndex].bareoutputLines) { bareoutputLines = JSON.parse(scriptCardsStashedScripts[stashIndex].bareoutputLines); }
-						if (scriptCardsStashedScripts[stashIndex].gmonlyLines) { gmonlyLines = JSON.parse(scriptCardsStashedScripts[stashIndex].gmonlyLines); }
-						if (scriptCardsStashedScripts[stashIndex].repeatingSectionIDs) { repeatingSectionIDs = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingSectionIDs); }
-						if (scriptCardsStashedScripts[stashIndex].repeatingSection) { repeatingSection = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingSection); }
-						if (scriptCardsStashedScripts[stashIndex].repeatingCharAttrs) { repeatingCharAttrs = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingCharAttrs); }
-						if (scriptCardsStashedScripts[stashIndex].loopControl) { loopControl = scriptCardsStashedScripts[stashIndex].loopControl; }
-						if (scriptCardsStashedScripts[stashIndex].loopStack) { loopStack = scriptCardsStashedScripts[stashIndex].loopStack; }
-						//if (scriptCardsStashedScripts[stashIndex].loopCounter) {loopCounter = scriptCardsStashedScripts[stashIndex].loopCounter; }
-						repeatingCharID = scriptCardsStashedScripts[stashIndex].repeatingCharID;
-						repeatingSectionName = scriptCardsStashedScripts[stashIndex].repeatingSectionName;
-						repeatingIndex = scriptCardsStashedScripts[stashIndex].repeatingIndex;
-						lineCounter = scriptCardsStashedScripts[stashIndex].programCounter;
-
-						if (cardParameters.sourcetoken) {
-							var charLookup = getObj("graphic", cardParameters.sourcetoken);
-							if (charLookup != null && charLookup.get("represents") !== "") {
-								cardParameters.sourcecharacter = getObj("character", charLookup.get("represents"));
-							} else {
-								cardParameters.sourcecharacter = undefined;
-							}
-						}
-
-						if (cardParameters.targettoken) {
-							var charLookup = getObj("graphic", cardParameters.targettoken);
-							if (charLookup != null && charLookup.get("represents") !== "") {
-								cardParameters.targetcharacter = getObj("character", charLookup.get("represents"));
-							} else {
-								cardParameters.targetcharacter = undefined;
-							}
-						}
-
-						if (msg.selected) {
-							arrayVariables["SC_SelectedTokens"] = [];
-							for (let x = 0; x < msg.selected.length; x++) {
-								arrayVariables["SC_SelectedTokens"].push(msg.selected[x]._id);
-								arrayIndexes["SC_SelectedTokens"] = 0;
-							}
-						}
-
-						if (!isReentrant) {
-							for (var x = 1; x < resumeArgs.length; x++) {
-								var thisInfo = resumeArgs[x].split(cardParameters.parameterdelimiter);
-								stringVariables[thisInfo[0].trim()] = thisInfo[1].trim();
-							}
-						}
-						if (!isReentrant && scriptCardsStashedScripts[resumeArgs[0]]) { delete scriptCardsStashedScripts[resumeArgs[0]]; }
-
-						if (msg.playerid) {
-							var sendingPlayer = getObj("player", msg.playerid);
-							if (sendingPlayer) {
-								stringVariables["SendingPlayerID"] = msg.playerid;
-								lastExecutedByID = msg.playerid;
-								stringVariables["SendingPlayerName"] = sendingPlayer.get("_displayname");
-								lastExecutedDisplayName = sendingPlayer.get("_displayname");
-								stringVariables["SendingPlayerColor"] = sendingPlayer.get("color");
-								stringVariables["SendingPlayerSpeakingAs"] = sendingPlayer.get("speakingas");
-								stringVariables["SendingPlayerIsGM"] = playerIsGM(msg.playerid) ? "1" : "0";
-							}
-						}
-
-					} else {
-						// Strip out all newlines in the input text
-						cardContent = msg.content.replace(/(\r\n|\n|\r)/gm, " ");
-						cardContent = cardContent.replace(/(<br ?\/?>)*/g, "");
-						cardContent = cardContent.replace(/\}\}/g, " }}");
-						cardContent = cardContent.replace(/\\\\\[/g, "[");
-						cardContent = cardContent.replace(/\\\\\]/g, "]");
-						cardContent = cardContent.trim();
-						if (cardContent.charAt(cardContent.length - 1) !== "}") {
-							if (cardContent.charAt(cardContent.length - 2) !== "}") {
-								cardContent += "}";
-							}
-							cardContent += "}";
-						}
-
-						var libraries = cardContent.match(/\+\+\+.+?\+\+\+/g);
-						if (libraries) {
-							cardContent = insertLibraryContent(cardContent, libraries[0].replace(/\+\+\+/g, ""));
-							cardContent = cardContent.replace(/\+\+\+.+?\+\+\+/g, "")
-						}
-
-						// Split the card into an array of tag-based (--) lines
-						let cardWork = cardContent.match(/\{\{(.*?)\}\}/gis)
-						if (cardWork && cardWork[0]) {
-							var cardLines = cardWork[0].substring(2, cardWork[0].length - 3).split("--")
-						}
-						//var cardLines = cardContent.match(/\{\{(.*?)\}\}/gis) ? (" " + cardContent.match(/\{\{(.*?)\}\}/gis)[0]).substring(2,-2).split("--") : []
-					}
-
-					// pre-parse line labels and store line numbers for branching and for data lines to store in the data structure
-					for (let x = 0; x < cardLines.length; x++) {
-						let thisTag = getLineTag(cardLines[x], x, false)
-						let isRedef = false;
-						if (thisTag.charAt(0) == ":") {
-							if (lineLabels[thisTag.substring(1)]) {
-								log(`ScriptCards Warning: redefined label ${thisTag.substring(1)}`);
-								isRedef = true;
-							}
-							if (labelChecking[thisTag.substring(1).toLowerCase()] && !isRedef) {
-								log(`ScriptCards Warning: Similar labels ${labelChecking[thisTag.substring(1).toLowerCase()]} and ${thisTag.substring(1)}`);
-							}
-							lineLabels[thisTag.substring(1)] = x;
-							labelChecking[thisTag.substring(1).toLowerCase()] = thisTag.substring(1);
-						}
-						if (thisTag.toLowerCase() === "d!") {
-							var thisData = CSVtoArray(getLineContent(cardLines[x]));
-							while (thisData.length > 0) {
-								let dataElement = thisData.shift();
-								scriptData.push(dataElement);
-								saveScriptData.push(dataElement);
-							}
-						}
-					}
-
-					if (isReentrant) {
-						outputLines = [];
-						bareoutputLines = [];
-						gmonlyLines = [];
-						var entryLabel = resumeArgs[1].split(";")[0];
-						stringVariables["reentryval"] = resumeArgs[1].split(";")[1];
-						if (lineLabels[entryLabel]) {
-							lineCounter = lineLabels[entryLabel]
-						} else {
-							log(`ScriptCards Error: Label ${resumeArgs[1]} is not defined for reentrant script`)
-						}
-					}
-
-					// Process card lines starting with the first line (cardLines[0] will contain an empty string due to the split)
-					do {
-						while (lineCounter < cardLines.length) {
-
-							let thisTag = await replaceVariableContent(getLineTag(cardLines[lineCounter], lineCounter, true), cardParameters, false);
-							let thisContent = await replaceVariableContent(getLineContent(cardLines[lineCounter]), cardParameters, (thisTag.charAt(0) == "+" || thisTag.charAt(0) == "*" || thisTag.charAt(0) == "&"));
-
-							if (cardParameters.debug == 1) {
-								log(`Line Counter: ${lineCounter}, Tag:${thisTag}, Content:${thisContent}`);
-							}
-
-							if (thisTag.charAt(0) !== "/") {
-
-								// Handle Stashing and asking for info
-								if (thisTag.charAt(0).toLowerCase() == "i") {
-									var myGuid = uuidv4();
-									var stashType = thisTag.substring(1);
-									var stashList = thisContent.split("||");
-									var buildLine = "";
-									var varList = "";
-									for (var x = 0; x < stashList.length; x++) {
-										var theseParams = stashList[x].split(";");
-										if (theseParams[0].toLowerCase() == "t") {
-											if (buildLine !== "") { buildLine += "-|-"; varList += ";"; }
-											buildLine += theseParams[1] + ";&#64;{target|" + theseParams[2] + "|token_id}";
-											varList += theseParams[1];
-										}
-										if (theseParams[0].toLowerCase() == "q") {
-											if (buildLine !== "") { buildLine += "-|-"; varList += cardParameters.parameterdelimiter; }
-											buildLine += theseParams[1] + cardParameters.parameterdelimiter + "?{" + theseParams[2] + "}";
-											varList += theseParams[1];
-										}
-									}
-									var flavorText = stashType.split(";")[0];
-									if (cardParameters.formatinforequesttext !== "0") {
-										flavorText = processInlineFormatting(flavorText, cardParameters, false);
-									}
-									var buttonLabel = stashType.split(";")[1];
-
-									stashAScript(myGuid, cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, "", "X", arrayVariables, arrayIndexes, gmonlyLines, bareoutputLines);
-									lineCounter = cardLines.length + 100;
-									cardParameters.hidecard = "1";
-									sendChat(msg.who, `/w ${msg.who} ${flavorText}` + makeButton(buttonLabel, `!sc-resume ${myGuid}-|-${buildLine}`, cardParameters));
-								}
-
-								// *********** STARTHERE
-
-								switch (thisTag.charAt(0).toLowerCase()) {
-									case "!": await handleObjectModificationCommands(thisTag, thisContent, cardParameters); break;
-									case "a": playJukeboxTrack(thisContent); break;
-									case "c": await handleCaseCommand(thisTag, thisContent, cardParameters, cardLines); break;
-									case "d": handleDataReadCommands(thisTag); break;
-									case "e": handleEmoteCommands(thisTag, thisContent); break;
-									case "h": handleHasTableCommands(thisTag, hashTables, thisContent); break;
-									case "l": handleLoadCommands(thisTag, thisContent, cardParameters); break;
-									case "p": handlePointerCommand(thisTag, thisContent); break;
-									case "r": handleRepeatingAttributeCommands(thisTag, thisContent, cardParameters); break;
-									case "s": handleStashLines(thisTag, thisContent, cardParameters); break;
-									case "w": await handleWaitStatements(thisTag, thisContent, cardParameters); break;
-									case "v": handleVisualEffectsCommand(thisTag, thisContent, cardParameters); break;
-									case "x": {
-										if (cardParameters.functionbenchmarking == "1") { reportBenchmarkingData(); }
-										(cardParameters["reentrant"] !== 0) ? stashAScript(cardParameters["reentrant"], cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, varList, "X", arrayVariables, arrayIndexes, gmonlyLines, bareoutputLines) : null
-										lineCounter = cardLines.length + 1;
-									} break;
-									case "z": handleZOrderSettingCommands(thisTag, thisContent); break;
-									case "~": await handleFunctionCommands(thisTag, thisContent, cardParameters, msg); break;
-									case "^": if (lineLabels[thisTag.substring(1)]) { lineCounter = lineLabels[thisTag.substring(1)] } else { log(`ScriptCards Error: Label ${jumpTo} is not defined on line ${lineCounter} (${thisTag}, ${thisContent})`) } break;
-									case "@": handleAPICallCommands(thisTag, thisContent, cardParameters, msg); break;
-									case "#": handleCardSettingsCommands(thisTag, thisContent, cardParameters); break;
-									case "+": case "*": await handleOutputCommands(thisTag, thisContent, cardParameters); break;
-									case "=": await handleRollVariableSetCommand(thisTag, thisContent, cardParameters); break;
-									case "&": await setStringOrArrayElement(thisTag.substring(1), thisContent, cardParameters); break;
-									case "\\": handleConsoleLogs(thisTag, thisContent); break;
-									case "<": if (returnStack.length > 0) {
-										arrayVariables["args"] = [];
-										callParamList = parameterStack.pop();
-										if (callParamList) {
-											for (const value of Object.values(callParamList)) {
-												arrayVariables["args"].push(value.toString().trim());
-											}
-										}
-										lineCounter = returnStack.pop();
-									} break;
-									case ">": handleGosubCommands(thisTag, thisContent, cardParameters); break;
-									case "]": handleBlockEndCommand(thisTag, thisContent, cardLines); break;
-									case "?": await handleConditionalBlock(thisTag, thisContent, cardParameters, cardLines); break;
-									//case "%": handleLoopStatements(thisTag, thisContent, cardParameters, cardLines); break;
-								}
-
-								// Handle looping statements
-								if (thisTag.charAt(0) === "%") {
-									var loopCounter = thisTag.substring(1);
-									if (loopCounter && loopCounter !== "!") {
-										if (loopControl[loopCounter]) { log(`ScriptCards: Warning - loop counter ${loopCounter} reused inside itself on line ${lineCounter}.`); }
-										var params = thisContent.split(cardParameters.parameterdelimiter);
-										if (params.length === 2 && params[0].toLowerCase().endsWith("each")) {
-											// This will be a for-each loop, so the first (and only) parameter must be an array name
-											if (arrayVariables[params[1]] && arrayVariables[params[1]].length > 0) {
-												loopControl[loopCounter] = { loopType: "foreach", initial: 0, current: 0, end: arrayVariables[params[1]].length - 1, step: 1, nextIndex: lineCounter, arrayName: params[1] }
-												stringVariables[loopCounter] = arrayVariables[params[1]][0];
-												loopStack.push(loopCounter);
-												if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
-											} else {
-												log(`ScriptCards For...Each loop without a defined array or with empty array on line ${lineCounter}`)
-											}
-										}
-										if (params.length === 2 && (params[0].toLowerCase().endsWith("while") || params[0].toLowerCase().endsWith("until"))) {
-											var originalContent = getLineContent(cardLines[lineCounter]);
-											var contentParts = originalContent.split(cardParameters.parameterdelimiter);
-											var isTrue = await processFullConditional(await replaceVariableContent(contentParts[1], cardParameters)) || params[0].toLowerCase().endsWith("until");
-											if (isTrue) {
-												loopControl[loopCounter] = { loopType: params[0].toLowerCase().endsWith("until") ? "until" : "while", initial: 0, current: 0, end: 999999, step: 1, nextIndex: lineCounter, condition: contentParts[1] }
-												stringVariables[loopCounter] = "true";
-												loopStack.push(loopCounter);
-												if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
-											} else {
-												var line = lineCounter;
-												for (line = lineCounter + 1; line < cardLines.length; line++) {
-													if (getLineTag(cardLines[line], line, "").trim() == "%") {
-														lineCounter = line;
-														break;
-													}
-												}
-												if (lineCounter > cardLines.length) {
-													log(`ScriptCards: Warning - no end block marker found for loop block started ${loopCounter}`);
-													lineCounter = cardLines.length + 1;
-												}
-											}
-										}
-										if (params.length === 2 && (!params[0].toLowerCase().endsWith("each")) && (!params[0].toLowerCase().endsWith("until")) && (!params[0].toLowerCase().endsWith("while"))) { params.push("1"); } // Add a "1" as the assumed step value if only two parameters
-										if (params.length === 3) {
-											if (isNumeric(params[0]) && isNumeric(params[1]) && isNumeric(params[2]) && parseInt(params[2]) != 0) {
-												loopControl[loopCounter] = { loopType: "fornext", initial: parseInt(params[0]), current: parseInt(params[0]), end: parseInt(params[1]), step: parseInt(params[2]), nextIndex: lineCounter }
-												stringVariables[loopCounter] = params[0];
-												loopStack.push(loopCounter);
-												if (cardParameters.debug == 1) { log(`ScriptCards: Info - Beginning of loop ${loopCounter}`) }
-											} else {
-												if (parseInt(params[2] == 0)) {
-													log(`ScriptCards: Error - cannot use loop step of 0 at line ${lineCounter}`)
-												} else {
-													log(`ScriptCards: Error - loop initialization contains non-numeric values on line ${lineCounter}`)
-												}
-											}
-										}
-									} else {
-										if (loopStack.length >= 1) {
-											var currentLoop = loopStack[loopStack.length - 1];
-											if (loopControl[currentLoop]) {
-												loopControl[currentLoop].current += loopControl[currentLoop].step;
-												switch (loopControl[currentLoop].loopType) {
-													case "fornext":
-														stringVariables[currentLoop] = loopControl[currentLoop].current.toString();
-														break;
-													case "foreach":
-														try {
-															var beforeLoopEnded = stringVariables[currentLoop]
-															stringVariables[currentLoop] = arrayVariables[loopControl[currentLoop].arrayName][loopControl[currentLoop].current]
-														} catch {
-															stringVariables[currentLoop] = "ArrayError"
-														}
-														break;
-													case "while":
-														var isTrue = await processFullConditional(await replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
-														if (!isTrue) {
-															loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
-															loopControl[currentLoop].step = 1;
-														}
-														break;
-													case "until":
-														var isTrue = await processFullConditional(await replaceVariableContent(loopControl[currentLoop].condition, cardParameters));
-														if (isTrue) {
-															loopControl[currentLoop].current = loopControl[currentLoop].end + 1;
-															loopControl[currentLoop].step = 1;
-														}
-														break;
-
-												}
-												if ((loopControl[currentLoop].step > 0 && loopControl[currentLoop].current > loopControl[currentLoop].end) ||
-													(loopControl[currentLoop].step < 0 && loopControl[currentLoop].current < loopControl[currentLoop].end) ||
-													loopCounter == "!") {
-													stringVariables[currentLoop] = beforeLoopEnded;
-													loopStack.pop();
-													delete loopControl[currentLoop];
-													if (cardParameters.debug == 1) { log(`ScriptCards: Info - End of loop ${currentLoop}`) }
-													if (loopCounter == "!") {
-														var line = lineCounter;
-														for (line = lineCounter + 1; line < cardLines.length; line++) {
-															if (getLineTag(cardLines[line], line, "").trim() == "%") {
-																lineCounter = line;
-																break;
-															}
-														}
-														if (lineCounter > cardLines.length) {
-															log(`ScriptCards: Warning - no end block marker found for loop block started ${loopCounter}`);
-															lineCounter = cardLines.length + 1;
-														}
-													}
-												} else {
-													lineCounter = loopControl[currentLoop].nextIndex;
-												}
-											}
-										} else {
-											log(`ScriptCards: Error - Loop end statement without an active loop on line ${lineCounter}`);
-										}
-									}
-								}
-							}
-
-							executionCounter++;
-
-							if (executionCounter > cardParameters.executionlimit) {
-								log("ScriptCards Error: Execution Limit Reached. Terminating Script;")
-								lineCounter = cardLines.length + 1;
-							}
-							lineCounter++;
-						}
-					} while (repeatScriptCard)
-
-					var subtitle = "";
-					if ((cardParameters.leftsub !== "") && (cardParameters.rightsub !== "")) {
-						subtitle = cardParameters.leftsub + cardParameters.subtitleseparator + cardParameters.rightsub;
-					}
-					if ((cardParameters.leftsub !== "") && (cardParameters.rightsub == "")) {
-						subtitle = cardParameters.leftsub;
-					}
-					if ((cardParameters.leftsub == "") && (cardParameters.rightsub !== "")) {
-						subtitle = cardParameters.rightsub;
-					}
-
-					subtitle = processInlineFormatting(subtitle, cardParameters, (cardParameters.overridetemplate.toLowerCase() !== "none"));
-
-					var gmoutput = (gmonlyLines.length > 0) ? gmoutput = htmlTemplateHiddenTitle.replace("=X=TITLE=X=", cardParameters.title).replace("=X=SUBTITLE=X=", subtitle) : ""
-
-					var cardOutput = (cardParameters.hidetitlecard == "0") ? (htmlTemplate.replace("=X=TITLE=X=", cardParameters.title).replace("=X=SUBTITLE=X=", subtitle))
-						: htmlTemplateHiddenTitle.replace("=X=TITLE=X=", cardParameters.title).replace("=X=SUBTITLE=X=", subtitle);
-
-					cardOutput += outputLines.join("")
-					gmoutput += gmonlyLines.join("")
-
-					cardOutput += htmlTemplateEnd;
-					cardOutput = replaceStyleInformation(cardOutput, cardParameters);
-
-					if (gmonlyLines.length > 0) {
-						gmoutput += htmlTemplateEnd;
-						gmoutput = replaceStyleInformation(gmoutput, cardParameters);
-					}
-
-					var emote = "";
-					var emoteLeft = "";
-					var emoteRight = "";
-
-					if (cardParameters.emotestate == "visible") {
-						if (cardParameters.sourcetoken !== "") {
-							var thisToken = getObj("graphic", cardParameters.sourcetoken.trim());
-							if (thisToken != null && thisToken.get("imgsrc") !== "") {
-								emoteLeft = `<img src=${thisToken.get("imgsrc")} style='height: ${cardParameters.emotesourcetokensize}px; min-width: ${cardParameters.emotesourcetokensize}px; float: left;'></img>`;
-							}
-						}
-						if (cardParameters.targettoken !== "") {
-							var thisToken = getObj("graphic", cardParameters.targettoken.trim());
-							if (thisToken != null && thisToken.get("imgsrc") !== "") {
-								emoteRight = `<img src=${thisToken.get("imgsrc")} style='height: ${cardParameters.emotetargettokensize}px; min-width: ${cardParameters.emotetargettokensize}px; float: left;'></img>`;
-							}
-						}
-					}
-
-					if (cardParameters.emotesourcetokenoverride !== "0") {
-						emoteLeft = `<img src=${cardParameters.emotesourcetokenoverride} style='height: ${cardParameters.emotesourcetokensize}px; min-width: ${cardParameters.emotesourcetokensize}px; float: left;'></img>`;
-					}
-
-					if (cardParameters.emotetargettokenoverride !== "0") {
-						emoteRight = `<img src=${cardParameters.emotetargettokenoverride} style='height: ${cardParameters.emotesourcetokensize}px; min-width: ${cardParameters.emotesourcetokensize}px; float: left;'></img>`;
-					}
-
-					if (cardParameters.emotetext !== "" || emoteLeft !== "" || emoteRight !== "") {
-						if (emoteLeft == "") { emoteLeft = "&nbsp;" }
-						if (emoteRight == "") { emoteRight = "&nbsp;" }
-						emote = "<div style='display: table; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal; background: " + cardParameters.emotebackground + "'>" + emoteLeft + "<div style='display: table-cell; width: 100%; " + " font-size: " + cardParameters.emotefontsize + "; font-weight: " + cardParameters.emotefontweight + "; color: " + cardParameters.emotefontcolor + "; font-family: " + cardParameters.emotefont + "; " + "vertical-align: middle; text-align: center; padding: 0px 2px;'>" + cardParameters.emotetext + "</div><div style='display: table-cell; margin: -5px 0px 3px -7px; font-weight: normal; font-style: normal;'>" + emoteRight + "</div></div>"
-						emote = await replaceVariableContent(emote, cardParameters, false);
-					}
-
-					var from = cardParameters.showfromfornonwhispers !== "0" ? msg.who : "";
-
-					cardOutput = removeInlineRolls(cardOutput, cardParameters);
-					emote = removeInlineRolls(emote, cardParameters);
-
-					if (cardParameters.overridetemplate.toLowerCase() !== "none") {
-						var textCode = templates[cardParameters.overridetemplate].textcode;
-						if (textCode && textCode.indexOf("font-style:") == -1) {
-							textCode = textCode.slice(0, textCode.lastIndexOf(";")) + "; font-style: normal;" + textCode.slice(textCode.lastIndexOf(";") + 1)
-						}
-						var titleCode = templates[cardParameters.overridetemplate].titlecode
-						if (titleCode && titleCode.indexOf("font-style:") == -1) {
-							titleCode = titleCode.slice(0, titleCode.lastIndexOf(";")) + "; font-style: normal;" + titleCode.slice(titleCode.lastIndexOf(";") + 1)
-						}
-						var boxCode = templates[cardParameters.overridetemplate].boxcode
-						if (boxCode && boxCode.indexOf("font-style:") == -1) {
-							boxCode = boxCode.slice(0, boxCode.lastIndexOf(";")) + "; font-style: normal;" + boxCode.slice(boxCode.lastIndexOf(";") + 1)
-						}
-						cardOutput = boxCode + titleCode + cardParameters.title + textCode;
-						if (subtitle != "") {
-							cardOutput += `<div align=center ${FillTemplateStyle("subtitlestyle", cardParameters, true)}> ${subtitle}</div>`
-						}
-						for (var x = 0; x < outputLines.length; x++) {
-							cardOutput += bareoutputLines[x];
-						}
-						cardOutput += templates[cardParameters.overridetemplate].buttonwrapper
-						cardOutput += '</div></div></div>' + templates[cardParameters.overridetemplate].footer + "</div>"
-						cardOutput = replaceStyleInformation(cardOutput, cardParameters);
-						cardOutput = removeInlineRolls(cardOutput, cardParameters);
-					}
-
-					if (cardParameters.hidecard == "0") {
-						if (emote !== "") {
-							if (cardParameters.whisper == "" || cardParameters.whisper == "0") {
-								sendChat(from, "/desc " + emote + " " + cardOutput);
-							} else {
-								var whispers = cardParameters.whisper.split(",");
-								for (var w in whispers) {
-									var WhisperTarget = whispers[w].trim();
-									if (WhisperTarget == "self") {
-										WhisperTarget = getObj("player", msg.playerid).get("displayname");
-									}
-									sendChat(msg.who, `/w "${WhisperTarget}" ${emote} ${cardOutput}`);
-								}
-							}
-						} else {
-							if (cardParameters.whisper == "" || cardParameters.whisper == "0") {
-								sendChat(from, "/desc " + cardOutput);
-							} else {
-								var whispers = cardParameters.whisper.split(",");
-								for (var w in whispers) {
-									var WhisperTarget = whispers[w].trim();
-									if (WhisperTarget == "self") {
-										WhisperTarget = getObj("player", msg.playerid).get("displayname");
-									}
-									sendChat(msg.who, `/w "${WhisperTarget}" ${cardOutput}`);
-								}
-							}
-						}
-					}
-
-					if (gmonlyLines.length > 0) {
-						var gmWhisperTarget = cardParameters.gmoutputtarget
-						if (gmWhisperTarget == "self") {
-							gmWhisperTarget = getObj("player", msg.playerid).get("displayname");
-						}
-						sendChat("API", "/w " + gmWhisperTarget + " " + gmoutput);
-					}
-				}
-			}
+		// Register chat:message handler with queue system
+		on('chat:message', function (msg) {
+			messageQueue.push(msg);
+			processMessageQueue();
 		});
 	});
 
@@ -2038,6 +2071,12 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 	function getLineTag(line, linenum, logerror) {
 		// (?<!\\)\|
+		if (!line) {
+			if (logerror) {
+				log(`ScriptCards Error: Line ${linenum} is undefined or null.`);
+			}
+			return "/Error - No Line Tag Specified";
+		}
 		if (line.match(/(?<!\\\\)\|/)) {
 			return line.split(/(?<!\\\\)\|/)[0].replaceAll("\\\\|", "|").trim();
 		} else {
@@ -2049,6 +2088,9 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	}
 
 	function getLineContent(line) {
+		if (!line) {
+			return "/Error - No Line Content Specified";
+		}
 		if (line.match(/(?<!\\)\|/)) {
 			return line.substring(line.search(/(?<!\\\\)\|/) + 1).replaceAll("\\\\|", "|").trim();
 		} else {
@@ -4160,6 +4202,35 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 								}
 									break;
 
+								case "h": {
+									let regexSplit = /\|(?=(?:[^"]*"[^"]*")*[^"]*$)/
+									let settings = thisContent.split(regexSplit);
+									let hProps = {}
+									for (let x = 0; x < settings.length; x++) {
+										//log(`Setting ${x} is ${settings[x]}`)
+										let setting = settings[x].match(/(".*?"|[^":\s]+)(?=\s*:|\s*$)/g);
+										if (setting[1]) {
+											if (setting[1].startsWith('"') && setting[1].endsWith('"')) {
+												setting[1] = setting[1].substring(1, setting[1].length - 1);
+											}
+											hProps[setting[0]] = getSafeTokenProperty(setting[0], setting[1]);
+										}
+									}
+
+									try {
+										var newHandout = createObj("handout", hProps);
+									} catch (e) {
+										log(e)
+									}
+
+									if (newHandout) {
+										stringVariables[thisTag.substring(4)] = newHandout.id
+									} else {
+										stringVariables[thisTag.substring(4)] = "OBJECT_CREATION_ERROR";
+									}
+								}
+									break;
+
 								case "t": {
 									let regexSplit = /\|(?=(?:[^"]*"[^"]*")*[^"]*$)/
 									let settings = thisContent.split(regexSplit);
@@ -4333,6 +4404,81 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							}
 							break;
 
+						case "h": {
+							var handoutID = thisTag.substring(3);
+							let regexSplit = /\|(?=(?:[^"]*"[^"]*")*[^"]*$)/					
+							let settings = thisContent.split(regexSplit);
+							let hProps = {}
+
+							for (let x = 0; x < settings.length; x++) {
+								//log(`Setting ${x} is ${settings[x]}`)
+								let setting = settings[x].match(/(".*?"|[^":\s]+)(?=\s*:|\s*$)/g);
+								if (setting[1]) {
+									if (setting[1].startsWith('"') && setting[1].endsWith('"')) {
+										setting[1] = setting[1].substring(1, setting[1].length - 1);
+									}
+									hProps[setting[0]] = getSafeTokenProperty(setting[0], setting[1]);
+								}
+							}
+
+							try {
+								var theHandout = getObj("handout", handoutID);
+							} catch (e) {
+								log(e)
+							}
+
+							if (theHandout) {
+								stringVariables[thisTag.substring(4)] = theHandout.id
+
+								_.each(hProps, function (settingValue, settingName) {
+									theHandout.set(settingName, settingValue);
+								});
+								
+/*
+								for (let i = 0; i < settings.length; i++) {
+									let thisSetting = settings[i].split(":");
+
+									let settingName = thisSetting.shift();
+									let settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");
+
+									if (settingValue && (settingValue.startsWith("+=") || settingValue.startsWith("-="))) {
+										let currentValue = theHandout.get(settingName);
+										let delta = settingValue.substring(2);
+										if (isNumber(currentValue) && isNumber(delta)) {
+											settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
+										} else {
+											settingValue = currentValue + delta;
+										}
+									}
+
+									if (cardParameters.formatoutputforobjectmodification == "1") {
+										settingValue = processInlineFormatting(settingValue, cardParameters, false);
+									}
+
+									if (theHandout && typeof (theHandout.get(settingName)) == "boolean" && settingValue) {
+										switch (settingValue.toLowerCase()) {
+											case "true": case "on": case "1": settingValue = true; break;
+											case "false": case "off": case "0": settingValue = false; break;
+											case "": case "toggle": case "flip": settingValue = !(theHandout.get(settingName)); break;
+										}
+									}
+
+									//if (settingName && settingValue) { 
+									if (settingName) {
+
+										theHandout.set(settingName, settingValue);
+										if (cardParameters.dontnotifyobservers !== "1") {
+											notifyObservers('handoutChange', theHandout, prevHandout);
+										}
+									}
+								}
+									*/
+							}
+						}
+
+
+							break;
+
 						case "t": {
 							var tokenID = thisTag.substring(3);
 							if (tokenID.toLowerCase() == "s" && cardParameters.sourcetoken) { tokenID = cardParameters.sourcetoken; }
@@ -4425,7 +4571,9 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 										}
 
 										theToken.set(settingName, settingValue);
-										notifyObservers('tokenChange', theToken, prevTok);
+										if (cardParameters.dontnotifyobservers !== "1") {
+											notifyObservers('tokenChange', theToken, prevTok);
+										}
 									}
 
 									if ('undefined' !== typeof HealthColors && HealthColors.Update) {
