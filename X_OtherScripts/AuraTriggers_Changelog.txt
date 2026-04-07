@@ -5,6 +5,9 @@ Potential ToDos:
 - Add radius overrides
 - Aura library handout? Instead of GMNotes field?
 
+V 0.9:
+- Checks for ScriptCards version and displays warning if it's not new enough to support ScriptCards as Aura Actions. ScriptCards version 3.0.19a or later is required for this support.
+
 V 0.8:
 - Properly handles an icon not being specified. Previously an aura without and icon was being ignored.
 - Added support for walls blocking auras using Path Math and "pathv2" lighting objects. Legacy "path" objects are not supported.

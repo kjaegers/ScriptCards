@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.19";
-	const NUMERIC_VERSION = "300190"
+	const APIVERSION = "3.0.19a";
+	const NUMERIC_VERSION = "300191"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1360,6 +1360,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		loadLibraryHandounts();
 
 		API_Meta.ScriptCards.version = APIVERSION;
+		API_Meta.ScriptCards.numericVersion = NUMERIC_VERSION;
 
 		// Log that the script is "ready". We also include the meta offset which can be used
 		// to track sandbox crash errors by subtracting the offset from the line number that the

@@ -4,7 +4,7 @@
 
 AuraTriggers is currently **experimental**.
 
-- API version: `0.8`
+- API version: `0.9`
 - Author: Kurt Jaegers
 - Runtime warning from script: not ready for live/production games yet
 

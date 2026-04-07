@@ -17,11 +17,15 @@ const AuraTriggers = (() => {
 
     const APIAUTHOR = "Kurt Jaegers";
 
+    const APIVERSION = "0.9";
+
+    // Placeholder for potential localization support in the future. Currently does not do anything.
+    var APILANGUAGE = "english";
+
     // Configuration schema version. This represents the last time changes were made to the configuration values
     // saved between sessions, and is not necessarially the same as the API version number.
-    const APIVERSION = "0.8";
 
-    var APILANGUAGE = "english";
+    const CONFIG_SCHEMA_VERSION = 1;
 
     // No config settings defined at this time
     var configSettings = {
@@ -121,7 +125,21 @@ const AuraTriggers = (() => {
 
         // Display API info in the console log
         log(`-=> ${APINAME} - ${APIVERSION} by ${APIAUTHOR} Ready <=- Meta Offset : ${API_Meta.AuraTriggers.offset}`);
-        sendChat("AuraTriggers", `${APINAME} v${APIVERSION} is loaded, but this API Mod is in development/testing and NOT ready for prime time. DO NOT USE in your live game yet!.`);
+
+        sendChat("AuraTriggers", `/w GM v${APIVERSION} is loaded, but this API Mod is in development/testing and NOT ready for prime time. DO NOT USE in your live game yet!.`);
+
+        // Check ScriptCards Version and display warning if it's not new enough
+        let scriptCardsVersion = 0;
+        let scversion_text = "";
+        if (typeof API_Meta.ScriptCards !== "undefined" && API_Meta.ScriptCards.numericVersion) {
+            scriptCardsVersion = API_Meta.ScriptCards.numericVersion ;
+            scversion_text = API_Meta.ScriptCards.version;
+            if (scriptCardsVersion < 300191) {
+                log(`${APINAME}: ScriptCards version is out of date. Please update to version 3.0.19a or later to support ScriptCards as Aura Actions.`);
+                sendChat(`${APINAME}`, `!script {{ --#whisper|gm --#titlecardbackground|#ff0000 --#title|AuraTriggers --#leftsub|AT Ver ${APIVERSION} --#rightsub|SC Ver ${scversion_text} --+AuraTriggers| needs ScriptCards version 3.0.19a or higher to prevent concurrency issues. [b]If you are not using ScriptCards[/b] for Aura Actions, you can ignore this message. }}`);
+            }
+        }
+
         let pageList = findObjs({ _type: "page" });
         if (pageList && Array.isArray(pageList)) {
             _.each(pageList, function (page) {
@@ -130,6 +148,12 @@ const AuraTriggers = (() => {
                 }
             });
         }
+
+        /*
+        on("change:handout", function () {
+			loadAuraHandouts();
+		});
+        */
 
         // Monitor for new Graphics objects (includes tokens)
         on('add:graphic', function (obj) {
