@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.20:
+- Version number update because OneClick happened before I got the changes saved :)
+
 v 3.0.19b:
 - Updated handout creation and modification to process inline formatting for notes properties.
 

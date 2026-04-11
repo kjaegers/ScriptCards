@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.19b";
-	const NUMERIC_VERSION = "300192"
+	const APIVERSION = "3.0.20";
+	const NUMERIC_VERSION = "300200"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
