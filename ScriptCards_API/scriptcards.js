@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.19a";
-	const NUMERIC_VERSION = "300191"
+	const APIVERSION = "3.0.19b";
+	const NUMERIC_VERSION = "300192"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -409,9 +409,9 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		if (isProcessingQueue || messageQueue.length === 0) {
 			return;
 		}
-		
+
 		isProcessingQueue = true;
-		
+
 		while (messageQueue.length > 0) {
 			const msg = messageQueue.shift();
 			try {
@@ -421,7 +421,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				if (error.stack) log(error.stack);
 			}
 		}
-		
+
 		isProcessingQueue = false;
 	}
 
@@ -4209,12 +4209,17 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 									let hProps = {}
 									for (let x = 0; x < settings.length; x++) {
 										//log(`Setting ${x} is ${settings[x]}`)
-										let setting = settings[x].match(/(".*?"|[^":\s]+)(?=\s*:|\s*$)/g);
-										if (setting[1]) {
-											if (setting[1].startsWith('"') && setting[1].endsWith('"')) {
-												setting[1] = setting[1].substring(1, setting[1].length - 1);
+										let setting = settings[x].split(":");
+										let settingName = setting.shift();
+										let settingValue = setting.join(":");
+										if (settingValue) {
+											if (settingValue.startsWith('"') && settingValue.endsWith('"')) {
+												settingValue = settingValue.substring(1, settingValue.length - 1);
 											}
-											hProps[setting[0]] = getSafeTokenProperty(setting[0], setting[1]);
+											hProps[settingName] = getSafeTokenProperty(settingName, settingValue);
+											if (settingName.endsWith("notes")) {
+												hProps[settingName] = processInlineFormatting(settingValue, cardParameters);
+											}
 										}
 									}
 
@@ -4407,18 +4412,22 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 						case "h": {
 							var handoutID = thisTag.substring(3);
-							let regexSplit = /\|(?=(?:[^"]*"[^"]*")*[^"]*$)/					
+							let regexSplit = /\|(?=(?:[^"]*"[^"]*")*[^"]*$)/
 							let settings = thisContent.split(regexSplit);
 							let hProps = {}
 
 							for (let x = 0; x < settings.length; x++) {
-								//log(`Setting ${x} is ${settings[x]}`)
-								let setting = settings[x].match(/(".*?"|[^":\s]+)(?=\s*:|\s*$)/g);
-								if (setting[1]) {
-									if (setting[1].startsWith('"') && setting[1].endsWith('"')) {
-										setting[1] = setting[1].substring(1, setting[1].length - 1);
+								let setting = settings[x].split(":");
+								let settingName = setting.shift();
+								let settingValue = setting.join(":");
+								if (settingValue) {
+									if (settingValue.startsWith('"') && settingValue.endsWith('"')) {
+										settingValue = settingValue.substring(1, settingValue.length - 1);
 									}
-									hProps[setting[0]] = getSafeTokenProperty(setting[0], setting[1]);
+									hProps[settingName] = getSafeTokenProperty(settingName, settingValue);
+									if (settingName.endsWith("notes")) {
+										hProps[settingName] = processInlineFormatting(settingValue, cardParameters);
+									}
 								}
 							}
 
@@ -4434,46 +4443,46 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 								_.each(hProps, function (settingValue, settingName) {
 									theHandout.set(settingName, settingValue);
 								});
+
+								/*
+																for (let i = 0; i < settings.length; i++) {
+																	let thisSetting = settings[i].split(":");
 								
-/*
-								for (let i = 0; i < settings.length; i++) {
-									let thisSetting = settings[i].split(":");
-
-									let settingName = thisSetting.shift();
-									let settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");
-
-									if (settingValue && (settingValue.startsWith("+=") || settingValue.startsWith("-="))) {
-										let currentValue = theHandout.get(settingName);
-										let delta = settingValue.substring(2);
-										if (isNumber(currentValue) && isNumber(delta)) {
-											settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
-										} else {
-											settingValue = currentValue + delta;
-										}
-									}
-
-									if (cardParameters.formatoutputforobjectmodification == "1") {
-										settingValue = processInlineFormatting(settingValue, cardParameters, false);
-									}
-
-									if (theHandout && typeof (theHandout.get(settingName)) == "boolean" && settingValue) {
-										switch (settingValue.toLowerCase()) {
-											case "true": case "on": case "1": settingValue = true; break;
-											case "false": case "off": case "0": settingValue = false; break;
-											case "": case "toggle": case "flip": settingValue = !(theHandout.get(settingName)); break;
-										}
-									}
-
-									//if (settingName && settingValue) { 
-									if (settingName) {
-
-										theHandout.set(settingName, settingValue);
-										if (cardParameters.dontnotifyobservers !== "1") {
-											notifyObservers('handoutChange', theHandout, prevHandout);
-										}
-									}
-								}
-									*/
+																	let settingName = thisSetting.shift();
+																	let settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");
+								
+																	if (settingValue && (settingValue.startsWith("+=") || settingValue.startsWith("-="))) {
+																		let currentValue = theHandout.get(settingName);
+																		let delta = settingValue.substring(2);
+																		if (isNumber(currentValue) && isNumber(delta)) {
+																			settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
+																		} else {
+																			settingValue = currentValue + delta;
+																		}
+																	}
+								
+																	if (cardParameters.formatoutputforobjectmodification == "1") {
+																		settingValue = processInlineFormatting(settingValue, cardParameters, false);
+																	}
+								
+																	if (theHandout && typeof (theHandout.get(settingName)) == "boolean" && settingValue) {
+																		switch (settingValue.toLowerCase()) {
+																			case "true": case "on": case "1": settingValue = true; break;
+																			case "false": case "off": case "0": settingValue = false; break;
+																			case "": case "toggle": case "flip": settingValue = !(theHandout.get(settingName)); break;
+																		}
+																	}
+								
+																	//if (settingName && settingValue) { 
+																	if (settingName) {
+								
+																		theHandout.set(settingName, settingValue);
+																		if (cardParameters.dontnotifyobservers !== "1") {
+																			notifyObservers('handoutChange', theHandout, prevHandout);
+																		}
+																	}
+																}
+																	*/
 							}
 						}
 
