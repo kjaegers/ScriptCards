@@ -1,6 +1,6 @@
 !script {{
   --/|Script Name : 5E Action Menu
-  --/|Version     : 2.7.8
+  --/|Version     : 2.7.9
   --/|Requires SC : 2.7.15+
   --/|Author      : Kurt Jaegers
 
@@ -1032,6 +1032,9 @@
   --#whisper|[&whisperTarget]
   --~skillInfo|string;split;|;[&reentryval]
   --~skillType|string;tolowercase;[&skillInfo1]_bonus
+  --~skillBase|string;tolowercase;npc_[&skillInfo1]_base
+  --=SkillMod|[*S:[&skillType]]
+  --?"[*S:[&skillBase]]" -ne "" -and "[*S:[&skillBase]]" -ne "0"|=SkillMod;[*S:[&skillBase]]
   --&rollType|[&skillInfo2]
   --&skillDisplayName|[&skillInfo1]
   --?[&skillDisplayName] -eq "animal_handling"|&skillDisplayName;Animal Handling
@@ -1039,7 +1042,7 @@
   --&rollEquation|1d20
   --?[&rollType] -eq "Advantage"|&rollEquation;2d20kh1
   --?[&rollType] -eq "Disadvantage"|&rollEquation;2d20kl1
-  --=SkillCheck|[&rollEquation] + [*S:[&skillType]] [&obrac][&skillInfo1][&cbrac]
+  --=SkillCheck|[&rollEquation] + [$SkillMod.Raw] [&obrac][&skillInfo1][&cbrac]
   --#title|[&skillDisplayName] Check
   --#leftsub|[*S:character_name]
   --#rightsub|

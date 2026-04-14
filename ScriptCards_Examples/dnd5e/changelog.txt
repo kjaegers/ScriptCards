@@ -1,5 +1,8 @@
 Change Log for items in the ScriptExamples/dnd5e Folder:
 
+2026-04-14 - 5e Character Action Menu 2.7.9
+- Fixed a bug where NPC skill checks were only using raw attribute values instead of using npc-specific skill modifiers.
+
 2026-01-25 - 5e Character Action Menu 2.7.8
 - Fixed a bug where Action and Legendary Actions for NPCs caches were not being Cleared
 - Fixed a bug were Multiattack descriptions were not being displayed correctly.
