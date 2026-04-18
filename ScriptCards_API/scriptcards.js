@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.20";
-	const NUMERIC_VERSION = "300200"
+	const APIVERSION = "3.0.21";
+	const NUMERIC_VERSION = "300210"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -5389,11 +5389,76 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					}
 					break;
 
+				case "repeatingrow":
+					var variableName = thisTag.substring(1);
+					if (params.length == 6) {
+						if (params[1].toLowerCase() == "copybyindex") {
+							let sourceCharacter = getObj("character", params[2]);
+							let destCharacter = getObj("character", params[3]);
+							let section = params[4];
+							let sourceRow = params[5];
+							log(`Source Character: ${sourceCharacter}, Dest Character: ${destCharacter}, Section: ${section}, Source Row: ${sourceRow}`);
+							repeatingSectionIDs = getRepeatingSectionIDs(params[2], params[4]);
+							if (repeatingSectionIDs) {
+								repeatingIndex = Number(sourceRow);
+								repeatingCharID = sourceCharacter.id;
+								repeatingSectionName = section;
+								fillCharAttrs(findObjs({ _type: 'attribute', _characterid: repeatingCharID }));
+								repeatingSection = getSectionAttrsByID(repeatingCharID, repeatingSectionName, repeatingSectionIDs[repeatingIndex]);
+								repeatingIndex = Number(sourceRow);
+
+								let newRowID = generateRowID();
+								stringVariables["SC_LAST_CREATED_ROWID"] = newRowID;
+
+								for (let x = 0; x < repeatingSection.length; x += 2) {
+									try {
+										let attrName = repeatingSection[x].split("|")[0].trim();
+										let attrValue = repeatingSection[x].split("|")[1].trim();
+										let attrMax = repeatingSection[x + 1].split("|")[1].trim();
+										let newAttribute = createObj("attribute", {
+											name: `${repeatingSectionName}_${newRowID}_${attrName}`,
+											_characterid: destCharacter.id,
+											current: "",
+											max: attrMax
+										})
+										newAttribute.setWithWorker({ current: attrValue });
+									} catch (err) {
+										log(`Error processing repeating section row ${x}: ${err}`);
+									}
+
+								}
+							}
+						}
+					}
+					break;
+
 				case "turnorder":
 					var variableName = thisTag.substring(1);
 					if (params.length >= 2) {
 						if (params[1].toLowerCase() == "clear") {
 							Campaign().set("turnorder", "");
+						}
+						if ((params[1].toLowerCase() == "next") || params[1].toLowerCase() == "advance") {
+							let turnorder = [];
+							if (Campaign().get("turnorder") !== "") {
+								turnorder = JSON.parse(Campaign().get("turnorder"));
+							}
+							if (turnorder.length > 0) {
+								let currentTurn = turnorder.shift(); // Remove first element
+								turnorder.push(currentTurn); // Add it to the end
+								Campaign().set("turnorder", JSON.stringify(turnorder));
+							}
+						}
+						if ((params[1].toLowerCase() == "previous") || params[1].toLowerCase() == "rewind") {
+							let turnorder = [];
+							if (Campaign().get("turnorder") !== "") {
+								turnorder = JSON.parse(Campaign().get("turnorder"));
+							}
+							if (turnorder.length > 0) {
+								let lastTurn = turnorder.pop(); // Remove last element
+								turnorder.unshift(lastTurn); // Add it to the beginning
+								Campaign().set("turnorder", JSON.stringify(turnorder));
+							}
 						}
 						if (params[1].toLowerCase() == "getcurrentactor") {
 							var turnorder = [];

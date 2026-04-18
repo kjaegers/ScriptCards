@@ -1,5 +1,19 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.21:
+- New --~ repeatingrow function: copybyindex
+  This is a new function category (repeatingrow) and the first implemented function allows copying a repeating row from one character to another.
+  Usage:
+    --~|repeatingrow;copybyindex;SourceCharacterID;DestinationCharacterID;repeating_section_name;0
+    for example, to copy the first row (index 0) from the repeating_spell-1 section of the selected character to the target character, you would use:
+    --~|repeatingrow;copybyindex;@{selected|character_id};@{target|character_id};repeating_spell-1;0
+
+  Note that this is "experimental" at this time. Use with caution and test thoroughly. Additional "copyby" options will be implemented in the future if this proves solid/reliable.
+
+- New --~ turnorder functions: next, previous (aliases are advance, rewind)
+  --~|turnorder;next
+  --~|turnorder;previous
+
 v 3.0.20:
 - Version number update because OneClick happened before I got the changes saved :)
 
