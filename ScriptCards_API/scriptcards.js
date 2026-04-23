@@ -27,7 +27,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.21";
+	const APIVERSION = "3.0.22";
 	const NUMERIC_VERSION = "300210"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
@@ -1825,6 +1825,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 						var returnID = false;
 
 						var attrName = workString.substring(workString.indexOf(":") + 1, workString.length - 1);
+
 						if (attrName.indexOf(":::") >= 0) {
 							defaultValue = attrName.substring(attrName.indexOf(":::") + 3, attrName.length);
 							attrName = attrName.substring(0, attrName.indexOf(":::"))
@@ -1837,6 +1838,14 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 								character = getObj("character", token.get("represents"));
 							}
 						}
+						/*
+						if (character != null && is2024Sheet(character.id)) {
+							if (!(attrName.startsWith("c-") || attrName.startsWith("b-"))) {
+								attrName = "b-" + attrName;
+								log(`Assuming reference to bar attribute for 2024 sheet and modifying attribute name to ${attrName}`)
+							}
+						}
+						*/
 						if (character != null) {
 							if (attrName.endsWith("^")) {
 								attrName = attrName.substring(0, attrName.length - 1);
@@ -2880,9 +2889,71 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		return repRowIds;
 	}
 
-	function getSectionAttrs(charid, entryname, sectionname, searchtext, fuzzy) {
+	function getSectionAttrs(charid, entryname, sectionname, searchtext, fuzzy, joiner = "|") {
 		var return_set = [];
 		var char_attrs = findObjs({ type: "attribute", _characterid: charid });
+		try {
+			var action_prefix = undefined;
+			if (!fuzzy) {
+				for (let i = 0; i < char_attrs.length; i++) {
+					let attr = char_attrs[i];
+					let attrName = attr.get("name");
+					let attrCurrent = attr.get("current");
+					if (attrName.startsWith(sectionname) && attrName.endsWith(searchtext) && attrCurrent == entryname) {
+						action_prefix = attrName.slice(0, -searchtext.length);
+						break;
+					}
+				}
+			} else {
+				var thisRegex = new RegExp(entryname, "i");
+				for (let i = 0; i < char_attrs.length; i++) {
+					let attr = char_attrs[i];
+					let attrName = attr.get("name");
+					let attrCurrent = attr.get("current");
+					if (attrName.startsWith(sectionname) && attrName.match(searchtext) && attrCurrent.match(thisRegex)) {
+						action_prefix = attrName.slice(0, -searchtext.length);
+						break;
+					}
+				}
+			}
+			if (!action_prefix) {
+				return return_set;
+			}
+		} catch {
+			return return_set;
+		}
+
+		try {
+			action_attrs = [];
+			for (let i = 0; i < char_attrs.length; i++) {
+				if (char_attrs[i].get("name").startsWith(action_prefix)) {
+					action_attrs.push(char_attrs[i]);
+				}
+			}
+		} catch {
+			return return_set;
+		}
+
+		for (let i = 0; i < action_attrs.length; i++) {
+			let z = action_attrs[i];
+			if (z.get("name")) {
+				return_set.push(z.get("name").toString().replace(action_prefix, "") + "|" + z.get("current").toString().replace(/(?:\r\n|\r|\n)/g, "<br>").replace("@{", "").replace("}", ""));
+				return_set.push(z.get("name").toString().replace(action_prefix, "") + "_max|" + z.get("max").toString());
+			}
+		}
+
+		var PrefixEntry = "xxxActionIDxxxx" + joiner + action_prefix.replace(sectionname + "_", "");
+		PrefixEntry = PrefixEntry.substring(0, PrefixEntry.length - 1);
+
+		return_set.unshift(PrefixEntry);
+
+		return (return_set);
+	}
+
+	function getSectionAttrsEx(charid, entryname, sectionname, searchtext, fuzzy, joiner = "|") {
+		var return_set = [];
+		var char_attrs = findObjs({ type: "attribute", _characterid: charid });
+
 		try {
 			if (!fuzzy) {
 				var action_prefix = char_attrs
@@ -2912,20 +2983,15 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 		action_attrs.forEach(function (z) {
 			if (z.get("name")) {
-				return_set.push(z.get("name").toString().replace(action_prefix, "") + "|" + z.get("current").toString().replace(/(?:\r\n|\r|\n)/g, "<br>").replace("@{", "").replace("}", ""));
-				return_set.push(z.get("name").toString().replace(action_prefix, "") + "_max|" + z.get("max").toString());
+				return_set.push(z.get("name").toString().replace(action_prefix, "") + joiner + z.get("current").toString().replace(/(?:\r\n|\r|\n)/g, "<br>").replace("@{", "").replace("}", ""));
+				return_set.push(z.get("name").toString().replace(action_prefix, "") + "_max" + joiner + z.get("max").toString());
 			}
 		})
-
-		var PrefixEntry = "xxxActionIDxxxx|" + action_prefix.replace(sectionname + "_", "");
-		PrefixEntry = PrefixEntry.substring(0, PrefixEntry.length - 1);
-
-		return_set.unshift(PrefixEntry);
 
 		return (return_set);
 	}
 
-	function getSectionAttrsByID(charid, sectionname, sectionID) {
+	function getSectionAttrsByID(charid, sectionname, sectionID, joiner = "|") {
 		var return_set = [];
 		var action_prefix = sectionname + "_" + sectionID + "_";
 
@@ -2938,12 +3004,34 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 		action_attrs.forEach(function (z) {
 			try {
-				return_set.push(z.get("name").replace(action_prefix, "") + "|" + z.get("current").toString().replace(/(?:\r\n|\r|\n)/g, "<br>"));//.replace(/[\[\]\@]/g, " "));
-				return_set.push(z.get("name").replace(action_prefix, "") + "_max|" + z.get("max").toString());
+				return_set.push(z.get("name").replace(action_prefix, "") + joiner + z.get("current").toString().replace(/(?:\r\n|\r|\n)/g, "<br>"));//.replace(/[\[\]\@]/g, " "));
+				return_set.push(z.get("name").replace(action_prefix, "") + "_max" + joiner + z.get("max").toString());
 				// eslint-disable-next-line no-empty
 			} catch { log(`Attribute lookup error parsing ${z.get("name'")}`) }
 		})
 		return (return_set);
+	}
+
+	function copyRepeatingSectionRow(destCharacter, repeatingSectionName, repeatingSection, delimiter, destRepeatinSection) {
+		let newRowID = generateRowID();
+		stringVariables["SC_LAST_CREATED_ROWID"] = newRowID;
+
+		for (let x = 0; x < repeatingSection.length; x += 2) {
+			try {
+				let attrName = repeatingSection[x].split(delimiter)[0].trim();
+				let attrValue = repeatingSection[x].split(delimiter)[1].trim();
+				let attrMax = repeatingSection[x + 1].split(delimiter)[1].trim();
+				let newAttribute = createObj("attribute", {
+					name: `${destRepeatinSection}_${newRowID}_${attrName}`,
+					_characterid: destCharacter.id,
+					current: "",
+					max: attrMax
+				})
+				newAttribute.setWithWorker({ current: attrValue });
+			} catch (err) {
+				log(`Error processing repeating section row ${x}: ${err}`);
+			}
+		}
 	}
 
 	function rollOnRollableTable(tableName) {
@@ -5391,42 +5479,48 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 				case "repeatingrow":
 					var variableName = thisTag.substring(1);
-					if (params.length == 6) {
+					if (params.length >= 6) {
 						if (params[1].toLowerCase() == "copybyindex") {
 							let sourceCharacter = getObj("character", params[2]);
 							let destCharacter = getObj("character", params[3]);
 							let section = params[4];
 							let sourceRow = params[5];
-							log(`Source Character: ${sourceCharacter}, Dest Character: ${destCharacter}, Section: ${section}, Source Row: ${sourceRow}`);
+							let destRepeatinSection = section;
+							if (params[6]) { destRepeatinSection = params[6]; }
 							repeatingSectionIDs = getRepeatingSectionIDs(params[2], params[4]);
 							if (repeatingSectionIDs) {
 								repeatingIndex = Number(sourceRow);
 								repeatingCharID = sourceCharacter.id;
 								repeatingSectionName = section;
 								fillCharAttrs(findObjs({ _type: 'attribute', _characterid: repeatingCharID }));
-								repeatingSection = getSectionAttrsByID(repeatingCharID, repeatingSectionName, repeatingSectionIDs[repeatingIndex]);
-								repeatingIndex = Number(sourceRow);
+								repeatingSection = getSectionAttrsByID(repeatingCharID, repeatingSectionName, repeatingSectionIDs[repeatingIndex], "-|-");
 
-								let newRowID = generateRowID();
-								stringVariables["SC_LAST_CREATED_ROWID"] = newRowID;
+								copyRepeatingSectionRow(destCharacter, repeatingSectionName, repeatingSection, "-|-", destRepeatinSection);
+							}
+						}
+					}
 
-								for (let x = 0; x < repeatingSection.length; x += 2) {
-									try {
-										let attrName = repeatingSection[x].split("|")[0].trim();
-										let attrValue = repeatingSection[x].split("|")[1].trim();
-										let attrMax = repeatingSection[x + 1].split("|")[1].trim();
-										let newAttribute = createObj("attribute", {
-											name: `${repeatingSectionName}_${newRowID}_${attrName}`,
-											_characterid: destCharacter.id,
-											current: "",
-											max: attrMax
-										})
-										newAttribute.setWithWorker({ current: attrValue });
-									} catch (err) {
-										log(`Error processing repeating section row ${x}: ${err}`);
-									}
-
+					if (params.length >= 7) {
+						if (params[1].toLowerCase() == "copybyfieldmatch") {
+							let sourceCharacter = getObj("character", params[2]);
+							let destCharacter = getObj("character", params[3]);
+							let section = params[4];
+							let matchField = params[5];
+							let matchValue = params[6];
+							let destRepeatinSection = section;
+							if (params[7]) { destRepeatinSection = params[7]; }
+							repeatingSectionIDs = getRepeatingSectionIDs(params[2], params[4]);
+							if (repeatingSectionIDs) {
+								repeatingCharID = sourceCharacter.id;
+								repeatingSectionName = section;
+								fillCharAttrs(findObjs({ _type: 'attribute', _characterid: repeatingCharID }));
+								repeatingSection = getSectionAttrsEx(sourceCharacter.id, matchValue, section, matchField, true, "-|-");
+								if (repeatingSection) {
+									copyRepeatingSectionRow(destCharacter, repeatingSectionName, repeatingSection, "-|-", destRepeatinSection);
+								} else {
 								}
+							} else {
+								log(`DEBUG: repeatingSectionIDs not found`);
 							}
 						}
 					}
@@ -7599,6 +7693,15 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		}
 
 		return extractKeyValuePairs(obj);
+	}
+
+	function is2024Sheet(charID) {
+		let char = getObj("character", charID);
+		if (char) {
+			return char.get("charactersheetname") === "dnd2024byroll20"
+		} else {
+			return false;
+		}
 	}
 
 	function extractKeyValuePairs(obj, prefix = '') {

@@ -1,5 +1,16 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.22:
+- Updated repeating row copy routine to not truncate values containing a | in the field.
+- Refactored the new copybyindex function to allow for future expansion of other "copyby" functions that might copy by different parameters
+- Added copybyfieldname to the repeatingrow function section. This allows you to copy a repeating row from one character to another by matching a specific field value. The syntax is:
+  --~|repeatingrow;copybyfieldname;SourceCharacterID;DestinationCharacterID;repeating_section_name;field_name;field_value
+  ex:
+  --~|repeatingrow;copybyfieldmatch;@{selected|character_id};@{target|character_id};repeating_spell-1;spellname;Hunter's Mark
+- Both copybyindex and copybyfieldname have an optional final parameter that, if set to any non-default value, will cause the new row to be created in a different repeating section:
+  --~|repeatingrow;copybyfieldmatch;@{selected|character_id};@{target|character_id};repeating_spell-1;spellname;Hunter's Mark;repeating_spell-2
+  (this copies hunter's mark from Level 1 on a character to a level 2 spell on the target character)
+
 v 3.0.21:
 - New --~ repeatingrow function: copybyindex
   This is a new function category (repeatingrow) and the first implemented function allows copying a repeating row from one character to another.
