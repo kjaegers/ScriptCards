@@ -1,5 +1,24 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.22a:
+- NOTE: This version is expermental to see if it solves a particular issue with using embedded code in a script. Use with caution and test thoroughly before using in a live game.
+- Added code to only extract the outermost instance of {{ and }}, meaning technically {{ and }} could exist inside a script - IF Roll20 didn't break because of them being there :)
+- It is possible to escape {{ and }} inside a script by using the sequence !{!{ and !}!} respectively. This allows you to include the literal text {{ and }} in your script without it being treated as the start or end of the script content.
+- Modified the add:graphic trigger code to exclude notes, gmnotes, and bio from the variable set up in trigger replacements, as they could cause issues if certain characters were in one of the fields.
+- It is now possible to mark "literal text" using the sequence ${ ... $} and anything inside this king of sequence will not be split into script lines or processed for variable replacement. Example:
+    !script {{ 
+      --&TID|@{target|token_id}
+      --+Hello|World 
+      --+Display|${Don't -- split --+here|ok? $} 
+      --+Tid|[&TID]
+      --!t:[&TID]|tooltip:${ !script !{!{ --+Hello|Tooltip! !}!} $}|name:Just For Fun
+      --+Just|Show ${[$Roll.Raw]$} here! 
+      --+Embedded|This is an embedded ${!script !{!{ --+|Hello !}!} $} scriptcard!
+      --+And|It continues
+    }}
+- Token creation (--!ot) now checks for the validity of imgsrc values and sides values.
+- Token creation (--!ot) 
+
 v 3.0.22:
 - Updated repeating row copy routine to not truncate values containing a | in the field.
 - Refactored the new copybyindex function to allow for future expansion of other "copyby" functions that might copy by different parameters

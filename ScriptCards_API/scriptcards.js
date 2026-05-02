@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.22";
-	const NUMERIC_VERSION = "300210"
+	const APIVERSION = "3.0.22a EXPERIMENTAL";
+	const NUMERIC_VERSION = "30021a"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -738,9 +738,14 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					}
 
 					// Split the card into an array of tag-based (--) lines
-					let cardWork = cardContent.match(/\{\{(.*?)\}\}/gis)
-					if (cardWork && cardWork[0]) {
-						var cardLines = cardWork[0].substring(2, cardWork[0].length - 3).split("--")
+					//let cardWork = cardContent.match(/\{\{(.*?)\}\}/gis)
+					let cardWork = getFirstOutermostDoubleBraceBlock(cardContent);
+					if (cardWork) {
+						cardWork = cardWork.replaceAll("!{!{", "{{").replaceAll("!}!}", "}}");
+						//var cardLines = cardWork[0].substring(2, cardWork[0].length - 3).split("--")
+						var cardLines = cardWork
+							.substring(2, cardWork.length - 3)
+							.split(/--(?=(?:(?:(?!\$\{|\$\})[\s\S])*\$\{(?:(?!\$\{|\$\})[\s\S])*\$\})*(?:(?!\$\{|\$\})[\s\S])*$)/);
 					}
 					//var cardLines = cardContent.match(/\{\{(.*?)\}\}/gis) ? (" " + cardContent.match(/\{\{(.*?)\}\}/gis)[0]).substring(2,-2).split("--") : []
 				}
@@ -1148,6 +1153,10 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		if (state[APINAME].triggersenabled == undefined) { state[APINAME].triggersenabled = true; }
 		if (state[APINAME].playerscandelete == undefined) { state[APINAME].playerscandelete = false; }
 
+		if (APIVERSION.indexOf("EXPERIMENTAL") !== -1) {
+			sendChat(APINAME, "/w gm " + APINAME + " version " + APIVERSION + " initializing. Warning: This version is experimental and may contain bugs. Use with caution.");
+		}
+
 		reload_template_mule();
 
 		const findBioMule = findObjs({ _type: "character", name: "ScriptCards_BioMule" })[0];
@@ -1206,7 +1215,9 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				handleAbilityTrigger('change:graphic', (obj, prev) => {
 					let replacement = "";
 					for (const property in prev) {
-						replacement += ` ${getSafeTriggerString("GraphicOld" + property, prev[property])} ${getSafeTriggerString("GraphicNew" + property, obj.get(property))} `;
+						if (property !== "gmnotes" && property !== "notes" && property !== "bio") {
+							replacement += ` ${getSafeTriggerString("GraphicOld" + property, prev[property])} ${getSafeTriggerString("GraphicNew" + property, obj.get(property))} `;
+						}
 					}
 					return replacement;
 				});
@@ -1410,8 +1421,9 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
 		content = content.replace(/\[&zwnj;/g, "[")
-		while (content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:|\?])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
-			var thisMatch = content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:|\?])[^\[\]]*?(?!\.+[\[])(\])/g)[0];
+		//while (content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:|\?])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
+		while (content.match(/(?=(?:(?:(?!\$\{|\$\})[\s\S])*\$\{(?:(?!\$\{|\$\})[\s\S])*\$\})*(?:(?!\$\{|\$\})[\s\S])*$)\[(?:[\$&@%\*~=:\?])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
+			var thisMatch = content.match(/(?=(?:(?:(?!\$\{|\$\})[\s\S])*\$\{(?:(?!\$\{|\$\})[\s\S])*\$\})*(?:(?!\$\{|\$\})[\s\S])*$)\[(?:[\$&@%\*~=:\?])[^\[\]]*?(?!\.+[\[])(\])/g)[0];
 			var replacement = "";
 			switch (thisMatch.charAt(1)) {
 				case "&":
@@ -2077,6 +2089,10 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			if (failCount > failLimit) return content;
 		}
 		return content;
+	}
+
+	function stripEscapmentMarkers(content) {
+		return content.replaceAll("${", "").replaceAll("$}", "");
 	}
 
 	function getLineTag(line, linenum, logerror) {
@@ -4301,6 +4317,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 										let settingName = setting.shift();
 										let settingValue = setting.join(":");
 										if (settingValue) {
+											settingValue = setting.Value.trim();
 											if (settingValue.startsWith('"') && settingValue.endsWith('"')) {
 												settingValue = settingValue.substring(1, settingValue.length - 1);
 											}
@@ -4326,20 +4343,29 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 									break;
 
 								case "t": {
-									let regexSplit = /\|(?=(?:[^"]*"[^"]*")*[^"]*$)/
+									let regexSplit = /\|(?=(?:[^"]*"[^"]*")*[^"]*$)(?=(?:(?:(?!\$\{|\$\})[\s\S])*\$\{(?:(?!\$\{|\$\})[\s\S])*\$\})*(?:(?!\$\{|\$\})[\s\S])*$)/
 									let settings = thisContent.split(regexSplit);
 									let tProps = {}
-									for (let x = 0; x < settings.length; x++) {
-										//log(`Setting ${x} is ${settings[x]}`)
-										let setting = settings[x].match(/(".*?"|[^":\s]+)(?=\s*:|\s*$)/g);
-										if (setting[1]) {
-											if (setting[1].startsWith('"') && setting[1].endsWith('"')) {
-												setting[1] = setting[1].substring(1, setting[1].length - 1);
+									if (settings) {
+										for (let x = 0; x < settings.length; x++) {
+											if (settings[x]) {
+												let setting = settings[x].match(/(".*?"|[^":\s]+)(?=\s*:|\s*$)/g);
+												let settingName = setting[0];
+												let settingValue = settings[x].substring(settings[x].indexOf(":") + 1);
+
+												if (settingName) {
+													if (settingValue.startsWith('"') && settingValue.endsWith('"')) {
+														settingValue = settingValue.substring(1, settingValue.length - 1);
+													}
+													if (settingName.startsWith("t-") || settingName.startsWith("T-")) {
+														settingName = settingName.substring(2);
+													}
+													if (settingName.toLowerCase() === "imgsrc") {
+														settingValue = getCleanImgsrc(settingValue.replaceAll("\\\"", ""));
+													}
+													tProps[settingName] = getSafeTokenProperty(settingName, stripEscapmentMarkers(settingValue));
+												}
 											}
-											if (setting[0].startsWith("t-") || setting[0].startsWith("T-")) {
-												setting[0] = setting[0].substring(2);
-											}
-											tProps[setting[0]] = getSafeTokenProperty(setting[0], setting[1]);
 										}
 									}
 									if (tProps["subtype"] == undefined) { tProps["subtype"] = "token"; }
@@ -4581,7 +4607,10 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							var tokenID = thisTag.substring(3);
 							if (tokenID.toLowerCase() == "s" && cardParameters.sourcetoken) { tokenID = cardParameters.sourcetoken; }
 							if (tokenID.toLowerCase() == "t" && cardParameters.targettoken) { tokenID = cardParameters.targettoken; }
-							let settings = thisContent.split(/(?<![\\\\])\|/);
+							let regexSplit = /\|(?=(?:[^"]*"[^"]*")*[^"]*$)(?=(?:(?:(?!\$\{|\$\})[\s\S])*\$\{(?:(?!\$\{|\$\})[\s\S])*\$\})*(?:(?!\$\{|\$\})[\s\S])*$)/
+							let settings = thisContent.split(regexSplit);
+							log(`Settings for token modification: ${settings}`)
+							//let settings = thisContent.split(/(?<![\\\\])\|/);
 							let theToken = getObj("graphic", tokenID);
 							let prevTok = JSON.parse(JSON.stringify(theToken));
 
@@ -4594,6 +4623,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 										settingName = settingName.substring(2);
 									}
 									let settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");
+									settingValue = stripEscapmentMarkers(settingValue);
 
 									if (settingName.toLowerCase() == "night_vision_effect" && (settingValue.trim().toLowerCase() == "dimming")) {
 										settingValue = "Dimming_0"
@@ -4970,6 +5000,9 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			}
 			rowData = processInlineFormatting(rowData, cardParameters, false);
 			rawRowData = processInlineFormatting(rawRowData, cardParameters, true);
+
+			rowData = stripEscapmentMarkers(rowData);
+			rawRowData = stripEscapmentMarkers(rawRowData);
 
 			thisTag.charAt(0) == "+" ? outputLines.push(rowData) : gmonlyLines.push(rowData)
 			thisTag.charAt(0) == "+" ? bareoutputLines.push(rawRowData) : null
@@ -7702,6 +7735,59 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		} else {
 			return false;
 		}
+	}
+
+	function getFirstOutermostDoubleBraceBlock(text) {
+		let depth = 0;
+		let start = -1;
+		let inProtectedBlock = false;
+
+		for (let i = 0; i < text.length; i++) {
+			const two = text.slice(i, i + 2);
+
+			// Enter ${ ... $} protected block.
+			// While in this mode, {{ and }} are ignored completely.
+			if (!inProtectedBlock && two === "${") {
+				inProtectedBlock = true;
+				i++;
+				continue;
+			}
+
+			// Exit ${ ... $} protected block.
+			if (inProtectedBlock && two === "$}") {
+				inProtectedBlock = false;
+				i++;
+				continue;
+			}
+
+			// Ignore everything inside ${ ... $}
+			if (inProtectedBlock) {
+				continue;
+			}
+
+			// Start or nested {{
+			if (two === "{{") {
+				if (depth === 0) {
+					start = i;
+				}
+
+				depth++;
+				i++;
+				continue;
+			}
+
+			// End }}
+			if (two === "}}" && depth > 0) {
+				depth--;
+				i++;
+
+				if (depth === 0 && start !== -1) {
+					return text.slice(start, i + 1);
+				}
+			}
+		}
+
+		return null;
 	}
 
 	function extractKeyValuePairs(obj, prefix = '') {
