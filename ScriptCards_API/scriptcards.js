@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.22a EXPERIMENTAL";
-	const NUMERIC_VERSION = "30021a"
+	const APIVERSION = "3.0.22b EXPERIMENTAL";
+	const NUMERIC_VERSION = "30022b"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -731,10 +731,11 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 						cardContent += "}";
 					}
 
-					var libraries = cardContent.match(/\+\+\+.+?\+\+\+/g);
+					var libraries = cardContent.match(/\+\+\+[\s\S]*?\+\+\+(?=(?:(?:(?!\$\{|\$\})[\s\S])*\$\{(?:(?!\$\{|\$\})[\s\S])*\$\})*(?:(?!\$\{|\$\})[\s\S])*$)/g);
 					if (libraries) {
 						cardContent = insertLibraryContent(cardContent, libraries[0].replace(/\+\+\+/g, ""));
-						cardContent = cardContent.replace(/\+\+\+.+?\+\+\+/g, "")
+						//cardContent = cardContent.replace(/\+\+\+(?=(?:(?:(?!\$\{|\$\})[\s\S])*\$\{(?:(?!\$\{|\$\})[\s\S])*\$\})*(?:(?!\$\{|\$\})[\s\S])*$)/g, "")
+						cardContent = removeLibraryBlocks(cardContent);
 					}
 
 					// Split the card into an array of tag-based (--) lines
@@ -7813,6 +7814,27 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		}
 
 		return result;
+	}
+
+	function removeLibraryBlocks(text) {
+		const protectedBlocks = [];
+
+		// Protect ${ ... $} blocks
+		text = text.replace(/\$\{[\s\S]*?\$\}/g, match => {
+			const placeholder = `__PROTECTED_BLOCK_${protectedBlocks.length}__`;
+			protectedBlocks.push(match);
+			return placeholder;
+		});
+
+		// Remove +++ ... +++ blocks outside protected areas
+		text = text.replace(/\+\+\+[\s\S]*?\+\+\+/g, "");
+
+		// Restore protected blocks
+		text = text.replace(/__PROTECTED_BLOCK_(\d+)__/g, (_, index) => {
+			return protectedBlocks[Number(index)];
+		});
+
+		return text;
 	}
 })();
 
