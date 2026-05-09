@@ -1,5 +1,16 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.23:
+- Added the --!x:tokenid| command to allow for deletion of graphic objects (Tokens). The syntax is:
+  --!x:tokenid|Reason for deletion (optional)
+  If the tokenid is valid and the object is successfully deleted, a message will be logged to the API console listing what was deleted and who ran the script that deleted it.
+  At this time, ONLY graphic objects can be deleted with --!x commands.
+  Example:
+    !script {{ 
+      --!x:@{selected|token_id}| 
+    }}
+
+
 v 3.0.22b:
 - Add protection for ${ ... $} blockes around library inclusions.
 

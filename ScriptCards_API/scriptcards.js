@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.22b EXPERIMENTAL";
-	const NUMERIC_VERSION = "30022b"
+	const APIVERSION = "3.0.23";
+	const NUMERIC_VERSION = "300230"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -4525,6 +4525,19 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							}
 							break;
 
+						case "x": {
+							// object deletion - currently tokens only
+							log(`ScriptCards: Attempting to delete object with id ${thisTag.substring(3)} from script run by ${stringVariables.SendingPlayerName}`);
+							var tokenID = thisTag.substring(3);
+							if (tokenID.toLowerCase() == "s" && cardParameters.sourcetoken) { tokenID = cardParameters.sourcetoken; }
+							if (tokenID.toLowerCase() == "t" && cardParameters.targettoken) { tokenID = cardParameters.targettoken; }
+							var theToken = getObj("graphic", tokenID);
+							if (theToken) {
+								log(`ScriptCards: Deleting token with id ${theToken.id} from script run by ${stringVariables.SendingPlayerName}`);
+								theToken.remove();
+							}							
+						}
+
 						case "h": {
 							var handoutID = thisTag.substring(3);
 							let regexSplit = /\|(?=(?:[^"]*"[^"]*")*[^"]*$)/
@@ -7836,6 +7849,33 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 		return text;
 	}
+
+    function NewGetAttrByName(characterId, attrName, valueType) {
+        if (!characterId || !attrName) {
+            return undefined;
+        }
+
+        let attrs = findObjs({
+            _type: "attribute",
+            _characterid: characterId
+        }) || [];
+
+        let targetName = String(attrName).toLowerCase();
+        let attrObj = attrs.find(function (attr) {
+            let name = attr.get("name");
+            return name && String(name).toLowerCase() === targetName;
+        });
+
+        if (!attrObj) {
+            return undefined;
+        }
+
+        if (valueType && String(valueType).toLowerCase() === "max") {
+            return attrObj.get("max");
+        }
+
+        return attrObj.get("current");
+    }	
 })();
 
 // log(`Error setting z-order ${e.message}, thisTag: ${thisTag}, thisContent: ${thisContent}`)
