@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.23a";
-	const NUMERIC_VERSION = "300231"
+	const APIVERSION = "3.0.23b";
+	const NUMERIC_VERSION = "300232"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1427,9 +1427,15 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		if (content === undefined) { return content }
 		if (!(typeof content.match == 'function')) { return content }
 		content = content.replace(/\[&zwnj;/g, "[")
+		var rexMatch;
+		if (content.indexOf("${") != -1 && content.indexOf("$}") != -1) {
+			rexMatch = /\[(?:[\$|\&|\@|\%|\*|\~|\=|\:|\?])[^\[\]]*?(?!\.+[\[])(\])/g
+		} else {
+			rexMatch = /(?=(?:(?:(?!\$\{|\$\})[\s\S])*\$\{(?:(?!\$\{|\$\})[\s\S])*\$\})*(?:(?!\$\{|\$\})[\s\S])*$)\[(?:[\$&@%\*~=:\?])[^\[\]]*?(?!\.+[\[])(\])/g
+		}
 		//while (content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:|\?])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
-		while (content.match(/(?=(?:(?:(?!\$\{|\$\})[\s\S])*\$\{(?:(?!\$\{|\$\})[\s\S])*\$\})*(?:(?!\$\{|\$\})[\s\S])*$)\[(?:[\$&@%\*~=:\?])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
-			var thisMatch = content.match(/(?=(?:(?:(?!\$\{|\$\})[\s\S])*\$\{(?:(?!\$\{|\$\})[\s\S])*\$\})*(?:(?!\$\{|\$\})[\s\S])*$)\[(?:[\$&@%\*~=:\?])[^\[\]]*?(?!\.+[\[])(\])/g)[0];
+		while (content.match(rexMatch) != null) {
+			var thisMatch = content.match(rexMatch)[0];
 			var replacement = "";
 			switch (thisMatch.charAt(1)) {
 				case "&":
@@ -4323,7 +4329,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 										let settingName = setting.shift();
 										let settingValue = setting.join(":");
 										if (settingValue) {
-											settingValue = setting.Value.trim();
+											settingValue = settingValue.trim();
 											if (settingValue.startsWith('"') && settingValue.endsWith('"')) {
 												settingValue = settingValue.substring(1, settingValue.length - 1);
 											}

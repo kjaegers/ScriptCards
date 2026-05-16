@@ -1,5 +1,9 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.23b:
+- Typo-fix that was breaking handout creation with a sandbox error.
+- Additional optimizations to Regex matching to improve performance.
+
 v 3.0.23a:
 - Speed restoration for scripts that don't use ${ and $} blocks.
 
