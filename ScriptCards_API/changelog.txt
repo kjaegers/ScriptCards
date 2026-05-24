@@ -1,5 +1,8 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.23c:
+- Fixed bug that would append }} to some statements at the end of a script.
+
 v 3.0.23b:
 - Typo-fix that was breaking handout creation with a sandbox error.
 - Additional optimizations to Regex matching to improve performance.

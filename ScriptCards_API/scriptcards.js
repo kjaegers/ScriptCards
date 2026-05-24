@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.23b";
-	const NUMERIC_VERSION = "300232"
+	const APIVERSION = "3.0.23c";
+	const NUMERIC_VERSION = "300233"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -741,6 +741,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					// Split the card into an array of tag-based (--) lines
 					//let cardWork = cardContent.match(/\{\{(.*?)\}\}/gis)
 					let cardWork = getFirstOutermostDoubleBraceBlock(cardContent);
+					//cardWork = cardWork.trim().slice(2, cardWork.length - 2);
+					cardWork = cardWork.trim().slice(2,-2);
 					if (cardWork) {
 						cardWork = cardWork.replaceAll("!{!{", "{{").replaceAll("!}!}", "}}");
 						//var cardLines = cardWork[0].substring(2, cardWork[0].length - 3).split("--")
