@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.23d";
-	const NUMERIC_VERSION = "300234"
+	const APIVERSION = "3.0.24";
+	const NUMERIC_VERSION = "300240"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1430,11 +1430,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		if (!(typeof content.match == 'function')) { return content }
 		content = content.replace(/\[&zwnj;/g, "[")
 		var rexMatch;
-		if (content.indexOf("${") != -1 && content.indexOf("$}") != -1) {
-			rexMatch = /\[(?:[\$|\&|\@|\%|\*|\~|\=|\:|\?])[^\[\]]*?(?!\.+[\[])(\])/g
-		} else {
-			rexMatch = /(?=(?:(?:(?!\$\{|\$\})[\s\S])*\$\{(?:(?!\$\{|\$\})[\s\S])*\$\})*(?:(?!\$\{|\$\})[\s\S])*$)\[(?:[\$&@%\*~=:\?])[^\[\]]*?(?!\.+[\[])(\])/g
-		}
+		rexMatch = /(?=(?:(?:(?!\$\{|\$\})[\s\S])*\$\{(?:(?!\$\{|\$\})[\s\S])*\$\})*(?:(?!\$\{|\$\})[\s\S])*$)\[(?:[\$&@%\*~=:\?])[^\[\]]*?(?!\.+[\[])(\])/g
 		//while (content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:|\?])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
 		while (content.match(rexMatch) != null) {
 			var thisMatch = content.match(rexMatch)[0];
