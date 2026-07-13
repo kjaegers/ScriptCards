@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.24";
-	const NUMERIC_VERSION = "300240"
+	const APIVERSION = "3.0.24a";
+	const NUMERIC_VERSION = "300241"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -2004,7 +2004,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							var propertyName = objectInfo[3];
 							var thisObj = getObj(objectType, objectID);
 							if (thisObj != null && !(propertyName == "action")) {
-								if (bioFields[propertyName.toLowerCase()] == 1 || propertyName.toLowerCase() == "defaulttoken") {
+								if ((bioFields[propertyName.toLowerCase()] == 1  && (objectType !== "graphic" && propertyName !== "gmnotes"))
+								|| propertyName.toLowerCase() == "defaulttoken") {
 									replacement = await getBioField(thisObj, propertyName) || "";
 								} else {
 									replacement = thisObj.get(propertyName) || "";
