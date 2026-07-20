@@ -27,7 +27,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.24a";
+	const APIVERSION = "3.0.24a EXPERIMENTAL";
 	const NUMERIC_VERSION = "300241"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
@@ -406,13 +406,13 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 	// Process messages from the queue sequentially
 	async function processMessageQueue() {
-		if (isProcessingQueue || messageQueue.length === 0) {
+		if (isProcessingQueue || !messageQueue || messageQueue.length === 0) {
 			return;
 		}
 
 		isProcessingQueue = true;
 
-		while (messageQueue.length > 0) {
+		while ((messageQueue !== undefined) && messageQueue.length > 0) {
 			const msg = messageQueue.shift();
 			try {
 				await handleChatMessage(msg);
@@ -434,6 +434,10 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			var isReentrant = false;
 			var resumeArgs;
 			var cardContent;
+			var handoutVariables = [];
+			var handoutSelected = [];
+			var handoutTarget = [];
+			var cardLines = [];
 
 			// !sc-liststoredsettings creates a new scriptcard and sends it to
 			// chat. With no parameters, it reports a list of all of the stored settings
@@ -480,6 +484,88 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					metaCard = `!scriptcard {{ --#title|Remove Stored Setting --#leftsub|${settingName} --+|No stored settings group named ${settingName} was found. }} `;
 					sendChat("API", metaCard);
 				}
+			}
+
+			if (apiCmdText.startsWith("!sc-runhandout ")) {
+				let handoutName = msg.content.substring(msg.content.indexOf(" ")).trim();
+				if (handoutName.indexOf(" --") === -1) {
+					handoutName = handoutName.trim();
+				} else {
+					handoutName = handoutName.substring(0, handoutName.indexOf(" --")).trim();
+				}
+				let handoutOptionList = msg.content.substring(msg.content.indexOf(" ")).trim();
+				handoutOptionList = handoutOptionList.substring(handoutOptionList.indexOf(" ")).trim();
+				let handoutField = "notes";
+				let handoutOptions = (handoutOptionList.match(/--[^|\s]+\|[\s\S]*?(?=(?:\s--[^|\s]+\|)|$)/g) || []).map((opt) => opt.trim());
+				log(`ScriptCards: Running handout ${handoutName} with options ${handoutOptions}`);
+				let handout = undefined;
+				let clearSelect = false;
+				let wasSelected = false;
+				let wasMerge = false;
+				try {
+					handout = findObjs({ type: "handout", name: handoutName })[0];
+				} catch (e) {
+				}
+				if (!handout) {
+					try {
+						handout = findObjs({ type: "handout", id: handoutName })[0];
+					} catch (e) {
+					}
+				}
+				log(`ScriptCards: Found handout ${handout ? handout.get("id") : "undefined"}`);
+
+				// Parse the handout options and set the appropriate values for use later
+				if (handoutOptions && handoutOptions.length > 0) {
+					for (let i = 0; i < handoutOptions.length; i++) {
+						let option = handoutOptions[i];
+						let optionName = option.substring(0, option.indexOf("|")).trim();
+						let optionValue = option.substring(option.indexOf("|") + 1).trim();
+						switch (optionName.toLowerCase()) {
+							case "--selectedtoken":
+							case "--selected":
+							case "--select":
+							case "--selectedtokens":
+								log(`ScriptCards: Setting selected tokens to ${optionValue}`);
+								handoutSelected = optionValue.split(",").map((id) => id.trim());
+								clearSelect = true;
+								wasSelected = true;
+								break;
+							case "--targettoken":
+							case "--target":
+							case "--targettokens":
+								handoutTarget = optionValue.split(",").map((id) => id.trim());
+								break;
+							case "--field":
+							case "--handoutfield":
+								if (optionValue.toLowerCase() === "gmnotes" || optionValue.toLowerCase() === "notes") {
+									handoutField = optionValue;
+								} else {
+									log("ScriptCards: Invalid handout field specified for !sc-runhandout. Defaulting to notes.");
+								}
+								break;
+							case "--mergeselect":
+								if (optionValue.toLowerCase() === "true" || optionValue === "1") {
+									wasMerge = true;
+								}
+								break;
+						}
+						if (optionName.startsWith("--var")) {
+							handoutVariables.push({ name: optionValue.substring(0, optionValue.indexOf("|")).trim(), value: optionValue.substring(optionValue.indexOf("|") + 1).trim() });
+						}
+					}
+				}
+
+				if (handout) {
+					let handoutText = await getBioField(handout, handoutField);
+					msg.content = handoutText.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
+					apiCmdText = msg.content;
+					log(`clear select is ${clearSelect}, wasMerge is ${wasMerge}`);
+					if (wasSelected && !wasMerge) {
+						msg.selected = [];
+					}
+				}
+
+				log(`ScriptCards: msg.content is now ${msg.content}`);
 			}
 
 			if (apiCmdText.startsWith("!sc-deleteindividualstoredsetting ")) {
@@ -635,12 +721,33 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					}
 				}
 
+				arrayVariables["SC_SelectedTokens"] = [];
+				arrayVariables["SC_TargetTokens"] = [];
+
 				if (msg.selected) {
-					arrayVariables["SC_SelectedTokens"] = [];
 					for (let x = 0; x < msg.selected.length; x++) {
 						arrayVariables["SC_SelectedTokens"].push(msg.selected[x]._id);
 						arrayIndexes["SC_SelectedTokens"] = 0;
 					}
+				}
+
+				if (handoutSelected && handoutSelected.length > 0) {
+					for (let x = 0; x < handoutSelected.length; x++) {
+						arrayVariables["SC_SelectedTokens"].push(handoutSelected[x]);
+						arrayIndexes["SC_SelectedTokens"] = 0;
+					}
+				}
+
+				if (handoutTarget && handoutTarget.length > 0) {
+					for (let x = 0; x < handoutTarget.length; x++) {
+						arrayVariables["SC_TargetTokens"].push(handoutTarget[x]);
+						arrayIndexes["SC_TargetTokens"] = 0;
+					}
+				}
+
+				for (let i = 0; i < handoutVariables.length; i++) {
+					stringVariables[handoutVariables[i].name] = handoutVariables[i].value;
+					log(`ScriptCards: Setting variable ${handoutVariables[i].name} to ${handoutVariables[i].value}`);
 				}
 
 				if (isResume) {
@@ -746,7 +853,6 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					if (cardWork) {
 						cardWork = cardWork.replaceAll("!{!{", "{{").replaceAll("!}!}", "}}");
 						//var cardLines = cardWork[0].substring(2, cardWork[0].length - 3).split("--")
-						var cardLines;
 						if ((cardWork.indexOf("$}") > -1) && (cardWork.indexOf("${") > -1)) {
 							cardLines = cardWork
 								.substring(2, cardWork.length - 3)
@@ -2004,8 +2110,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							var propertyName = objectInfo[3];
 							var thisObj = getObj(objectType, objectID);
 							if (thisObj != null && !(propertyName == "action")) {
-								if ((bioFields[propertyName.toLowerCase()] == 1  && (objectType !== "graphic" && propertyName !== "gmnotes"))
-								|| propertyName.toLowerCase() == "defaulttoken") {
+								if ((bioFields[propertyName.toLowerCase()] == 1 && (objectType !== "graphic" && propertyName !== "gmnotes"))
+									|| propertyName.toLowerCase() == "defaulttoken") {
 									replacement = await getBioField(thisObj, propertyName) || "";
 								} else {
 									replacement = thisObj.get(propertyName) || "";

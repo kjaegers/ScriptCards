@@ -1,5 +1,30 @@
 ScriptCards Roll20 API Script Changelog
 
+v 3.0.24a (EXPERIMENTAL):
+- Experimental version for implementing !sc-runhandout command. Usage:
+  !sc-runhandout <HandoutName OR HandoutID> [--option|value]
+
+  currently the following options exist:
+    --field|<notes or gmnotes> - Defaults to "notes". Determines which handout field will be used to read the scriptcard content from.
+    --select|<tokenid or comma separated list of tokenids> - The SC_SelectedTokens array will be populated with the specified token(s) for use in the scriptcard. If not specified, the SC_SelectedTokens array will be populated with the currently selected tokens.
+    --target|<tokenid or comma separated list of tokenids> - The SC_TargetTokens array will be populated with the specified token(s) for use in the scriptcard. The SC_TargetTokens is a new array that is similar to SC_SelectedTokens, but is intended to be used for the "target" of an action. If not specified, the SC_TargetTokens array will be empty.
+    --var|name|value - This will create a string variable with the specified name and value for use in the scriptcard. You can specify multiple --var options to create multiple variables.
+    --mergeselect|<true or 1> - If "-selected" tokens are specified and mergeselect is specified and set to true or 1, the SC_SelectedTokens array will be merged with the currently selected tokens. If not specified, the SC_SelectedTokens array will be replaced with the specified tokens. If selections are merged, the VTT selected tokens will appear first in the array, followed by the tokens specified in the --select option. If a token is specified in both the VTT selection and the --select option, it will only twice in the array.
+
+  Examples:
+    !sc-runhandout ScriptCards_MagicMissile
+    !sc-runhandout ScriptCards_MagicMissile --select|@{selected|token_id} --target|@{target|token_id} --var|SpellLevel|3
+
+  Note that when a script is read from a handout, it does not pass through Roll20's chat server, so things like @{selected} will not be processed/replaced. Tha same is true for ?{...} roll server queries, though in both cases these can be specified in the !sc-runhandout command options and will be available in the scriptcard as string variables.
+
+  Note 2: When the script is read from the handout, all HTML and formatting is removed. This means you can use bold, italics, etc. in the Roll20 editor to enhance readability of the script, but it will not be present when the script is actually run. You can, of course, still use scriptcards inline formatting in your output lines.
+
+  Note 3: Anything that can be done in a chat-windows ScriptCard should be possible in a handout. If you find something that doesn't work, please let me know and I will look into it.
+
+
+v 3.0.23a:
+- Bug fix for *O when dealing with graphics and their gmnotes - which aren't bio fields :)
+
 v 3.0.24:
 - Updated regex matching in variable replacement function to correctly handle ${ ... $} blocks.
 
