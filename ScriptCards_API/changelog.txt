@@ -1,5 +1,35 @@
 ScriptCards Roll20 API Script Changelog
 
+Ideas:
+- Immediate mode variable referencing (handing variables on the back end so translation doesn't mess with the values)
+
+v 3.0.25 (EXPERIMENTAL):
+- Added DataGrids as a new variable type. Currently the only way to fill a datagrid is from a CSV file in a handout.
+  --~|datagrid;fromhandout;DataGridName;HandoutName or ID;field;qualifier;delimeter
+    (NOTE that field, qualifier, and delimiter are optional, but if you want a qualifier, you'll need to specify a field, and if you want a delimiter, you'll need to specify a qualifier) Default field is notes, default delimiter is a comma. There is no default text qualifier to allow you to use double-quotes in your data. If you want to use a text qualifier, specify it in the command. For example, if your data is in the gmnotes field and uses double-quotes as a text qualifier, you would use:
+    --~|datagrid;fromhandout;DataGridName;HandoutName or ID;gmnotes;"
+    
+  This will create a datagrid variable called DataGridName and fill it with the data from the specified handout. The first line of the handout should contain the field names, separated by commas. The subsequent lines should contain the data, also separated by commas. The number of fields in each line should match the number of fields in the first line.
+
+  To reference DataGrid items, use [^DataGridName;RowReference;ColumnName] where RowReference can be either the numeric form (ex, Row 5) or a columnName/value match (ex, Skill=Nature). ColumnNames specifies the column to be returned for the row reference. If the result could not be found, the reference will return an empty string. Numeric Row Numbers are 1-based, so the first row of data (not the header row) is Row 1. ColumnNames are case sensitive and must match the header row exactly.
+  
+  Example - Given this table in the notes property of a handout called "SkillsTable":
+    Ability,Skill,AttributeName
+    Strength,Athletics,Athletics
+    Dexterity,Acrobatics,Acrobatics
+    Dexterity,Sleight of Hand,SleightofHand
+    Dexterity,Stealth,Stealth
+    Intelligence,Arcana,Arcana
+
+  The DataGrid can be loaded with 
+    --~|datagrid;fromhandout;Skills;SkillsTable
+
+  Then the following references will return the following values:
+    [^Skills;4;Ability] = Dexterity
+    [^Skills;1;Skill] = Acrobatics
+    [^Skills;2;AttributeName] = SleightofHand
+    [^Skills;Skill=Stealth;Ability] = Dexterity
+
 v 3.0.24a (EXPERIMENTAL):
 - Experimental version for implementing !sc-runhandout command. Usage:
   !sc-runhandout <HandoutName OR HandoutID> [--option|value]

@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.24a EXPERIMENTAL";
-	const NUMERIC_VERSION = "300241"
+	const APIVERSION = "3.0.25 EXPERIMENTAL";
+	const NUMERIC_VERSION = "300250"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -360,6 +360,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	var templates = {};
 	var benchmarks = {};
 	var pointerVariables = {};
+	var dataGrids = {};
 
 	//We use several variables to track repeating section (--R) commands
 	var repeatingSection = undefined;
@@ -497,7 +498,6 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				handoutOptionList = handoutOptionList.substring(handoutOptionList.indexOf(" ")).trim();
 				let handoutField = "notes";
 				let handoutOptions = (handoutOptionList.match(/--[^|\s]+\|[\s\S]*?(?=(?:\s--[^|\s]+\|)|$)/g) || []).map((opt) => opt.trim());
-				log(`ScriptCards: Running handout ${handoutName} with options ${handoutOptions}`);
 				let handout = undefined;
 				let clearSelect = false;
 				let wasSelected = false;
@@ -512,7 +512,6 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					} catch (e) {
 					}
 				}
-				log(`ScriptCards: Found handout ${handout ? handout.get("id") : "undefined"}`);
 
 				// Parse the handout options and set the appropriate values for use later
 				if (handoutOptions && handoutOptions.length > 0) {
@@ -525,7 +524,6 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							case "--selected":
 							case "--select":
 							case "--selectedtokens":
-								log(`ScriptCards: Setting selected tokens to ${optionValue}`);
 								handoutSelected = optionValue.split(",").map((id) => id.trim());
 								clearSelect = true;
 								wasSelected = true;
@@ -559,13 +557,10 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					let handoutText = await getBioField(handout, handoutField);
 					msg.content = handoutText.replace(/<[^>]*>/g, "").replace(/&nbsp;/g, "").replace(/&amp;/g, "&").replace(/&lt;/g, "<").replace(/&gt;/g, ">").replace(/&quot;/g, '"').replace(/&#39;/g, "'").trim();
 					apiCmdText = msg.content;
-					log(`clear select is ${clearSelect}, wasMerge is ${wasMerge}`);
 					if (wasSelected && !wasMerge) {
 						msg.selected = [];
 					}
 				}
-
-				log(`ScriptCards: msg.content is now ${msg.content}`);
 			}
 
 			if (apiCmdText.startsWith("!sc-deleteindividualstoredsetting ")) {
@@ -1536,7 +1531,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		if (!(typeof content.match == 'function')) { return content }
 		content = content.replace(/\[&zwnj;/g, "[")
 		var rexMatch;
-		rexMatch = /(?=(?:(?:(?!\$\{|\$\})[\s\S])*\$\{(?:(?!\$\{|\$\})[\s\S])*\$\})*(?:(?!\$\{|\$\})[\s\S])*$)\[(?:[\$&@%\*~=:\?])[^\[\]]*?(?!\.+[\[])(\])/g
+		rexMatch = /(?=(?:(?:(?!\$\{|\$\})[\s\S])*\$\{(?:(?!\$\{|\$\})[\s\S])*\$\})*(?:(?!\$\{|\$\})[\s\S])*$)\[(?:[\$&@%\*~=:\?^])[^\[\]]*?(?!\.+[\[])(\])/g
 		//while (content.match(/\[(?:[\$|\&|\@|\%|\*|\~|\=|\:|\?])[^\[\]]*?(?!\.+[\[])(\])/g) != null) {
 		while (content.match(rexMatch) != null) {
 			var thisMatch = content.match(rexMatch)[0];
@@ -1769,6 +1764,55 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 						}
 						if (cardParameters.debug !== "0") {
 							log(`ContentIn: ${content} Match: ${thisMatch}, vName: ${vName}, replacement ${replacement}`)
+						}
+					}
+					break;
+
+				case "^":
+					// Data Grid References
+					let ref = thisMatch.substring(2, thisMatch.length - 1).split(";");
+					if (ref.length == 3) {
+						let gridName = ref[0];
+						let rowReference = ref[1];
+						let colName = ref[2];
+						let rowIndex = rowReference;
+
+						// If the row reference contains "=", treat it as a Column=Value lookup
+						if (rowReference.indexOf("=") > -1) {
+							let equalsPos = rowReference.indexOf("=");
+							let searchColumn = rowReference.substring(0, equalsPos).trim();
+							let searchValue = rowReference.substring(equalsPos + 1).trim();
+
+							rowIndex = undefined;
+
+							if (dataGrids[gridName]) {
+								for (let rowNum in dataGrids[gridName]) {
+									if (
+										dataGrids[gridName].hasOwnProperty(rowNum) &&
+										dataGrids[gridName][rowNum][searchColumn] !== undefined &&
+										dataGrids[gridName][rowNum][searchColumn] === searchValue
+									) {
+										rowIndex = rowNum;
+										break;
+									}
+								}
+							}
+
+							log(`Data Grid Search: ${gridName}, ${searchColumn}=${searchValue}, Found Row: ${rowIndex}`);
+						}
+
+						log(`Data Grid Reference: ${gridName}, Row: ${rowIndex}, Column: ${colName}`);
+
+						if (
+							rowIndex !== undefined &&
+							dataGrids[gridName] &&
+							dataGrids[gridName][rowIndex] &&
+							dataGrids[gridName][rowIndex][colName] !== undefined
+						) {
+							replacement = dataGrids[gridName][rowIndex][colName];
+						} else {
+							replacement = "";
+							log(`ScriptCards Error: Data grid reference ${thisMatch} is invalid or no matching row was found.`);
 						}
 					}
 					break;
@@ -6244,6 +6288,170 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					}
 					break;
 
+				case "datagrid":
+					if (params[1].toLowerCase() == "fromhandout") {
+						// fromhandout;hashname;handoutname/id;field;qualifier;delimiter
+						//
+						// Examples:
+						// fromhandout;TestDG;My Handout;notes;",;
+						// fromhandout;TestDG;My Handout;notes;";|
+						//
+						// Structure:
+						// {
+						//     "rownum": {
+						//         "columnname1": "value1",
+						//         "columnname2": "value2"
+						//     }
+						// }
+
+						let tableName = params[2];
+						dataGrids[tableName] = {};
+
+						let handoutName = params[3];
+						let handoutField = params[4] || "notes";
+						let textQualifier = params[5] || "";
+						let delimiter = params[6] || ",";
+
+						let handoutFormat = "csv";
+						let handout = undefined;
+
+						// Parse a single delimited line, respecting an optional text qualifier.
+						let parseDelimitedLine = function (line, delimiter, qualifier) {
+							let values = [];
+							let currentValue = "";
+							let inQualifiedValue = false;
+
+							for (let i = 0; i < line.length; i++) {
+								let currentChar = line[i];
+
+								// Handle qualifier characters.
+								if (qualifier && currentChar === qualifier) {
+
+									// A doubled qualifier inside a qualified value represents
+									// a literal qualifier character.
+									if (
+										inQualifiedValue &&
+										i + 1 < line.length &&
+										line[i + 1] === qualifier
+									) {
+										currentValue += qualifier;
+										i++;
+									} else {
+										// Toggle qualified/unqualified state.
+										inQualifiedValue = !inQualifiedValue;
+									}
+								}
+
+								// Only treat the delimiter as a field separator when
+								// we are not inside a qualified value.
+								else if (
+									!inQualifiedValue &&
+									line.substring(i, i + delimiter.length) === delimiter
+								) {
+									values.push(currentValue.trim());
+									currentValue = "";
+
+									// Account for multi-character delimiters.
+									i += delimiter.length - 1;
+								}
+
+								// Normal character.
+								else {
+									currentValue += currentChar;
+								}
+							}
+
+							// Add the final value.
+							values.push(currentValue.trim());
+
+							return values;
+						};
+
+						try {
+							handout = findObjs({
+								type: "handout",
+								name: handoutName
+							})[0];
+						} catch (e) {
+						}
+
+						if (!handout) {
+							try {
+								handout = findObjs({
+									type: "handout",
+									id: handoutName
+								})[0];
+							} catch (e) {
+							}
+						}
+
+						if (handout) {
+
+							if (handoutFormat.toLowerCase() == "csv") {
+								let handoutContent = await getBioField(
+									handout,
+									handoutField
+								);
+
+								handoutContent = handoutContent
+									.replace(/<br\s*\/?>/gi, "\n")
+									.replace(/<\/p>/gi, "\n")
+									.replace(/<[^>]*>/g, "")
+									.replace(/&nbsp;/g, "")
+									.replace(/&amp;/g, "&")
+									.replace(/&lt;/g, "<")
+									.replace(/&gt;/g, ">")
+									.replace(/&quot;/g, '"')
+									.replace(/&#39;/g, "'")
+									.trim();
+
+
+								let lines = handoutContent.split(/\r?\n/);
+
+								// Parse headings using the configured delimiter and qualifier.
+								let headings = parseDelimitedLine(
+									lines[0],
+									delimiter,
+									textQualifier
+								);
+
+								for (let j = 1; j < lines.length; j++) {
+									let line = lines[j];
+
+									// Skip blank lines.
+									if (line.trim() === "") {
+										continue;
+									}
+
+									let vals = parseDelimitedLine(
+										line,
+										delimiter,
+										textQualifier
+									);
+
+									dataGrids[tableName][j] = {};
+
+									for (let k = 0; k < headings.length; k++) {
+										let key = headings[k].trim();
+
+										// Use an empty string if this row has fewer values
+										// than there are headings.
+										let value =
+											vals[k] !== undefined
+												? vals[k].trim()
+												: "";
+
+										dataGrids[tableName][j][key] = value;
+									}
+								}
+							}
+						} else {
+							log(
+								`ScriptCards Error: Unable to find handout ${handoutName}`
+							);
+						}
+					}
+					break;
 				case "hashtable":
 				case "hash":
 					if (params.length == 3) {
@@ -6322,6 +6530,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 								log(`ScriptCards: Error encounted: ${e}`)
 							}
 						}
+
+
 
 						if (params[1].toLowerCase() == "fromrepeatingsection") {
 							try {
