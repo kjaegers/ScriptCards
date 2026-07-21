@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.25 EXPERIMENTAL";
-	const NUMERIC_VERSION = "300250"
+	const APIVERSION = "3.0.25a EXPERIMENTAL";
+	const NUMERIC_VERSION = "300251"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -1798,10 +1798,10 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 								}
 							}
 
-							log(`Data Grid Search: ${gridName}, ${searchColumn}=${searchValue}, Found Row: ${rowIndex}`);
+							//log(`Data Grid Search: ${gridName}, ${searchColumn}=${searchValue}, Found Row: ${rowIndex}`);
 						}
 
-						log(`Data Grid Reference: ${gridName}, Row: ${rowIndex}, Column: ${colName}`);
+						//log(`Data Grid Reference: ${gridName}, Row: ${rowIndex}, Column: ${colName}`);
 
 						if (
 							rowIndex !== undefined &&
@@ -5735,6 +5735,128 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							}
 						}
 					}
+
+					if (params[1].toLowerCase() == "copyfromdatagrid") {
+						// copyfromdatagrid;characterid;section;datagrid;row-or-column=value
+						//
+						// Examples:
+						// copyfromdatagrid;-ABC123;repeatingattack;Items;5
+						// copyfromdatagrid;-ABC123;repeatingattack;Items;Name=Longsword
+
+						let destCharacter = getObj("character", params[2]);
+						let repeatingSectionName = params[3];
+						let gridName = params[4];
+						let rowReference = params[5];
+						let rowIndex = rowReference;
+
+						if (!destCharacter) {
+							log(
+								`ScriptCards Error: Unable to find destination character ` +
+								`${params[2]} for repeating row copy.`
+							);
+							break;
+						}
+
+						if (!dataGrids[gridName]) {
+							log(
+								`ScriptCards Error: Data grid ${gridName} does not exist.`
+							);
+							break;
+						}
+
+						// If the row reference contains "=", treat it as
+						// a Column=Value lookup.
+						if (rowReference.indexOf("=") > -1) {
+							let equalsPos = rowReference.indexOf("=");
+							let searchColumn = rowReference
+								.substring(0, equalsPos)
+								.trim();
+
+							let searchValue = rowReference
+								.substring(equalsPos + 1)
+								.trim();
+
+							rowIndex = undefined;
+
+							for (let rowNum in dataGrids[gridName]) {
+								if (
+									dataGrids[gridName].hasOwnProperty(rowNum) &&
+									dataGrids[gridName][rowNum][searchColumn] !== undefined &&
+									dataGrids[gridName][rowNum][searchColumn] === searchValue
+								) {
+									rowIndex = rowNum;
+									break;
+								}
+							}
+
+							log(
+								`Data Grid Search: ${gridName}, ` +
+								`${searchColumn}=${searchValue}, ` +
+								`Found Row: ${rowIndex}`
+							);
+						}
+
+						if (
+							rowIndex === undefined ||
+							!dataGrids[gridName][rowIndex]
+						) {
+							log(
+								`ScriptCards Error: Unable to find data grid row ` +
+								`${rowReference} in grid ${gridName}.`
+							);
+							break;
+						}
+
+						let gridRow = dataGrids[gridName][rowIndex];
+						let newRowID = generateRowID();
+
+						stringVariables["SC_LAST_CREATED_ROWID"] = newRowID;
+
+						for (let fieldName in gridRow) {
+							if (!gridRow.hasOwnProperty(fieldName)) {
+								continue;
+							}
+
+							// Fields beginning with "__" are metadata and
+							// should not be copied to the repeating row.
+							if (fieldName.indexOf("__") === 0) {
+								continue;
+							}
+
+							let attrValue = gridRow[fieldName];
+
+							try {
+								let newAttribute = createObj("attribute", {
+									name:
+										`${repeatingSectionName}_` +
+										`${newRowID}_` +
+										`${fieldName}`,
+									_characterid: destCharacter.id,
+									current: "",
+									max: ""
+								});
+
+								newAttribute.setWithWorker({
+									current:
+										attrValue !== undefined &&
+											attrValue !== null
+											? String(attrValue)
+											: ""
+								});
+							} catch (err) {
+								log(
+									`Error creating repeating section field ` +
+									`${fieldName}: ${err}`
+								);
+							}
+						}
+
+						log(
+							`ScriptCards: Created repeating row ${newRowID} ` +
+							`in ${repeatingSectionName} from ` +
+							`${gridName} row ${rowIndex}.`
+						);
+					}
 					break;
 
 				case "turnorder":
@@ -6308,42 +6430,67 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 						dataGrids[tableName] = {};
 
 						let handoutName = params[3];
-						let handoutField = params[4] || "notes";
-						let textQualifier = params[5] || "";
+						let handoutField = (params[4] || "notes").trim().toLowerCase();
+						let textQualifier = params[5] || "`";
 						let delimiter = params[6] || ",";
+
+						if (
+							handoutField !== "notes" &&
+							handoutField !== "gmnotes"
+						) {
+							//log(`ScriptCards Error: Invalid handout field ` + `[${handoutField}]. Defaulting to notes.`							);
+							handoutField = "notes";
+						}
 
 						let handoutFormat = "csv";
 						let handout = undefined;
 
 						// Parse a single delimited line, respecting an optional text qualifier.
 						let parseDelimitedLine = function (line, delimiter, qualifier) {
+							//log(`ScriptCards: Parsing line "${line}" with delimiter "${delimiter}" and qualifier "${qualifier}".`);
 							let values = [];
 							let currentValue = "";
 							let inQualifiedValue = false;
+
+							// Defensive normalization. An empty delimiter would otherwise
+							// cause the parsing loop to never advance.
+							if (
+								typeof delimiter !== "string" ||
+								delimiter.length === 0
+							) {
+								delimiter = ",";
+							}
+
+							if (typeof qualifier !== "string") {
+								qualifier = "";
+							}
 
 							for (let i = 0; i < line.length; i++) {
 								let currentChar = line[i];
 
 								// Handle qualifier characters.
-								if (qualifier && currentChar === qualifier) {
-
+								if (
+									qualifier.length > 0 &&
+									line.substring(i, i + qualifier.length) === qualifier
+								) {
 									// A doubled qualifier inside a qualified value represents
-									// a literal qualifier character.
+									// a literal qualifier.
 									if (
 										inQualifiedValue &&
-										i + 1 < line.length &&
-										line[i + 1] === qualifier
+										line.substring(
+											i + qualifier.length,
+											i + (qualifier.length * 2)
+										) === qualifier
 									) {
 										currentValue += qualifier;
-										i++;
+										i += (qualifier.length * 2) - 1;
 									} else {
-										// Toggle qualified/unqualified state.
 										inQualifiedValue = !inQualifiedValue;
+										i += qualifier.length - 1;
 									}
 								}
 
-								// Only treat the delimiter as a field separator when
-								// we are not inside a qualified value.
+								// Only recognize delimiters outside qualified fields.
 								else if (
 									!inQualifiedValue &&
 									line.substring(i, i + delimiter.length) === delimiter
@@ -6351,22 +6498,20 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 									values.push(currentValue.trim());
 									currentValue = "";
 
-									// Account for multi-character delimiters.
 									i += delimiter.length - 1;
 								}
 
-								// Normal character.
 								else {
 									currentValue += currentChar;
 								}
 							}
 
-							// Add the final value.
 							values.push(currentValue.trim());
 
 							return values;
 						};
 
+						//log(`ScriptCards: Loading handout ${handoutName} into data grid ${tableName}.`);
 						try {
 							handout = findObjs({
 								type: "handout",
@@ -6385,9 +6530,17 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							}
 						}
 
-						if (handout) {
+						//log(`ScriptCards: Handout ${handoutName} found: ${handout ? "Yes" : "No"}.`);
 
+						if (handout) {
 							if (handoutFormat.toLowerCase() == "csv") {
+								//log(`ScriptCards: tableName      = [${tableName}]`);
+								//log(`ScriptCards: handoutName    = [${handoutName}]`);
+								//log(`ScriptCards: handoutField   = [${handoutField}]`);
+								//log(`ScriptCards: textQualifier  = [${textQualifier}]`);
+								//log(`ScriptCards: delimiter      = [${delimiter}]`);
+								//log(`ScriptCards: params         = ${JSON.stringify(params)}`);
+								//log(`ScriptCards: About to call getBioField.`);
 								let handoutContent = await getBioField(
 									handout,
 									handoutField
@@ -6407,6 +6560,14 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 
 								let lines = handoutContent.split(/\r?\n/);
+
+								//log(
+								//	`ScriptCards DataGrid Parameters: ` +
+								//	`qualifier=[${textQualifier}] ` +
+								//	`qualifierLength=${textQualifier.length}, ` +
+								//	`delimiter=[${delimiter}] ` +
+								//	`delimiterLength=${delimiter.length}`
+								//);
 
 								// Parse headings using the configured delimiter and qualifier.
 								let headings = parseDelimitedLine(
@@ -6441,6 +6602,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 												? vals[k].trim()
 												: "";
 
+										//log(`ScriptCards: Setting data grid ${tableName}[${j}][${key}] = ${value}`);
 										dataGrids[tableName][j][key] = value;
 									}
 								}

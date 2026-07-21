@@ -3,6 +3,10 @@ ScriptCards Roll20 API Script Changelog
 Ideas:
 - Immediate mode variable referencing (handing variables on the back end so translation doesn't mess with the values)
 
+v 3.0.25a (EXPERIMENTAL):
+- Bug fixes and log cleanup for DataGrid functionality. Important note: When using " as a text qualifier if can confuse the parameter parsing. I suggest using ` as the qualifier character for now until I figure out how to address :)
+
+
 v 3.0.25 (EXPERIMENTAL):
 - Added DataGrids as a new variable type. Currently the only way to fill a datagrid is from a CSV file in a handout.
   --~|datagrid;fromhandout;DataGridName;HandoutName or ID;field;qualifier;delimeter
