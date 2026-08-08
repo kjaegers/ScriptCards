@@ -3,6 +3,22 @@ ScriptCards Roll20 API Script Changelog
 Ideas:
 - Immediate mode variable referencing (handing variables on the back end so translation doesn't mess with the values)
 
+v 3.0.30 (EXPERIMENTAL):
+
+   *** NOTE ***
+   This version of ScriptCards is an EXPERIMENTAL version that expands the support for Beacon sheets - especially Roll20's new D&D 2024 sheet. It is not intended for use in production games at this time, but is being released to allow for testing and feedback. Please report any issues you find to the ScriptCards Discord channel.
+
+   This version is primarially the work of Timothy B, the creator of many ScriptCards items like Tim's Spellbook Mod, and Tim's NPC Stat Block Mod. I've tested this version with my 2014 test game, and so far have not seen any issues, but I don't currently have an in-depth 2024 game to test with.
+
+   The new updates support non-D&D beacon sheets, but the community created Beacon sheets are generally much less complicated than the D&D 2024 sheet, so ScriptCards includes lookup tables to help map the fields correctly.
+
+   Beacon sheets use a very different internal data structure, with a heireraichal structure that is not compatible with the flat structure of the older sheets. For example, the D&D 2014 "hp" attribute is actually "sheet->hitpoints->currentHP" in the D&D 2024 sheet, though an alias of just "hp" is available. See the DND2024_beacon_sheet_reference.md file for more information.
+
+  What's New:
+  - Use the setting --#beaconsheet|1 to enable Beacon sheet support.
+  - Check the DND2024_beacon_sheet_reference.md file in the GitHub repository for a list of Beacon sheet fields and their internal names. This is a work in progress, and will be updated as more fields are discovered.
+  - Using "c-" and "b-" are not currently supported for beacon sheets. This will break existing scripts used against beacon sheets, but I'll likely add a way to strip them out before a final release (so they just get ignored). Check the DND2024_beacon_sheet_reference.md file for the correct field names to use with beacon sheets.
+
 v 3.0.25a (EXPERIMENTAL):
 - Bug fixes and log cleanup for DataGrid functionality. Important note: When using " as a text qualifier if can confuse the parameter parsing. I suggest using ` as the qualifier character for now until I figure out how to address :)
 

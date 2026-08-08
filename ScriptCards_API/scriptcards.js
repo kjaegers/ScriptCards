@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.25a EXPERIMENTAL";
-	const NUMERIC_VERSION = "300251"
+	const APIVERSION = "3.0.30-beacon-experimental.130 EXPERIMENTAL";
+	const NUMERIC_VERSION = "300301"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -362,6 +362,552 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	var pointerVariables = {};
 	var dataGrids = {};
 
+	//---------------------------------------------------------------------------------------
+	// Optional Beacon sheet adapters
+	//---------------------------------------------------------------------------------------
+	// ScriptCards' interpreter, formatting, variables, object handling, and other generic
+	// facilities are defined above. Sheet-specific Beacon compatibility belongs here, after
+	// the generic core, and is initialized only when a matching Beacon sheet is actually used.
+	const DND2024_BEACON_SHEET_NAME = "dnd2024byroll20";
+	let dnd2024BeaconAdapterConstants;
+
+	function createDnd2024BeaconAdapter() {
+		const collections = Object.freeze({
+			abilityScores: "abilityscores",
+			actions: "actions",
+			armorClasses: "armorclasses",
+			attacks: "attacks",
+			attunements: "attunements",
+			backgrounds: "backgrounds",
+			classes: "classes",
+			classLevels: "classlevels",
+			conditions: "conditions",
+			currencies: "currencies",
+			damages: "damages",
+			defenses: "defenses",
+			exhaustions: "exhaustions",
+			features: "features",
+			hitDices: "hitdices",
+			hitPoints: "hitpoints",
+			items: "items",
+			languages: "languages",
+			modifiers: "modifiers",
+			preparedSpellSlots: "preparedspellslots",
+			proficiencies: "proficiencies",
+			resources: "resources",
+			restDisplays: "restdisplays",
+			rollBonuses: "rollbonuses",
+			senses: "senses",
+			sizes: "sizes",
+			skills: "skills",
+			species: "species",
+			speeds: "speeds",
+			spells: "spells",
+			spellSlots: "spellslots",
+			spellcastings: "spellcastings",
+			subclasses: "subclasses",
+			upcastings: "upcastings",
+			weaponMasteryChanges: "weaponmasterychanges",
+			weaponMasteryKnowns: "weaponmasteryknowns",
+			weaponMasterySlots: "weaponmasteryslots",
+			weaponMasteries: "weaponmasteries"
+		});
+
+		const fields = Object.freeze({
+			type: "type",
+			name: "name",
+			shortID: "shortID",
+			enabled: "_enabled",
+			arrayPosition: "arrayPosition",
+			parentID: "parentID",
+			childIDs: "childIDs",
+			actionType: "actionType",
+			spellLevel: "spellLevel",
+			slotType: "_slotType",
+			ability: "ability",
+			category: "category",
+			proficiency: "proficiency",
+			proficiencyLevel: "proficiencyLevel",
+			classID: "classID",
+			level: "level",
+			totalLevel: "totalLevel",
+			speed: "speed",
+			isTemp: "isTemp",
+			value: "value"
+		});
+
+		const valuePaths = Object.freeze({
+			formulaFlatValue: Object.freeze([["valueFormula", "flatValue"], ["flatValue"], ["value"]])
+		});
+
+		const abilityNames = Object.freeze({
+			str: "Strength", strength: "Strength",
+			dex: "Dexterity", dexterity: "Dexterity",
+			con: "Constitution", constitution: "Constitution",
+			int: "Intelligence", intelligence: "Intelligence",
+			wis: "Wisdom", wisdom: "Wisdom",
+			cha: "Charisma", charisma: "Charisma"
+		});
+
+		const skillNames = Object.freeze({
+			acrobatics: "Acrobatics", animalhandling: "Animal Handling",
+			arcana: "Arcana", athletics: "Athletics", deception: "Deception",
+			history: "History", insight: "Insight", intimidation: "Intimidation",
+			investigation: "Investigation", medicine: "Medicine", nature: "Nature",
+			perception: "Perception", performance: "Performance",
+			persuasion: "Persuasion", religion: "Religion",
+			sleightofhand: "Sleight of Hand", stealth: "Stealth", survival: "Survival"
+		});
+
+		const standardSkillAbilities = Object.freeze({
+			acrobatics: "Dexterity", animalhandling: "Wisdom", arcana: "Intelligence",
+			athletics: "Strength", deception: "Charisma", history: "Intelligence",
+			insight: "Wisdom", intimidation: "Charisma", investigation: "Intelligence",
+			medicine: "Wisdom", nature: "Intelligence", perception: "Wisdom",
+			performance: "Charisma", persuasion: "Charisma", religion: "Intelligence",
+			sleightofhand: "Dexterity", stealth: "Dexterity", survival: "Wisdom"
+		});
+
+		const actionTypes = Object.freeze({
+			action: "Action",
+			bonusAction: "Bonus Action",
+			freeAction: "Free Action",
+			reaction: "Reaction",
+			legendary: "Legendary",
+			mythic: "Mythic"
+		});
+
+		const spellSlotOrdinals = Object.freeze({
+			1: "FIRST", 2: "SECOND", 3: "THIRD", 4: "FOURTH", 5: "FIFTH",
+			6: "SIXTH", 7: "SEVENTH", 8: "EIGHTH", 9: "NINTH"
+		});
+
+		const storedAliases = {
+			hp: ["hitpoints", "currentHP"],
+			hptemp: ["hitpoints", "tempHP"],
+			size: ["about", "characteristics", "size"],
+			alignment: ["about", "characteristics", "alignment"],
+			creaturetype: ["character", "creatureType"],
+			npctype: ["character", "creatureType"],
+			pronouns: ["character", "pronouns"],
+			experience: ["classLevel", "currentExp"],
+			inspiration: ["inspiration", "isInspired"],
+			npcacnotes: ["npc", "acNotes"],
+			npcchallenge: ["npc", "challengeRating"],
+			npccustomxp: ["npc", "customXP"],
+			npcgear: ["npc", "gear"],
+			npchabitat: ["npc", "habitat"],
+			npclegendaryactions: ["npc", "legendaryActionCompendiumNum"],
+			npclegendaryactionsdesc: ["npc", "legendaryActionSummary"],
+			npcmythicactionsdesc: ["npc", "mythicActionSummary"],
+			npchpformula: ["npc", "rollHP"],
+			npctreasure: ["npc", "treasure"]
+		};
+		const writableStoredAliases = {
+			hp: true,
+			hptemp: true,
+			size: true,
+			alignment: true,
+			experience: true,
+			inspiration: true
+		};
+		for (let level = 1; level <= 9; level++) {
+			storedAliases[`lvl${level}slotsexpended`] = ["spellSlots", "currentByLevel", spellSlotOrdinals[level]];
+			writableStoredAliases[`lvl${level}slotsexpended`] = true;
+		}
+
+		const repeatingSections = {};
+		const defineRepeating = (sectionName, descriptor) => {
+			repeatingSections[sectionName.toLowerCase()] = Object.freeze({
+				collections: Object.freeze((descriptor.collections || []).slice()),
+				displayOrderPaths: descriptor.displayOrderPaths
+					? Object.freeze(descriptor.displayOrderPaths.map((path) => Object.freeze(path.slice())))
+					: undefined,
+				actionTypes: descriptor.actionTypes ? Object.freeze(descriptor.actionTypes.slice()) : undefined,
+				categories: descriptor.categories ? Object.freeze(descriptor.categories.slice()) : undefined,
+				spellLevel: descriptor.spellLevel,
+				purpose: descriptor.purpose
+			});
+		};
+		const actionCollections = [collections.actions, collections.attacks];
+		defineRepeating("repeating_npcaction", {
+			collections: actionCollections, displayOrderPaths: [["actions", "actionDisplayOrder"]], actionTypes: [actionTypes.action], purpose: "ordinary actions and attacks"
+		});
+		defineRepeating("repeating_npcbonusaction", {
+			collections: actionCollections, displayOrderPaths: [["actions", "bonusActionDisplayOrder"]], actionTypes: [actionTypes.bonusAction], purpose: "bonus actions and attacks"
+		});
+		defineRepeating("repeating_npcfreeaction", {
+			collections: actionCollections, displayOrderPaths: [["actions", "freeActionDisplayOrder"]], actionTypes: [actionTypes.freeAction], purpose: "free actions and attacks"
+		});
+		defineRepeating("repeating_npcreaction", {
+			collections: actionCollections, displayOrderPaths: [["actions", "reactionDisplayOrder"]], actionTypes: [actionTypes.reaction], purpose: "reactions and reaction attacks"
+		});
+		defineRepeating("repeating_npcaction-l", {
+			collections: actionCollections, actionTypes: [actionTypes.legendary], purpose: "legendary actions"
+		});
+		defineRepeating("repeating_npcaction-m", {
+			collections: actionCollections, actionTypes: [actionTypes.mythic], purpose: "mythic actions"
+		});
+		const featureDisplayOrderPaths = [["features", "classFeatureDisplayOrder"], ["features", "featsDisplayOrder"], ["features", "otherDisplayOrder"], ["features", "speciesTraitsDisplayOrder"]];
+		defineRepeating("repeating_npctrait", {
+			collections: [collections.features], displayOrderPaths: featureDisplayOrderPaths, purpose: "NPC traits and features"
+		});
+		defineRepeating("repeating_traits", {
+			collections: [collections.features], displayOrderPaths: featureDisplayOrderPaths, purpose: "PC features and traits"
+		});
+		defineRepeating("repeating_attack", {
+			collections: [collections.attacks], displayOrderPaths: [["attacks", "attackDisplayOrder"]], purpose: "PC and NPC attack definitions"
+		});
+		defineRepeating("repeating_inventory", {
+			collections: [collections.items], displayOrderPaths: [["inventory", "equipmentDisplayOrder"], ["inventory", "otherPossessionsDisplayOrder"]], purpose: "inventory items"
+		});
+		defineRepeating("repeating_item", {
+			collections: [collections.items], displayOrderPaths: [["inventory", "equipmentDisplayOrder"], ["inventory", "otherPossessionsDisplayOrder"]], purpose: "inventory item compatibility"
+		});
+		defineRepeating("repeating_resource", {
+			collections: [collections.resources], purpose: "resource records"
+		});
+		defineRepeating("repeating_tool", {
+			collections: [collections.proficiencies], categories: ["Tool"], purpose: "tool proficiencies"
+		});
+		defineRepeating("repeating_spell", {
+			collections: [collections.spells], displayOrderPaths: [["spells", "displayOrder"]], purpose: "all spells"
+		});
+		defineRepeating("repeating_spell-cantrip", {
+			collections: [collections.spells], displayOrderPaths: [["spells", "displayOrder", 0]], spellLevel: 0, purpose: "cantrips"
+		});
+		for (let level = 1; level <= 9; level++) {
+			defineRepeating(`repeating_spell-${level}`, {
+				collections: [collections.spells], displayOrderPaths: [["spells", "displayOrder", level]], spellLevel: level, purpose: `level ${level} spells`
+			});
+		}
+
+		const adapter = Object.freeze({
+			sheetName: DND2024_BEACON_SHEET_NAME,
+			rootNames: Object.freeze({ store: "store", builder: "builder", appState: "appState" }),
+			storePaths: Object.freeze({
+				integrants: Object.freeze(["integrants", "integrants"]),
+				actionDisplayOrder: Object.freeze(["actions", "actionDisplayOrder"]),
+				bonusActionDisplayOrder: Object.freeze(["actions", "bonusActionDisplayOrder"]),
+				freeActionDisplayOrder: Object.freeze(["actions", "freeActionDisplayOrder"]),
+				reactionDisplayOrder: Object.freeze(["actions", "reactionDisplayOrder"]),
+				attackDisplayOrder: Object.freeze(["attacks", "attackDisplayOrder"]),
+				classFeatureDisplayOrder: Object.freeze(["features", "classFeatureDisplayOrder"]),
+				featsDisplayOrder: Object.freeze(["features", "featsDisplayOrder"]),
+				otherFeatureDisplayOrder: Object.freeze(["features", "otherDisplayOrder"]),
+				speciesTraitsDisplayOrder: Object.freeze(["features", "speciesTraitsDisplayOrder"]),
+				spellDisplayOrder: Object.freeze(["spells", "displayOrder"]),
+				equipmentDisplayOrder: Object.freeze(["inventory", "equipmentDisplayOrder"]),
+				otherPossessionsDisplayOrder: Object.freeze(["inventory", "otherPossessionsDisplayOrder"]),
+				weaponMasteryDisplayOrder: Object.freeze(["weaponMasteries", "masteryDisplayOrder"])
+			}),
+			collections,
+			fields,
+			valuePaths,
+			storedAliases: Object.freeze(storedAliases),
+			writableStoredAliases: Object.freeze(writableStoredAliases),
+			abilityNames,
+			skillNames,
+			standardSkillAbilities,
+			actionTypes,
+			proficiencyCategories: Object.freeze({ skill: "Skill", savingThrow: "Saving Throw" }),
+			movementModes: Object.freeze({ walking: "Walk", burrowing: "Burrow", climbing: "Climb", flying: "Fly", swimming: "Swim" }),
+			currencyNames: Object.freeze({ cp: "Copper", sp: "Silver", ep: "Electrum", gp: "Gold", pp: "Platinum" }),
+			spellSlotOrdinals,
+			repeatingSections: Object.freeze(repeatingSections),
+			xpByChallenge: new Map([
+				[0, 10], [0.125, 25], [0.25, 50], [0.5, 100],
+				[1, 200], [2, 450], [3, 700], [4, 1100], [5, 1800], [6, 2300],
+				[7, 2900], [8, 3900], [9, 5000], [10, 5900], [11, 7200], [12, 8400],
+				[13, 10000], [14, 11500], [15, 13000], [16, 15000], [17, 18000],
+				[18, 20000], [19, 22000], [20, 25000], [21, 33000], [22, 41000],
+				[23, 50000], [24, 62000], [25, 75000], [26, 90000], [27, 105000],
+				[28, 120000], [29, 135000], [30, 155000]
+			])
+		});
+		return adapter;
+	}
+
+	function validateDnd2024BeaconAdapter(adapter) {
+		const collectionCount = Object.keys(adapter.collections || {}).length;
+		const abilityCount = new Set(Object.values(adapter.abilityNames || {})).size;
+		const skillCount = Object.keys(adapter.skillNames || {}).length;
+		const repeatingCount = Object.keys(adapter.repeatingSections || {}).length;
+		const repeatingSections = adapter.repeatingSections || {};
+		const descriptorHasActionType = (sectionName, actionType) => {
+			const descriptor = repeatingSections[sectionName];
+			const normalizedActionType = normalizeBeaconLookupName(actionType);
+			return !!descriptor
+				&& Array.isArray(descriptor.actionTypes)
+				&& descriptor.actionTypes.some((value) => normalizeBeaconLookupName(value) === normalizedActionType);
+		};
+		const descriptorHasCategory = (sectionName, category) => {
+			const descriptor = repeatingSections[sectionName];
+			const normalizedCategory = normalizeBeaconLookupName(category);
+			return !!descriptor
+				&& Array.isArray(descriptor.categories)
+				&& descriptor.categories.some((value) => normalizeBeaconLookupName(value) === normalizedCategory);
+		};
+		const descriptorHasCollection = (sectionName, collectionName) => {
+			const descriptor = repeatingSections[sectionName];
+			const normalizedCollection = normalizeBeaconLookupName(collectionName);
+			return !!descriptor
+				&& Array.isArray(descriptor.collections)
+				&& descriptor.collections.some((value) => normalizeBeaconLookupName(value) === normalizedCollection);
+		};
+		const descriptorHasDisplayOrderPath = (sectionName, expectedPath) => {
+			const descriptor = repeatingSections[sectionName];
+			const normalizedExpected = expectedPath.map((value) => normalizeBeaconLookupName(value));
+			return !!descriptor
+				&& Array.isArray(descriptor.displayOrderPaths)
+				&& descriptor.displayOrderPaths.some((path) =>
+					Array.isArray(path)
+					&& path.length === normalizedExpected.length
+					&& path.every((value, index) => normalizeBeaconLookupName(value) === normalizedExpected[index])
+				);
+		};
+		const spellSections = Array.from({ length: 9 }, (_, index) => `repeating_spell-${index + 1}`);
+		const requiredRepeatingSections = [
+			"repeating_npcaction", "repeating_npcbonusaction", "repeating_npcfreeaction",
+			"repeating_npcreaction", "repeating_npcaction-l", "repeating_npcaction-m",
+			"repeating_npctrait", "repeating_traits", "repeating_attack", "repeating_inventory",
+			"repeating_item", "repeating_resource", "repeating_tool", "repeating_spell",
+			"repeating_spell-cantrip", ...spellSections
+		];
+		const valid = collectionCount >= 38
+			&& abilityCount === 6
+			&& skillCount === 18
+			&& repeatingCount >= requiredRepeatingSections.length
+			&& requiredRepeatingSections.every((sectionName) => repeatingSections[sectionName])
+			&& descriptorHasActionType("repeating_npcaction", "Action")
+			&& descriptorHasActionType("repeating_npcbonusaction", "Bonus Action")
+			&& descriptorHasActionType("repeating_npcfreeaction", "Free Action")
+			&& descriptorHasActionType("repeating_npcreaction", "Reaction")
+			&& descriptorHasActionType("repeating_npcaction-l", "Legendary")
+			&& descriptorHasActionType("repeating_npcaction-m", "Mythic")
+			&& descriptorHasCategory("repeating_tool", "Tool")
+			&& descriptorHasCollection("repeating_npcaction", "actions")
+			&& descriptorHasCollection("repeating_npcaction", "attacks")
+			&& descriptorHasCollection("repeating_npcbonusaction", "actions")
+			&& descriptorHasCollection("repeating_npcbonusaction", "attacks")
+			&& descriptorHasCollection("repeating_npcfreeaction", "actions")
+			&& descriptorHasCollection("repeating_npcfreeaction", "attacks")
+			&& descriptorHasCollection("repeating_npcreaction", "actions")
+			&& descriptorHasCollection("repeating_npcreaction", "attacks")
+			&& descriptorHasCollection("repeating_npcaction-l", "actions")
+			&& descriptorHasCollection("repeating_npcaction-l", "attacks")
+			&& descriptorHasCollection("repeating_npcaction-m", "actions")
+			&& descriptorHasCollection("repeating_npcaction-m", "attacks")
+			&& descriptorHasCollection("repeating_npctrait", "features")
+			&& descriptorHasCollection("repeating_traits", "features")
+			&& descriptorHasCollection("repeating_attack", "attacks")
+			&& descriptorHasCollection("repeating_inventory", "items")
+			&& descriptorHasCollection("repeating_item", "items")
+			&& descriptorHasCollection("repeating_resource", "resources")
+			&& descriptorHasCollection("repeating_tool", "proficiencies")
+			&& descriptorHasCollection("repeating_spell", "spells")
+			&& descriptorHasCollection("repeating_spell-cantrip", "spells")
+			&& spellSections.every((sectionName) => descriptorHasCollection(sectionName, "spells"))
+			&& descriptorHasDisplayOrderPath("repeating_npcaction", ["actions", "actionDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_npcbonusaction", ["actions", "bonusActionDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_npcfreeaction", ["actions", "freeActionDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_npcreaction", ["actions", "reactionDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_npctrait", ["features", "classFeatureDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_npctrait", ["features", "featsDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_npctrait", ["features", "otherDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_npctrait", ["features", "speciesTraitsDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_traits", ["features", "classFeatureDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_traits", ["features", "featsDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_traits", ["features", "otherDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_traits", ["features", "speciesTraitsDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_attack", ["attacks", "attackDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_inventory", ["inventory", "equipmentDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_inventory", ["inventory", "otherPossessionsDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_item", ["inventory", "equipmentDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_item", ["inventory", "otherPossessionsDisplayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_spell", ["spells", "displayOrder"])
+			&& descriptorHasDisplayOrderPath("repeating_spell-cantrip", ["spells", "displayOrder", 0])
+			&& Number(repeatingSections["repeating_spell-cantrip"].spellLevel) === 0
+			&& spellSections.every((sectionName, index) =>
+				Number(repeatingSections[sectionName].spellLevel) === index + 1
+				&& descriptorHasDisplayOrderPath(sectionName, ["spells", "displayOrder", index + 1])
+			);
+		if (!valid) {
+			log(`ScriptCards Error: D&D 2024 Beacon adapter coverage validation failed (${collectionCount} collections, ${abilityCount} abilities, ${skillCount} skills, ${repeatingCount} repeating sections).`);
+		}
+		addBeaconPerformanceStat("dnd2024AdapterCollectionDefinitions", collectionCount);
+		addBeaconPerformanceStat("dnd2024AdapterRepeatingSectionDefinitions", repeatingCount);
+		return valid;
+	}
+
+	function getDnd2024BeaconAdapter(characterId) {
+		if (!is2024Sheet(characterId)) {
+			return undefined;
+		}
+		if (!dnd2024BeaconAdapterConstants) {
+			dnd2024BeaconAdapterConstants = createDnd2024BeaconAdapter();
+			validateDnd2024BeaconAdapter(dnd2024BeaconAdapterConstants);
+			addBeaconPerformanceStat("dnd2024AdapterInitializations");
+		}
+		return dnd2024BeaconAdapterConstants;
+	}
+	//---------------------------------------------------------------------------------------
+
+	var beaconStructuredIndexCache = new Map();
+	var beaconPerformanceStats = {};
+	// Caches per-card Beacon sheet-item reads and successful writes. Missing and
+	// error results are stored separately so Map.has() continues to indicate that
+	// a usable value exists.
+	var beaconSheetItemCache = new Map();
+	var beaconSheetItemMissCache = new Map();
+	var beaconRepeatingStateCache = new Map();
+	var beaconRepeatingWritableTargetCache = new Map();
+	var beaconRepeatingWritableTargets = [];
+	var beaconAttributeRepeatingRowCache = new Map();
+	const getBeaconSheetItemCacheKey = (characterId, operation, name) =>
+		`${characterId}\u0000${operation}\u0000${String(name).toLowerCase()}`;
+
+	function addBeaconPerformanceStat(name, amount = 1) {
+		beaconPerformanceStats[name] = Number(beaconPerformanceStats[name] || 0) + amount;
+	}
+
+	function addBeaconPerformanceDetail(groupName, detailName, values = {}) {
+		if (!beaconPerformanceStats[groupName] || typeof beaconPerformanceStats[groupName] !== "object" || Array.isArray(beaconPerformanceStats[groupName])) {
+			beaconPerformanceStats[groupName] = {};
+		}
+		const key = String(detailName);
+		if (!beaconPerformanceStats[groupName][key]) {
+			beaconPerformanceStats[groupName][key] = {};
+		}
+		const detail = beaconPerformanceStats[groupName][key];
+		for (const [name, amount] of Object.entries(values)) {
+			detail[name] = Number(detail[name] || 0) + Number(amount || 0);
+		}
+	}
+
+	async function readBeaconSheetItem(characterId, name, operation = "current", options = {}) {
+		const normalizedOperation = String(operation || "current").toLowerCase();
+		const cacheKey = getBeaconSheetItemCacheKey(characterId, normalizedOperation, name);
+		const fresh = options.fresh === true;
+		const cacheResult = options.cacheResult !== false;
+		addBeaconPerformanceStat("sheetItemRequests");
+
+		if (!fresh && beaconSheetItemCache.has(cacheKey)) {
+			addBeaconPerformanceStat("sheetItemCacheHits");
+			return beaconSheetItemCache.get(cacheKey);
+		}
+		if (!fresh && beaconSheetItemMissCache.has(cacheKey)) {
+			addBeaconPerformanceStat("sheetItemNegativeCacheHits");
+			const cachedMiss = beaconSheetItemMissCache.get(cacheKey);
+			if (cachedMiss && cachedMiss.error) {
+				throw new Error(cachedMiss.error);
+			}
+			return cachedMiss ? cachedMiss.value : undefined;
+		}
+
+		addBeaconPerformanceStat("sheetItemSdkCalls");
+		const detailName = `${normalizedOperation}:${String(name)}`;
+		const started = Date.now();
+		try {
+			const value = await getSheetItem(characterId, name, normalizedOperation);
+			const elapsed = Date.now() - started;
+			const unresolved = beaconLookupIsUnresolved(value);
+			addBeaconPerformanceStat("sheetItemMilliseconds", elapsed);
+			addBeaconPerformanceDetail("sheetItemCallDetails", detailName, {
+				calls: 1,
+				milliseconds: elapsed,
+				unresolved: unresolved ? 1 : 0
+			});
+			if (cacheResult) {
+				if (unresolved) {
+					beaconSheetItemMissCache.set(cacheKey, { value });
+					addBeaconPerformanceStat("sheetItemUnresolved");
+				} else {
+					beaconSheetItemCache.set(cacheKey, value);
+					beaconSheetItemMissCache.delete(cacheKey);
+				}
+			}
+			return value;
+		} catch (error) {
+			const elapsed = Date.now() - started;
+			addBeaconPerformanceStat("sheetItemMilliseconds", elapsed);
+			addBeaconPerformanceStat("sheetItemErrors");
+			addBeaconPerformanceDetail("sheetItemCallDetails", detailName, {
+				calls: 1,
+				milliseconds: elapsed,
+				errors: 1
+			});
+			if (cacheResult) {
+				beaconSheetItemMissCache.set(cacheKey, { error: error && error.message ? error.message : String(error) });
+			}
+			throw error;
+		}
+	}
+
+	function clearBeaconCacheEntriesForCharacter(cache, characterId) {
+		const prefix = `${characterId}\u0000`;
+		for (const key of cache.keys()) {
+			if (String(key).startsWith(prefix)) {
+				cache.delete(key);
+			}
+		}
+	}
+
+	function invalidateBeaconCharacterCaches(characterId) {
+		beaconStructuredIndexCache.delete(characterId);
+		clearBeaconCacheEntriesForCharacter(beaconSheetItemCache, characterId);
+		clearBeaconCacheEntriesForCharacter(beaconSheetItemMissCache, characterId);
+		clearBeaconCacheEntriesForCharacter(beaconRepeatingStateCache, characterId);
+	}
+
+	const getBeaconComputedSummary = () => {
+		let computedSummary;
+		try {
+			const campaign = Campaign();
+			if (campaign && typeof campaign.get === "function") {
+				computedSummary = campaign.get("computedSummary");
+			}
+			if (typeof computedSummary === "undefined" && campaign) {
+				computedSummary = campaign.computedSummary;
+			}
+		} catch (error) {
+			return undefined;
+		}
+
+		return computedSummary && typeof computedSummary === "object" && !Array.isArray(computedSummary)
+			? computedSummary
+			: undefined;
+	};
+
+	const getBeaconComputedTokenBarProperty = (propertyName) => {
+		if (typeof propertyName !== "string" || !propertyName) {
+			return undefined;
+		}
+
+		const computedSummary = getBeaconComputedSummary();
+		if (!computedSummary) {
+			return undefined;
+		}
+
+		if (Object.prototype.hasOwnProperty.call(computedSummary, propertyName)) {
+			return {
+				property: propertyName,
+				metadata: computedSummary[propertyName]
+			};
+		}
+
+		const normalizedPropertyName = propertyName.toLowerCase();
+		const matchingProperties = Object.keys(computedSummary).filter((name) => name.toLowerCase() === normalizedPropertyName);
+		if (matchingProperties.length !== 1) {
+			return undefined;
+		}
+
+		return {
+			property: matchingProperties[0],
+			metadata: computedSummary[matchingProperties[0]]
+		};
+	};
+
 	//We use several variables to track repeating section (--R) commands
 	var repeatingSection = undefined;
 	var repeatingSectionIDs = undefined;
@@ -369,6 +915,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	var repeatingCharID = undefined;
 	var repeatingCharAttrs = undefined;
 	var repeatingSectionName = undefined;
+	var repeatingBeaconState = undefined;
 	var triggerCharID = undefined;
 	var storageCharID = undefined;
 	var bioCharID = undefined;
@@ -673,6 +1220,38 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				labelChecking = {};
 
 				benchmarks = {};
+				beaconPerformanceStats = {
+					structuredRootParses: 0,
+					typedIndexBuilds: 0,
+					typedIndexMilliseconds: 0,
+					typedAttributesScanned: 0,
+					typedObjectsVisited: 0,
+					stableIdentityLookups: 0,
+					stableIdentityDirectHits: 0,
+					localCompatibilityRequests: 0,
+					localCompatibilityHits: 0,
+					localCompatibilityMilliseconds: 0,
+					localCompatibilityBypassedSdk: 0,
+					sheetItemRequests: 0,
+					sheetItemSdkCalls: 0,
+					sheetItemCacheHits: 0,
+					sheetItemNegativeCacheHits: 0,
+					sheetItemMilliseconds: 0,
+					sheetItemUnresolved: 0,
+					sheetItemErrors: 0,
+					repeatingStateRequests: 0,
+					repeatingStateBuilds: 0,
+					repeatingStateCacheHits: 0,
+					repeatingEnumerationMilliseconds: 0,
+					repeatingRowsEnumerated: 0,
+					repeatingFieldRequests: 0,
+					repeatingLocalFieldHits: 0,
+					repeatingFieldSdkCalls: 0,
+					repeatingCanonicalFallbacks: 0,
+					sheetItemCallDetails: {},
+					localCompatibilityMissDetails: {},
+					repeatingSectionDetails: {}
+				};
 
 				// The returnStack stores the line number to return to after a gosub, while the parameter stack stores parameter lists for nexted gosubs
 				returnStack = [];
@@ -686,6 +1265,13 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				arrayIndexes = {};
 				hashTables = {};
 				pointerVariables = {};
+				beaconStructuredIndexCache.clear();
+				beaconSheetItemCache.clear();
+				beaconSheetItemMissCache.clear();
+				beaconRepeatingStateCache.clear();
+				beaconRepeatingWritableTargetCache.clear();
+				beaconRepeatingWritableTargets = [];
+				beaconAttributeRepeatingRowCache.clear();
 
 				loopControl = {};
 				loopStack = [];
@@ -763,6 +1349,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					if (scriptCardsStashedScripts[stashIndex].repeatingSectionIDs) { repeatingSectionIDs = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingSectionIDs); }
 					if (scriptCardsStashedScripts[stashIndex].repeatingSection) { repeatingSection = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingSection); }
 					if (scriptCardsStashedScripts[stashIndex].repeatingCharAttrs) { repeatingCharAttrs = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingCharAttrs); }
+					if (scriptCardsStashedScripts[stashIndex].repeatingBeaconState) { repeatingBeaconState = JSON.parse(scriptCardsStashedScripts[stashIndex].repeatingBeaconState); }
 					if (scriptCardsStashedScripts[stashIndex].loopControl) { loopControl = scriptCardsStashedScripts[stashIndex].loopControl; }
 					if (scriptCardsStashedScripts[stashIndex].loopStack) { loopStack = scriptCardsStashedScripts[stashIndex].loopStack; }
 					//if (scriptCardsStashedScripts[stashIndex].loopCounter) {loopCounter = scriptCardsStashedScripts[stashIndex].loopCounter; }
@@ -902,7 +1489,12 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					while (lineCounter < cardLines.length) {
 
 						let thisTag = await replaceVariableContent(getLineTag(cardLines[lineCounter], lineCounter, true), cardParameters, false);
-						let thisContent = await replaceVariableContent(getLineContent(cardLines[lineCounter]), cardParameters, (thisTag.charAt(0) == "+" || thisTag.charAt(0) == "*" || thisTag.charAt(0) == "&"));
+						const lowerTag = thisTag.toLowerCase();
+						const preserveObjectModificationEscapedPipes = lowerTag.startsWith("!a:")
+							|| lowerTag.startsWith("!c:")
+							|| (String(cardParameters.beaconsheet) === "1" && lowerTag.startsWith("!or:"));
+						const lineContent = getLineContent(cardLines[lineCounter], preserveObjectModificationEscapedPipes);
+						let thisContent = await replaceVariableContent(lineContent, cardParameters, (thisTag.charAt(0) == "+" || thisTag.charAt(0) == "*" || thisTag.charAt(0) == "&"));
 
 						if (cardParameters.debug == 1) {
 							log(`Line Counter: ${lineCounter}, Tag:${thisTag}, Content:${thisContent}`);
@@ -953,7 +1545,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 								case "h": handleHasTableCommands(thisTag, hashTables, thisContent); break;
 								case "l": handleLoadCommands(thisTag, thisContent, cardParameters); break;
 								case "p": handlePointerCommand(thisTag, thisContent); break;
-								case "r": handleRepeatingAttributeCommands(thisTag, thisContent, cardParameters); break;
+								case "r": await handleRepeatingAttributeCommands(thisTag, thisContent, cardParameters); break;
 								case "s": handleStashLines(thisTag, thisContent, cardParameters); break;
 								case "w": await handleWaitStatements(thisTag, thisContent, cardParameters); break;
 								case "v": handleVisualEffectsCommand(thisTag, thisContent, cardParameters); break;
@@ -1247,6 +1839,13 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					}
 					sendChat("API", "/w " + gmWhisperTarget + " " + gmoutput);
 				}
+				beaconStructuredIndexCache.clear();
+				beaconSheetItemCache.clear();
+				beaconSheetItemMissCache.clear();
+				beaconRepeatingStateCache.clear();
+				beaconRepeatingWritableTargetCache.clear();
+				beaconRepeatingWritableTargets = [];
+				beaconAttributeRepeatingRowCache.clear();
 			}
 		}
 	}
@@ -1487,7 +2086,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		// sandbox reports to contain the error.
 		log(`-=> ${APINAME} - ${APIVERSION} by ${APIAUTHOR} Ready <=- Meta Offset : ${API_Meta.ScriptCards.offset}`);
 
-		if (APIVERSION.endsWith("experimental")) {
+		if (APIVERSION.toLowerCase().endsWith("experimental")) {
 			log(`-=> NOTE: This is an experimental version of ScriptCards and is not recommended for widespread use at this time. <=-`);
 		}
 
@@ -1510,14 +2109,86 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		});
 	});
 
-	function resolveAttributeSubstitution(characterid, reference) {
-		if (typeof reference.match === "function") {
-			while (reference.match(/\@(?:[\{])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-\+|\)]*?(?!\w+[\{])(\})/g) != null) {
-				var thisMatch = reference.match(/\@(?:[\{])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-\+|\)]*?(?!\w+[\{])(\})/g)[0];
-				var attrName = thisMatch.substring(2, thisMatch.length - 1);
-				var replacement = getAttrByName(characterid, attrName);
-				reference = reference.replace(thisMatch, replacement);
+	function getAttributeReferenceCharacter(characterOrTokenId) {
+		let character = getObj("character", characterOrTokenId);
+		if (character) {
+			return character;
+		}
+		const token = getObj("graphic", characterOrTokenId);
+		if (token && token.get("represents")) {
+			character = getObj("character", token.get("represents"));
+		}
+		return character;
+	}
+
+	async function getAttributeReferenceValue(characterOrTokenId, attributeName, cardParameters, operation = "current") {
+		const character = getAttributeReferenceCharacter(characterOrTokenId);
+		const requestedName = String(attributeName == null ? "" : attributeName).trim();
+		if (!character || !requestedName) {
+			return { found: false, value: undefined };
+		}
+
+		const beaconMode = cardParameters && String(cardParameters.beaconsheet) === "1";
+		if (beaconMode && /^repeating_/i.test(requestedName)) {
+			const repeatingTarget = await resolveBeaconAttributeSetRepeatingTarget(
+				character.id,
+				requestedName,
+				false
+			);
+			if (repeatingTarget.success) {
+				const value = await getBeaconRepeatingField(
+					repeatingTarget.state,
+					repeatingTarget.rowIndex,
+					repeatingTarget.fieldName,
+					repeatingTarget.operation,
+					cardParameters.debug === "1"
+				);
+				if (!beaconLookupIsUnresolved(value)) {
+					return { found: true, value, source: "beacon-repeating" };
+				}
 			}
+		}
+
+		const lookupName = operation === "max" && !requestedName.endsWith("^")
+			? `${requestedName}^`
+			: requestedName;
+		return await getPageTokenCharacterAttributeValue(
+			character,
+			lookupName,
+			beaconMode,
+			cardParameters && cardParameters.debug === "1"
+		);
+	}
+
+	async function resolveAttributeSubstitution(characterid, reference, cardParameters) {
+		if (typeof reference !== "string") {
+			return reference;
+		}
+
+		const attributeReferencePattern = /\@(?:[\{])[\w|\s|À-ÖØ-öø-ÿ|\%|\(|\:|\.|\_|\>|\^|\-\+|\)]*?(?!\w+[\{])(\})/g;
+		const seen = new Set();
+		let substitutionCount = 0;
+		while (reference.match(attributeReferencePattern) != null && substitutionCount < 100) {
+			if (seen.has(reference)) {
+				if (cardParameters && cardParameters.debug === "1") {
+					log(`ScriptCards: Circular nested attribute substitution stopped for ${reference}`);
+				}
+				break;
+			}
+			seen.add(reference);
+			const thisMatch = reference.match(attributeReferencePattern)[0];
+			const attrName = thisMatch.substring(2, thisMatch.length - 1);
+			const lookup = await getAttributeReferenceValue(characterid, attrName, cardParameters, "current");
+			const replacement = lookup.found && lookup.value != null ? lookup.value : "";
+			const nextReference = reference.replace(thisMatch, replacement);
+			if (nextReference === reference) {
+				break;
+			}
+			reference = nextReference;
+			substitutionCount++;
+		}
+		if (substitutionCount >= 100 && cardParameters && cardParameters.debug === "1") {
+			log(`ScriptCards: Nested attribute substitution limit reached for ${reference}`);
 		}
 
 		return reference;
@@ -1986,7 +2657,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					if (activeCharacter !== "") {
 						var workString = thisMatch;
 
-						if (cardParameters.enableattributesubstitution !== "0") { workString = resolveAttributeSubstitution(activeCharacter, thisMatch); }
+						if (cardParameters.enableattributesubstitution !== "0") { workString = await resolveAttributeSubstitution(activeCharacter, thisMatch, cardParameters); }
 						var token;
 						var attribute = "";
 						var defaultValue = null;
@@ -2010,14 +2681,6 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 								character = getObj("character", token.get("represents"));
 							}
 						}
-						/*
-						if (character != null && is2024Sheet(character.id)) {
-							if (!(attrName.startsWith("c-") || attrName.startsWith("b-"))) {
-								attrName = "b-" + attrName;
-								log(`Assuming reference to bar attribute for 2024 sheet and modifying attribute name to ${attrName}`)
-							}
-						}
-						*/
 						if (character != null) {
 							if (attrName.endsWith("^")) {
 								attrName = attrName.substring(0, attrName.length - 1);
@@ -2035,50 +2698,50 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 						}
 						if (token != null && attrName.toLowerCase().startsWith("t-")) {
 							if (attrName.toLowerCase() == "t-bio" || attrName.toLowerCase() == "t-notes") {
-								attribute = getBioField(token, attrName.substring(2));
+								attribute = await getBioField(token, attrName.substring(2));
 							} else {
-								if (token.get(attrName.substring(2))) {
-									attribute = token.get(attrName.substring(2)).toString() || "";
+								const tokenValue = token.get(attrName.substring(2));
+								if (tokenValue !== undefined && tokenValue !== null) {
+									attribute = tokenValue.toString();
 								}
 							}
 						}
-						if (character != null && (attrName.toLowerCase().startsWith("c-") || attrName.toLowerCase().startsWith("b-"))) {
-							attribute = await getSheetItem(character.id, attrName.substring(2), opType);
-						}
-						if (character != null && (!attrName.toLowerCase().startsWith("t-")) && (!attrName.toLowerCase().startsWith("c-") && (!attrName.toLowerCase().startsWith("b-")))) {
-							//if (attrName.toLowerCase() !== "bio" && attrName.toLowerCase() !== "notes" && attrName.toLowerCase() !== "gmnotes" && attrName.toLowerCase() !== "_defaulttoken") {
-							if (!bioFields[attrName.toLowerCase()] == 1) {
-								attribute = getAttrByName(character.id, attrName, opType);
-								if (attribute === undefined) {
-									if (returnID) {
-										attribute = attribute._id;
-									} else {
-										attribute = character.get(attrName);
-										if (hasSubFields && attribute) {
-											for (var sf = 1; sf < subfields.length; sf++) {
-												attribute = attribute[subfields[sf]];
-											}
-										}
-									}
-								} else {
-									if (returnID) {
-										attribute = attribute._id;
-									} else {
-										if (hasSubFields && attribute) {
-											for (var sf = 1; sf < subfields.length; sf++) {
-												if (attribute[subfields[sf]]) {
-													attribute = attribute[subfields[sf]];
-												}
-											}
-										}
-									}
-								}
-							} else {
+
+						if (character != null && !attrName.toLowerCase().startsWith("t-")) {
+							if (bioFields[attrName.toLowerCase()] == 1 && !hasSubFields) {
 								attribute = await getBioField(character, attrName);
+							} else {
+								const characterLookupName = hasSubFields ? subfields.join("->") : attrName;
+								const lookupRequest = opType === "max" ? `${characterLookupName}^` : characterLookupName;
+								const characterLookup = await getPageTokenCharacterAttributeValue(
+									character,
+									lookupRequest,
+									String(cardParameters.beaconsheet) === "1",
+									cardParameters.debug === "1"
+								);
+								if (characterLookup.found) {
+									attribute = returnID && characterLookup.attributeId
+										? characterLookup.attributeId
+										: characterLookup.value;
+								} else if (returnID) {
+									attribute = undefined;
+								} else {
+									attribute = character.get(attrName);
+									if (hasSubFields && attribute !== undefined && attribute !== null) {
+										for (var sf = 1; sf < subfields.length; sf++) {
+											if (attribute === undefined || attribute === null) {
+												break;
+											}
+											attribute = attribute[subfields[sf]];
+										}
+									}
+								}
 							}
-							if (cardParameters.attemptattributeparsing != 0) {
-								attribute = ParseCalculatedAttribute(attribute, character)
-							}
+						}
+						if (character != null
+							&& !attrName.toLowerCase().startsWith("t-")
+							&& cardParameters.attemptattributeparsing != 0) {
+							attribute = await ParseCalculatedAttribute(attribute, character, cardParameters);
 						}
 						if (token == undefined && character == undefined) {
 							// Try finding a Player object
@@ -2093,7 +2756,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 						}
 						if (character != null) {
 							if (cardParameters.enableattributesubstitution !== "0") {
-								replacement = resolveAttributeSubstitution(character.get("_id"), replacement);
+								replacement = await resolveAttributeSubstitution(character.get("_id"), replacement, cardParameters);
 							}
 						}
 
@@ -2154,7 +2817,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							var propertyName = objectInfo[3];
 							var thisObj = getObj(objectType, objectID);
 							if (thisObj != null && !(propertyName == "action")) {
-								if ((bioFields[propertyName.toLowerCase()] == 1 && (objectType !== "graphic" && propertyName !== "gmnotes"))
+								if ((bioFields[propertyName.toLowerCase()] == 1 && objectType !== "graphic")
 									|| propertyName.toLowerCase() == "defaulttoken") {
 									replacement = await getBioField(thisObj, propertyName) || "";
 								} else {
@@ -2173,74 +2836,78 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 					if (thisMatch.charAt(2).toLowerCase() == "r") {
 						// Repeating section attributes
-						var opType = "";
-						var repSectionHandled = false;
-						var attrName = thisMatch.substring(4, thisMatch.length - 1);
-						if (attrName.toLowerCase() == "$fieldlist$") {
-							replacement = "";
-							if (repeatingSection) {
-								for (var x = 0; x < repeatingSection.length; x++) {
-									replacement += repeatingSection[x].split("|")[0] + "|";
+						if (String(cardParameters.beaconsheet) === "1") {
+							replacement = await resolveBeaconRepeatingReference(thisMatch, cardParameters);
+						} else {
+							var opType = "";
+							var repSectionHandled = false;
+							var attrName = thisMatch.substring(4, thisMatch.length - 1);
+							if (attrName.toLowerCase() == "$fieldlist$") {
+								replacement = "";
+								if (repeatingSection) {
+									for (var x = 0; x < repeatingSection.length; x++) {
+										replacement += repeatingSection[x].split("|")[0] + "|";
+									}
 								}
+								replacement.slice(0, -1)
+								repSectionHandled = true
 							}
-							replacement.slice(0, -1)
-							repSectionHandled = true
-						}
-						if (attrName.match(/(\-.*)\:(.*)\:(\d*)\:(.*)/) && !repSectionHandled) {
-							replacement = ""
-							var values = attrName.match(/(\-.*)\:(.*)\:(\d*)\:(.*)/)
-							values.shift();
-							repeatingSectionIDs = getRepeatingSectionIDs(values[0], values[1])
-							if (values[3].endsWith("^")) { values[3] = values[3].substring(0, values[3].length - 1) + "_max" }
-							if (repeatingSectionIDs) {
+							if (attrName.match(/(\-.*)\:(.*)\:(\d*)\:(.*)/) && !repSectionHandled) {
+								replacement = ""
+								var values = attrName.match(/(\-.*)\:(.*)\:(\d*)\:(.*)/)
+								values.shift();
+								repeatingSectionIDs = getRepeatingSectionIDs(values[0], values[1])
+								if (values[3].endsWith("^")) { values[3] = values[3].substring(0, values[3].length - 1) + "_max" }
+								if (repeatingSectionIDs) {
+									if (thisMatch.charAt(3) == ":") {
+										let repeatingIndex = Number(values[2]);
+										let repeatingCharID = values[0];
+										let repeatingSectionName = values[1];
+										fillCharAttrs(findObjs({ _type: 'attribute', _characterid: repeatingCharID }));
+										repeatingSection = getSectionAttrsByID(repeatingCharID, repeatingSectionName, repeatingSectionIDs[repeatingIndex]);
+										repeatingIndex = Number(values[2]);
+										if (repeatingSectionIDs) {
+											for (let i in repeatingSection) {
+												if (repeatingSection[i].split("|")[0] == values[3]) {
+													replacement = repeatingSection[i].split("|").slice(1, 999).join("|");
+												}
+											}
+										}
+									} else {
+										replacement = values[1] + "_" + repeatingSectionIDs[Number(values[2])] + "_" + values[3]
+									}
+								}
+								repSectionHandled = true
+							}
+							if (attrName.match(/(\-.*)\:(.*)\:rowcount/) && !repSectionHandled) {
+								replacement = ""
+								let values = attrName.match(/(\-.*)\:(.*)\:rowcount/)
+								values.shift();
+								repeatingSectionIDs = getRepeatingSectionIDs(values[0], values[1])
+								replacement = repeatingSectionIDs.length;
+								repSectionHandled = true
+							}
+							if (!repSectionHandled) {
+								if (attrName.endsWith("^")) {
+									attrName = attrName.substring(0, attrName.length - 1);
+									opType = "_max";
+								}
+								var searchText = attrName + opType + "|";
 								if (thisMatch.charAt(3) == ":") {
-									let repeatingIndex = Number(values[2]);
-									let repeatingCharID = values[0];
-									let repeatingSectionName = values[1];
-									fillCharAttrs(findObjs({ _type: 'attribute', _characterid: repeatingCharID }));
-									repeatingSection = getSectionAttrsByID(repeatingCharID, repeatingSectionName, repeatingSectionIDs[repeatingIndex]);
-									repeatingIndex = Number(values[2]);
 									if (repeatingSectionIDs) {
-										for (let i in repeatingSection) {
-											if (repeatingSection[i].split("|")[0] == values[3]) {
+										for (var i in repeatingSection) {
+											if (repeatingSection[i].startsWith(searchText)) {
 												replacement = repeatingSection[i].split("|").slice(1, 999).join("|");
+												//charId = repeatingCharID;
 											}
 										}
 									}
 								} else {
-									replacement = values[1] + "_" + repeatingSectionIDs[Number(values[2])] + "_" + values[3]
+									replacement = repeatingSectionName + "_" + repeatingSectionIDs[repeatingIndex] + "_" + attrName + opType;
 								}
+								if (!repeatingSection) { replacement = "NoRepeatingAttributeLoaded" }
+								if (repeatingSection && repeatingSection.length <= 1) { replacement = "NoRepeatingAttributeLoaded" }
 							}
-							repSectionHandled = true
-						}
-						if (attrName.match(/(\-.*)\:(.*)\:rowcount/) && !repSectionHandled) {
-							replacement = ""
-							let values = attrName.match(/(\-.*)\:(.*)\:rowcount/)
-							values.shift();
-							repeatingSectionIDs = getRepeatingSectionIDs(values[0], values[1])
-							replacement = repeatingSectionIDs.length;
-							repSectionHandled = true
-						}
-						if (!repSectionHandled) {
-							if (attrName.endsWith("^")) {
-								attrName = attrName.substring(0, attrName.length - 1);
-								opType = "_max";
-							}
-							var searchText = attrName + opType + "|";
-							if (thisMatch.charAt(3) == ":") {
-								if (repeatingSectionIDs) {
-									for (var i in repeatingSection) {
-										if (repeatingSection[i].startsWith(searchText)) {
-											replacement = repeatingSection[i].split("|").slice(1, 999).join("|");
-											//charId = repeatingCharID;
-										}
-									}
-								}
-							} else {
-								replacement = repeatingSectionName + "_" + repeatingSectionIDs[repeatingIndex] + "_" + attrName + opType;
-							}
-							if (!repeatingSection) { replacement = "NoRepeatingAttributeLoaded" }
-							if (repeatingSection && repeatingSection.length <= 1) { replacement = "NoRepeatingAttributeLoaded" }
 						}
 
 					}
@@ -2278,15 +2945,16 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		}
 	}
 
-	function getLineContent(line) {
+	function getLineContent(line, preserveEscapedPipes = false) {
 		if (!line) {
 			return "/Error - No Line Content Specified";
 		}
-		if (line.match(/(?<!\\)\|/)) {
-			return line.substring(line.search(/(?<!\\\\)\|/) + 1).replaceAll("\\\\|", "|").trim();
-		} else {
+		const divider = line.match(/(?<!\\)\|/) ? line.search(/(?<!\\\\)\|/) : -1;
+		if (divider < 0) {
 			return "/Error - No Line Content Specified";
 		}
+		const content = line.substring(divider + 1);
+		return (preserveEscapedPipes ? content : content.replaceAll("\\\\|", "|")).trim();
 	}
 
 	// Take a "Roll Text" string (ie, "1d20 + 5 [Str] + 3 [Prof]") and execute the rolls.
@@ -3321,6 +3989,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		scriptCardsStashedScripts[stashIndex].repeatingSectionIDs = JSON.stringify(repeatingSectionIDs);
 		scriptCardsStashedScripts[stashIndex].repeatingSection = JSON.stringify(repeatingSection);
 		scriptCardsStashedScripts[stashIndex].repeatingCharAttrs = JSON.stringify(repeatingCharAttrs);
+		scriptCardsStashedScripts[stashIndex].repeatingBeaconState = JSON.stringify(repeatingBeaconState);
 		scriptCardsStashedScripts[stashIndex].repeatingCharID = repeatingCharID;
 		scriptCardsStashedScripts[stashIndex].repeatingSectionName = repeatingSectionName;
 		scriptCardsStashedScripts[stashIndex].repeatingIndex = repeatingIndex;
@@ -3944,16 +4613,38 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		log(`ScriptCards: ${Object.keys(templates).length} Templates loaded`);
 	}
 
-	function ParseCalculatedAttribute(attribute, character) {
-		while (attribute.match(/\@\{(.*?)\}/g) != null) {
-			var thisMatch = attribute.match(/\@\{(.*?)\}/g)[0];
-			var replacement = "";
-			try {
-				replacement = getAttrByName(character.id, thisMatch.replace("@{", "").replace("}", ""), "current");
-			} catch {
-				log(`Failure looking up attribute ${thisMatch}`)
+	async function ParseCalculatedAttribute(attribute, character, cardParameters) {
+		if (typeof attribute !== "string") {
+			return attribute;
+		}
+		const seen = new Set();
+		let parseCount = 0;
+		while (attribute.match(/\@\{(.*?)\}/g) != null && parseCount < 100) {
+			if (seen.has(attribute)) {
+				if (cardParameters && cardParameters.debug === "1") {
+					log(`ScriptCards: Circular calculated-attribute reference stopped for ${attribute}`);
+				}
+				break;
 			}
-			attribute = attribute.replace(thisMatch, replacement);
+			seen.add(attribute);
+			const thisMatch = attribute.match(/\@\{(.*?)\}/g)[0];
+			const attributeName = thisMatch.replace("@{", "").replace("}", "");
+			let replacement = "";
+			try {
+				const lookup = await getAttributeReferenceValue(character.id, attributeName, cardParameters, "current");
+				replacement = lookup.found && lookup.value != null ? lookup.value : "";
+			} catch (error) {
+				log(`Failure looking up attribute ${thisMatch}`);
+			}
+			const nextAttribute = attribute.replace(thisMatch, replacement);
+			if (nextAttribute === attribute) {
+				break;
+			}
+			attribute = nextAttribute;
+			parseCount++;
+		}
+		if (parseCount >= 100 && cardParameters && cardParameters.debug === "1") {
+			log(`ScriptCards: Calculated-attribute parsing limit reached for ${attribute}`);
 		}
 		attribute = attribute.replace(/floor\((.*?)\)/g, "$1 {FLOOR}"); // Remove double square brackets
 		attribute = attribute.replace(/ceil\((.*?)\)/g, "$1 {CEIL}"); // Remove double square brackets
@@ -4653,9 +5344,30 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 								case "r": {
 									let charInfo = thisTag.substring(4).split(":");
+									if (String(cardParameters.beaconsheet) === "1" && (charInfo.length < 2 || !charInfo[0].trim() || !charInfo[1].trim())) {
+										stringVariables["SC_LAST_CREATED_ROWID"] = "";
+										log(`ScriptCards Error: Beacon --!or requires both a character ID and a SectionName.`);
+										break;
+									}
 									if (charInfo.length >= 2) {
 										var theCharacter = getObj("character", charInfo[0])
 										var theSection = charInfo[1];
+										if (String(cardParameters.beaconsheet) === "1") {
+											const created = await createBeaconOriginalRepeatingRow(
+												charInfo[0],
+												theSection,
+												thisContent,
+												cardParameters.debug === "1"
+											);
+											if (created.success) {
+												stringVariables["SC_LAST_CREATED_ROWID"] = created.rowId;
+											} else {
+												stringVariables["SC_LAST_CREATED_ROWID"] = created.partialRowId || "";
+												log(`ScriptCards Error: Beacon --!or failed: ${created.error}.`);
+											}
+											break;
+										}
+
 										var rowID = generateRowID();
 										stringVariables["SC_LAST_CREATED_ROWID"] = rowID;
 										var repeatingInfo = thisContent.split("|");
@@ -4816,13 +5528,18 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 										log(1)
 										let theChar = getObj("character", theToken.get("represents"));
 										if (theChar != null) {
+											const beaconComputedBarProperty = getBeaconComputedTokenBarProperty(settingValue);
+											if (beaconComputedBarProperty && beaconComputedBarProperty.metadata
+												&& beaconComputedBarProperty.metadata.tokenBarValue === true) {
+												settingValue = beaconComputedBarProperty.property;
+											} else {
+												try {
+													var theAttribute = findObjs({ _type: "attribute", _characterid: theChar.get("_id"), name: settingValue })[0];
+												} catch { log("Error setting bar link. Attribute not found.") }
 
-											try {
-												var theAttribute = findObjs({ _type: "attribute", _characterid: theChar.get("_id"), name: settingValue })[0];
-											} catch { log("Error setting bar link. Attribute not found.") }
-
-											if (theAttribute != null) {
-												settingValue = theAttribute.get("_id");
+												if (theAttribute != null) {
+													settingValue = theAttribute.get("_id");
+												}
 											}
 										}
 									}
@@ -4876,8 +5593,44 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 											settingValue = Number(settingValue)
 										}
 
-										theToken.set(settingName, settingValue);
-										if (cardParameters.dontnotifyobservers !== "1") {
+										let tokenSettingChanged = false;
+										let beaconComputedBarHandled = false;
+										if (/^bar[1-4]_value$/i.test(settingName)) {
+											const barLinkName = settingName.toLowerCase().replace("_value", "_link");
+											const barLink = theToken.get(barLinkName);
+											const beaconComputedBarProperty = getBeaconComputedTokenBarProperty(barLink);
+											if (beaconComputedBarProperty && beaconComputedBarProperty.metadata
+												&& beaconComputedBarProperty.metadata.tokenBarValue === true) {
+												beaconComputedBarHandled = true;
+												const representedCharacterID = theToken.get("represents");
+												if (beaconComputedBarProperty.metadata.readonly === true) {
+													log(`ScriptCards Error: Beacon linked token bar "${barLinkName}" uses read-only computed property "${beaconComputedBarProperty.property}".`);
+												} else if (!representedCharacterID) {
+													log(`ScriptCards Error: Beacon linked token bar "${barLinkName}" cannot be updated because the token does not represent a character.`);
+												} else if (typeof setComputed !== "function") {
+													log(`ScriptCards Error: Beacon linked token bar "${barLinkName}" cannot be updated because setComputed() is unavailable.`);
+												} else {
+													try {
+														await setComputed({
+															characterId: representedCharacterID,
+															property: beaconComputedBarProperty.property,
+															args: [settingValue]
+														});
+														invalidateBeaconCharacterCaches(representedCharacterID);
+														tokenSettingChanged = true;
+													} catch (error) {
+														const errorMessage = error && error.message ? error.message : error;
+														log(`ScriptCards Error: Beacon linked token bar "${barLinkName}" failed to update "${beaconComputedBarProperty.property}": ${errorMessage}`);
+													}
+												}
+											}
+										}
+
+										if (!beaconComputedBarHandled) {
+											theToken.set(settingName, settingValue);
+											tokenSettingChanged = true;
+										}
+										if (tokenSettingChanged && cardParameters.dontnotifyobservers !== "1") {
 											notifyObservers('tokenChange', theToken, prevTok);
 										}
 									}
@@ -4900,12 +5653,12 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							var charID = thisTag.substring(3);
 							if (charID.toLowerCase() == "s") {
 								if (cardParameters.sourcecharacter) {
-									tokenID = cardParameters.sourcecharacter.id;
+									charID = cardParameters.sourcecharacter.id;
 								}
 							}
 							if (charID.toLowerCase() == "t") {
 								if (cardParameters.targetcharacter) {
-									tokenID = cardParameters.targetcharacter.id;
+									charID = cardParameters.targetcharacter.id;
 								}
 							}
 							var settings = thisContent.split(/(?<![\\\\])\|/);
@@ -4914,17 +5667,84 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 								for (var i = 0; i < settings.length; i++) {
 									var thisSetting = settings[i].split(":");
 									var settingName = thisSetting.shift();
-									let beacon = settingName.toLowerCase().startsWith("c-") || settingName.toLowerCase().startsWith("b-");
+									if (settingName.startsWith("!")) {
+										log(`ScriptCards Error: --!c does not create custom attributes. Use --!a:${charID}|!AttributeName:value for Beacon user.* attributes.`);
+										continue;
+									}
+									const beacon = String(cardParameters.beaconsheet) === "1";
+									let setType = "current";
+									if (/^(?:b-|c-)/i.test(settingName)) {
+										log(`ScriptCards Error: Beacon prefixes have been removed. Use "${settingName.substring(2)}" with --#beaconsheet|1.`);
+										continue;
+									}
 									if (beacon) {
-										settingName = settingName.substring(2);
+										if (settingName.endsWith("^")) {
+											setType = "max";
+											settingName = settingName.slice(0, -1);
+										}
+										if (settingName.toLowerCase().startsWith("user.")) {
+											log(`ScriptCards Error: Beacon custom attribute "${settingName}" must be written with --!a, not --!c.`);
+											continue;
+										}
 									}
 									var settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");
+
+									if (beacon && settingName.includes("->")) {
+										const nestedWrite = await writeBeaconStructuredPath(charID, settingName, settingValue, setType);
+										if (!nestedWrite.success) {
+											log(`ScriptCards Error: Beacon nested write "${settingName}" failed: ${nestedWrite.error}`);
+										} else if (cardParameters.debug === "1") {
+											log(`ScriptCards Beacon nested write: submitted ${nestedWrite.rootName}.${nestedWrite.operation}->${nestedWrite.path.join("->")} through ${nestedWrite.writeRoute || "structured write"}, changing ${JSON.stringify(nestedWrite.previousValue)} to ${JSON.stringify(nestedWrite.value)}. Reread the sheet to verify persistence.`);
+										}
+										continue;
+									}
+
+									var beaconWriteCacheKey;
+									var beaconSheetValue;
+									if (beacon) {
+										beaconWriteCacheKey = getBeaconSheetItemCacheKey(charID, setType, settingName);
+										const dnd2024Adapter = getDnd2024BeaconAdapter(charID);
+										const normalizedSettingName = normalizeBeaconLookupName(settingName);
+										const localStoredAlias = dnd2024Adapter
+											&& dnd2024Adapter.writableStoredAliases[normalizedSettingName]
+											? resolveDnd2024BeaconStoredAlias(charID, settingName, setType, [])
+											: { handled: false, found: false, value: undefined };
+										if (localStoredAlias.handled && localStoredAlias.found) {
+											beaconSheetValue = localStoredAlias.value;
+										} else if (beaconSheetItemCache.has(beaconWriteCacheKey)) {
+											beaconSheetValue = beaconSheetItemCache.get(beaconWriteCacheKey);
+										} else {
+											try {
+												beaconSheetValue = await readBeaconSheetItem(charID, settingName, setType);
+											} catch (error) {
+												beaconSheetValue = undefined;
+											}
+										}
+										if (beaconLookupIsUnresolved(beaconSheetValue) && setType === "max") {
+											try {
+												const currentValue = await readBeaconSheetItem(charID, settingName, "current");
+												if (!beaconLookupIsUnresolved(currentValue)) {
+													beaconSheetValue = "";
+												}
+											} catch (error) {
+												beaconSheetValue = undefined;
+											}
+										}
+										if (beaconLookupIsUnresolved(beaconSheetValue)) {
+											log(`ScriptCards Error: Beacon sheet value "${settingName}" does not exist. Use --!a to create user.* custom attributes.`);
+											continue;
+										}
+									}
+
 									if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
 										var currentValue;
 										if (bioFields[settingName.toLowerCase()] == 1) {
-											currentValue = getbioField(theCharacter, settingName);
+											currentValue = await getBioField(theCharacter, settingName);
+										} else if (beacon) {
+											currentValue = beaconSheetValue;
+										} else {
+											currentValue = theCharacter.get(settingName);
 										}
-										if (beacon) { currentValue = await getSheetItem(charID, settingName) } else { currentValue = theCharacter.get(settingName) }
 										var delta = settingValue.substring(2);
 										if (isNumber(currentValue) && isNumber(delta)) {
 											settingValue = settingValue.startsWith("+=") ? Number(currentValue) + Number(delta) : Number(currentValue) - Number(delta);
@@ -4939,7 +5759,13 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 										}
 									} else {
 										if (beacon) {
-											setSheetItem(charID, settingName, settingValue);
+											try {
+												await setSheetItem(charID, settingName, settingValue, setType, { allowThrow: true });
+												invalidateBeaconCharacterCaches(charID);
+											} catch (error) {
+												const errorMessage = error && error.message ? error.message : error;
+												log(`ScriptCards Error: Beacon native write "${settingName}" failed: ${errorMessage}`);
+											}
 										} else {
 											theCharacter.set(settingName, settingValue);
 										}
@@ -4972,6 +5798,177 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							}
 							if (characterObj != null) {
 								var settings = thisContent.split(/(?<![\\\\])\|/);
+								if (String(cardParameters.beaconsheet) === "1") {
+									const getExistingBeaconAttributeTarget = async (lookupName, operation) => {
+										const explicitCustomLookup = lookupName.toLowerCase().startsWith("user.");
+										const schemaProperty = explicitCustomLookup
+											? undefined
+											: getBeaconComputedTokenBarProperty(lookupName);
+										const resolvedLookupName = schemaProperty ? schemaProperty.property : lookupName;
+										const requestedCacheKey = getBeaconSheetItemCacheKey(characterObj.id, operation, resolvedLookupName);
+										const currentCacheKey = getBeaconSheetItemCacheKey(characterObj.id, "current", resolvedLookupName);
+										const maxCacheKey = getBeaconSheetItemCacheKey(characterObj.id, "max", resolvedLookupName);
+										let exists = beaconSheetItemCache.has(currentCacheKey)
+											|| beaconSheetItemCache.has(maxCacheKey);
+										let value = beaconSheetItemCache.has(requestedCacheKey)
+											? beaconSheetItemCache.get(requestedCacheKey)
+											: undefined;
+
+										if (!exists || value === undefined) {
+											try {
+												const requestedValue = await readBeaconSheetItem(characterObj.id, resolvedLookupName, operation);
+												if (!beaconLookupIsUnresolved(requestedValue)) {
+													exists = true;
+													value = requestedValue;
+													beaconSheetItemCache.set(requestedCacheKey, requestedValue);
+												}
+											} catch (error) {
+												value = undefined;
+											}
+										}
+
+										if (!exists && operation === "max") {
+											if (beaconSheetItemCache.has(currentCacheKey)) {
+												exists = true;
+											} else {
+												try {
+													const currentValue = await readBeaconSheetItem(characterObj.id, resolvedLookupName, "current");
+													if (!beaconLookupIsUnresolved(currentValue)) {
+														exists = true;
+														beaconSheetItemCache.set(currentCacheKey, currentValue);
+													}
+												} catch (error) {
+													exists = false;
+												}
+											}
+										}
+
+										const schemaMatched = !exists && schemaProperty !== undefined;
+										if (schemaMatched) {
+											exists = true;
+										}
+
+										return {
+											exists,
+											value,
+											cacheKey: requestedCacheKey,
+											lookupName: resolvedLookupName,
+											schemaMatched
+										};
+									};
+
+									for (var i = 0; i < settings.length; i++) {
+										var thisSetting = settings[i].split(":");
+										var settingName = thisSetting.shift();
+										var createAttribute = false;
+										var setType = "current";
+										if (settingName.startsWith("!")) {
+											createAttribute = true;
+											settingName = settingName.substring(1);
+										}
+										if (settingName.endsWith("^")) {
+											setType = "max";
+											settingName = settingName.slice(0, -1);
+										}
+										if (settingName.startsWith("$")) {
+											settingName = settingName.substring(1);
+										}
+										if (!settingName) {
+											continue;
+										}
+										if (settingName.toLowerCase().startsWith("b-") || settingName.toLowerCase().startsWith("c-")) {
+											log(`ScriptCards Error: Beacon prefixes have been removed. Use "${settingName.substring(2)}" instead.`);
+											continue;
+										}
+										if (settingName.includes("->")) {
+											log(`ScriptCards Error: Beacon structured path "${settingName}" must be written with --!c, not --!a.`);
+											continue;
+										}
+
+										var settingValue = thisSetting.join(":").replace(/\\\\\|/gi, "|");
+										const explicitCustomAttribute = settingName.toLowerCase().startsWith("user.");
+										if (!explicitCustomAttribute && /^repeating_/i.test(settingName)) {
+											const repeatingResult = await setExistingBeaconRepeatingAttribute(
+												characterObj.id,
+												settingName,
+												settingValue,
+												setType,
+												cardParameters.debug === "1"
+											);
+											if (!repeatingResult.success) {
+												log(`ScriptCards Error: Beacon --!a repeating write "${settingName}" failed: ${repeatingResult.error}`);
+											}
+											continue;
+										}
+										const bareSettingName = explicitCustomAttribute ? settingName.substring(5) : settingName;
+										const customSettingName = explicitCustomAttribute ? settingName : `user.${settingName}`;
+										let targetSettingName;
+										let targetInfo;
+										let targetRoute;
+
+										if (explicitCustomAttribute) {
+											targetInfo = await getExistingBeaconAttributeTarget(customSettingName, setType);
+											if (targetInfo.exists || createAttribute) {
+												targetSettingName = customSettingName;
+												targetRoute = targetInfo.exists ? "existing custom attribute" : "new custom attribute";
+											}
+										} else {
+											const nativeInfo = await getExistingBeaconAttributeTarget(bareSettingName, setType);
+											if (nativeInfo.exists) {
+												targetSettingName = nativeInfo.lookupName || bareSettingName;
+												targetInfo = nativeInfo;
+												targetRoute = nativeInfo.schemaMatched
+													? "native sheet schema item"
+													: "existing native sheet item";
+											} else {
+												const customInfo = await getExistingBeaconAttributeTarget(customSettingName, setType);
+												if (customInfo.exists || createAttribute) {
+													targetSettingName = customSettingName;
+													targetInfo = customInfo;
+													targetRoute = customInfo.exists ? "existing custom attribute" : "new custom attribute";
+												}
+											}
+										}
+
+										if (!targetSettingName) {
+											continue;
+										}
+										if (!targetInfo.exists && !settingValue) {
+											continue;
+										}
+
+										var existingSheetValue = targetInfo.value;
+										if (targetInfo.exists && existingSheetValue === undefined) {
+											existingSheetValue = "";
+										}
+										if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
+											var delta = settingValue.substring(2);
+											if (!targetInfo.exists) {
+												settingValue = settingValue.startsWith("+=") ? delta : `-${delta}`;
+												if (isNumber(settingValue)) {
+													settingValue = Number(settingValue);
+												}
+											} else if (isNumber(existingSheetValue) && isNumber(delta)) {
+												settingValue = settingValue.startsWith("+=") ? Number(existingSheetValue) + Number(delta) : Number(existingSheetValue) - Number(delta);
+											} else {
+												settingValue = existingSheetValue + delta;
+											}
+										}
+
+										try {
+											await setSheetItem(characterObj.id, targetSettingName, settingValue, setType, { allowThrow: true });
+											invalidateBeaconCharacterCaches(characterObj.id);
+											if (cardParameters.debug === "1") {
+												log(`ScriptCards Beacon --!a write: ${targetSettingName}.${setType} = ${JSON.stringify(settingValue)} through ${targetRoute}.`);
+											}
+										} catch (error) {
+											const errorMessage = error && error.message ? error.message : error;
+											log(`ScriptCards Error: Beacon --!a write "${targetSettingName}" failed: ${errorMessage}`);
+										}
+									}
+									break;
+								}
+
 								for (var i = 0; i < settings.length; i++) {
 									var thisSetting = settings[i].split(":");
 									var settingName = thisSetting.shift();
@@ -5688,7 +6685,100 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					}
 					break;
 
-				case "repeatingrow":
+				case "repeatingrow": {
+					const repeatingRowOperation = String(params[1] || "").toLowerCase();
+
+					if (String(cardParameters.beaconsheet) === "1" && repeatingRowOperation === "copybyindex") {
+						stringVariables["SC_LAST_CREATED_ROWID"] = "";
+						if (params.length < 6 || params.length > 7) {
+							log(
+								`ScriptCards Error: Beacon repeatingrow;copybyindex requires ` +
+								`SourceCharacterID;DestinationCharacterID;source_repeating_section_name;row_index` +
+								` and accepts an optional destination_repeating_section_name.`
+							);
+							break;
+						}
+
+						const sourceCharacter = getObj("character", params[2]);
+						const destCharacter = getObj("character", params[3]);
+						if (!sourceCharacter) {
+							log(`ScriptCards Error: Unable to find source character ${params[2]} for Beacon repeatingrow;copybyindex.`);
+							break;
+						}
+						if (!destCharacter) {
+							log(`ScriptCards Error: Unable to find destination character ${params[3]} for Beacon repeatingrow;copybyindex.`);
+							break;
+						}
+
+						const copied = await copyBeaconRepeatingRowByIndex(
+							sourceCharacter.id,
+							destCharacter.id,
+							params[4],
+							params[6] || params[4],
+							params[5],
+							cardParameters.debug == 1
+						);
+						if (copied.success) {
+							stringVariables["SC_LAST_CREATED_ROWID"] = copied.rowId;
+						} else {
+							log(`ScriptCards Error: Beacon repeatingrow;copybyindex failed: ${copied.error}.`);
+						}
+						break;
+					}
+
+					if (String(cardParameters.beaconsheet) === "1" && repeatingRowOperation === "copybyfieldmatch") {
+						stringVariables["SC_LAST_CREATED_ROWID"] = "";
+						if (params.length < 7 || params.length > 8) {
+							log(
+								`ScriptCards Error: Beacon repeatingrow;copybyfieldmatch requires ` +
+								`SourceCharacterID;DestinationCharacterID;source_repeating_section_name;field_name;field_value` +
+								` and accepts an optional destination_repeating_section_name.`
+							);
+							break;
+						}
+
+						const sourceCharacter = getObj("character", params[2]);
+						const destCharacter = getObj("character", params[3]);
+						if (!sourceCharacter) {
+							log(`ScriptCards Error: Unable to find source character ${params[2]} for Beacon repeatingrow;copybyfieldmatch.`);
+							break;
+						}
+						if (!destCharacter) {
+							log(`ScriptCards Error: Unable to find destination character ${params[3]} for Beacon repeatingrow;copybyfieldmatch.`);
+							break;
+						}
+
+						const copied = await copyBeaconRepeatingRowByFieldMatch(
+							sourceCharacter.id,
+							destCharacter.id,
+							params[4],
+							params[7] || params[4],
+							params[5],
+							params[6],
+							cardParameters.debug == 1
+						);
+						if (copied.success) {
+							stringVariables["SC_LAST_CREATED_ROWID"] = copied.rowId;
+						} else if (copied.noMatch) {
+							if (cardParameters.debug == 1) {
+								log(`ScriptCards Beacon repeatingrow;copybyfieldmatch: ${copied.error}.`);
+							}
+						} else {
+							log(`ScriptCards Error: Beacon repeatingrow;copybyfieldmatch failed: ${copied.error}.`);
+						}
+						break;
+					}
+
+					if (String(cardParameters.beaconsheet) === "1" && repeatingRowOperation === "copyfromdatagrid") {
+						stringVariables["SC_LAST_CREATED_ROWID"] = "";
+						log(
+							`ScriptCards Error: Beacon repeatingrow;copyfromdatagrid is not supported because ` +
+							`data-grid rows do not define canonical Beacon record structure. ` +
+							`No Roll20 Attribute objects were created.`
+						);
+						break;
+					}
+
 					var variableName = thisTag.substring(1);
 					if (params.length >= 6) {
 						if (params[1].toLowerCase() == "copybyindex") {
@@ -5698,6 +6788,18 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							let sourceRow = params[5];
 							let destRepeatinSection = section;
 							if (params[6]) { destRepeatinSection = params[6]; }
+							stringVariables["SC_LAST_CREATED_ROWID"] = "";
+
+							if (!sourceCharacter) {
+								log(`ScriptCards Error: Unable to find source character ${params[2]} for repeatingrow;copybyindex.`);
+								break;
+							}
+							if (!destCharacter) {
+								log(`ScriptCards Error: Unable to find destination character ${params[3]} for repeatingrow;copybyindex.`);
+								break;
+							}
+
+
 							repeatingSectionIDs = getRepeatingSectionIDs(params[2], params[4]);
 							if (repeatingSectionIDs) {
 								repeatingIndex = Number(sourceRow);
@@ -5720,18 +6822,29 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							let matchValue = params[6];
 							let destRepeatinSection = section;
 							if (params[7]) { destRepeatinSection = params[7]; }
+							stringVariables["SC_LAST_CREATED_ROWID"] = "";
+
+							if (!sourceCharacter) {
+								log(`ScriptCards Error: Unable to find source character ${params[2]} for repeatingrow;copybyfieldmatch.`);
+								break;
+							}
+							if (!destCharacter) {
+								log(`ScriptCards Error: Unable to find destination character ${params[3]} for repeatingrow;copybyfieldmatch.`);
+								break;
+							}
+
+
 							repeatingSectionIDs = getRepeatingSectionIDs(params[2], params[4]);
 							if (repeatingSectionIDs) {
 								repeatingCharID = sourceCharacter.id;
 								repeatingSectionName = section;
 								fillCharAttrs(findObjs({ _type: 'attribute', _characterid: repeatingCharID }));
 								repeatingSection = getSectionAttrsEx(sourceCharacter.id, matchValue, section, matchField, true, "-|-");
-								if (repeatingSection) {
+								if (Array.isArray(repeatingSection) && repeatingSection.length > 0) {
 									copyRepeatingSectionRow(destCharacter, repeatingSectionName, repeatingSection, "-|-", destRepeatinSection);
-								} else {
 								}
-							} else {
-								log(`DEBUG: repeatingSectionIDs not found`);
+							} else if (cardParameters.debug == 1) {
+								log(`ScriptCards repeatingrow;copybyfieldmatch: no source repeating rows were found in ${section}.`);
 							}
 						}
 					}
@@ -5858,6 +6971,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 						);
 					}
 					break;
+				}
 
 				case "turnorder":
 					var variableName = thisTag.substring(1);
@@ -6224,6 +7338,18 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				case "attribute":
 					if (params.length > 4) {
 						if (params[1].toLowerCase() == "set") {
+							if (String(cardParameters.beaconsheet) === "1") {
+								const beaconAttributeResult = await setBeaconAttributeFunction(
+									params[2],
+									params[3],
+									params[4],
+									cardParameters.debug === "1"
+								);
+								if (!beaconAttributeResult.success) {
+									log(`ScriptCards Error: Beacon attribute;set failed: ${beaconAttributeResult.error}.`);
+								}
+								break;
+							}
 							var theCharacter = getObj("character", params[2]);
 							if (theCharacter) {
 								var oldAttrs = findObjs({ _type: "attribute", _characterid: params[2], name: params[3].trim() });
@@ -6705,29 +7831,40 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 								hashTables[hashname] = {};
 
-								let sectionIDs = getRepeatingSectionIDs(charid, sectionname)
-
-								for (let x = 0; x < sectionIDs.length; x++) {
-									let thisSection = getSectionAttrsByID(charid, sectionname, sectionIDs[x])
-									for (let y = 0; y < thisSection.length; y++) {
-										let rowName = thisSection[y].split("|")[0]
-										let rowValue = thisSection[y].split("|")[1]
-										if (rowName.toLowerCase() == identifier) {
-											rowID = rowValue
+								if (String(cardParameters.beaconsheet) === "1") {
+									const beaconState = await buildBeaconRepeatingState(charid, sectionname, cardParameters.debug === "1");
+									if (beaconState) {
+										for (let rowIndex = 0; rowIndex < beaconState.rows.length; rowIndex++) {
+											const identifierValue = await getBeaconRepeatingField(beaconState, rowIndex, identifier, "current", cardParameters.debug === "1");
+											rowID = normalizeRepeatingHashValue(identifierValue);
+											const rowFields = await getBeaconRepeatingHashFields(beaconState, rowIndex, identifier, cardParameters.debug === "1");
+											for (const [rowName, rowValue] of Object.entries(rowFields)) {
+												hashTables[hashname][rowID + "_" + rowName] = normalizeRepeatingHashValue(rowValue)
+											}
+											hashTables[hashname][rowID + "_sectionid"] = beaconState.rows[rowIndex].id
 										}
 									}
+								} else {
+									let sectionIDs = getRepeatingSectionIDs(charid, sectionname)
 
-									for (let y = 0; y < thisSection.length; y++) {
-										let rowName = thisSection[y].split("|")[0]
-										let rowValue = thisSection[y].split("|")[1]
-										if (rowValue.indexOf("@{") > -1) { rowValue = "Unsupported (AttrRef)" }
-										if (rowValue.indexOf("[[") > -1) { rowValue = "Unsupported (InlineRoll)" }
-										if (rowValue.indexOf("{{") > -1) { rowValue = "Unsupported (TemplateRef)" }
-										if (!rowValue) { rowValue = "" }
-										hashTables[hashname][rowID + "_" + rowName] = rowValue
+									for (let x = 0; x < sectionIDs.length; x++) {
+										let thisSection = getSectionAttrsByID(charid, sectionname, sectionIDs[x])
+										for (let y = 0; y < thisSection.length; y++) {
+											let rowName = thisSection[y].split("|")[0]
+											let rowValue = thisSection[y].split("|")[1]
+											if (rowName.toLowerCase() == identifier) {
+												rowID = rowValue
+											}
+										}
+
+										for (let y = 0; y < thisSection.length; y++) {
+											let rowName = thisSection[y].split("|")[0]
+											let rowValue = normalizeRepeatingHashValue(thisSection[y].split("|")[1])
+											hashTables[hashname][rowID + "_" + rowName] = rowValue
+										}
+										hashTables[hashname][rowID + "_sectionid"] = sectionIDs[x]
+
 									}
-									hashTables[hashname][rowID + "_sectionid"] = sectionIDs[x]
-
 								}
 							} catch (e) {
 								log(`ScriptCards: Error occured converting repeating section to hash table: ${e}`)
@@ -6743,15 +7880,25 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 								hashTables[hashname] = {};
 
-								let thisSection = getSectionAttrsByID(charid, sectionname, sectionID)
-								for (let y = 0; y < thisSection.length; y++) {
-									let rowName = thisSection[y].split("|")[0]
-									let rowValue = thisSection[y].split("|")[1]
-									if (rowValue.indexOf("@{") > -1) { rowValue = "Unsupported (AttrRef)" }
-									if (rowValue.indexOf("[[") > -1) { rowValue = "Unsupported (InlineRoll)" }
-									if (rowValue.indexOf("{{") > -1) { rowValue = "Unsupported (TemplateRef)" }
-									if (!rowValue) { rowValue = "" }
-									hashTables[hashname][rowName] = rowValue
+								if (String(cardParameters.beaconsheet) === "1") {
+									const beaconState = await buildBeaconRepeatingState(charid, sectionname, cardParameters.debug === "1");
+									if (beaconState) {
+										const rowIndex = beaconState.rows.findIndex((row) => String(row.id) === String(sectionID));
+										if (rowIndex >= 0) {
+											const rowFields = await getBeaconRepeatingHashFields(beaconState, rowIndex, undefined, cardParameters.debug === "1");
+											for (const [rowName, rowValue] of Object.entries(rowFields)) {
+												hashTables[hashname][rowName] = normalizeRepeatingHashValue(rowValue)
+											}
+											hashTables[hashname]["_sectionid"] = beaconState.rows[rowIndex].id
+										}
+									}
+								} else {
+									let thisSection = getSectionAttrsByID(charid, sectionname, sectionID)
+									for (let y = 0; y < thisSection.length; y++) {
+										let rowName = thisSection[y].split("|")[0]
+										let rowValue = normalizeRepeatingHashValue(thisSection[y].split("|")[1])
+										hashTables[hashname][rowName] = rowValue
+									}
 								}
 							} catch (e) {
 								log(`ScriptCards: Error occured converting repeating row to hash table: ${e}`)
@@ -7045,12 +8192,16 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 														if (!charobj) {
 															foundTokens.splice(t, 1);
 														} else {
-															try {
-																var attrFind = findObjs({ type: 'attribute', characterid: charobj.id, name: attrFilter })[0]
-																if (!attrFind || attrFind.get('current').toLowerCase().trim() !== attrValue) {
-																	foundTokens.splice(t, 1);
-																}
-															} catch (e) {
+															const attributeResult = await getPageTokenCharacterAttributeValue(
+																charobj,
+																attrFilter,
+																String(cardParameters.beaconsheet) === "1",
+																cardParameters.debug === "1"
+															);
+															const comparableValue = attributeResult.found
+																? String(attributeResult.value == null ? "" : attributeResult.value).toLowerCase().trim()
+																: undefined;
+															if (!attributeResult.found || comparableValue !== attrValue) {
 																foundTokens.splice(t, 1);
 															}
 														}
@@ -7060,13 +8211,17 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 														if (!charobj) {
 															foundTokens.splice(t, 1);
 														} else {
-															try {
-																var attrFind = findObjs({ type: 'attribute', characterid: charobj.id, name: attrFilter })[0]
-																if (!attrFind || attrFind.get('current').toLowerCase().trim().indexOf(attrValue) == -1) {
-																	foundTokens.splice(t, 1);
-																}
-															} catch (e) {
-																//
+															const attributeResult = await getPageTokenCharacterAttributeValue(
+																charobj,
+																attrFilter,
+																String(cardParameters.beaconsheet) === "1",
+																cardParameters.debug === "1"
+															);
+															const comparableValue = attributeResult.found
+																? String(attributeResult.value == null ? "" : attributeResult.value).toLowerCase().trim()
+																: undefined;
+															if (!attributeResult.found || comparableValue.indexOf(attrValue) === -1) {
+																foundTokens.splice(t, 1);
 															}
 														}
 														break;
@@ -7450,18 +8605,28 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							if (params[2] !== "") {
 								try {
 									arrayVariables[params[2]] = [];
-									var pushValue = "";
-									var localSectionIDs = getRepeatingSectionIDs(params[3], params[4]);
-									if (localSectionIDs && localSectionIDs.length > 0) {
-										for (var x = 0; x < localSectionIDs.length; x++) {
-											var thisRepeatingSection = getSectionAttrsByID(params[3], params[4], localSectionIDs[x]);
-											pushValue = "";
-											for (var q = 0; q < thisRepeatingSection.length; q++) {
-												if (thisRepeatingSection[q].split("|")[0] == params[5]) {
-													pushValue = thisRepeatingSection[q].split("|")[1];
-												}
+									if (String(cardParameters.beaconsheet) === "1") {
+										const beaconState = await buildBeaconRepeatingState(params[3], params[4], cardParameters.debug === "1");
+										if (beaconState) {
+											for (let rowIndex = 0; rowIndex < beaconState.rows.length; rowIndex++) {
+												const value = await getBeaconRepeatingField(beaconState, rowIndex, params[5], "current", cardParameters.debug === "1");
+												arrayVariables[params[2]].push(value === undefined ? "" : value);
 											}
-											arrayVariables[params[2]].push(pushValue);
+										}
+									} else {
+										var pushValue = "";
+										var localSectionIDs = getRepeatingSectionIDs(params[3], params[4]);
+										if (localSectionIDs && localSectionIDs.length > 0) {
+											for (var x = 0; x < localSectionIDs.length; x++) {
+												var thisRepeatingSection = getSectionAttrsByID(params[3], params[4], localSectionIDs[x]);
+												pushValue = "";
+												for (var q = 0; q < thisRepeatingSection.length; q++) {
+													if (thisRepeatingSection[q].split("|")[0] == params[5]) {
+														pushValue = thisRepeatingSection[q].split("|")[1];
+													}
+												}
+												arrayVariables[params[2]].push(pushValue);
+											}
 										}
 									}
 								} catch {
@@ -7475,29 +8640,43 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 							if (params[2] !== "") {
 								try {
 									arrayVariables[params[2]] = [];
-									var pushValue = "";
-									var localSectionIDs = getRepeatingSectionIDs(params[3], params[4]);
 									var attrList = params[5].split(":");
-									if (localSectionIDs && localSectionIDs.length > 0) {
-										for (var x = 0; x < localSectionIDs.length; x++) {
-											pushValue = [];
-											var thisRepeatingSection = getSectionAttrsByID(params[3], params[4], localSectionIDs[x]);
-											for (var y = 0; y < attrList.length; y++) {
-												var found = false
-												for (var q = 0; q < thisRepeatingSection.length; q++) {
-													if (thisRepeatingSection[q].split("|")[0] == attrList[y]) {
-														if (thisRepeatingSection[q].split("|")[1] != null) {
-															pushValue.push(thisRepeatingSection[q].split("|")[1]);
-															found = true
-														} else {
-															pushValue.push("");
-														}
-
-													}
+									if (String(cardParameters.beaconsheet) === "1") {
+										const beaconState = await buildBeaconRepeatingState(params[3], params[4], cardParameters.debug === "1");
+										if (beaconState) {
+											for (let rowIndex = 0; rowIndex < beaconState.rows.length; rowIndex++) {
+												const rowValues = [];
+												for (const fieldName of attrList) {
+													const value = await getBeaconRepeatingField(beaconState, rowIndex, fieldName, "current", cardParameters.debug === "1");
+													rowValues.push(value === undefined ? "" : value);
 												}
-												if (!found) { pushValue.push(""); }
+												arrayVariables[params[2]].push(rowValues.join(params[6]));
 											}
-											arrayVariables[params[2]].push(pushValue.join(params[6]));
+										}
+									} else {
+										var pushValue = "";
+										var localSectionIDs = getRepeatingSectionIDs(params[3], params[4]);
+										if (localSectionIDs && localSectionIDs.length > 0) {
+											for (var x = 0; x < localSectionIDs.length; x++) {
+												pushValue = [];
+												var thisRepeatingSection = getSectionAttrsByID(params[3], params[4], localSectionIDs[x]);
+												for (var y = 0; y < attrList.length; y++) {
+													var found = false
+													for (var q = 0; q < thisRepeatingSection.length; q++) {
+														if (thisRepeatingSection[q].split("|")[0] == attrList[y]) {
+															if (thisRepeatingSection[q].split("|")[1] != null) {
+																pushValue.push(thisRepeatingSection[q].split("|")[1]);
+																found = true
+															} else {
+																pushValue.push("");
+															}
+
+														}
+													}
+													if (!found) { pushValue.push(""); }
+												}
+												arrayVariables[params[2]].push(pushValue.join(params[6]));
+											}
 										}
 									}
 								} catch {
@@ -7549,7 +8728,2984 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		}
 	}
 
-	function handleRepeatingAttributeCommands(thisTag, thisContent, cardParameters) {
+
+	const BEACON_REPEATING_VISIBLE_FIELDS = new Set(["name", "label", "title"]);
+	const BEACON_REPEATING_CLASSIFIER_SUFFIXES = ["type", "category", "section", "level"];
+	const BEACON_RECORD_ORDER_FIELDS = ["arrayPosition", "position", "order", "index"];
+	const BEACON_REPEATING_PROTECTED_FIELDS = new Set([
+		"id", "uuid", "shortid", "xxxactionidxxxx", "enabled",
+		"arrayposition", "position", "order", "index",
+		"createdtime", "created", "timestamp", "parentid", "childids", "relations",
+		"scriptcardsrepeatingsection"
+	]);
+	const BEACON_REPEATING_LOCAL_READ_EXCLUDED_FIELDS = new Set([
+		...BEACON_REPEATING_PROTECTED_FIELDS,
+		"type", "kind", "category", "subtype", "section", "recordtype", "entrytype", "level"
+	]);
+	const BEACON_REPEATING_CONTENT_FIELDS = new Set([
+		"name", "label", "title", "slug", "description", "text", "notes",
+		"display", "displayname", "builderdisplayname", "source",
+		...BEACON_REPEATING_PROTECTED_FIELDS,
+		"value", "current", "max", "maximum", "flatvalue",
+		"valueformula", "formula", "amount", "quantity"
+	]);
+
+	function normalizeBeaconOriginalRepeatingSection(sectionName) {
+		const requestedSection = String(sectionName == null ? "" : sectionName).trim();
+		if (!requestedSection) {
+			return "";
+		}
+		return requestedSection.toLowerCase().startsWith("repeating_")
+			? requestedSection
+			: `repeating_${requestedSection}`;
+	}
+
+
+	function beaconRepeatingCreationComparable(value) {
+		if (value === null || value === undefined) {
+			return String(value);
+		}
+		if (typeof value === "string") {
+			return value.trim().toLowerCase();
+		}
+		return String(value);
+	}
+
+	function beaconRepeatingCreationStructuralField(fieldName, fieldValue, sectionName) {
+		const normalized = normalizeBeaconLookupName(fieldName);
+		if (["type", "kind", "category"].includes(normalized)) {
+			return true;
+		}
+		if (["subtype", "section", "recordtype", "entrytype"].includes(normalized)) {
+			return true;
+		}
+
+		const classifierSuffix = BEACON_REPEATING_CLASSIFIER_SUFFIXES
+			.find((suffix) => normalized.endsWith(suffix));
+		if (!classifierSuffix) {
+			return false;
+		}
+
+		const normalizedSection = normalizeBeaconLookupName(
+			String(sectionName == null ? "" : sectionName).replace(/^repeating_/i, "")
+		);
+		const normalizedValue = normalizeBeaconLookupName(fieldValue);
+		if (!normalizedSection || !normalizedValue) {
+			return false;
+		}
+		const fieldStem = normalized.substring(0, normalized.length - classifierSuffix.length);
+		return normalizedSection.includes(normalizedValue)
+			|| normalizedValue.includes(normalizedSection)
+			|| (fieldStem && normalizedSection.includes(fieldStem));
+	}
+
+	function beaconRepeatingRelationshipHasValues(value) {
+		const parsed = parseBeaconStructuredValue(value);
+		const relationshipValue = parsed === undefined ? value : parsed;
+		if (Array.isArray(relationshipValue)) {
+			return relationshipValue.some((item) => String(item == null ? "" : item).trim() !== "");
+		}
+		if (relationshipValue && typeof relationshipValue === "object") {
+			return Object.keys(relationshipValue).length > 0;
+		}
+		return String(relationshipValue == null ? "" : relationshipValue).trim() !== "";
+	}
+
+	function beaconRepeatingRecordHasMeaningfulFields(record, sectionName) {
+		if (!record || typeof record !== "object" || Array.isArray(record)) {
+			return false;
+		}
+		return Object.entries(record).some(([fieldName, fieldValue]) => {
+			const normalizedField = normalizeBeaconLookupName(fieldName);
+			if (normalizedField === "childids" || normalizedField === "relations") {
+				return beaconRepeatingRelationshipHasValues(fieldValue);
+			}
+			if (!normalizedField
+				|| normalizedField === "scriptcardsrepeatingsection"
+				|| BEACON_REPEATING_PROTECTED_FIELDS.has(normalizedField)
+				|| beaconRepeatingCreationStructuralField(fieldName, fieldValue, sectionName)) {
+				return false;
+			}
+			if (fieldValue === undefined || fieldValue === null || fieldValue === "") {
+				return false;
+			}
+			if (Array.isArray(fieldValue)) {
+				return fieldValue.length > 0;
+			}
+			if (typeof fieldValue === "object") {
+				return Object.keys(fieldValue).length > 0;
+			}
+			return true;
+		});
+	}
+
+
+	function beaconRepeatingCreationChildCount(record) {
+		const childIDs = beaconProperty(record, "childIDs");
+		if (Array.isArray(childIDs)) {
+			return childIDs.length;
+		}
+		const parsed = parseBeaconStructuredValue(childIDs);
+		return Array.isArray(parsed) ? parsed.length : 0;
+	}
+
+	function chooseBeaconRepeatingCreationRow(state) {
+		if (!state || !Array.isArray(state.rows)) {
+			return undefined;
+		}
+		const rows = state.rows.filter((row) =>
+			row
+			&& row.record
+			&& typeof row.record === "object"
+			&& !Array.isArray(row.record)
+			&& row.rootName
+			&& Array.isArray(row.path)
+			&& row.path.length > 0
+		);
+		rows.sort((left, right) => {
+			const leftScore = beaconRepeatingCreationChildCount(left.record) * 100
+				+ Object.values(left.record).filter((value) => value && typeof value === "object").length * 10
+				+ Object.keys(left.record).length;
+			const rightScore = beaconRepeatingCreationChildCount(right.record) * 100
+				+ Object.values(right.record).filter((value) => value && typeof value === "object").length * 10
+				+ Object.keys(right.record).length;
+			return leftScore - rightScore;
+		});
+		return rows[0];
+	}
+
+	function buildBeaconRepeatingCreationProfile(state) {
+		const exemplarRow = chooseBeaconRepeatingCreationRow(state);
+		if (!exemplarRow) {
+			return undefined;
+		}
+
+		const exemplar = exemplarRow.record;
+		const canonicalRows = state.rows
+			.filter((row) =>
+				row
+				&& row.record
+				&& typeof row.record === "object"
+				&& !Array.isArray(row.record)
+				&& row.attributeId
+				&& row.rootName
+				&& Array.isArray(row.path)
+				&& row.path.length > 0
+			)
+			.map((row) => row.record);
+		const membershipFields = {};
+
+		for (const [fieldName, fieldValue] of Object.entries(exemplar)) {
+			if (fieldValue === undefined || !beaconPrimitive(fieldValue)) {
+				continue;
+			}
+			const normalizedField = normalizeBeaconLookupName(fieldName);
+			const alwaysCopy = ["type", "kind", "category"].includes(normalizedField);
+			if (!alwaysCopy && !beaconRepeatingCreationStructuralField(fieldName, fieldValue, state.sectionName)) {
+				continue;
+			}
+			if (BEACON_REPEATING_CONTENT_FIELDS.has(normalizedField)) {
+				continue;
+			}
+
+			const sharedBySection = canonicalRows.every((record) => {
+				const key = beaconOwnPropertyKey(record, fieldName);
+				return key !== undefined
+					&& record[key] !== undefined
+					&& beaconPrimitive(record[key])
+					&& beaconRepeatingCreationComparable(record[key]) === beaconRepeatingCreationComparable(fieldValue);
+			});
+			if (alwaysCopy || sharedBySection || canonicalRows.length === 1) {
+				membershipFields[fieldName] = fieldValue;
+			}
+		}
+
+		return {
+			rootName: exemplarRow.rootName,
+			rootAttributeName: exemplarRow.rootAttributeName || exemplarRow.rootName,
+			rootAttributeId: exemplarRow.attributeId,
+			parentPath: exemplarRow.path.slice(0, -1),
+			exemplar: JSON.parse(JSON.stringify(exemplar)),
+			membershipFields
+		};
+	}
+
+	function generateBeaconRepeatingShortID(characterId) {
+		const indexed = getBeaconTypedCollectionIndex(characterId, "current", false);
+		for (let attempt = 0; attempt < 100; attempt++) {
+			const candidate = generateRowID().slice(-9);
+			if (!findBeaconRepeatingCanonicalEntry(indexed, candidate)) {
+				return candidate;
+			}
+		}
+		return generateRowID();
+	}
+
+	function parseBeaconOriginalRepeatingFields(content) {
+		const text = String(content == null ? "" : content);
+		if (!text.trim()) {
+			return [];
+		}
+		return text.split(/(?<![\\\\])\|/)
+			.map((fieldText) => {
+				const parts = fieldText.split(":");
+				const name = String(parts.shift() || "").trim();
+				const current = String(parts.shift() || "").replace(/%3A/gi, ":").replace(/\\\\\|/gi, "|").trim();
+				const max = parts.join(":").replace(/%3A/gi, ":").replace(/\\\\\|/gi, "|").trim();
+				return { name, current, max };
+			})
+			.filter((field) => field.name);
+	}
+
+	function parseBeaconBooleanValue(value) {
+		if (typeof value === "boolean") {
+			return { success: true, value };
+		}
+		const normalized = String(value).trim().toLowerCase();
+		if (["1", "true", "yes", "on"].includes(normalized)) {
+			return { success: true, value: true };
+		}
+		if (["0", "false", "no", "off"].includes(normalized)) {
+			return { success: true, value: false };
+		}
+		return { success: false };
+	}
+
+	function coerceBeaconRepeatingCreationValue(value, sampleValue) {
+		if (typeof sampleValue === "number" && isNumber(value)) {
+			return Number(value);
+		}
+		if (typeof sampleValue === "boolean") {
+			const parsedBoolean = parseBeaconBooleanValue(value);
+			if (parsedBoolean.success) {
+				return parsedBoolean.value;
+			}
+		}
+		return value;
+	}
+
+	function resolveBeaconRepeatingCreationField(profile, fieldName) {
+		const exemplar = profile.exemplar || {};
+		return beaconOwnPropertyKey(exemplar, fieldName) || fieldName;
+	}
+
+	function beaconRepeatingResetValue(sampleValue) {
+		if (Array.isArray(sampleValue)) {
+			return [];
+		}
+		if (sampleValue && typeof sampleValue === "object") {
+			return {};
+		}
+		if (typeof sampleValue === "string") {
+			const parsed = parseBeaconStructuredValue(sampleValue);
+			if (Array.isArray(parsed)) {
+				return "[]";
+			}
+			if (parsed && typeof parsed === "object") {
+				return "{}";
+			}
+		}
+		return "";
+	}
+
+	function beaconRepeatingIdentityValue(fieldName, sampleValue, rowId) {
+		const normalizedField = normalizeBeaconLookupName(fieldName);
+		if (normalizedField === "uuid") {
+			return uuidv4();
+		}
+		if (normalizedField === "id"
+			&& typeof sampleValue === "string"
+			&& /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(sampleValue)) {
+			return uuidv4();
+		}
+		return rowId;
+	}
+
+	function applyBeaconRepeatingCreationBase(record, profile, characterId, siblingRecords) {
+		const exemplar = profile.exemplar || {};
+		const protectedFields = new Set();
+		const availableFields = Array.from(new Set(
+			Object.keys(record).concat(Object.keys(exemplar))
+		));
+
+		let identityFields = availableFields.filter((fieldName) =>
+			["id", "uuid", "shortid", "xxxactionidxxxx"].includes(normalizeBeaconLookupName(fieldName))
+		);
+		if (!identityFields.length) {
+			identityFields = ["shortID"];
+		}
+		const primaryIdentityField = identityFields.find((fieldName) =>
+			normalizeBeaconLookupName(fieldName) === "shortid"
+		) || identityFields.find((fieldName) =>
+			normalizeBeaconLookupName(fieldName) === "xxxactionidxxxx"
+		) || identityFields.find((fieldName) =>
+			normalizeBeaconLookupName(fieldName) === "uuid"
+		) || identityFields[0];
+		const primarySampleKey = beaconOwnPropertyKey(exemplar, primaryIdentityField);
+		const primarySampleValue = primarySampleKey === undefined
+			? record[primaryIdentityField]
+			: exemplar[primarySampleKey];
+		const primaryIdentityName = normalizeBeaconLookupName(primaryIdentityField);
+		const rowId = primaryIdentityName === "uuid"
+			|| (primaryIdentityName === "id"
+				&& typeof primarySampleValue === "string"
+				&& /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(primarySampleValue))
+			? uuidv4()
+			: generateBeaconRepeatingShortID(characterId);
+		for (const fieldName of identityFields) {
+			const sampleKey = beaconOwnPropertyKey(exemplar, fieldName);
+			const sampleValue = sampleKey === undefined ? record[fieldName] : exemplar[sampleKey];
+			record[fieldName] = fieldName === primaryIdentityField
+				? rowId
+				: beaconRepeatingIdentityValue(fieldName, sampleValue, rowId);
+			protectedFields.add(fieldName);
+		}
+
+		let enabledFields = availableFields.filter((fieldName) =>
+			normalizeBeaconLookupName(fieldName) === "enabled"
+		);
+		if (!enabledFields.length) {
+			enabledFields = ["_enabled"];
+		}
+		for (const fieldName of enabledFields) {
+			record[fieldName] = true;
+			protectedFields.add(fieldName);
+		}
+
+		const normalizedOrderFields = BEACON_RECORD_ORDER_FIELDS
+			.map((candidate) => normalizeBeaconLookupName(candidate));
+		let orderFields = availableFields.filter((fieldName) =>
+			normalizedOrderFields.includes(normalizeBeaconLookupName(fieldName))
+		);
+		if (!orderFields.length) {
+			orderFields = ["arrayPosition"];
+		}
+		const primaryOrderField = orderFields[0];
+		let highestOrder = -1;
+		for (const sibling of siblingRecords) {
+			const siblingOrder = Number(beaconProperty(sibling, primaryOrderField));
+			if (Number.isFinite(siblingOrder) && siblingOrder > highestOrder) {
+				highestOrder = siblingOrder;
+			}
+		}
+		for (const fieldName of orderFields) {
+			record[fieldName] = highestOrder + 1;
+			protectedFields.add(fieldName);
+		}
+
+		const now = Date.now();
+		for (const fieldName of availableFields) {
+			const normalizedField = normalizeBeaconLookupName(fieldName);
+			const sampleKey = beaconOwnPropertyKey(exemplar, fieldName);
+			const sampleValue = Object.prototype.hasOwnProperty.call(record, fieldName)
+				? record[fieldName]
+				: (sampleKey === undefined ? undefined : exemplar[sampleKey]);
+			if (normalizedField === "parentid") {
+				record[fieldName] = beaconRepeatingResetValue(sampleValue);
+				protectedFields.add(fieldName);
+			} else if (normalizedField === "childids" || normalizedField === "relations") {
+				record[fieldName] = beaconRepeatingResetValue(sampleValue);
+				protectedFields.add(fieldName);
+			} else if (["createdtime", "created", "timestamp"].includes(normalizedField)) {
+				record[fieldName] = typeof sampleValue === "string" ? String(now) : now;
+				protectedFields.add(fieldName);
+			}
+		}
+
+		return {
+			rowId,
+			protectedFields: Array.from(protectedFields)
+		};
+	}
+
+	function beaconRepeatingCreationProtectedFields(profile, baseInfo) {
+		return new Set(
+			Array.from(BEACON_REPEATING_PROTECTED_FIELDS)
+				.concat(Object.keys(profile.membershipFields || {}))
+				.concat(baseInfo.protectedFields || [])
+				.map((field) => normalizeBeaconLookupName(field))
+				.filter((field) => field)
+		);
+	}
+
+	function getBeaconStructuredContainer(root, path) {
+		let container = root;
+		for (let index = 0; index < path.length; index++) {
+			const selected = selectBeaconStructuredWriteKey(container, path[index]);
+			if (!selected.success) {
+				return { success: false, error: `${selected.error} at ${path.slice(0, index + 1).join("->")}` };
+			}
+			container = container[selected.key];
+		}
+		return container && typeof container === "object"
+			? { success: true, container }
+			: { success: false, error: `the selected Beacon container is not an object or array` };
+	}
+
+
+	function cloneBeaconRepeatingCreationProfile(profile) {
+		if (!profile || typeof profile !== "object") {
+			return undefined;
+		}
+		try {
+			const cloned = JSON.parse(JSON.stringify(profile));
+			delete cloned.rootAttributeId;
+			return cloned;
+		} catch (error) {
+			return undefined;
+		}
+	}
+
+	function deriveBeaconRepeatingNumericDestinationProfile(
+		sourceProfile,
+		sourceSectionName,
+		destinationSectionName
+	) {
+		const sourceStem = beaconRepeatingCanonicalSectionStem(sourceSectionName);
+		const destinationStem = beaconRepeatingCanonicalSectionStem(destinationSectionName);
+		const sourceNumbers = Array.from(sourceStem.matchAll(/\d+/g), (match) => Number(match[0]));
+		const destinationNumbers = Array.from(destinationStem.matchAll(/\d+/g), (match) => Number(match[0]));
+		if (sourceNumbers.length !== 1 || destinationNumbers.length !== 1) {
+			return undefined;
+		}
+		if (sourceStem.replace(/\d+/g, "") !== destinationStem.replace(/\d+/g, "")) {
+			return undefined;
+		}
+		const profile = cloneBeaconRepeatingCreationProfile(sourceProfile);
+		if (!profile) {
+			return undefined;
+		}
+		let changed = false;
+		for (const fieldName of Object.keys(profile.membershipFields || {})) {
+			if (!normalizeBeaconLookupName(fieldName).endsWith("level")) {
+				continue;
+			}
+			const sourceValue = profile.membershipFields[fieldName];
+			if (Number(sourceValue) !== sourceNumbers[0]) {
+				continue;
+			}
+			profile.membershipFields[fieldName] = typeof sourceValue === "string"
+				? String(destinationNumbers[0])
+				: destinationNumbers[0];
+			const exemplarField = beaconOwnPropertyKey(profile.exemplar || {}, fieldName);
+			if (exemplarField !== undefined) {
+				const exemplarValue = profile.exemplar[exemplarField];
+				profile.exemplar[exemplarField] = typeof exemplarValue === "string"
+					? String(destinationNumbers[0])
+					: destinationNumbers[0];
+			}
+			changed = true;
+		}
+		return changed ? profile : undefined;
+	}
+
+	function getBeaconRepeatingCreationProfileSchemaSample(value) {
+		if (Array.isArray(value)) {
+			return { type: "array" };
+		}
+		if (value && typeof value === "object") {
+			return {
+				type: "object",
+				keys: Object.keys(value).sort().reduce((result, key) => {
+					result[key] = getBeaconRepeatingCreationProfileSchemaSample(value[key]);
+					return result;
+				}, {})
+			};
+		}
+		if (typeof value === "string") {
+			if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value)) {
+				return { type: "uuid-string" };
+			}
+			const parsed = parseBeaconStructuredValue(value);
+			if (Array.isArray(parsed)) {
+				return { type: "json-array-string" };
+			}
+			if (parsed && typeof parsed === "object") {
+				return { type: "json-object-string" };
+			}
+		}
+		return { type: value === null ? "null" : typeof value };
+	}
+
+	function getBeaconRepeatingCreationProfileSchemaSignature(profile) {
+		if (!profile || typeof profile !== "object") {
+			return "";
+		}
+		const exemplar = profile.exemplar && typeof profile.exemplar === "object"
+			? profile.exemplar
+			: {};
+		const exemplarSchema = Object.keys(exemplar).sort().reduce((result, key) => {
+			result[key] = getBeaconRepeatingCreationProfileSchemaSample(exemplar[key]);
+			return result;
+		}, {});
+		const membershipFields = profile.membershipFields && typeof profile.membershipFields === "object"
+			? Object.keys(profile.membershipFields).sort().reduce((result, key) => {
+				result[key] = profile.membershipFields[key];
+				return result;
+			}, {})
+			: {};
+		try {
+			return JSON.stringify({
+				rootName: normalizeBeaconLookupName(profile.rootAttributeName || profile.rootName),
+				parentPath: Array.isArray(profile.parentPath) ? profile.parentPath.map((segment) => String(segment)) : [],
+				membershipFields,
+				exemplarSchema
+			});
+		} catch (error) {
+			return "";
+		}
+	}
+
+	function getBeaconRepeatingCreationProfileCache() {
+		if (!state[APINAME]) {
+			state[APINAME] = { module: APINAME, schemaVersion: APIVERSION, config: {}, persistentVariables: {} };
+		}
+		if (!state[APINAME].beaconRepeatingCreationProfiles
+			|| typeof state[APINAME].beaconRepeatingCreationProfiles !== "object"
+			|| Array.isArray(state[APINAME].beaconRepeatingCreationProfiles)) {
+			state[APINAME].beaconRepeatingCreationProfiles = {};
+		}
+		return state[APINAME].beaconRepeatingCreationProfiles;
+	}
+
+	function getBeaconRepeatingSheetIdentity(characterId) {
+		const character = getObj("character", characterId);
+		const sheetName = character ? character.get("charactersheetname") : "";
+		return normalizeBeaconLookupName(sheetName || "unknown-beacon-sheet");
+	}
+
+	function getBeaconRepeatingCreationProfileCacheKey(characterId, sectionName) {
+		const normalizedSection = normalizeBeaconOriginalRepeatingSection(sectionName);
+		if (!normalizedSection) {
+			return "";
+		}
+		return `${getBeaconRepeatingSheetIdentity(characterId)}\u0000${normalizeBeaconLookupName(normalizedSection)}`;
+	}
+
+	function cacheBeaconRepeatingCreationProfile(characterId, sectionName, profile) {
+		const cacheKey = getBeaconRepeatingCreationProfileCacheKey(characterId, sectionName);
+		const cachedProfile = cloneBeaconRepeatingCreationProfile(profile);
+		if (!cacheKey || !cachedProfile) {
+			return false;
+		}
+		const cache = getBeaconRepeatingCreationProfileCache();
+		const existingSignature = getBeaconRepeatingCreationProfileSchemaSignature(cache[cacheKey]);
+		const proposedSignature = getBeaconRepeatingCreationProfileSchemaSignature(cachedProfile);
+		if (existingSignature && existingSignature === proposedSignature) {
+			return false;
+		}
+		cache[cacheKey] = cachedProfile;
+		return true;
+	}
+
+	function getCachedBeaconRepeatingCreationProfile(characterId, sectionName) {
+		const cacheKey = getBeaconRepeatingCreationProfileCacheKey(characterId, sectionName);
+		const cached = cacheKey ? getBeaconRepeatingCreationProfileCache()[cacheKey] : undefined;
+		const profile = cloneBeaconRepeatingCreationProfile(cached);
+		if (!profile || !profile.parentPath || !Array.isArray(profile.parentPath)) {
+			return undefined;
+		}
+		const normalizedProfileRoot = normalizeBeaconLookupName(profile.rootAttributeName || profile.rootName);
+		const normalizedProfilePath = profile.parentPath.map((segment) => normalizeBeaconLookupName(segment));
+		if (normalizedProfileRoot === "builder"
+			|| normalizedProfilePath.includes("alldecisions")
+			|| normalizedProfilePath.includes("decisions")) {
+			invalidateCachedBeaconRepeatingCreationProfile(characterId, sectionName);
+			return undefined;
+		}
+
+		const rootAttribute = findObjs({
+			_type: "attribute",
+			_characterid: characterId,
+			name: profile.rootAttributeName || profile.rootName
+		}, { caseInsensitive: true })[0];
+		if (!rootAttribute) {
+			return undefined;
+		}
+		const parsedRoot = parseBeaconStructuredValue(rootAttribute.get("current"));
+		if (!parsedRoot || typeof parsedRoot !== "object") {
+			return undefined;
+		}
+		const located = getBeaconStructuredContainer(parsedRoot, profile.parentPath);
+		if (!located.success) {
+			return undefined;
+		}
+		profile.rootAttributeId = rootAttribute.id;
+		profile.rootAttributeName = rootAttribute.get("name");
+		return profile;
+	}
+
+
+	function invalidateCachedBeaconRepeatingCreationProfile(characterId, sectionName) {
+		const cacheKey = getBeaconRepeatingCreationProfileCacheKey(characterId, sectionName);
+		const cache = getBeaconRepeatingCreationProfileCache();
+		if (!cacheKey || !Object.prototype.hasOwnProperty.call(cache, cacheKey)) {
+			return false;
+		}
+		delete cache[cacheKey];
+		return true;
+	}
+
+	async function findBeaconRepeatingCreationProfile(characterId, sectionName, targetState, debug, options = {}) {
+		const skipCache = options && options.skipCache === true;
+		const logContext = options && options.logContext ? String(options.logContext) : "--!or";
+		let profile = buildBeaconRepeatingCreationProfile(targetState);
+		if (profile) {
+			const cacheUpdated = cacheBeaconRepeatingCreationProfile(characterId, sectionName, profile);
+			if (debug && cacheUpdated) {
+				log(`ScriptCards Beacon ${logContext}: refreshed the shared ${sectionName} creation profile from the destination character.`);
+			}
+			return { success: true, profile, learnedFrom: characterId, source: "destination exemplar" };
+		}
+
+		if (!skipCache) {
+			profile = getCachedBeaconRepeatingCreationProfile(characterId, sectionName);
+			if (profile) {
+				if (debug) {
+					log(`ScriptCards Beacon ${logContext}: using the shared ${sectionName} creation profile for ${getBeaconRepeatingSheetIdentity(characterId)}.`);
+				}
+				return { success: true, profile, learnedFrom: "cached profile", source: "cached profile" };
+			}
+		}
+
+		const destinationSheetIdentity = getBeaconRepeatingSheetIdentity(characterId);
+		for (const character of findObjs({ _type: "character" })) {
+			if (!character || character.id === characterId
+				|| getBeaconRepeatingSheetIdentity(character.id) !== destinationSheetIdentity) {
+				continue;
+			}
+			const candidateState = await buildBeaconRepeatingState(character.id, sectionName, false);
+			profile = buildBeaconRepeatingCreationProfile(candidateState);
+			if (profile) {
+				const cacheUpdated = cacheBeaconRepeatingCreationProfile(characterId, sectionName, profile);
+				if (debug) {
+					log(
+						`ScriptCards Beacon ${logContext}: learned ${sectionName} creation metadata from character ${character.id}`
+						+ `${cacheUpdated ? " and updated the shared profile" : " using the existing shared profile"}.`
+					);
+				}
+				return { success: true, profile, learnedFrom: character.id, source: "cross-character exemplar" };
+			}
+		}
+
+		return {
+			success: false,
+			error: `section "${sectionName}" has no native example row on the destination character or any other compatible Beacon character, and no previously learned profile is available. The current Beacon SDK does not expose a safe generic repeating-row constructor, so ScriptCards will not create an untyped record`
+		};
+	}
+
+	function ensureBeaconOriginalRepeatingVisibleName(fields) {
+		const visibleIdentity = fields.find((field) =>
+			BEACON_REPEATING_VISIBLE_FIELDS.has(normalizeBeaconLookupName(field.name))
+			&& String(field.current).trim() !== ""
+		);
+		if (!visibleIdentity) {
+			fields.push({ name: "name", current: "New Entry", max: "" });
+		}
+		return fields;
+	}
+
+
+	function clearLoadedBeaconRepeatingState(characterId) {
+		if (!repeatingBeaconState || String(repeatingBeaconState.characterId) !== String(characterId)) {
+			return;
+		}
+		setCurrentBeaconRepeatingRow(undefined, -1);
+	}
+
+	function restoreBeaconStructuredRoots(rootAttribute, rollbackProperties, characterId) {
+		try {
+			rootAttribute.setWithWorker(rollbackProperties);
+			invalidateBeaconCharacterCaches(characterId);
+			clearLoadedBeaconRepeatingState(characterId);
+			return "";
+		} catch (error) {
+			return error && error.message ? error.message : String(error);
+		}
+	}
+
+	function refreshLoadedBeaconRepeatingState(characterId, rootName, path, value) {
+		if (!repeatingBeaconState || String(repeatingBeaconState.characterId) !== String(characterId)) {
+			return;
+		}
+
+		const normalizedRoot = normalizeBeaconLookupName(rootName) === "sheet"
+			? "store"
+			: normalizeBeaconLookupName(rootName);
+		const recordPath = Array.isArray(path) ? path.slice(0, -1) : [];
+		const fieldName = Array.isArray(path) && path.length ? path[path.length - 1] : undefined;
+		const normalizedField = normalizeBeaconLookupName(fieldName);
+		if (BEACON_REPEATING_PROTECTED_FIELDS.has(normalizedField)
+			|| beaconRepeatingCreationStructuralField(fieldName, value, repeatingBeaconState.sectionName)) {
+			clearLoadedBeaconRepeatingState(characterId);
+			return;
+		}
+
+		for (const row of repeatingBeaconState.rows || []) {
+			row.values = {};
+			delete row.completeFieldEntries;
+			if (!fieldName
+				|| normalizeBeaconLookupName(row.rootName) !== normalizedRoot
+				|| !Array.isArray(row.path)
+				|| row.path.length !== recordPath.length
+				|| row.path.some((segment, index) => String(segment) !== String(recordPath[index]))) {
+				continue;
+			}
+
+			const canonicalField = beaconOwnPropertyKey(row.record || {}, fieldName);
+			if (canonicalField !== undefined) {
+				row.record[canonicalField] = value;
+				row.values[`current\u0000${String(canonicalField).toLowerCase()}`] = beaconRepeatingValue(value);
+			}
+		}
+
+		if (repeatingBeaconState.rows && repeatingBeaconState.rows[repeatingIndex]) {
+			repeatingSection = beaconRepeatingSectionArray(repeatingBeaconState.rows[repeatingIndex]);
+		}
+	}
+
+	async function pollBeaconUntilSuccess(check, attempts = 20, delayMilliseconds = 50) {
+		let result = { success: false };
+		for (let attempt = 0; attempt < attempts; attempt++) {
+			result = await check(attempt) || { success: false };
+			if (result.success) {
+				return result;
+			}
+			if (attempt < attempts - 1) {
+				await new Promise((resolve) => setTimeout(resolve, delayMilliseconds));
+			}
+		}
+		return result;
+	}
+
+	async function waitForCreatedBeaconRepeatingRow(characterId, sectionName, rowId) {
+		const result = await pollBeaconUntilSuccess(async () => {
+			invalidateBeaconCharacterCaches(characterId);
+			const state = await buildBeaconRepeatingState(characterId, sectionName, false);
+			const row = state && state.rows
+				? state.rows.find((candidate) => String(candidate.id) === String(rowId))
+				: undefined;
+			return { success: Boolean(row), row };
+		}, 10);
+		return result.success ? result.row : undefined;
+	}
+
+
+
+	async function copyBeaconRepeatingRowByFieldMatch(
+		sourceCharacterId,
+		destinationCharacterId,
+		sourceSectionName,
+		destinationSectionName,
+		matchField,
+		matchValue,
+		debug
+	) {
+		if (!getObj("character", sourceCharacterId)) {
+			return { success: false, error: `source character "${sourceCharacterId}" was not found` };
+		}
+		if (!getObj("character", destinationCharacterId)) {
+			return { success: false, error: `destination character "${destinationCharacterId}" was not found` };
+		}
+
+		const normalizedSourceSection = normalizeBeaconOriginalRepeatingSection(sourceSectionName);
+		const normalizedDestinationSection = normalizeBeaconOriginalRepeatingSection(destinationSectionName);
+		if (!normalizedSourceSection) {
+			return { success: false, error: `a source repeating-section name is required` };
+		}
+		if (!normalizedDestinationSection) {
+			return { success: false, error: `a destination repeating-section name is required` };
+		}
+		if (matchField === undefined || matchField === null || String(matchField).trim() === "") {
+			return { success: false, error: `a source-row field name is required` };
+		}
+
+		let matcher;
+		try {
+			matcher = new RegExp(String(matchValue === undefined || matchValue === null ? "" : matchValue), "i");
+		} catch (error) {
+			return {
+				success: false,
+				error: `match value "${matchValue}" is not a valid regular expression: ${error.message}`
+			};
+		}
+
+		const sourceState = await buildBeaconRepeatingState(
+			sourceCharacterId,
+			normalizedSourceSection,
+			debug
+		);
+		if (!sourceState) {
+			return {
+				success: false,
+				error: `source section "${normalizedSourceSection}" is not exposed as a Beacon repeating section`
+			};
+		}
+
+		let matchedRow;
+		let matchedIndex = -1;
+		let matchedValue = "";
+		let regexMatchedRow;
+		let regexMatchedIndex = -1;
+		let regexMatchedValue = "";
+		const literalMatchValue = String(matchValue === undefined || matchValue === null ? "" : matchValue);
+		for (let rowIndex = 0; rowIndex < (sourceState.rows || []).length; rowIndex++) {
+			const fieldValue = await getBeaconRepeatingField(
+				sourceState,
+				rowIndex,
+				matchField,
+				"current",
+				debug
+			);
+			const comparableValue = fieldValue === undefined || fieldValue === null
+				? ""
+				: String(fieldValue);
+
+			// Try a literal case-insensitive field match before fuzzy or regular-expression
+			// matching so names containing punctuation, such as "Dagger (Ranged)", do not
+			// require escaping.
+			if (comparableValue.toLowerCase() === literalMatchValue.toLowerCase()) {
+				matchedRow = sourceState.rows[rowIndex];
+				matchedIndex = rowIndex;
+				matchedValue = comparableValue;
+				break;
+			}
+			if (!regexMatchedRow && matcher.test(comparableValue)) {
+				regexMatchedRow = sourceState.rows[rowIndex];
+				regexMatchedIndex = rowIndex;
+				regexMatchedValue = comparableValue;
+			}
+		}
+		if (!matchedRow && regexMatchedRow) {
+			matchedRow = regexMatchedRow;
+			matchedIndex = regexMatchedIndex;
+			matchedValue = regexMatchedValue;
+		}
+
+		if (!matchedRow) {
+			return {
+				success: false,
+				noMatch: true,
+				error: `no row in "${normalizedSourceSection}" matched field "${matchField}" against "${matchValue}"`
+			};
+		}
+
+		const copied = await copyBeaconResolvedRepeatingRow(
+			sourceCharacterId,
+			destinationCharacterId,
+			normalizedSourceSection,
+			normalizedDestinationSection,
+			matchedRow,
+			debug,
+			"copybyfieldmatch"
+		);
+		if (copied.success) {
+			copied.matchField = String(matchField);
+			copied.matchValue = String(matchValue === undefined || matchValue === null ? "" : matchValue);
+			copied.matchedFieldValue = matchedValue;
+			copied.sourceRowIndex = matchedIndex;
+		}
+		return copied;
+	}
+
+	async function copyBeaconRepeatingRowByIndex(
+		sourceCharacterId,
+		destinationCharacterId,
+		sourceSectionName,
+		destinationSectionName,
+		sourceRowIndex,
+		debug
+	) {
+		if (!getObj("character", sourceCharacterId)) {
+			return { success: false, error: `source character "${sourceCharacterId}" was not found` };
+		}
+		if (!getObj("character", destinationCharacterId)) {
+			return { success: false, error: `destination character "${destinationCharacterId}" was not found` };
+		}
+
+		const normalizedSourceSection = normalizeBeaconOriginalRepeatingSection(sourceSectionName);
+		const normalizedDestinationSection = normalizeBeaconOriginalRepeatingSection(destinationSectionName);
+		if (!normalizedSourceSection) {
+			return { success: false, error: `a source repeating-section name is required` };
+		}
+		if (!normalizedDestinationSection) {
+			return { success: false, error: `a destination repeating-section name is required` };
+		}
+
+		const numericRowIndex = Number(sourceRowIndex);
+		if (!Number.isInteger(numericRowIndex) || numericRowIndex < 0) {
+			return { success: false, error: `source row index "${sourceRowIndex}" is not a non-negative integer` };
+		}
+
+		const sourceState = await buildBeaconRepeatingState(
+			sourceCharacterId,
+			normalizedSourceSection,
+			debug
+		);
+		if (!sourceState) {
+			return {
+				success: false,
+				error: `source section "${normalizedSourceSection}" is not exposed as a Beacon repeating section`
+			};
+		}
+		const sourceRow = sourceState.rows && sourceState.rows[numericRowIndex];
+		if (!sourceRow) {
+			return {
+				success: false,
+				error: `source section "${normalizedSourceSection}" has no row at index ${numericRowIndex}`
+			};
+		}
+
+		const copied = await copyBeaconResolvedRepeatingRow(
+			sourceCharacterId,
+			destinationCharacterId,
+			normalizedSourceSection,
+			normalizedDestinationSection,
+			sourceRow,
+			debug,
+			"copybyindex"
+		);
+		if (copied.success) {
+			copied.sourceRowIndex = numericRowIndex;
+		}
+		return copied;
+	}
+
+
+	function beaconRepeatingRelationshipIds(value) {
+		const parsed = parseBeaconStructuredValue(value);
+		if (!Array.isArray(parsed)) {
+			return [];
+		}
+		return parsed
+			.map((item) => String(item == null ? "" : item).trim())
+			.filter((item) => item !== "");
+	}
+
+	function beaconRepeatingRelationshipValue(sampleValue, ids) {
+		const normalizedIds = Array.from(ids || []).map((item) => String(item));
+		if (Array.isArray(sampleValue)) {
+			return normalizedIds;
+		}
+		if (typeof sampleValue === "string") {
+			const parsed = parseBeaconStructuredValue(sampleValue);
+			if (Array.isArray(parsed)) {
+				return JSON.stringify(normalizedIds);
+			}
+		}
+		return normalizedIds;
+	}
+
+	function setBeaconRepeatingRecordField(record, fieldName, value) {
+		const existingField = beaconOwnPropertyKey(record, fieldName);
+		record[existingField === undefined ? fieldName : existingField] = value;
+	}
+
+	function beaconRepeatingContainerRecords(container) {
+		return Array.isArray(container)
+			? container.filter((record) => record && typeof record === "object")
+			: Object.values(container).filter((record) => record && typeof record === "object");
+	}
+
+	function allocateBeaconRepeatingCanonicalKey(container) {
+		if (Array.isArray(container)) {
+			return String(container.length);
+		}
+		let canonicalKey;
+		do {
+			canonicalKey = uuidv4();
+		} while (Object.prototype.hasOwnProperty.call(container, canonicalKey));
+		return canonicalKey;
+	}
+
+	function insertBeaconRepeatingCanonicalRecord(container, canonicalKey, record) {
+		if (Array.isArray(container)) {
+			container.push(record);
+			return;
+		}
+		container[canonicalKey] = record;
+	}
+
+	function setBeaconRepeatingCanonicalRecord(container, canonicalKey, record) {
+		if (!container || typeof container !== "object") {
+			return { success: false, error: `the destination canonical container is unavailable` };
+		}
+		if (Array.isArray(container)) {
+			if (!/^\d+$/.test(String(canonicalKey))) {
+				return { success: false, error: `canonical array key "${canonicalKey}" is not numeric` };
+			}
+			const index = Number(canonicalKey);
+			while (container.length <= index) {
+				container.push(null);
+			}
+			container[index] = record;
+			return { success: true };
+		}
+		container[canonicalKey] = record;
+		return { success: true };
+	}
+
+	function remapBeaconRepeatingMaxRelationships(record, canonicalKeyMap) {
+		if (!record || typeof record !== "object" || Array.isArray(record)) {
+			return;
+		}
+		const parentField = beaconOwnPropertyKey(record, "parentID");
+		if (parentField !== undefined) {
+			const mappedParent = canonicalKeyMap.get(String(record[parentField]));
+			if (mappedParent !== undefined) {
+				record[parentField] = mappedParent;
+			}
+		}
+		const childField = beaconOwnPropertyKey(record, "childIDs");
+		if (childField !== undefined) {
+			const sourceChildren = beaconRepeatingRelationshipIds(record[childField]);
+			const mappedChildren = sourceChildren
+				.map((childId) => canonicalKeyMap.get(String(childId)))
+				.filter((childId) => childId !== undefined);
+			record[childField] = beaconRepeatingRelationshipValue(record[childField], mappedChildren);
+		}
+	}
+
+	function copyBeaconRepeatingMaxRecords(
+		sourceMaxRoot,
+		sourceParentPath,
+		destinationMaxRoot,
+		destinationCurrentRoot,
+		destinationParentPath,
+		canonicalKeyMap
+	) {
+		if (!sourceMaxRoot || typeof sourceMaxRoot !== "object") {
+			return { success: true, copiedCount: 0, expected: [] };
+		}
+		const sourceLocated = getBeaconStructuredContainer(sourceMaxRoot, sourceParentPath);
+		if (!sourceLocated.success) {
+			return { success: true, copiedCount: 0, expected: [] };
+		}
+		const scaffolded = ensureBeaconStructuredParentPath(
+			destinationMaxRoot,
+			destinationCurrentRoot,
+			destinationParentPath.concat("__scriptcards_max_record__")
+		);
+		if (!scaffolded.success) {
+			return scaffolded;
+		}
+		const destinationLocated = getBeaconStructuredContainer(destinationMaxRoot, destinationParentPath);
+		if (!destinationLocated.success) {
+			return destinationLocated;
+		}
+
+		const expected = [];
+		for (const [sourceCanonicalKey, destinationCanonicalKey] of canonicalKeyMap.entries()) {
+			const sourceRecord = getBeaconRepeatingCanonicalRecord(sourceLocated.container, sourceCanonicalKey);
+			if (sourceRecord === undefined || sourceRecord === null) {
+				continue;
+			}
+			let clonedRecord = sourceRecord;
+			try {
+				clonedRecord = JSON.parse(JSON.stringify(sourceRecord));
+			} catch (error) {
+				return {
+					success: false,
+					error: `maximum data for canonical record "${sourceCanonicalKey}" could not be cloned: ${error.message}`
+				};
+			}
+			remapBeaconRepeatingMaxRelationships(clonedRecord, canonicalKeyMap);
+			const inserted = setBeaconRepeatingCanonicalRecord(
+				destinationLocated.container,
+				destinationCanonicalKey,
+				clonedRecord
+			);
+			if (!inserted.success) {
+				return inserted;
+			}
+			expected.push({
+				path: destinationParentPath.concat(destinationCanonicalKey),
+				value: clonedRecord
+			});
+		}
+		return { success: true, copiedCount: expected.length, expected };
+	}
+
+	function getBeaconRepeatingCanonicalRecord(container, canonicalKey) {
+		if (!container || typeof container !== "object") {
+			return undefined;
+		}
+		if (Array.isArray(container)) {
+			if (!/^\d+$/.test(String(canonicalKey))) {
+				return undefined;
+			}
+			return container[Number(canonicalKey)];
+		}
+		return container[canonicalKey];
+	}
+
+	function applyBeaconRepeatingLinkedParent(record, parentCanonicalKey) {
+		const parentField = beaconOwnPropertyKey(record, "parentID");
+		if (parentField !== undefined || parentCanonicalKey !== "") {
+			setBeaconRepeatingRecordField(record, parentField === undefined ? "parentID" : parentField, parentCanonicalKey);
+		}
+	}
+
+	function applyBeaconRepeatingLinkedChildren(record, sourceSampleValue, childCanonicalKeys) {
+		const childField = beaconOwnPropertyKey(record, "childIDs");
+		if (childField !== undefined || childCanonicalKeys.length) {
+			setBeaconRepeatingRecordField(
+				record,
+				childField === undefined ? "childIDs" : childField,
+				beaconRepeatingRelationshipValue(sourceSampleValue, childCanonicalKeys)
+			);
+		}
+	}
+
+	function cloneBeaconRepeatingLinkedRecordGraph(
+		sourceContainer,
+		destinationContainer,
+		sourceCanonicalKey,
+		destinationParentCanonicalKey,
+		destinationCharacterId,
+		canonicalKeyMap,
+		generatedRowIds
+	) {
+		const normalizedSourceKey = String(sourceCanonicalKey);
+		if (canonicalKeyMap.has(normalizedSourceKey)) {
+			return {
+				success: true,
+				canonicalKey: canonicalKeyMap.get(normalizedSourceKey),
+				createdCount: 0
+			};
+		}
+
+		const sourceRecord = getBeaconRepeatingCanonicalRecord(sourceContainer, sourceCanonicalKey);
+		if (!sourceRecord || typeof sourceRecord !== "object" || Array.isArray(sourceRecord)) {
+			return {
+				success: false,
+				error: `linked Beacon record key "${sourceCanonicalKey}" was not found beside the source repeating row`
+			};
+		}
+
+		let clonedRecord;
+		try {
+			clonedRecord = JSON.parse(JSON.stringify(sourceRecord));
+		} catch (error) {
+			return {
+				success: false,
+				error: `linked Beacon record "${sourceCanonicalKey}" could not be cloned: ${error.message}`
+			};
+		}
+
+		const childField = beaconOwnPropertyKey(sourceRecord, "childIDs");
+		const sourceChildValue = childField === undefined ? undefined : sourceRecord[childField];
+		const sourceChildKeys = beaconRepeatingRelationshipIds(sourceChildValue);
+		const linkedProfile = {
+			exemplar: sourceRecord,
+			membershipFields: {}
+		};
+
+		let baseInfo;
+		for (let attempt = 0; attempt < 20; attempt++) {
+			baseInfo = applyBeaconRepeatingCreationBase(
+				clonedRecord,
+				linkedProfile,
+				destinationCharacterId,
+				beaconRepeatingContainerRecords(destinationContainer)
+			);
+			if (!generatedRowIds.has(String(baseInfo.rowId))) {
+				break;
+			}
+			baseInfo = undefined;
+		}
+		if (!baseInfo) {
+			return {
+				success: false,
+				error: `a unique identity could not be generated for linked Beacon record "${sourceCanonicalKey}"`
+			};
+		}
+		generatedRowIds.add(String(baseInfo.rowId));
+
+		const destinationCanonicalKey = allocateBeaconRepeatingCanonicalKey(destinationContainer);
+		canonicalKeyMap.set(normalizedSourceKey, destinationCanonicalKey);
+		applyBeaconRepeatingLinkedParent(clonedRecord, destinationParentCanonicalKey);
+		insertBeaconRepeatingCanonicalRecord(destinationContainer, destinationCanonicalKey, clonedRecord);
+
+		const destinationChildKeys = [];
+		let createdCount = 1;
+		for (const sourceChildKey of sourceChildKeys) {
+			const clonedChild = cloneBeaconRepeatingLinkedRecordGraph(
+				sourceContainer,
+				destinationContainer,
+				sourceChildKey,
+				destinationCanonicalKey,
+				destinationCharacterId,
+				canonicalKeyMap,
+				generatedRowIds
+			);
+			if (!clonedChild.success) {
+				return clonedChild;
+			}
+			destinationChildKeys.push(clonedChild.canonicalKey);
+			createdCount += clonedChild.createdCount;
+		}
+		applyBeaconRepeatingLinkedChildren(clonedRecord, sourceChildValue, destinationChildKeys);
+
+		return {
+			success: true,
+			canonicalKey: destinationCanonicalKey,
+			rowId: baseInfo.rowId,
+			createdCount
+		};
+	}
+
+
+	async function copyBeaconResolvedRepeatingRow(
+		sourceCharacterId,
+		destinationCharacterId,
+		normalizedSourceSection,
+		normalizedDestinationSection,
+		sourceRow,
+		debug,
+		operationName
+	) {
+		if (!sourceRow.record
+			|| typeof sourceRow.record !== "object"
+			|| Array.isArray(sourceRow.record)
+			|| !sourceRow.rootName
+			|| !Array.isArray(sourceRow.path)
+			|| sourceRow.path.length === 0) {
+			return {
+				success: false,
+				error: `source row ${sourceRow.id || "unknown"} has no retained canonical Beacon record`
+			};
+		}
+
+		const destinationState = await buildBeaconRepeatingState(
+			destinationCharacterId,
+			normalizedDestinationSection,
+			debug
+		);
+		if (!destinationState) {
+			return {
+				success: false,
+				error: `destination section "${normalizedDestinationSection}" is not exposed as a Beacon repeating section`
+			};
+		}
+
+		const sourceProfile = buildBeaconRepeatingCreationProfile({
+			characterId: sourceCharacterId,
+			sectionName: normalizedSourceSection,
+			rows: [sourceRow]
+		});
+		if (!sourceProfile) {
+			return {
+				success: false,
+				error: `source row ${sourceRow.id || "unknown"} could not supply a canonical creation profile`
+			};
+		}
+
+		let destinationProfile = buildBeaconRepeatingCreationProfile(destinationState);
+		let destinationProfileSource = "destination exemplar";
+		if (!destinationProfile && normalizedDestinationSection === normalizedSourceSection) {
+			destinationProfile = sourceProfile;
+			destinationProfileSource = "source row";
+		}
+		if (!destinationProfile && normalizedDestinationSection !== normalizedSourceSection) {
+			destinationProfile = deriveBeaconRepeatingNumericDestinationProfile(
+				sourceProfile,
+				normalizedSourceSection,
+				normalizedDestinationSection
+			);
+			if (destinationProfile) {
+				destinationProfileSource = "source numeric-section translation";
+			}
+		}
+		if (!destinationProfile) {
+			const discovered = await findBeaconRepeatingCreationProfile(
+				destinationCharacterId,
+				normalizedDestinationSection,
+				destinationState,
+				debug,
+				{ logContext: `repeatingrow;${operationName}` }
+			);
+			if (!discovered.success) {
+				return {
+					success: false,
+					error: `destination section "${normalizedDestinationSection}" has no usable creation profile: ${discovered.error}`
+				};
+			}
+			destinationProfile = discovered.profile;
+			destinationProfileSource = discovered.source;
+		}
+
+		const rootName = destinationProfile.rootAttributeName || destinationProfile.rootName;
+		const rootAttribute = findObjs({
+			_type: "attribute",
+			_characterid: destinationCharacterId,
+			name: rootName
+		}, { caseInsensitive: true })[0];
+		if (!rootAttribute) {
+			return {
+				success: false,
+				error: `destination character has no structured Beacon root named "${rootName}"`
+			};
+		}
+
+		const rawRoot = rootAttribute.get("current");
+		const parsedRoot = parseBeaconStructuredValue(rawRoot);
+		if (!parsedRoot || typeof parsedRoot !== "object") {
+			return {
+				success: false,
+				error: `destination Beacon root "${rootName}" does not contain structured current data`
+			};
+		}
+
+		let updatedRoot;
+		let newRecord;
+		try {
+			updatedRoot = JSON.parse(JSON.stringify(parsedRoot));
+			newRecord = JSON.parse(JSON.stringify(sourceRow.record));
+		} catch (error) {
+			return {
+				success: false,
+				error: `Beacon repeating-row data could not be cloned: ${error.message}`
+			};
+		}
+
+		const located = getBeaconStructuredContainer(updatedRoot, destinationProfile.parentPath);
+		if (!located.success) {
+			return located;
+		}
+		const container = located.container;
+		const siblingRecords = beaconRepeatingContainerRecords(container);
+
+		const sourceRootAttribute = sourceRow.attributeId
+			? getObj("attribute", sourceRow.attributeId)
+			: findObjs({
+				_type: "attribute",
+				_characterid: sourceCharacterId,
+				name: sourceRow.rootAttributeName || sourceRow.rootName
+			}, { caseInsensitive: true })[0];
+		if (!sourceRootAttribute) {
+			return {
+				success: false,
+				error: `source row ${sourceRow.id || "unknown"} has no readable structured Beacon root`
+			};
+		}
+		const parsedSourceRoot = parseBeaconStructuredValue(sourceRootAttribute.get("current"));
+		const parsedSourceMaxRoot = parseBeaconStructuredValue(sourceRootAttribute.get("max"));
+		if (!parsedSourceRoot || typeof parsedSourceRoot !== "object") {
+			return {
+				success: false,
+				error: `source Beacon root "${sourceRow.rootAttributeName || sourceRow.rootName}" does not contain structured current data`
+			};
+		}
+		const sourceLocated = getBeaconStructuredContainer(parsedSourceRoot, sourceRow.path.slice(0, -1));
+		if (!sourceLocated.success) {
+			return {
+				success: false,
+				error: `source linked-record container could not be resolved: ${sourceLocated.error}`
+			};
+		}
+		const sourceContainer = sourceLocated.container;
+		const sourceCanonicalKey = String(sourceRow.path[sourceRow.path.length - 1]);
+		const sourceChildField = beaconOwnPropertyKey(sourceRow.record, "childIDs");
+		const sourceChildValue = sourceChildField === undefined
+			? undefined
+			: sourceRow.record[sourceChildField];
+		const sourceChildKeys = beaconRepeatingRelationshipIds(sourceChildValue);
+
+		if (normalizedDestinationSection !== normalizedSourceSection) {
+			for (const sourceMembershipField of Object.keys(sourceProfile.membershipFields || {})) {
+				const sourceRecordField = beaconOwnPropertyKey(newRecord, sourceMembershipField);
+				const destinationMembershipField = beaconOwnPropertyKey(
+					destinationProfile.membershipFields || {},
+					sourceMembershipField
+				);
+				if (sourceRecordField !== undefined && destinationMembershipField === undefined) {
+					delete newRecord[sourceRecordField];
+				}
+			}
+		}
+		for (const [fieldName, fieldValue] of Object.entries(destinationProfile.membershipFields || {})) {
+			const existingField = beaconOwnPropertyKey(newRecord, fieldName);
+			newRecord[existingField === undefined ? fieldName : existingField] = fieldValue;
+		}
+
+		const baseInfo = applyBeaconRepeatingCreationBase(
+			newRecord,
+			destinationProfile,
+			destinationCharacterId,
+			siblingRecords
+		);
+		const rowId = baseInfo.rowId;
+		const generatedRowIds = new Set([String(rowId)]);
+
+		const canonicalKey = allocateBeaconRepeatingCanonicalKey(container);
+		insertBeaconRepeatingCanonicalRecord(container, canonicalKey, newRecord);
+
+		const canonicalKeyMap = new Map([[sourceCanonicalKey, canonicalKey]]);
+		const destinationChildKeys = [];
+		let linkedRecordCount = 0;
+		for (const sourceChildKey of sourceChildKeys) {
+			const clonedChild = cloneBeaconRepeatingLinkedRecordGraph(
+				sourceContainer,
+				container,
+				sourceChildKey,
+				canonicalKey,
+				destinationCharacterId,
+				canonicalKeyMap,
+				generatedRowIds
+			);
+			if (!clonedChild.success) {
+				return clonedChild;
+			}
+			destinationChildKeys.push(clonedChild.canonicalKey);
+			linkedRecordCount += clonedChild.createdCount;
+		}
+		applyBeaconRepeatingLinkedChildren(newRecord, sourceChildValue, destinationChildKeys);
+
+		const rawMaxRoot = rootAttribute.get("max");
+		let copiedMaximums = { success: true, copiedCount: 0, expected: [] };
+		let updatedMaxRoot;
+		if (parsedSourceMaxRoot && typeof parsedSourceMaxRoot === "object") {
+			const parsedDestinationMaxRoot = parseBeaconStructuredValue(rawMaxRoot);
+			const destinationMaxTemplate = parsedDestinationMaxRoot && typeof parsedDestinationMaxRoot === "object"
+				? parsedDestinationMaxRoot
+				: (Array.isArray(updatedRoot) ? [] : {});
+			try {
+				updatedMaxRoot = JSON.parse(JSON.stringify(destinationMaxTemplate));
+			} catch (error) {
+				return { success: false, error: `destination Beacon max root "${rootName}" could not be cloned: ${error.message}` };
+			}
+			copiedMaximums = copyBeaconRepeatingMaxRecords(
+				parsedSourceMaxRoot,
+				sourceRow.path.slice(0, -1),
+				updatedMaxRoot,
+				updatedRoot,
+				destinationProfile.parentPath,
+				canonicalKeyMap
+			);
+			if (!copiedMaximums.success) {
+				return copiedMaximums;
+			}
+		}
+
+		const writeProperties = {
+			current: typeof rawRoot === "string" ? JSON.stringify(updatedRoot) : updatedRoot
+		};
+		if (copiedMaximums.copiedCount) {
+			writeProperties.max = typeof rawMaxRoot === "string" ? JSON.stringify(updatedMaxRoot) : updatedMaxRoot;
+		}
+		try {
+			rootAttribute.setWithWorker(writeProperties);
+		} catch (error) {
+			return {
+				success: false,
+				error: error && error.message ? error.message : error
+			};
+		}
+
+		const rollbackProperties = { current: rawRoot };
+		if (copiedMaximums.copiedCount) {
+			rollbackProperties.max = rawMaxRoot;
+		}
+
+		for (const expectedMaximum of copiedMaximums.expected) {
+			const persistedMaximum = await waitForBeaconStructuredWrite(
+				rootAttribute,
+				expectedMaximum.path,
+				expectedMaximum.value,
+				"max"
+			);
+			if (!persistedMaximum.success) {
+				const rollbackError = restoreBeaconStructuredRoots(rootAttribute, rollbackProperties, destinationCharacterId);
+				return {
+					success: false,
+					partialRowId: rollbackError ? rowId : "",
+					rolledBack: !rollbackError,
+					error: rollbackError
+						? `copied maximum data for row ${rowId} did not persist, and rollback failed: ${rollbackError}`
+						: `copied maximum data for row ${rowId} did not persist; the destination roots were restored`
+				};
+			}
+		}
+
+		clearLoadedBeaconRepeatingState(destinationCharacterId);
+		const projectedRow = await waitForCreatedBeaconRepeatingRow(
+			destinationCharacterId,
+			normalizedDestinationSection,
+			rowId
+		);
+		let sourceProjectionConflict = false;
+		if (projectedRow && normalizedDestinationSection !== normalizedSourceSection) {
+			invalidateBeaconCharacterCaches(destinationCharacterId);
+			const oldSectionState = await buildBeaconRepeatingState(
+				destinationCharacterId,
+				normalizedSourceSection,
+				false
+			);
+			sourceProjectionConflict = Boolean(
+				oldSectionState
+				&& Array.isArray(oldSectionState.rows)
+				&& oldSectionState.rows.some((candidate) => String(candidate.id) === String(rowId))
+			);
+		}
+		if (!projectedRow || sourceProjectionConflict) {
+			const rollbackError = restoreBeaconStructuredRoots(rootAttribute, rollbackProperties, destinationCharacterId);
+			const verificationError = sourceProjectionConflict
+				? `canonical row ${rowId} appeared in both ${normalizedSourceSection} and ${normalizedDestinationSection}`
+				: `canonical row ${rowId} was written but its ${normalizedDestinationSection} projection was not verified`;
+			return {
+				success: false,
+				partialRowId: rollbackError ? rowId : "",
+				rolledBack: !rollbackError,
+				error: rollbackError
+					? `${verificationError}, and rollback failed: ${rollbackError}`
+					: `${verificationError}; the destination root was restored`
+			};
+		}
+
+		if (debug) {
+			log(
+				`ScriptCards Beacon repeatingrow;${operationName}: copied ` +
+				`${normalizedSourceSection} row ${sourceRow.id} from character ${sourceCharacterId} ` +
+				`to ${normalizedDestinationSection} row ${rowId} on character ${destinationCharacterId} ` +
+				`at ${rootName}->${destinationProfile.parentPath.concat(canonicalKey).join("->")} ` +
+				`using ${destinationProfileSource}, and verified its computed projection` +
+				`${linkedRecordCount ? ` with ${linkedRecordCount} remapped linked record(s)` : ""}` +
+				`${copiedMaximums.copiedCount ? ` and ${copiedMaximums.copiedCount} copied maximum record(s)` : ""}.`
+			);
+		}
+		return {
+			success: true,
+			rowId,
+			canonicalKey,
+			sourceRowId: sourceRow.id,
+			sourceSectionName: normalizedSourceSection,
+			sectionName: normalizedDestinationSection,
+			destinationProfileSource,
+			linkedRecordCount,
+			maximumRecordCount: copiedMaximums.copiedCount
+		};
+	}
+
+
+	async function attemptCreateBeaconOriginalRepeatingRow(characterId, normalizedSection, suppliedFields, discovered, debug) {
+		const profile = discovered.profile;
+		let rootAttribute = profile.rootAttributeId
+			? getObj("attribute", profile.rootAttributeId)
+			: undefined;
+		if (!rootAttribute || String(rootAttribute.get("_characterid")) !== String(characterId)) {
+			rootAttribute = findObjs({
+				_type: "attribute",
+				_characterid: characterId,
+				name: profile.rootAttributeName || profile.rootName
+			}, { caseInsensitive: true })[0];
+		}
+		if (!rootAttribute) {
+			return {
+				success: false,
+				profileInvalid: true,
+				error: `the character has no structured Beacon root named "${profile.rootAttributeName || profile.rootName}"`
+			};
+		}
+
+		const rawRoot = rootAttribute.get("current");
+		const parsedRoot = parseBeaconStructuredValue(rawRoot);
+		if (!parsedRoot || typeof parsedRoot !== "object") {
+			return {
+				success: false,
+				profileInvalid: true,
+				error: `Beacon root "${profile.rootAttributeName || profile.rootName}" does not contain structured current data`
+			};
+		}
+		let updatedRoot;
+		try {
+			updatedRoot = JSON.parse(JSON.stringify(parsedRoot));
+		} catch (error) {
+			return { success: false, error: `Beacon root "${profile.rootAttributeName || profile.rootName}" could not be cloned: ${error.message}` };
+		}
+
+		const hasMaximumValues = suppliedFields.some((supplied) => supplied.max !== "");
+		const rawMaxRoot = rootAttribute.get("max");
+		let updatedMaxRoot;
+		if (hasMaximumValues) {
+			const parsedMaxRoot = parseBeaconStructuredValue(rawMaxRoot);
+			const maxTemplate = parsedMaxRoot && typeof parsedMaxRoot === "object"
+				? parsedMaxRoot
+				: (Array.isArray(parsedRoot) ? [] : {});
+			try {
+				updatedMaxRoot = JSON.parse(JSON.stringify(maxTemplate));
+			} catch (error) {
+				return { success: false, error: `Beacon max root "${profile.rootAttributeName || profile.rootName}" could not be cloned: ${error.message}` };
+			}
+		}
+
+		const located = getBeaconStructuredContainer(updatedRoot, profile.parentPath);
+		if (!located.success) {
+			return { success: false, profileInvalid: true, error: located.error };
+		}
+		const container = located.container;
+		const siblingRecords = Array.isArray(container)
+			? container.filter((record) => record && typeof record === "object")
+			: Object.values(container).filter((record) => record && typeof record === "object");
+		const newRecord = JSON.parse(JSON.stringify(profile.membershipFields || {}));
+		const baseInfo = applyBeaconRepeatingCreationBase(newRecord, profile, characterId, siblingRecords);
+		const rowId = baseInfo.rowId;
+		const protectedFields = beaconRepeatingCreationProtectedFields(profile, baseInfo);
+		const maximumWrites = [];
+
+		for (const supplied of suppliedFields) {
+			const currentField = resolveBeaconRepeatingCreationField(profile, supplied.name);
+			if (protectedFields.has(normalizeBeaconLookupName(supplied.name))
+				|| protectedFields.has(normalizeBeaconLookupName(currentField))) {
+				return {
+					success: false,
+					error: `field "${supplied.name}" controls Beacon row identity, ordering, relationships, enabled state, or section membership and cannot be supplied to --!or`
+				};
+			}
+			const currentSampleKey = beaconOwnPropertyKey(profile.exemplar, currentField);
+			const currentSample = currentSampleKey === undefined ? undefined : profile.exemplar[currentSampleKey];
+			newRecord[currentField] = coerceBeaconRepeatingCreationValue(supplied.current, currentSample);
+			if (supplied.max !== "") {
+				maximumWrites.push({
+					fieldName: currentField,
+					value: coerceBeaconRepeatingCreationValue(supplied.max, currentSample),
+					sampleValue: currentSample
+				});
+			}
+		}
+
+		const canonicalKey = allocateBeaconRepeatingCanonicalKey(container);
+		insertBeaconRepeatingCanonicalRecord(container, canonicalKey, newRecord);
+		const recordPath = profile.parentPath.concat(canonicalKey);
+
+		if (maximumWrites.length) {
+			for (const maximumWrite of maximumWrites) {
+				const maximumPath = recordPath.concat(maximumWrite.fieldName);
+				const scaffolded = ensureBeaconStructuredParentPath(updatedMaxRoot, updatedRoot, maximumPath);
+				if (!scaffolded.success) {
+					return { success: false, error: scaffolded.error };
+				}
+				const written = setBeaconStructuredLeaf(
+					updatedMaxRoot,
+					maximumPath,
+					maximumWrite.value,
+					true,
+					maximumWrite.sampleValue
+				);
+				if (!written.success) {
+					return { success: false, error: written.error };
+				}
+				maximumWrite.value = written.value;
+				maximumWrite.path = maximumPath;
+			}
+		}
+
+		const writeProperties = {
+			current: typeof rawRoot === "string" ? JSON.stringify(updatedRoot) : updatedRoot
+		};
+		if (maximumWrites.length) {
+			writeProperties.max = typeof rawMaxRoot === "string" ? JSON.stringify(updatedMaxRoot) : updatedMaxRoot;
+		}
+		try {
+			rootAttribute.setWithWorker(writeProperties);
+		} catch (error) {
+			return { success: false, error: error && error.message ? error.message : error };
+		}
+
+		const rollbackProperties = { current: rawRoot };
+		if (maximumWrites.length) {
+			rollbackProperties.max = rawMaxRoot;
+		}
+
+		for (const maximumWrite of maximumWrites) {
+			const persistedMaximum = await waitForBeaconStructuredWrite(
+				rootAttribute,
+				maximumWrite.path,
+				maximumWrite.value,
+				"max"
+			);
+			if (!persistedMaximum.success) {
+				const rollbackError = restoreBeaconStructuredRoots(rootAttribute, rollbackProperties, characterId);
+				return {
+					success: false,
+					partialRowId: rollbackError ? rowId : "",
+					rolledBack: !rollbackError,
+					error: rollbackError
+						? `maximum for canonical row ${rowId} did not persist, and rollback failed: ${rollbackError}`
+						: `maximum for canonical row ${rowId} did not persist; the destination roots were restored`
+				};
+			}
+		}
+
+		clearLoadedBeaconRepeatingState(characterId);
+		const projectedRow = await waitForCreatedBeaconRepeatingRow(characterId, normalizedSection, rowId);
+		if (!projectedRow) {
+			const rollbackError = restoreBeaconStructuredRoots(rootAttribute, rollbackProperties, characterId);
+			return {
+				success: false,
+				profileInvalid: !rollbackError,
+				partialRowId: rollbackError ? rowId : "",
+				rolledBack: !rollbackError,
+				error: rollbackError
+					? `canonical row ${rowId} was written but Beacon did not expose it through ${normalizedSection}, and rollback failed: ${rollbackError}`
+					: `canonical row ${rowId} was written but Beacon did not expose it through ${normalizedSection}; the destination roots were restored`
+			};
+		}
+		cacheBeaconRepeatingCreationProfile(characterId, normalizedSection, profile);
+		if (debug) {
+			log(`ScriptCards Beacon --!or: created native ${normalizedSection} row ${rowId} at ${(profile.rootAttributeName || profile.rootName)}->${recordPath.join("->")} using ${discovered.source}, verified its computed projection${maximumWrites.length ? `, and stored ${maximumWrites.length} maximum value(s) in the parallel max tree` : ""}.`);
+		}
+		return {
+			success: true,
+			rowId,
+			canonicalKey,
+			sectionName: normalizedSection,
+			learnedFrom: discovered.learnedFrom,
+			maximumCount: maximumWrites.length
+		};
+	}
+
+	async function createBeaconOriginalRepeatingRow(characterId, sectionName, content, debug) {
+		if (!getObj("character", characterId)) {
+			return { success: false, error: `character "${characterId}" was not found` };
+		}
+		const normalizedSection = normalizeBeaconOriginalRepeatingSection(sectionName);
+		if (!normalizedSection) {
+			return { success: false, error: `a SectionName is required` };
+		}
+		let targetState = await buildBeaconRepeatingState(characterId, normalizedSection, debug);
+		if (!targetState) {
+			return { success: false, error: `section "${normalizedSection}" is not exposed as a Beacon repeating section` };
+		}
+
+		const suppliedFields = ensureBeaconOriginalRepeatingVisibleName(
+			parseBeaconOriginalRepeatingFields(content)
+		);
+		let discovered = await findBeaconRepeatingCreationProfile(
+			characterId,
+			normalizedSection,
+			targetState,
+			debug
+		);
+		if (!discovered.success) {
+			return { success: false, error: discovered.error };
+		}
+
+		let result = await attemptCreateBeaconOriginalRepeatingRow(
+			characterId,
+			normalizedSection,
+			suppliedFields,
+			discovered,
+			debug
+		);
+		if (result.success
+			|| discovered.source !== "cached profile"
+			|| result.profileInvalid !== true
+			|| result.rolledBack === false) {
+			return result;
+		}
+
+		invalidateCachedBeaconRepeatingCreationProfile(characterId, normalizedSection);
+		if (debug) {
+			log(
+				`ScriptCards Beacon --!or: the shared ${normalizedSection} creation profile failed native verification and was removed. `
+				+ `Searching compatible characters for a fresh exemplar.`
+			);
+		}
+		invalidateBeaconCharacterCaches(characterId);
+		targetState = await buildBeaconRepeatingState(characterId, normalizedSection, false);
+		discovered = await findBeaconRepeatingCreationProfile(
+			characterId,
+			normalizedSection,
+			targetState,
+			debug,
+			{ skipCache: true }
+		);
+		if (!discovered.success) {
+			return {
+				success: false,
+				error: `the cached ${normalizedSection} creation profile failed (${result.error}), and ScriptCards could not learn a replacement: ${discovered.error}`
+			};
+		}
+
+		result = await attemptCreateBeaconOriginalRepeatingRow(
+			characterId,
+			normalizedSection,
+			suppliedFields,
+			discovered,
+			debug
+		);
+		return result;
+	}
+
+	function getBeaconRepeatingSectionSpec(sectionName) {
+		const requestedSection = normalizeBeaconOriginalRepeatingSection(sectionName);
+		if (!requestedSection) {
+			return undefined;
+		}
+
+		const computedProperty = getBeaconComputedTokenBarProperty(requestedSection);
+		return {
+			lookupSection: requestedSection,
+			property: computedProperty
+				&& computedProperty.metadata
+				&& computedProperty.metadata.readonly === true
+				? computedProperty.property
+				: undefined
+		};
+	}
+
+	function beaconRepeatingCanonicalSectionStem(sectionName) {
+		return normalizeBeaconLookupName(
+			String(sectionName == null ? "" : sectionName).replace(/^repeating_/i, "")
+		);
+	}
+
+	function dnd2024BeaconRepeatingCanonicalEntryIsLiveIntegrant(entry, adapter) {
+		if (!entry || !Array.isArray(entry.path) || !adapter) {
+			return false;
+		}
+		const normalizedRoot = normalizeBeaconLookupName(entry.rootName || entry.rootAttributeName);
+		const normalizedPath = entry.path.map((segment) => normalizeBeaconLookupName(segment));
+		const integrantsPath = adapter.storePaths.integrants.map((segment) => normalizeBeaconLookupName(segment));
+		return normalizedRoot === normalizeBeaconLookupName(adapter.rootNames.store)
+			&& normalizedPath.length >= integrantsPath.length + 1
+			&& integrantsPath.every((segment, index) => normalizedPath[index] === segment);
+	}
+
+	function dnd2024BeaconSpellLevel(value) {
+		const normalized = normalizeBeaconLookupName(value);
+		if (normalized === "cantrip") {
+			return 0;
+		}
+		const numeric = Number(value);
+		return Number.isFinite(numeric) ? numeric : undefined;
+	}
+
+	function dnd2024BeaconRepeatingRecordKey(entry, adapter) {
+		if (!entry || !Array.isArray(entry.path) || !adapter) {
+			return undefined;
+		}
+		const integrantsLength = adapter.storePaths.integrants.length;
+		return entry.path.length > integrantsLength ? String(entry.path[integrantsLength]) : undefined;
+	}
+
+	function dnd2024BeaconDisplayOrderKeys(characterId, descriptor) {
+		if (!descriptor || !descriptor.displayOrderPaths || !descriptor.displayOrderPaths.length) {
+			return { authoritative: false, keys: [] };
+		}
+		const keys = [];
+		const appendKeys = (value) => {
+			const parsed = parseBeaconStructuredValue(value);
+			if (parsed !== undefined && parsed !== value && parsed && typeof parsed === "object") {
+				appendKeys(parsed);
+				return;
+			}
+			if (Array.isArray(value)) {
+				for (const item of value) {
+					appendKeys(item);
+				}
+				return;
+			}
+			if (value && typeof value === "object") {
+				for (const item of Object.values(value)) {
+					appendKeys(item);
+				}
+				return;
+			}
+			if (value !== undefined && value !== null && String(value).trim() !== "") {
+				// A display-order bucket containing one record may be returned as a
+				// scalar string instead of an array.
+				keys.push(String(value).trim());
+			}
+		};
+		for (const path of descriptor.displayOrderPaths) {
+			appendKeys(readDnd2024BeaconStoreValue(characterId, path));
+		}
+		// Empty arrays (including serialized "[]") do not identify section
+		// membership. Imported NPCs commonly leave these arrays empty and rely on
+		// the canonical record's actionType instead. Only a bucket that yielded at
+		// least one record key is authoritative.
+		return { authoritative: keys.length > 0, keys };
+	}
+
+	function dnd2024BeaconRecordMatchesRepeatingDescriptor(record, descriptor, adapter, displayOrderAuthoritative) {
+		if (!record || typeof record !== "object" || Array.isArray(record) || !descriptor || !adapter) {
+			return false;
+		}
+
+		// A populated display-order bucket is the sheet's authoritative section
+		// membership. Semantic fields are fallback classifiers only for sections
+		// without a usable order array (for example Legendary/Mythic and Tools).
+		if (!displayOrderAuthoritative && descriptor.actionTypes && descriptor.actionTypes.length) {
+			const actualActionType = normalizeBeaconLookupName(beaconProperty(record, adapter.fields.actionType));
+			const allowedActionTypes = descriptor.actionTypes.map((value) => normalizeBeaconLookupName(value));
+			if (!actualActionType || !allowedActionTypes.includes(actualActionType)) {
+				return false;
+			}
+		}
+		if (!displayOrderAuthoritative && descriptor.categories && descriptor.categories.length) {
+			const actualCategory = normalizeBeaconLookupName(beaconProperty(record, adapter.fields.category));
+			const allowedCategories = descriptor.categories.map((value) => normalizeBeaconLookupName(value));
+			if (!actualCategory || !allowedCategories.includes(actualCategory)) {
+				return false;
+			}
+		}
+		if (!displayOrderAuthoritative && descriptor.spellLevel !== undefined) {
+			let spellLevelValue = beaconProperty(record, "level");
+			if (spellLevelValue === undefined) {
+				spellLevelValue = beaconProperty(record, adapter.fields.spellLevel);
+			}
+			const actualSpellLevel = dnd2024BeaconSpellLevel(spellLevelValue);
+			if (actualSpellLevel !== descriptor.spellLevel) {
+				return false;
+			}
+		}
+		return true;
+	}
+
+	function inferDnd2024BeaconRepeatingCanonicalRows(characterId, sectionName, indexed) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		const normalizedSection = normalizeBeaconOriginalRepeatingSection(sectionName).toLowerCase();
+		const descriptor = adapter && adapter.repeatingSections[normalizedSection];
+		if (!adapter || !descriptor || !indexed || !indexed.index || !indexed.index.current) {
+			return { supported: false, rows: [], descriptor: undefined };
+		}
+
+		const displayOrder = dnd2024BeaconDisplayOrderKeys(characterId, descriptor);
+		const collectionEntries = [];
+		const availableRecordKeys = new Set();
+		for (const collectionName of descriptor.collections) {
+			const entries = indexed.index.current.get(normalizeBeaconLookupName(collectionName)) || [];
+			for (const entry of entries) {
+				if (!dnd2024BeaconRepeatingCanonicalEntryIsLiveIntegrant(entry, adapter)) {
+					continue;
+				}
+				collectionEntries.push(entry);
+				const recordKey = dnd2024BeaconRepeatingRecordKey(entry, adapter);
+				if (recordKey) {
+					availableRecordKeys.add(String(recordKey));
+				}
+			}
+		}
+
+		// A non-empty order array can contain stale record keys after sheet edits or
+		// imports. It is authoritative only when at least one key still identifies a
+		// live record in the descriptor's canonical collections. Preserve the first
+		// occurrence of each matching key so duplicate order entries cannot reshuffle
+		// an otherwise valid section.
+		const matchedDisplayOrderKeys = [];
+		const seenDisplayOrderKeys = new Set();
+		for (const key of displayOrder.keys) {
+			const normalizedKey = String(key);
+			if (!availableRecordKeys.has(normalizedKey) || seenDisplayOrderKeys.has(normalizedKey)) {
+				continue;
+			}
+			seenDisplayOrderKeys.add(normalizedKey);
+			matchedDisplayOrderKeys.push(normalizedKey);
+		}
+		const displayOrderAuthoritative = matchedDisplayOrderKeys.length > 0;
+		const displayOrderIndex = new Map(matchedDisplayOrderKeys.map((key, index) => [key, index]));
+		const candidates = [];
+		const seen = new Set();
+		for (const entry of collectionEntries) {
+			const recordKey = dnd2024BeaconRepeatingRecordKey(entry, adapter);
+			if (displayOrderAuthoritative && (!recordKey || !displayOrderIndex.has(recordKey))) {
+				continue;
+			}
+			// Display-order membership determines whether and where the sheet shows a
+			// record. Semantic category fields are used only when the section has no
+			// authoritative order bucket.
+			if (!dnd2024BeaconRecordMatchesRepeatingDescriptor(
+				entry.record, descriptor, adapter, displayOrderAuthoritative
+			)) {
+				continue;
+			}
+			const rowId = entry.stableIdentity || beaconRecordStableIdentity(entry.record);
+			if (!rowId) {
+				continue;
+			}
+			const uniqueKey = `${entry.attributeId}\u0000${entry.path.join("\u0000")}`;
+			if (seen.has(uniqueKey)) {
+				continue;
+			}
+			seen.add(uniqueKey);
+			candidates.push({
+				entry,
+				rowId: String(rowId),
+				displayOrder: displayOrderAuthoritative ? displayOrderIndex.get(recordKey) : undefined
+			});
+		}
+
+		const rows = candidates
+			.sort((left, right) => {
+				if (displayOrderAuthoritative) {
+					return left.displayOrder - right.displayOrder;
+				}
+				return beaconRecordOrder(left.entry.record) - beaconRecordOrder(right.entry.record)
+					|| left.entry.discoveryIndex - right.entry.discoveryIndex;
+			})
+			.map((candidate, rowIndex) => ({
+				id: candidate.rowId,
+				selector: `$${rowIndex}`,
+				characterId,
+				record: candidate.entry.record,
+				attributeId: candidate.entry.attributeId,
+				rootName: candidate.entry.rootName,
+				rootAttributeName: candidate.entry.rootAttributeName,
+				path: candidate.entry.path.slice(),
+				values: {},
+				canonicalSectionInference: true
+			}));
+		return { supported: true, rows, descriptor, displayOrderAuthoritative };
+	}
+
+	function findBeaconRepeatingCanonicalEntry(indexed, rowId) {
+		if (!indexed || !indexed.index || !rowId) {
+			return undefined;
+		}
+		beaconPerformanceStats.stableIdentityLookups++;
+		const entry = indexed.index.byStableIdentity.current.get(String(rowId));
+		if (entry) {
+			beaconPerformanceStats.stableIdentityDirectHits++;
+		}
+		return entry;
+	}
+
+	async function buildBeaconRepeatingState(characterId, sectionName, debug) {
+		addBeaconPerformanceStat("repeatingStateRequests");
+		const normalizedSectionName = String(sectionName == null ? "" : sectionName).toLowerCase();
+		const stateCacheKey = `${characterId}\u0000${normalizedSectionName}`;
+		if (beaconRepeatingStateCache.has(stateCacheKey)) {
+			addBeaconPerformanceStat("repeatingStateCacheHits");
+			const cachedState = beaconRepeatingStateCache.get(stateCacheKey);
+			if (debug) {
+				log(`ScriptCards Beacon repeating: ${sectionName} reused a cached per-card repeating state containing ${cachedState.rows.length} row(s).`);
+			}
+			return cachedState;
+		}
+		addBeaconPerformanceStat("repeatingStateBuilds");
+		const repeatingStarted = Date.now();
+		const spec = getBeaconRepeatingSectionSpec(sectionName);
+		if (!spec) {
+			if (debug) {
+				log(`ScriptCards Beacon repeating: ${sectionName} is not exposed as a read-only computed repeating property.`);
+			}
+			return undefined;
+		}
+
+		const indexed = getBeaconTypedCollectionIndex(characterId, "current", false);
+		const rows = [];
+		let computedRows = 0;
+		let unmatchedRows = 0;
+		let inferredRows = 0;
+
+		// D&D 2024 repeating projections use explicit section descriptors backed by
+		// registered canonical record families. Unknown sections use generic SDK
+		// enumeration; section names are never guessed.
+		const dnd2024Inference = inferDnd2024BeaconRepeatingCanonicalRows(
+			characterId,
+			spec.lookupSection,
+			indexed
+		);
+		if (dnd2024Inference.supported) {
+			rows.push(...dnd2024Inference.rows);
+			inferredRows = dnd2024Inference.rows.length;
+			addBeaconPerformanceStat("repeatingCanonicalEnumerationHits");
+			addBeaconPerformanceStat("repeatingCanonicalRows", inferredRows);
+			addBeaconPerformanceStat("dnd2024RepeatingCanonicalEnumerationHits");
+			addBeaconPerformanceStat("dnd2024RepeatingCanonicalRows", inferredRows);
+			addBeaconPerformanceDetail("dnd2024RepeatingDescriptorDetails", spec.lookupSection, {
+				requests: 1,
+				rows: inferredRows,
+				displayOrderHits: dnd2024Inference.displayOrderAuthoritative ? 1 : 0
+			});
+		} else if (spec.property) {
+			const maximumRows = 1000;
+			for (let position = 0; position < maximumRows; position++) {
+				const selector = `$${position}`;
+				const identityLookup = `${spec.property}_${selector}_id`;
+				let rowId;
+				try {
+					rowId = await readBeaconSheetItem(characterId, identityLookup, "current");
+				} catch (error) {
+					if (debug) {
+						log(`ScriptCards Beacon repeating: ${identityLookup} ended enumeration: ${error.message}`);
+					}
+					break;
+				}
+				if (beaconLookupIsUnresolved(rowId) || String(rowId).trim() === "") {
+					break;
+				}
+
+				computedRows++;
+				rowId = String(rowId).trim();
+				const entry = findBeaconRepeatingCanonicalEntry(indexed, rowId);
+				if (!entry) {
+					unmatchedRows++;
+					continue;
+				}
+				rows.push({
+					id: rowId,
+					selector,
+					record: entry.record,
+					attributeId: entry.attributeId,
+					rootName: entry.rootName,
+					rootAttributeName: entry.rootAttributeName,
+					path: entry.path.slice(),
+					values: {}
+				});
+			}
+		}
+
+		const repeatingState = {
+			characterId,
+			sectionName: spec.lookupSection,
+			rows,
+			enumerationRoute: dnd2024Inference.supported ? "D&D 2024 canonical section descriptor" : "computed projection"
+		};
+		const learnedProfile = buildBeaconRepeatingCreationProfile(repeatingState);
+		if (learnedProfile) {
+			cacheBeaconRepeatingCreationProfile(characterId, spec.lookupSection, learnedProfile);
+		}
+
+		const repeatingElapsed = Date.now() - repeatingStarted;
+		addBeaconPerformanceStat("repeatingEnumerationMilliseconds", repeatingElapsed);
+		addBeaconPerformanceStat("repeatingRowsEnumerated", computedRows + inferredRows);
+		addBeaconPerformanceDetail("repeatingSectionDetails", normalizedSectionName, {
+			builds: 1,
+			milliseconds: repeatingElapsed,
+			computedRows,
+			matchedRows: rows.length - inferredRows,
+			inferredRows,
+			unmatchedRows
+		});
+		beaconRepeatingStateCache.set(stateCacheKey, repeatingState);
+		if (debug) {
+			log(
+				`ScriptCards Beacon repeating: ${sectionName} enumerated ${computedRows} computed row(s) by position, ` +
+				`matched ${rows.length - inferredRows} projected canonical record(s), inferred ${inferredRows} canonical section row(s), ` +
+				`and excluded ${unmatchedRows} unmatched projection row(s); ${beaconIndexStatus(indexed)}.`
+			);
+		}
+
+		return repeatingState;
+	}
+
+	function beaconRepeatingValue(value) {
+		if (value === undefined || value === null) {
+			return "";
+		}
+		if (typeof value === "object") {
+			try {
+				return JSON.stringify(value);
+			} catch (error) {
+				return "";
+			}
+		}
+		return String(value).replace(/(?:\r\n|\r|\n)/g, "<br>");
+	}
+
+
+	function resolveBeaconRepeatingCanonicalAliasField(record, fieldName, sectionName) {
+		const directField = beaconOwnPropertyKey(record, fieldName);
+		if (directField !== undefined) {
+			return directField;
+		}
+		const normalizedRequested = normalizeBeaconLookupName(fieldName);
+		if (!normalizedRequested) {
+			return undefined;
+		}
+		const suffixMatches = Object.keys(record || {}).filter((candidate) => {
+			const normalizedCandidate = normalizeBeaconLookupName(candidate);
+			return normalizedCandidate.length >= 4 && normalizedRequested.endsWith(normalizedCandidate);
+		});
+		if (suffixMatches.length === 1) {
+			return suffixMatches[0];
+		}
+		const sectionStem = beaconRepeatingCanonicalSectionStem(sectionName).replace(/\d+$/g, "");
+		if (sectionStem && normalizedRequested.startsWith(sectionStem)) {
+			const remainder = normalizedRequested.slice(sectionStem.length);
+			const remainderField = Object.keys(record || {}).find((candidate) =>
+				normalizeBeaconLookupName(candidate) === remainder
+			);
+			if (remainderField) {
+				return remainderField;
+			}
+		}
+		return undefined;
+	}
+
+	function getBeaconRepeatingCanonicalField(record, fieldName, operation, sectionName) {
+		const requestedField = resolveBeaconRepeatingCanonicalAliasField(record, fieldName, sectionName) || fieldName;
+
+		if (operation === "max") {
+			return "";
+		}
+
+		const value = beaconProperty(record, requestedField);
+		return value === undefined ? "" : beaconRepeatingValue(value);
+	}
+
+	function getBeaconRepeatingCompatibilityRowId(row) {
+		if (!row) {
+			return "";
+		}
+
+		const shortIdField = beaconOwnPropertyKey(row.record, "shortID");
+		if (shortIdField !== undefined) {
+			const shortId = row.record[shortIdField];
+			if (beaconPrimitive(shortId)
+				&& !beaconLookupIsUnresolved(shortId)
+				&& String(shortId).trim() !== "") {
+				return String(shortId).trim();
+			}
+		}
+
+		return row.id === undefined || row.id === null ? "" : String(row.id);
+	}
+
+	function getBeaconRepeatingCanonicalMaxField(row, fieldName, sectionName) {
+		if (!row || !Array.isArray(row.path) || row.path.length === 0) {
+			return undefined;
+		}
+
+		const requestedField = resolveBeaconRepeatingCanonicalAliasField(
+			row.record,
+			fieldName,
+			sectionName
+		) || fieldName;
+		const canonicalField = beaconOwnPropertyKey(row.record, requestedField) || requestedField;
+		let rootAttribute = row.attributeId ? getObj("attribute", row.attributeId) : undefined;
+		if (!rootAttribute && row.rootAttributeName && row.characterId) {
+			rootAttribute = findObjs({
+				_type: "attribute",
+				_characterid: row.characterId,
+				name: row.rootAttributeName
+			}, { caseInsensitive: true })[0];
+		}
+		if (!rootAttribute) {
+			return undefined;
+		}
+
+		const maxRoot = parseBeaconStructuredValue(rootAttribute.get("max"));
+		if (!maxRoot || typeof maxRoot !== "object") {
+			return undefined;
+		}
+		const located = getBeaconStructuredExistingLeaf(
+			maxRoot,
+			row.path.concat(canonicalField)
+		);
+		return located.success ? beaconRepeatingValue(located.value) : undefined;
+	}
+
+	async function getBeaconRepeatingWritablePath(state, rowIndex, fieldName, debug, operation = "current", options = {}) {
+		if (!state || !state.rows || !state.rows[rowIndex]) {
+			return { success: false, error: `no Beacon repeating row is loaded` };
+		}
+
+		const row = state.rows[rowIndex];
+		if (!row.rootName && !row.rootAttributeName) {
+			return {
+				success: false,
+				error: `the loaded Beacon repeating row is a computed projection without a retained writable structured root`
+			};
+		}
+		if (!Array.isArray(row.path) || row.path.length === 0) {
+			return { success: false, error: `the loaded Beacon repeating row has no retained canonical record path` };
+		}
+
+		const requestedField = String(fieldName == null ? "" : fieldName).trim();
+		const normalizedField = normalizeBeaconLookupName(requestedField);
+		if (!requestedField || requestedField.includes("->")) {
+			return { success: false, error: `a single repeating-row field name is required` };
+		}
+		if (!options.allowProtected && (BEACON_REPEATING_PROTECTED_FIELDS.has(normalizedField)
+			|| ["xxxactionidxxxx", "id", "shortid", "uuid"].includes(normalizedField))) {
+			return { success: false, error: `Beacon repeating row identity and structural fields are not writable` };
+		}
+
+		let canonicalField = beaconOwnPropertyKey(row.record, requestedField);
+		let sampleValue = canonicalField === undefined ? undefined : row.record[canonicalField];
+		if (canonicalField === undefined) {
+			const translatedLookup = `${state.sectionName}_${row.selector}_${requestedField}`;
+			let translatedValue;
+			try {
+				translatedValue = await readBeaconSheetItem(state.characterId, translatedLookup, "current");
+			} catch (error) {
+				translatedValue = undefined;
+			}
+			if (!beaconLookupIsUnresolved(translatedValue)) {
+				const matchingFields = Object.entries(row.record || {})
+					.filter(([, value]) => value === null || ["string", "number", "boolean"].includes(typeof value))
+					.filter(([, value]) => beaconRepeatingValue(value) === String(translatedValue));
+				if (matchingFields.length === 1) {
+					canonicalField = matchingFields[0][0];
+					sampleValue = matchingFields[0][1];
+				}
+			}
+		}
+
+		if (canonicalField === undefined) {
+			const inferredFields = new Map();
+			for (let candidateIndex = 0; candidateIndex < state.rows.length; candidateIndex++) {
+				if (candidateIndex === rowIndex) {
+					continue;
+				}
+				const candidateRow = state.rows[candidateIndex];
+				let candidateField = beaconOwnPropertyKey(candidateRow.record, requestedField);
+				if (candidateField === undefined) {
+					const candidateLookup = `${state.sectionName}_${candidateRow.selector}_${requestedField}`;
+					let candidateTranslatedValue;
+					try {
+						candidateTranslatedValue = await readBeaconSheetItem(
+							state.characterId,
+							candidateLookup,
+							"current"
+						);
+					} catch (error) {
+						candidateTranslatedValue = undefined;
+					}
+					if (!beaconLookupIsUnresolved(candidateTranslatedValue)) {
+						const candidateMatches = Object.entries(candidateRow.record || {})
+							.filter(([, value]) => value === null || ["string", "number", "boolean"].includes(typeof value))
+							.filter(([, value]) => beaconRepeatingValue(value) === String(candidateTranslatedValue));
+						if (candidateMatches.length === 1) {
+							candidateField = candidateMatches[0][0];
+						}
+					}
+				}
+				if (candidateField !== undefined) {
+					const candidateValue = candidateRow.record[candidateField];
+					if (candidateValue === null || ["string", "number", "boolean"].includes(typeof candidateValue)) {
+						inferredFields.set(normalizeBeaconLookupName(candidateField), {
+							fieldName: candidateField,
+							sampleValue: candidateValue
+						});
+					}
+				}
+			}
+			if (inferredFields.size === 1) {
+				const inferred = Array.from(inferredFields.values())[0];
+				canonicalField = inferred.fieldName;
+				sampleValue = inferred.sampleValue;
+			}
+		}
+
+		if (canonicalField === undefined) {
+			canonicalField = requestedField;
+		}
+
+		const currentRecordField = beaconOwnPropertyKey(row.record, canonicalField);
+		const createMissingCurrentLeaf = currentRecordField === undefined;
+		if (!createMissingCurrentLeaf) {
+			canonicalField = currentRecordField;
+			sampleValue = row.record[currentRecordField];
+		}
+
+		const createMissingLeaf = operation === "max" ? true : createMissingCurrentLeaf;
+		const currentValue = createMissingCurrentLeaf ? undefined : row.record[canonicalField];
+		if (!options.allowContainerDelete && currentValue !== null && currentValue !== undefined
+			&& !["string", "number", "boolean"].includes(typeof currentValue)) {
+			return {
+				success: false,
+				error: `field "${canonicalField}" is an object or array; repeating writes may update only a primitive leaf`
+			};
+		}
+
+		const rootAttributeName = row.rootAttributeName || row.rootName;
+		const rootLookup = normalizeBeaconLookupName(rootAttributeName) === "store"
+			? "sheet"
+			: rootAttributeName;
+		const path = [rootLookup].concat(row.path, canonicalField).join("->");
+		if (debug) {
+			log(
+				`ScriptCards Beacon repeating: writable ${operation} field ${requestedField} resolved to ${path}${operation === "max" ? "^" : ""}` +
+				`${createMissingLeaf ? " and may create the missing final leaf" : ""}.`
+			);
+		}
+		return {
+			success: true,
+			path,
+			characterId: state.characterId,
+			sectionName: state.sectionName,
+			rowId: row.id,
+			recordPath: row.path.slice(),
+			fieldName: canonicalField,
+			operation,
+			createMissingLeaf,
+			sampleValue
+		};
+	}
+
+	async function readBeaconRepeatingProjectedField(state, row, fieldName, operation, debug) {
+		const lookupName = `${state.sectionName}_${row.selector}_${fieldName}`;
+		addBeaconPerformanceStat("repeatingFieldSdkCalls");
+		let value;
+		try {
+			value = await readBeaconSheetItem(state.characterId, lookupName, operation);
+		} catch (error) {
+			if (debug) {
+				log(`ScriptCards Beacon repeating: ${lookupName} failed: ${error.message}`);
+			}
+		}
+
+		if (beaconLookupIsUnresolved(value)) {
+			const canonicalValue = getBeaconRepeatingCanonicalField(row.record, fieldName, operation, state.sectionName);
+			addBeaconPerformanceStat("repeatingCanonicalFallbacks");
+			return canonicalValue;
+		}
+		return beaconRepeatingValue(value);
+	}
+
+	async function getBeaconRepeatingField(state, rowIndex, fieldName, operation, debug) {
+		if (!state || !state.rows || !state.rows[rowIndex]) {
+			return undefined;
+		}
+
+		addBeaconPerformanceStat("repeatingFieldRequests");
+		const row = state.rows[rowIndex];
+		const cacheKey = `${operation}\u0000${String(fieldName).toLowerCase()}`;
+		if (Object.prototype.hasOwnProperty.call(row.values, cacheKey)) {
+			return row.values[cacheKey];
+		}
+		if (normalizeBeaconLookupName(fieldName) === "xxxactionidxxxx") {
+			const compatibilityRowId = getBeaconRepeatingCompatibilityRowId(row);
+			row.values[cacheKey] = compatibilityRowId;
+			return compatibilityRowId;
+		}
+
+		let value;
+		if (operation === "max") {
+			value = getBeaconRepeatingCanonicalMaxField(row, fieldName, state.sectionName);
+		}
+
+		// A projected repeating row has already been matched to its canonical Beacon
+		// record by stable identity. An exact primitive field on that record does not
+		// need a second SDK translation call. Structural/classifier fields, aliases,
+		// computed values, containers, and missing fields still use getSheetItem().
+		if (value === undefined && operation === "current") {
+			const normalizedField = normalizeBeaconLookupName(fieldName);
+			if (!BEACON_REPEATING_LOCAL_READ_EXCLUDED_FIELDS.has(normalizedField)) {
+				const canonicalField = beaconOwnPropertyKey(row.record, fieldName);
+				if (canonicalField !== undefined) {
+					const canonicalValue = row.record[canonicalField];
+					if (canonicalValue === null || beaconPrimitive(canonicalValue)) {
+						value = beaconRepeatingValue(canonicalValue);
+						addBeaconPerformanceStat("repeatingLocalFieldHits");
+					}
+				}
+			}
+		}
+
+		if (value === undefined && row.canonicalSectionInference && operation === "current") {
+			value = await readBeaconRepeatingProjectedField(state, row, fieldName, operation, debug);
+		} else if (value === undefined && row.canonicalSectionInference) {
+			value = getBeaconRepeatingCanonicalField(row.record, fieldName, operation, state.sectionName);
+			addBeaconPerformanceStat("repeatingCanonicalFallbacks");
+		} else if (value === undefined) {
+			value = await readBeaconRepeatingProjectedField(state, row, fieldName, operation, debug);
+		}
+		row.values[cacheKey] = value;
+		return value;
+	}
+
+	function getBeaconRepeatingRecordFields(row) {
+		const fields = {};
+		for (const [field, value] of Object.entries(row && row.record || {})) {
+			if (normalizeBeaconLookupName(field) === "scriptcardsrepeatingsection") {
+				continue;
+			}
+			fields[field] = beaconRepeatingValue(value);
+		}
+		return fields;
+	}
+
+	function beaconRepeatingSectionArray(row) {
+		return row
+			? [`xxxActionIDxxxx|${getBeaconRepeatingCompatibilityRowId(row)}`].concat(
+				Object.entries(getBeaconRepeatingRecordFields(row)).map(([field, value]) => `${field}|${value}`)
+			)
+			: undefined;
+	}
+
+	function addBeaconRepeatingFieldCandidate(candidates, candidate, trusted) {
+		if (candidate === undefined || candidate === null) {
+			return;
+		}
+		const fieldName = String(candidate).trim();
+		if (!/^[A-Za-z_][A-Za-z0-9_-]*$/.test(fieldName)
+			|| /^repeating_/i.test(fieldName)
+			|| /_max$/i.test(fieldName)) {
+			return;
+		}
+		const normalizedField = normalizeBeaconLookupName(fieldName);
+		if (!normalizedField || ["xxxactionidxxxx", "scriptcardsrepeatingsection"].includes(normalizedField)) {
+			return;
+		}
+		const existing = candidates.get(normalizedField);
+		if (!existing || (trusted && !existing.trusted)) {
+			candidates.set(normalizedField, { fieldName, trusted: Boolean(trusted) });
+		}
+	}
+
+	function collectBeaconRepeatingMetadataCandidates(value, candidates, depth = 0, seen = new Set()) {
+		if (depth > 8 || value === undefined || value === null) {
+			return;
+		}
+		if (typeof value === "string") {
+			addBeaconRepeatingFieldCandidate(
+				candidates,
+				value,
+				Boolean(getBeaconComputedTokenBarProperty(value))
+			);
+			return;
+		}
+		if (typeof value !== "object" || seen.has(value)) {
+			return;
+		}
+		seen.add(value);
+		if (Array.isArray(value)) {
+			for (const entry of value) {
+				collectBeaconRepeatingMetadataCandidates(entry, candidates, depth + 1, seen);
+			}
+			return;
+		}
+		for (const [key, entry] of Object.entries(value)) {
+			addBeaconRepeatingFieldCandidate(
+				candidates,
+				key,
+				Boolean(getBeaconComputedTokenBarProperty(String(key)))
+			);
+			collectBeaconRepeatingMetadataCandidates(entry, candidates, depth + 1, seen);
+		}
+	}
+
+	function getBeaconRepeatingFieldCandidates(state, row) {
+		const candidates = new Map();
+		const record = row && row.record || {};
+		for (const fieldName of Object.keys(record)) {
+			if (normalizeBeaconLookupName(fieldName) !== "scriptcardsrepeatingsection") {
+				addBeaconRepeatingFieldCandidate(candidates, fieldName, true);
+			}
+		}
+
+		for (const cacheKey of Object.keys(row && row.values || {})) {
+			const separator = cacheKey.indexOf("\u0000");
+			if (separator >= 0 && cacheKey.substring(0, separator) === "current") {
+				addBeaconRepeatingFieldCandidate(candidates, cacheKey.substring(separator + 1), true);
+			}
+		}
+
+		const computedSummary = getBeaconComputedSummary();
+		if (!computedSummary) {
+			return candidates;
+		}
+
+		const sectionProperty = getBeaconComputedTokenBarProperty(state.sectionName);
+		if (sectionProperty && sectionProperty.metadata) {
+			collectBeaconRepeatingMetadataCandidates(sectionProperty.metadata, candidates);
+		}
+
+		const sectionFamily = normalizeBeaconLookupName(
+			String(state.sectionName || "")
+				.replace(/^repeating_/i, "")
+				.split("-")[0]
+		);
+		for (const propertyName of Object.keys(computedSummary)) {
+			if (/^repeating_/i.test(propertyName)) {
+				const sectionPrefix = `${state.sectionName}_$`;
+				if (propertyName.toLowerCase().startsWith(sectionPrefix.toLowerCase())) {
+					const selectorEnd = propertyName.indexOf("_", sectionPrefix.length);
+					if (selectorEnd >= 0 && selectorEnd < propertyName.length - 1) {
+						addBeaconRepeatingFieldCandidate(candidates, propertyName.substring(selectorEnd + 1), true);
+					}
+				}
+				continue;
+			}
+			const normalizedProperty = normalizeBeaconLookupName(propertyName);
+			const canonicalAlias = resolveBeaconRepeatingCanonicalAliasField(record, propertyName, state.sectionName);
+			const sectionRelated = sectionFamily && normalizedProperty.startsWith(sectionFamily);
+
+			// A global computed name is not a repeating-row alias merely because it
+			// happens to end with a canonical field name. For example, character_name,
+			// npc_name, and every skill *_type property all suffix-match Spell fields
+			// named name or type. Require both a section-family prefix and a canonical
+			// field relationship before admitting a global computed property.
+			if (sectionRelated && canonicalAlias !== undefined) {
+				addBeaconRepeatingFieldCandidate(candidates, propertyName, true);
+			}
+		}
+		return candidates;
+	}
+
+	async function getBeaconRepeatingCompleteFields(state, rowIndex, debug) {
+		if (!state || !state.rows || !state.rows[rowIndex]) {
+			return undefined;
+		}
+		const row = state.rows[rowIndex];
+		if (Array.isArray(row.completeFieldEntries)) {
+			return row.completeFieldEntries.slice();
+		}
+
+		const entries = [`xxxActionIDxxxx|${getBeaconRepeatingCompatibilityRowId(row)}`];
+		const added = new Set(["xxxactionidxxxx"]);
+		const addFieldPair = async (fieldName, currentValue) => {
+			const normalizedField = normalizeBeaconLookupName(fieldName);
+			if (!normalizedField || added.has(normalizedField)) {
+				return;
+			}
+			added.add(normalizedField);
+			entries.push(`${fieldName}|${currentValue === undefined ? "" : currentValue}`);
+			const maxValue = await getBeaconRepeatingField(state, rowIndex, fieldName, "max", false);
+			entries.push(`${fieldName}_max|${maxValue === undefined ? "" : maxValue}`);
+		};
+
+		const recordFields = getBeaconRepeatingRecordFields(row);
+		for (const [fieldName, value] of Object.entries(recordFields)) {
+			await addFieldPair(fieldName, value);
+		}
+
+		const candidates = getBeaconRepeatingFieldCandidates(state, row);
+		let translatedFields = 0;
+		for (const candidate of candidates.values()) {
+			const fieldName = candidate.fieldName;
+			const normalizedField = normalizeBeaconLookupName(fieldName);
+			if (added.has(normalizedField)) {
+				continue;
+			}
+
+			const canonicalAlias = resolveBeaconRepeatingCanonicalAliasField(row.record || {}, fieldName, state.sectionName);
+			let currentValue;
+			let fieldExists = canonicalAlias !== undefined;
+			if (row.canonicalSectionInference) {
+				if (!fieldExists && !candidate.trusted) {
+					continue;
+				}
+				currentValue = await getBeaconRepeatingField(state, rowIndex, fieldName, "current", false);
+				fieldExists = fieldExists || candidate.trusted;
+			} else {
+				const lookupName = `${state.sectionName}_${row.selector}_${fieldName}`;
+				try {
+					currentValue = await readBeaconSheetItem(state.characterId, lookupName, "current");
+				} catch (error) {
+					currentValue = undefined;
+				}
+				if (!beaconLookupIsUnresolved(currentValue)) {
+					currentValue = beaconRepeatingValue(currentValue);
+					fieldExists = true;
+				} else if (fieldExists) {
+					currentValue = await getBeaconRepeatingField(state, rowIndex, fieldName, "current", false);
+				}
+			}
+			if (!fieldExists) {
+				continue;
+			}
+			await addFieldPair(fieldName, currentValue);
+			translatedFields++;
+		}
+
+		row.completeFieldEntries = entries.slice();
+		if (debug) {
+			log(
+				`ScriptCards Beacon repeating: ${state.sectionName} row ${row.id} field inventory contains ` +
+				`${recordFields && Object.keys(recordFields).length || 0} canonical field(s), ${translatedFields} translated/public field(s), ` +
+				`and ${(entries.length - 1) / 2} current/max field pair(s).`
+			);
+		}
+		return entries;
+	}
+
+	function normalizeRepeatingHashValue(value) {
+		let rowValue = value === undefined || value === null ? "" : String(value);
+		if (rowValue.indexOf("@{") > -1) { return "Unsupported (AttrRef)"; }
+		if (rowValue.indexOf("[[") > -1) { return "Unsupported (InlineRoll)"; }
+		if (rowValue.indexOf("{{") > -1) { return "Unsupported (TemplateRef)"; }
+		return rowValue;
+	}
+
+	async function getBeaconRepeatingHashFields(state, rowIndex, identifierField, debug) {
+		if (!state || !state.rows || !state.rows[rowIndex]) {
+			return {};
+		}
+
+		const row = state.rows[rowIndex];
+		const recordFields = getBeaconRepeatingRecordFields(row);
+		const fields = { ...recordFields };
+
+		// Classic repeating hashes include a companion field_max entry for every
+		// repeating Attribute. Beacon records do not expose Attribute objects, so
+		// resolve each field through the same repeating max lookup and retain an
+		// empty string when the sheet has no corresponding maximum value.
+		for (const fieldName of Object.keys(recordFields)) {
+			const maxValue = await getBeaconRepeatingField(state, rowIndex, fieldName, "max", debug);
+			fields[`${fieldName}_max`] = maxValue === undefined ? "" : maxValue;
+		}
+
+		fields.xxxActionIDxxxx = getBeaconRepeatingCompatibilityRowId(row);
+		fields.id = row.id;
+
+		if (identifierField && !beaconOwnPropertyKey(fields, identifierField)) {
+			const identifierValue = await getBeaconRepeatingField(state, rowIndex, identifierField, "current", debug);
+			fields[identifierField] = identifierValue === undefined ? "" : identifierValue;
+			const identifierMaxValue = await getBeaconRepeatingField(state, rowIndex, identifierField, "max", debug);
+			fields[`${identifierField}_max`] = identifierMaxValue === undefined ? "" : identifierMaxValue;
+		}
+		return fields;
+	}
+
+	function setCurrentBeaconRepeatingRow(state, index) {
+		const selectedIndex = Number(index);
+		const hasRow = state && state.rows && state.rows[selectedIndex];
+		repeatingBeaconState = hasRow ? state : undefined;
+		repeatingCharID = hasRow ? state.characterId : undefined;
+		repeatingSectionName = hasRow ? state.sectionName : undefined;
+		repeatingSectionIDs = hasRow ? state.rows.map((row) => row.id) : undefined;
+		repeatingIndex = hasRow ? selectedIndex : undefined;
+		repeatingSection = hasRow ? beaconRepeatingSectionArray(state.rows[selectedIndex]) : undefined;
+	}
+
+	function normalizeBeaconRepeatingWritableTargetPath(path) {
+		const segments = String(path == null ? "" : path)
+			.trim()
+			.split("->")
+			.map((segment) => segment.trim())
+			.filter((segment) => segment !== "");
+		if (segments.length > 0) {
+			const rootName = normalizeBeaconLookupName(segments[0]);
+			if (rootName === "store") {
+				segments[0] = "sheet";
+			}
+		}
+		return segments.join("->").toLowerCase();
+	}
+
+	function registerBeaconRepeatingWritableTarget(writable) {
+		const normalizedPath = normalizeBeaconRepeatingWritableTargetPath(writable.path);
+		const context = {
+			characterId: String(writable.characterId),
+			sectionName: writable.sectionName,
+			rowId: writable.rowId,
+			recordPath: Array.isArray(writable.recordPath) ? writable.recordPath.slice() : undefined,
+			fieldName: writable.fieldName,
+			operation: writable.operation || "current",
+			createMissingLeaf: writable.createMissingLeaf,
+			sampleValue: writable.sampleValue,
+			normalizedPath
+		};
+		const cacheKey = `${context.characterId}\u0000${context.operation}\u0000${normalizedPath}`;
+		beaconRepeatingWritableTargetCache.set(cacheKey, context);
+		beaconRepeatingWritableTargets.push(context);
+	}
+
+	function consumeBeaconRepeatingWritableTarget(characterId, path, operation = "current") {
+		const normalizedCharacterId = String(characterId);
+		const normalizedOperation = String(operation || "current").toLowerCase();
+		const normalizedPath = normalizeBeaconRepeatingWritableTargetPath(path);
+		const cacheKey = `${normalizedCharacterId}\u0000${normalizedOperation}\u0000${normalizedPath}`;
+		let context = beaconRepeatingWritableTargetCache.get(cacheKey);
+		if (context) {
+			beaconRepeatingWritableTargetCache.delete(cacheKey);
+			const queuedIndex = beaconRepeatingWritableTargets.indexOf(context);
+			if (queuedIndex >= 0) {
+				beaconRepeatingWritableTargets.splice(queuedIndex, 1);
+			}
+			return context;
+		}
+
+		const queuedIndex = beaconRepeatingWritableTargets.findIndex((candidate) =>
+			String(candidate.characterId) === normalizedCharacterId
+			&& candidate.operation === normalizedOperation
+			&& candidate.normalizedPath === normalizedPath
+		);
+		if (queuedIndex < 0) {
+			return undefined;
+		}
+		context = beaconRepeatingWritableTargets.splice(queuedIndex, 1)[0];
+		beaconRepeatingWritableTargetCache.delete(
+			`${context.characterId}\u0000${context.operation}\u0000${context.normalizedPath}`
+		);
+		return context;
+	}
+
+	async function resolveBeaconRepeatingReference(thisMatch, cardParameters) {
+		const returnWritableName = thisMatch.charAt(3) === ">";
+		let attrName = thisMatch.substring(4, thisMatch.length - 1);
+
+		if (returnWritableName) {
+			let operation = "current";
+			if (attrName.endsWith("^")) {
+				attrName = attrName.substring(0, attrName.length - 1);
+				operation = "max";
+			}
+
+			const values = attrName.split(":");
+			let state = repeatingBeaconState;
+			let rowIndex = repeatingIndex;
+			let fieldName = attrName;
+			if (values.length >= 4) {
+				state = await buildBeaconRepeatingState(values[0], values[1], cardParameters.debug === "1");
+				rowIndex = Number(values[2]);
+				fieldName = values.slice(3).join(":");
+			}
+
+			const writable = await getBeaconRepeatingWritablePath(
+				state,
+				rowIndex,
+				fieldName,
+				cardParameters.debug === "1",
+				operation
+			);
+			if (!writable.success) {
+				log(`ScriptCards Error: Beacon repeating write target [*R>${attrName}] failed: ${writable.error}.`);
+				return "";
+			}
+			registerBeaconRepeatingWritableTarget(writable);
+			return operation === "max" ? `${writable.path}^` : writable.path;
+		}
+
+		if (attrName.toLowerCase() === "$fieldlist$") {
+			if (!repeatingBeaconState || !repeatingBeaconState.rows[repeatingIndex]) {
+				return "NoRepeatingAttributeLoaded";
+			}
+			const completeFields = await getBeaconRepeatingCompleteFields(
+				repeatingBeaconState,
+				repeatingIndex,
+				cardParameters.debug === "1"
+			);
+			return completeFields.map((entry) => entry.split("|")[0]).join("|") + "|";
+		}
+
+		const values = attrName.split(":");
+		if (values.length === 3 && values[2].toLowerCase() === "rowcount") {
+			const state = await buildBeaconRepeatingState(values[0], values[1], cardParameters.debug === "1");
+			return state ? state.rows.length : 0;
+		}
+		if (values.length >= 4) {
+			let fieldName = values.slice(3).join(":");
+			let operation = "current";
+			if (fieldName.endsWith("^")) {
+				fieldName = fieldName.substring(0, fieldName.length - 1);
+				operation = "max";
+			}
+			const state = await buildBeaconRepeatingState(values[0], values[1], cardParameters.debug === "1");
+			const value = await getBeaconRepeatingField(state, Number(values[2]), fieldName, operation, cardParameters.debug === "1");
+			return value === undefined ? "" : value;
+		}
+
+		if (!repeatingBeaconState || !repeatingBeaconState.rows[repeatingIndex]) {
+			return "NoRepeatingAttributeLoaded";
+		}
+
+		let operation = "current";
+		if (attrName.endsWith("^")) {
+			attrName = attrName.substring(0, attrName.length - 1);
+			operation = "max";
+		}
+		const value = await getBeaconRepeatingField(
+			repeatingBeaconState,
+			repeatingIndex,
+			attrName,
+			operation,
+			cardParameters.debug === "1"
+		);
+		return value === undefined ? "" : value;
+	}
+
+	async function handleBeaconRepeatingAttributeCommands(thisTag, thisContent, cardParameters) {
+		const command = thisTag.substring(1).toLowerCase();
+		const param = thisContent.split(cardParameters.parameterdelimiter);
+		const debug = cardParameters.debug === "1";
+
+		switch (command) {
+			case "find":
+			case "search": {
+				const state = await buildBeaconRepeatingState(param[0], param[2], debug);
+				let foundIndex = -1;
+				if (state) {
+					let matcher;
+					if (command === "search") {
+						try {
+							matcher = new RegExp(param[1], "i");
+						} catch (error) {
+							log(`ScriptCards Error: Beacon repeating search pattern "${param[1]}" is invalid: ${error.message}`);
+						}
+					}
+					for (let index = 0; index < state.rows.length && foundIndex < 0; index++) {
+						const value = await getBeaconRepeatingField(state, index, param[3], "current", debug);
+						if (command === "find" && String(value) === String(param[1])) {
+							foundIndex = index;
+						}
+						if (command === "search" && matcher && matcher.test(String(value))) {
+							foundIndex = index;
+						}
+					}
+				}
+				setCurrentBeaconRepeatingRow(state, foundIndex);
+				break;
+			}
+			case "first": {
+				const state = await buildBeaconRepeatingState(param[0], param[1], debug);
+				setCurrentBeaconRepeatingRow(state, 0);
+				break;
+			}
+			case "byindex": {
+				if (param[0] && param[1] && param[2] !== undefined) {
+					const state = await buildBeaconRepeatingState(param[0], param[1], debug);
+					setCurrentBeaconRepeatingRow(state, Number(param[2]));
+				} else {
+					setCurrentBeaconRepeatingRow(undefined, 0);
+				}
+				break;
+			}
+			case "bysectionid": {
+				if (param[0] && param[1] && param[2]) {
+					const state = await buildBeaconRepeatingState(param[0], param[1], debug);
+					const caseInsensitive = param[3] && (param[3] === "1" || param[3].toLowerCase() === "i");
+					const requestedId = caseInsensitive ? param[2].toLowerCase().trim() : param[2].trim();
+					const index = state ? state.rows.findIndex((row) => {
+						const rowId = caseInsensitive ? row.id.toLowerCase().trim() : row.id.trim();
+						return rowId === requestedId;
+					}) : -1;
+					setCurrentBeaconRepeatingRow(state, index);
+				} else {
+					setCurrentBeaconRepeatingRow(undefined, 0);
+				}
+				break;
+			}
+			case "next":
+				if (repeatingBeaconState && repeatingBeaconState.rows[repeatingIndex + 1]) {
+					setCurrentBeaconRepeatingRow(repeatingBeaconState, repeatingIndex + 1);
+				} else {
+					setCurrentBeaconRepeatingRow(undefined, -1);
+				}
+				break;
+			case "dump":
+				if (repeatingBeaconState && repeatingBeaconState.rows[repeatingIndex]) {
+					const completeFields = await getBeaconRepeatingCompleteFields(
+						repeatingBeaconState,
+						repeatingIndex,
+						debug
+					);
+					for (const field of completeFields) {
+						log(field);
+					}
+				}
+				break;
+		}
+	}
+
+	async function handleRepeatingAttributeCommands(thisTag, thisContent, cardParameters) {
+		if (String(cardParameters.beaconsheet) === "1") {
+			try {
+				await handleBeaconRepeatingAttributeCommands(thisTag, thisContent, cardParameters);
+			} catch (error) {
+				log(`Error processing Beacon Repeating Section command ${error.message}, thisTag: ${thisTag}, thisContent: ${thisContent} line ${lineCounter}`);
+			}
+			return;
+		}
+
+		repeatingBeaconState = undefined;
 		try {
 			var command = thisTag.substring(1).toLowerCase();
 			var param = thisContent.split(cardParameters.parameterdelimiter);
@@ -8056,6 +12212,9 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 	function reportBenchmarkingData() {
 		log(benchmarks);
+		if (beaconPerformanceStats && Object.values(beaconPerformanceStats).some((value) => Number(value) !== 0)) {
+			log({ ScriptCardsBeaconPerformance: beaconPerformanceStats });
+		}
 		let difference = Date.now() - scriptStartTimestamp
 		log(`Script Execution Time: ${difference} ms`)
 		log(`Executed script lines: ${executionCounter}`)
@@ -8237,7 +12396,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	function is2024Sheet(charID) {
 		let char = getObj("character", charID);
 		if (char) {
-			return char.get("charactersheetname") === "dnd2024byroll20"
+			return char.get("charactersheetname") === DND2024_BEACON_SHEET_NAME;
 		} else {
 			return false;
 		}
@@ -8296,6 +12455,2792 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		return null;
 	}
 
+
+	// Generic typed-collection fallback for Beacon [*...] references. Native
+	// getSheetItem() lookups remain authoritative; this is only used when a
+	// direct Beacon lookup is unresolved or a zero may be masking a collection.
+	function beaconLookupIsUnresolved(value) {
+		if (value === undefined || value === null) {
+			return true;
+		}
+		if (typeof value === "string") {
+			const normalized = value.trim().toLowerCase();
+			return normalized === "undefined"
+				|| normalized === "object.object"
+				|| normalized === "[object object]"
+				|| normalized.includes("&{template:error}")
+				|| normalized.includes("no attribute or sheet field found");
+		}
+		return typeof value === "object" && !Array.isArray(value) && Object.keys(value).length === 0;
+	}
+
+	function beaconLookupMayMaskCollection(value) {
+		return value === 0 || (typeof value === "string" && value.trim() === "0");
+	}
+
+	function resolveRoll20CharacterPseudoAttribute(character, lookupName, operation = "current") {
+		if (!character || String(operation).toLowerCase() !== "current") {
+			return { found: false, value: undefined };
+		}
+
+		const normalized = String(lookupName == null ? "" : lookupName)
+			.trim()
+			.toLowerCase();
+		switch (normalized) {
+			case "character_id":
+				return { found: true, value: character.id, source: "character-pseudo" };
+			case "character_name":
+				return { found: true, value: character.get("name"), source: "character-pseudo" };
+			default:
+				return { found: false, value: undefined };
+		}
+	}
+
+	async function getPageTokenCharacterAttributeValue(character, attributeName, beaconMode, debugEnabled) {
+		const requestedName = String(attributeName == null ? "" : attributeName).trim();
+		if (!character || !requestedName) {
+			return { found: false, value: undefined };
+		}
+
+		let lookupName = requestedName;
+		let operation = "current";
+		if (lookupName.endsWith("^")) {
+			operation = "max";
+			lookupName = lookupName.slice(0, -1);
+		}
+
+		if (!lookupName.includes("->")) {
+			const pseudoAttribute = resolveRoll20CharacterPseudoAttribute(character, lookupName, operation);
+			if (pseudoAttribute.found) {
+				return pseudoAttribute;
+			}
+		}
+
+		if (beaconMode) {
+			const lookupParts = lookupName.split("->");
+			const baseLookupName = lookupParts[0];
+			const resolvedBeaconValue = await resolveBeaconReferenceValue(
+				character,
+				baseLookupName,
+				operation,
+				lookupParts.length > 1 ? lookupParts.slice(1) : [],
+				debugEnabled
+			);
+			if (resolvedBeaconValue.found) {
+				return resolvedBeaconValue;
+			}
+		}
+
+		const classicLookupName = lookupName;
+		const allowClassicFallback = !classicLookupName.includes("->");
+		if (allowClassicFallback) {
+			try {
+				const classicAttribute = findObjs({
+					_type: "attribute",
+					_characterid: character.id,
+					name: classicLookupName
+				})[0];
+				if (classicAttribute) {
+					return {
+						found: true,
+						value: classicAttribute.get(operation),
+						attributeId: classicAttribute.id,
+						source: "attribute"
+					};
+				}
+			} catch (error) {
+				// Continue to the remaining lookup routes.
+			}
+		}
+
+		if (!beaconMode) {
+			try {
+				const value = getAttrByName(character.id, classicLookupName, operation);
+				return value === undefined
+					? { found: false, value: undefined }
+					: { found: true, value, source: "getAttrByName" };
+			} catch (error) {
+				return { found: false, value: undefined };
+			}
+		}
+
+		// Bare names may still address an existing Beacon custom field after the
+		// native/translated lookup and exact classic Attribute lookup both miss.
+		if (allowClassicFallback && !classicLookupName.toLowerCase().startsWith("user.")) {
+			const customLookupName = `user.${classicLookupName}`;
+			try {
+				const customValue = await readBeaconSheetItem(character.id, customLookupName, operation);
+				if (!beaconLookupIsUnresolved(customValue)) {
+					return { found: true, value: customValue, source: "beacon-custom" };
+				}
+			} catch (error) {
+				// Missing custom attributes simply remain unresolved.
+			}
+		}
+
+		return { found: false, value: undefined };
+	}
+
+	function normalizeBeaconLookupName(value) {
+		return String(value == null ? "" : value).toLowerCase().replace(/[^a-z0-9]/g, "");
+	}
+
+	function parseBeaconStructuredValue(value) {
+		if (value && typeof value === "object") {
+			return value;
+		}
+		if (typeof value !== "string") {
+			return undefined;
+		}
+		const trimmed = value.trim();
+		if (!trimmed || !((trimmed.startsWith("{") && trimmed.endsWith("}")) || (trimmed.startsWith("[") && trimmed.endsWith("]")))) {
+			return undefined;
+		}
+		try {
+			const parsed = JSON.parse(trimmed);
+			return parsed && typeof parsed === "object" ? parsed : undefined;
+		} catch (error) {
+			return undefined;
+		}
+	}
+
+	function beaconOwnPropertyKey(object, propertyName) {
+		if (!object || typeof object !== "object") {
+			return undefined;
+		}
+		if (Object.prototype.hasOwnProperty.call(object, propertyName)) {
+			return propertyName;
+		}
+		const normalized = normalizeBeaconLookupName(propertyName);
+		return Object.keys(object).find((candidate) => normalizeBeaconLookupName(candidate) === normalized);
+	}
+
+	function beaconProperty(object, propertyName) {
+		const key = beaconOwnPropertyKey(object, propertyName);
+		return key === undefined ? undefined : object[key];
+	}
+
+
+	function coerceBeaconStructuredWriteValue(value, currentValue) {
+		let result = value;
+		if (typeof result === "string" && (result.startsWith("+=") || result.startsWith("-="))) {
+			const add = result.startsWith("+=");
+			const delta = result.substring(2);
+			if (isNumber(currentValue) && isNumber(delta)) {
+				result = add
+					? Number(currentValue) + Number(delta)
+					: Number(currentValue) - Number(delta);
+			} else if (add) {
+				result = `${currentValue == null ? "" : currentValue}${delta}`;
+			} else {
+				return {
+					success: false,
+					error: `-= requires a numeric existing value and numeric delta for structured Beacon paths`
+				};
+			}
+		}
+
+		if (typeof currentValue === "number") {
+			if (!isNumber(result)) {
+				return {
+					success: false,
+					error: `the existing Beacon value is numeric, but "${result}" is not numeric`
+				};
+			}
+			return { success: true, value: Number(result) };
+		}
+
+		if (typeof currentValue === "boolean") {
+			const parsedBoolean = parseBeaconBooleanValue(result);
+			return parsedBoolean.success
+				? parsedBoolean
+				: {
+					success: false,
+					error: `the existing Beacon value is boolean; use 1/0, true/false, yes/no, or on/off`
+				};
+		}
+
+		if (currentValue && typeof currentValue === "object") {
+			return {
+				success: false,
+				error: `structured Beacon writes may update only an existing primitive leaf, not an object or array`
+			};
+		}
+
+		return { success: true, value: result == null ? "" : String(result) };
+	}
+
+	function selectBeaconStructuredWriteKey(container, selector) {
+		if (!container || typeof container !== "object") {
+			return { success: false, error: `the parent value is not an object or array` };
+		}
+
+		if (Array.isArray(container)) {
+			if (/^\d+$/.test(String(selector))) {
+				const index = Number(selector);
+				return index >= 0 && index < container.length
+					? { success: true, key: index }
+					: { success: false, error: `array index ${selector} is outside the available range` };
+			}
+
+			const identity = normalizeBeaconLookupName(selector);
+			const matches = container
+				.map((record, index) => ({ record, index }))
+				.filter((entry) =>
+					entry.record
+					&& typeof entry.record === "object"
+					&& !Array.isArray(entry.record)
+					&& normalizeBeaconLookupName(beaconRecordIdentity(entry.record)) === identity
+				);
+			return matches.length === 1
+				? { success: true, key: matches[0].index }
+				: {
+					success: false,
+					error: matches.length
+						? `array selector "${selector}" matched more than one record`
+						: `array selector "${selector}" did not match a record`
+				};
+		}
+
+		const key = beaconOwnPropertyKey(container, selector);
+		return key === undefined
+			? { success: false, error: `property "${selector}" does not exist` }
+			: { success: true, key };
+	}
+
+	function coerceBeaconStructuredCreatedValue(value, sampleValue) {
+		let result = value;
+		if (typeof result === "string" && (result.startsWith("+=") || result.startsWith("-="))) {
+			const subtract = result.startsWith("-=");
+			result = `${subtract ? "-" : ""}${result.substring(2)}`;
+		}
+
+		if (typeof sampleValue === "number") {
+			if (!isNumber(result)) {
+				return {
+					success: false,
+					error: `the corresponding repeating-row field is numeric, but "${result}" is not numeric`
+				};
+			}
+			return { success: true, value: Number(result) };
+		}
+
+		if (typeof sampleValue === "boolean") {
+			const parsedBoolean = parseBeaconBooleanValue(result);
+			return parsedBoolean.success
+				? parsedBoolean
+				: {
+					success: false,
+					error: `the corresponding repeating-row field is boolean; use 1/0, true/false, yes/no, or on/off`
+				};
+		}
+
+		return { success: true, value: result == null ? "" : String(result) };
+	}
+
+	function setBeaconStructuredLeaf(root, path, value, allowCreateLeaf, sampleValue, preserveBlank = false) {
+		if (!root || typeof root !== "object" || !Array.isArray(path) || path.length === 0) {
+			return { success: false, error: `the structured Beacon path is empty or invalid` };
+		}
+
+		const located = getBeaconStructuredContainer(root, path.slice(0, -1));
+		if (!located.success) {
+			return located;
+		}
+		const target = located.container;
+		const selectedLeaf = selectBeaconStructuredWriteKey(target, path[path.length - 1]);
+		if (!selectedLeaf.success) {
+			if (!allowCreateLeaf || Array.isArray(target)) {
+				return {
+					success: false,
+					error: `${selectedLeaf.error} at ${path.join("->")}`
+				};
+			}
+			const created = preserveBlank && value === ""
+				? { success: true, value: "" }
+				: coerceBeaconStructuredCreatedValue(value, sampleValue);
+			if (!created.success) {
+				return created;
+			}
+			const leafName = String(path[path.length - 1]);
+			target[leafName] = created.value;
+			return {
+				success: true,
+				previousValue: undefined,
+				value: created.value,
+				createdLeaf: true
+			};
+		}
+
+		const currentValue = target[selectedLeaf.key];
+		const coerced = preserveBlank && value === ""
+			? { success: true, value: "" }
+			: coerceBeaconStructuredWriteValue(value, currentValue);
+		if (!coerced.success) {
+			return { success: false, error: coerced.error };
+		}
+
+		target[selectedLeaf.key] = coerced.value;
+		return { success: true, previousValue: currentValue, value: coerced.value, createdLeaf: false };
+	}
+
+
+
+	function getBeaconStructuredExistingLeaf(root, path) {
+		if (!root || typeof root !== "object" || !Array.isArray(path) || path.length === 0) {
+			return { success: false, error: `the structured Beacon path is empty or invalid` };
+		}
+
+		const located = getBeaconStructuredContainer(root, path.slice(0, -1));
+		if (!located.success) {
+			return located;
+		}
+		const selectedLeaf = selectBeaconStructuredWriteKey(located.container, path[path.length - 1]);
+		if (!selectedLeaf.success) {
+			return selectedLeaf;
+		}
+		return { success: true, value: located.container[selectedLeaf.key] };
+	}
+
+	function beaconStructuredWriteValuesMatch(actual, expected) {
+		if (Object.is(actual, expected)) {
+			return true;
+		}
+		if (actual === null || actual === undefined || expected === null || expected === undefined) {
+			return false;
+		}
+		if (typeof actual === "object" && typeof expected === "object") {
+			try {
+				return JSON.stringify(actual) === JSON.stringify(expected);
+			} catch (error) {
+				return false;
+			}
+		}
+		return typeof actual === typeof expected && String(actual) === String(expected);
+	}
+
+	function ensureBeaconStructuredParentPath(root, templateRoot, path) {
+		if (!root || typeof root !== "object" || !templateRoot || typeof templateRoot !== "object") {
+			return { success: false, error: `the structured max root or current-tree template is unavailable` };
+		}
+
+		let container = root;
+		let template = templateRoot;
+		for (const selector of path.slice(0, -1)) {
+			const templateSelection = selectBeaconStructuredWriteKey(template, selector);
+			if (!templateSelection.success) {
+				return { success: false, error: `${templateSelection.error} in the current-tree template` };
+			}
+			const templateChild = template[templateSelection.key];
+			if (!templateChild || typeof templateChild !== "object") {
+				return { success: false, error: `the current-tree template path reaches a primitive before ${path.join("->")}` };
+			}
+
+			let selection = selectBeaconStructuredWriteKey(container, selector);
+			if (!selection.success) {
+				if (Array.isArray(container)) {
+					if (!/^\d+$/.test(String(selector))) {
+						return { success: false, error: `cannot create non-numeric array selector "${selector}" in the max tree` };
+					}
+					const index = Number(selector);
+					while (container.length <= index) {
+						container.push(undefined);
+					}
+					container[index] = Array.isArray(templateChild) ? [] : {};
+					selection = { success: true, key: index };
+				} else {
+					const key = Array.isArray(template) ? String(selector) : templateSelection.key;
+					container[key] = Array.isArray(templateChild) ? [] : {};
+					selection = { success: true, key };
+				}
+			}
+
+			if (!container[selection.key] || typeof container[selection.key] !== "object") {
+				return { success: false, error: `the max-tree path ${selector} is not an object or array` };
+			}
+			container = container[selection.key];
+			template = templateChild;
+		}
+		return { success: true };
+	}
+
+	async function waitForBeaconStructuredWrite(rootAttribute, path, expectedValue, operation = "current") {
+		return await pollBeaconUntilSuccess(async () => {
+			const parsedRoot = parseBeaconStructuredValue(rootAttribute.get(operation));
+			const observed = getBeaconStructuredExistingLeaf(parsedRoot, path);
+			const value = observed.success ? observed.value : undefined;
+			return {
+				success: observed.success && beaconStructuredWriteValuesMatch(value, expectedValue),
+				value
+			};
+		});
+	}
+
+	async function waitForBeaconRepeatingWriteProjection(context, expectedValue) {
+		const result = await pollBeaconUntilSuccess(async () => {
+			invalidateBeaconCharacterCaches(context.characterId);
+			const state = await buildBeaconRepeatingState(context.characterId, context.sectionName, false);
+			const rowIndex = state && state.rows
+				? state.rows.findIndex((row) => String(row.id) === String(context.rowId))
+				: -1;
+			const value = rowIndex >= 0
+				? await getBeaconRepeatingField(
+					state,
+					rowIndex,
+					context.fieldName,
+					context.operation || "current",
+					false
+				)
+				: undefined;
+			return {
+				success: rowIndex >= 0 && String(value) === beaconRepeatingValue(expectedValue),
+				state,
+				rowIndex,
+				value
+			};
+		});
+		return result.success
+			? result
+			: { success: false, value: result.value };
+	}
+
+
+	// Resolves a typed-collection shorthand such as
+	// speeds->0->valueFormula->flatValue to the retained
+	// structured Attribute root and canonical record path. This is generic
+	// Beacon behavior: collection names come from each record's own type/kind/category.
+	function resolveBeaconTypedCollectionWritePath(characterId, requestedSegments, operation = "current") {
+		const segments = Array.isArray(requestedSegments)
+			? requestedSegments.map((segment) => String(segment).trim())
+			: [];
+		if (segments.length < 3 || segments.some((segment) => !segment)) {
+			return { success: false, matched: false };
+		}
+
+		const collectionName = segments[0];
+		const normalizedCollectionName = normalizeBeaconLookupName(collectionName);
+		const selector = segments[1];
+		const leafPath = segments.slice(2);
+		let sourceOperation = operation;
+		let indexed = getBeaconTypedCollectionIndex(characterId, operation, false);
+		let collectionEntries = indexed.index[operation].get(normalizedCollectionName);
+		if (!collectionEntries && !indexed.index.fallbackBuilt[operation]) {
+			indexed = getBeaconTypedCollectionIndex(characterId, operation, true);
+			collectionEntries = indexed.index[operation].get(normalizedCollectionName);
+		}
+
+		// Max trees are commonly empty even when a matching current record exists.
+		// Retain the current record's canonical path and scaffold the max parent path
+		// using the current tree when the write itself targets max.
+		if (!collectionEntries && operation === "max") {
+			sourceOperation = "current";
+			indexed = getBeaconTypedCollectionIndex(characterId, "current", false);
+			collectionEntries = indexed.index.current.get(normalizedCollectionName);
+			if (!collectionEntries && !indexed.index.fallbackBuilt.current) {
+				indexed = getBeaconTypedCollectionIndex(characterId, "current", true);
+				collectionEntries = indexed.index.current.get(normalizedCollectionName);
+			}
+		}
+		if (!collectionEntries) {
+			return { success: false, matched: false };
+		}
+
+		let entry;
+		if (/^\d+$/.test(String(selector))) {
+			entry = collectionEntries[Number(selector)];
+			if (!entry) {
+				return {
+					success: false,
+					matched: true,
+					error: `typed Beacon collection "${collectionName}" has no record at index ${selector}`
+				};
+			}
+		} else {
+			const matches = findBeaconCollectionSelectorMatches(collectionEntries, selector);
+			if (matches.length !== 1) {
+				return {
+					success: false,
+					matched: true,
+					error: matches.length > 1
+						? `typed Beacon collection "${collectionName}" has ${matches.length} records matching selector "${selector}"; use a numeric index or another unique selector`
+						: `typed Beacon collection "${collectionName}" has no unique record matching selector "${selector}"`
+				};
+			}
+			entry = matches[0];
+		}
+
+		if (!entry || !Array.isArray(entry.path)) {
+			return {
+				success: false,
+				matched: true,
+				error: `typed Beacon collection "${collectionName}" did not retain a canonical record path`
+			};
+		}
+		const rootAttribute = (entry.attributeId && getObj("attribute", entry.attributeId))
+			|| findObjs({
+				_type: "attribute",
+				_characterid: characterId,
+				name: entry.rootAttributeName || entry.rootName
+			}, { caseInsensitive: true })[0];
+		if (!rootAttribute) {
+			return {
+				success: false,
+				matched: true,
+				error: `typed Beacon record "${collectionName}->${selector}" no longer has its structured Attribute root`
+			};
+		}
+
+		return {
+			success: true,
+			matched: true,
+			collectionName,
+			selector,
+			sourceOperation,
+			rootName: entry.rootName || entry.rootAttributeName,
+			rootAttributeName: entry.rootAttributeName || entry.rootName,
+			rootAttribute,
+			path: entry.path.concat(leafPath),
+			recordPath: entry.path.slice()
+		};
+	}
+
+	async function writeBeaconStructuredPath(characterId, lookupPath, settingValue, operation = "current", options = {}) {
+		const normalizedLookupPath = String(lookupPath == null ? "" : lookupPath).trim();
+		let segments = normalizedLookupPath
+			.split("->")
+			.map((segment) => segment.trim());
+		if (segments.length < 2 || segments.some((segment) => !segment)) {
+			return {
+				success: false,
+				error: `nested Beacon writes require a root and at least one existing subfield`
+			};
+		}
+
+		operation = String(operation || "current").toLowerCase();
+		if (!['current', 'max'].includes(operation)) {
+			return { success: false, error: `Beacon structured writes support only current or max` };
+		}
+
+		const requestedSegments = segments.slice();
+		const requestedRoot = segments.shift();
+		let rootName = normalizeBeaconLookupName(requestedRoot) === "sheet"
+			? "store"
+			: requestedRoot;
+		let rootAttribute = findObjs({
+			_type: "attribute",
+			_characterid: characterId,
+			name: rootName
+		}, { caseInsensitive: true })[0];
+		let typedCollectionResolution;
+		if (!rootAttribute) {
+			typedCollectionResolution = resolveBeaconTypedCollectionWritePath(
+				characterId,
+				requestedSegments,
+				operation
+			);
+			if (!typedCollectionResolution.success) {
+				return {
+					success: false,
+					error: typedCollectionResolution.error
+						|| `the character has no structured Beacon root or typed collection named "${rootName}"`
+				};
+			}
+			rootName = typedCollectionResolution.rootName;
+			rootAttribute = typedCollectionResolution.rootAttribute;
+			segments = typedCollectionResolution.path.slice();
+			addBeaconPerformanceStat("typedCollectionWritePathResolutions");
+		}
+
+		const rawRoot = rootAttribute.get(operation);
+		let parsedRoot = parseBeaconStructuredValue(rawRoot);
+		const currentRoot = operation === "max"
+			? parseBeaconStructuredValue(rootAttribute.get("current"))
+			: parsedRoot;
+		if ((!parsedRoot || typeof parsedRoot !== "object") && operation === "max" && currentRoot && typeof currentRoot === "object") {
+			parsedRoot = Array.isArray(currentRoot) ? [] : {};
+		}
+		if (!parsedRoot || typeof parsedRoot !== "object") {
+			return {
+				success: false,
+				error: `Beacon root "${rootName}" does not contain structured ${operation} data`
+			};
+		}
+
+		let updatedRoot;
+		try {
+			updatedRoot = JSON.parse(JSON.stringify(parsedRoot));
+		} catch (error) {
+			return {
+				success: false,
+				error: `Beacon root "${rootName}" could not be cloned: ${error.message}`
+			};
+		}
+
+		const repeatingWriteContext = consumeBeaconRepeatingWritableTarget(
+			characterId,
+			normalizedLookupPath,
+			operation
+		);
+		if (repeatingWriteContext && repeatingWriteContext.operation !== operation) {
+			return {
+				success: false,
+				error: `the repeating write target expected ${repeatingWriteContext.operation}, but the command requested ${operation}`
+			};
+		}
+		if (operation === "max" && (repeatingWriteContext || typedCollectionResolution)) {
+			const scaffolded = ensureBeaconStructuredParentPath(updatedRoot, currentRoot, segments);
+			if (!scaffolded.success) {
+				return { success: false, error: scaffolded.error };
+			}
+		}
+		const updated = setBeaconStructuredLeaf(
+			updatedRoot,
+			segments,
+			settingValue,
+			Boolean(options.createMissingLeaf || (repeatingWriteContext && repeatingWriteContext.createMissingLeaf)),
+			repeatingWriteContext ? repeatingWriteContext.sampleValue : options.sampleValue,
+			Boolean(options.preserveBlank)
+		);
+		if (!updated.success) {
+			return { success: false, error: updated.error };
+		}
+
+		const writeValue = typeof rawRoot === "string"
+			? JSON.stringify(updatedRoot)
+			: updatedRoot;
+		try {
+			rootAttribute.setWithWorker({ [operation]: writeValue });
+		} catch (error) {
+			return { success: false, error: error && error.message ? error.message : error };
+		}
+
+		const persisted = await waitForBeaconStructuredWrite(rootAttribute, segments, updated.value, operation);
+		if (!persisted.success) {
+			return {
+				success: false,
+				error: `the write was submitted, but ${rootName}.${operation}->${segments.join("->")} did not persist within the verification window`
+			};
+		}
+
+		invalidateBeaconCharacterCaches(characterId);
+		if (repeatingWriteContext) {
+			const projected = await waitForBeaconRepeatingWriteProjection(repeatingWriteContext, updated.value);
+			if (!projected.success) {
+				return {
+					success: false,
+					error: `the canonical write persisted, but Beacon did not refresh ${repeatingWriteContext.sectionName} row ${repeatingWriteContext.rowId} field ${repeatingWriteContext.fieldName} within the verification window`
+				};
+			}
+			setCurrentBeaconRepeatingRow(projected.state, projected.rowIndex);
+		} else if (operation === "current") {
+			refreshLoadedBeaconRepeatingState(characterId, rootName, segments, updated.value);
+		}
+		return {
+			success: true,
+			rootName,
+			operation,
+			path: segments,
+			previousValue: updated.previousValue,
+			value: updated.value,
+			writeRoute: repeatingWriteContext
+				? `attribute.setWithWorker and verified repeating projection${updated.createdLeaf ? " with missing leaf creation" : ""}`
+				: (typedCollectionResolution
+					? `typed collection ${typedCollectionResolution.collectionName}->${typedCollectionResolution.selector} translated to ${rootName}.${operation}->${segments.join("->")}`
+					: "attribute.setWithWorker and verified root")
+		};
+	}
+
+
+	function deleteBeaconStructuredValue(root, path) {
+		if (!root || typeof root !== "object" || !Array.isArray(path) || path.length === 0) {
+			return { success: false, error: `the structured Beacon path is empty or invalid` };
+		}
+		const located = getBeaconStructuredContainer(root, path.slice(0, -1));
+		if (!located.success) {
+			return { success: true, existed: false };
+		}
+		const selected = selectBeaconStructuredWriteKey(located.container, path[path.length - 1]);
+		if (!selected.success) {
+			return { success: true, existed: false };
+		}
+		const previousValue = located.container[selected.key];
+		const arrayElement = Array.isArray(located.container);
+		if (arrayElement) {
+			located.container.splice(Number(selected.key), 1);
+		} else {
+			delete located.container[selected.key];
+		}
+		return { success: true, existed: true, previousValue, arrayElement };
+	}
+
+	async function waitForBeaconStructuredDelete(
+		rootAttribute,
+		path,
+		previousValue,
+		operation = "current",
+		allowReplacement = false
+	) {
+		const previousSerialized = previousValue && typeof previousValue === "object"
+			? JSON.stringify(previousValue)
+			: previousValue;
+		let stableChecks = 0;
+		return await pollBeaconUntilSuccess(async () => {
+			const parsedRoot = parseBeaconStructuredValue(rootAttribute.get(operation));
+			const observed = getBeaconStructuredExistingLeaf(parsedRoot, path);
+			if (!observed.success) {
+				stableChecks++;
+				return { success: stableChecks >= 3 };
+			}
+			if (allowReplacement) {
+				const observedSerialized = observed.value && typeof observed.value === "object"
+					? JSON.stringify(observed.value)
+					: observed.value;
+				if (!beaconStructuredWriteValuesMatch(observedSerialized, previousSerialized)) {
+					stableChecks++;
+					return { success: stableChecks >= 3, replacementValue: observed.value };
+				}
+			}
+			stableChecks = 0;
+			return { success: false };
+		});
+	}
+
+	async function waitForBeaconRepeatingRowDeletion(context) {
+		const result = await pollBeaconUntilSuccess(async () => {
+			invalidateBeaconCharacterCaches(context.characterId);
+			const state = await buildBeaconRepeatingState(context.characterId, context.sectionName, false);
+			const rowIndex = state && state.rows
+				? state.rows.findIndex((row) => String(row.id) === String(context.rowId))
+				: -1;
+			return { success: rowIndex < 0, state, rowIndex };
+		});
+		return result.success ? result : { success: false };
+	}
+
+	async function deleteBeaconStructuredPath(characterId, lookupPath, operation = "current") {
+		const normalizedLookupPath = String(lookupPath == null ? "" : lookupPath).trim();
+		let segments = normalizedLookupPath
+			.split("->")
+			.map((segment) => segment.trim());
+		if (segments.length < 2 || segments.some((segment) => !segment)) {
+			return { success: false, error: `nested Beacon deletes require a root and at least one subfield` };
+		}
+		operation = String(operation || "current").toLowerCase();
+		if (!["current", "max"].includes(operation)) {
+			return { success: false, error: `Beacon structured deletes support only current or max` };
+		}
+		const requestedSegments = segments.slice();
+		const requestedRoot = segments.shift();
+		let rootName = normalizeBeaconLookupName(requestedRoot) === "sheet" ? "store" : requestedRoot;
+		const repeatingDeleteContext = consumeBeaconRepeatingWritableTarget(
+			characterId,
+			normalizedLookupPath,
+			operation
+		);
+		if (repeatingDeleteContext && repeatingDeleteContext.operation !== operation) {
+			return {
+				success: false,
+				error: `the repeating delete target expected ${repeatingDeleteContext.operation}, but the command requested ${operation}`
+			};
+		}
+		let rootAttribute = findObjs({
+			_type: "attribute",
+			_characterid: characterId,
+			name: rootName
+		}, { caseInsensitive: true })[0];
+		let typedCollectionResolution;
+		if (!rootAttribute) {
+			typedCollectionResolution = resolveBeaconTypedCollectionWritePath(
+				characterId,
+				requestedSegments,
+				operation
+			);
+			if (!typedCollectionResolution.success) {
+				if (typedCollectionResolution.matched) {
+					return { success: false, error: typedCollectionResolution.error };
+				}
+				return { success: true, existed: false, rootName, operation, path: segments };
+			}
+			rootName = typedCollectionResolution.rootName;
+			rootAttribute = typedCollectionResolution.rootAttribute;
+			segments = typedCollectionResolution.path.slice();
+			addBeaconPerformanceStat("typedCollectionDeletePathResolutions");
+		}
+		const rawRoot = rootAttribute.get(operation);
+		const parsedRoot = parseBeaconStructuredValue(rawRoot);
+		if (!parsedRoot || typeof parsedRoot !== "object") {
+			return { success: true, existed: false, rootName, operation, path: segments };
+		}
+		let updatedRoot;
+		try {
+			updatedRoot = JSON.parse(JSON.stringify(parsedRoot));
+		} catch (error) {
+			return { success: false, error: `Beacon root "${rootName}" could not be cloned: ${error.message}` };
+		}
+
+		const deleted = deleteBeaconStructuredValue(updatedRoot, segments);
+		if (!deleted.success) {
+			return deleted;
+		}
+		if (!deleted.existed) {
+			return { success: true, existed: false, rootName, operation, path: segments };
+		}
+
+		let recordPruned = false;
+		let rowDeleted = false;
+		let prunedPreviousValue;
+		let prunedArrayElement = false;
+		if (repeatingDeleteContext && Array.isArray(repeatingDeleteContext.recordPath)) {
+			const remainingRecord = getBeaconStructuredExistingLeaf(updatedRoot, repeatingDeleteContext.recordPath);
+			if (remainingRecord.success
+				&& remainingRecord.value
+				&& typeof remainingRecord.value === "object"
+				&& !Array.isArray(remainingRecord.value)) {
+				if (!beaconRepeatingRecordHasMeaningfulFields(
+					remainingRecord.value,
+					repeatingDeleteContext.sectionName
+				)) {
+					prunedPreviousValue = remainingRecord.value;
+					const removedRecord = deleteBeaconStructuredValue(updatedRoot, repeatingDeleteContext.recordPath);
+					recordPruned = removedRecord.success && removedRecord.existed;
+					prunedArrayElement = Boolean(removedRecord.arrayElement);
+					rowDeleted = recordPruned && operation === "current";
+				}
+			}
+		}
+
+		let rawCompanionMaxRoot;
+		let updatedCompanionMaxRoot;
+		let companionMaxDeleted;
+		if (rowDeleted && repeatingDeleteContext && Array.isArray(repeatingDeleteContext.recordPath)) {
+			rawCompanionMaxRoot = rootAttribute.get("max");
+			const parsedCompanionMaxRoot = parseBeaconStructuredValue(rawCompanionMaxRoot);
+			if (parsedCompanionMaxRoot && typeof parsedCompanionMaxRoot === "object") {
+				try {
+					updatedCompanionMaxRoot = JSON.parse(JSON.stringify(parsedCompanionMaxRoot));
+				} catch (error) {
+					return { success: false, error: `Beacon max root "${rootName}" could not be cloned for row cleanup: ${error.message}` };
+				}
+				companionMaxDeleted = deleteBeaconStructuredValue(
+					updatedCompanionMaxRoot,
+					repeatingDeleteContext.recordPath
+				);
+			}
+		}
+
+		const writeProperties = {
+			[operation]: typeof rawRoot === "string" ? JSON.stringify(updatedRoot) : updatedRoot
+		};
+		if (companionMaxDeleted && companionMaxDeleted.success && companionMaxDeleted.existed) {
+			writeProperties.max = typeof rawCompanionMaxRoot === "string"
+				? JSON.stringify(updatedCompanionMaxRoot)
+				: updatedCompanionMaxRoot;
+		}
+		try {
+			rootAttribute.setWithWorker(writeProperties);
+		} catch (error) {
+			return { success: false, error: error && error.message ? error.message : error };
+		}
+
+		const rollbackProperties = { [operation]: rawRoot };
+		if (companionMaxDeleted && companionMaxDeleted.success && companionMaxDeleted.existed) {
+			rollbackProperties.max = rawCompanionMaxRoot;
+		}
+
+		const verifyPath = recordPruned && repeatingDeleteContext && Array.isArray(repeatingDeleteContext.recordPath)
+			? repeatingDeleteContext.recordPath
+			: segments;
+		const verifyPreviousValue = recordPruned ? prunedPreviousValue : deleted.previousValue;
+		const allowReplacement = recordPruned ? prunedArrayElement : Boolean(deleted.arrayElement);
+		const persisted = await waitForBeaconStructuredDelete(
+			rootAttribute,
+			verifyPath,
+			verifyPreviousValue,
+			operation,
+			allowReplacement
+		);
+		if (!persisted.success) {
+			const rollbackError = restoreBeaconStructuredRoots(rootAttribute, rollbackProperties, characterId);
+			return {
+				success: false,
+				rolledBack: !rollbackError,
+				error: rollbackError
+					? `the delete was submitted, ${rootName}.${operation}->${verifyPath.join("->")} remained present, and rollback failed: ${rollbackError}`
+					: `the delete was submitted, but ${rootName}.${operation}->${verifyPath.join("->")} remained present; the root was restored`
+			};
+		}
+
+		if (companionMaxDeleted && companionMaxDeleted.success && companionMaxDeleted.existed) {
+			const companionPersisted = await waitForBeaconStructuredDelete(
+				rootAttribute,
+				repeatingDeleteContext.recordPath,
+				companionMaxDeleted.previousValue,
+				"max",
+				Boolean(companionMaxDeleted.arrayElement)
+			);
+			if (!companionPersisted.success) {
+				const rollbackError = restoreBeaconStructuredRoots(rootAttribute, rollbackProperties, characterId);
+				return {
+					success: false,
+					rolledBack: !rollbackError,
+					error: rollbackError
+						? `the current row was removed, its companion max record remained, and rollback failed: ${rollbackError}`
+						: `the current row was removed, but its companion max record remained; both roots were restored`
+				};
+			}
+		}
+
+		invalidateBeaconCharacterCaches(characterId);
+		if (repeatingDeleteContext) {
+			if (rowDeleted) {
+				const projected = await waitForBeaconRepeatingRowDeletion(repeatingDeleteContext);
+				if (!projected.success) {
+					return {
+						success: false,
+						error: `the canonical row was deleted, but ${repeatingDeleteContext.sectionName} row ${repeatingDeleteContext.rowId} remained projected`
+					};
+				}
+				clearCachedBeaconAttributeRepeatingRow(characterId, repeatingDeleteContext.sectionName, repeatingDeleteContext.rowId);
+				clearLoadedBeaconRepeatingState(characterId);
+			} else {
+				// Beacon may continue to expose a synthesized/defaulted compatibility value after
+				// the canonical leaf is deleted. Treat the persisted root deletion as authoritative
+				// and refresh the projected row.
+				invalidateBeaconCharacterCaches(characterId);
+				const state = await buildBeaconRepeatingState(characterId, repeatingDeleteContext.sectionName, false);
+				const rowIndex = state && state.rows
+					? state.rows.findIndex((row) => String(row.id) === String(repeatingDeleteContext.rowId))
+					: -1;
+				if (rowIndex < 0) {
+					clearLoadedBeaconRepeatingState(characterId);
+				} else {
+					setCurrentBeaconRepeatingRow(state, rowIndex);
+				}
+			}
+		} else {
+			clearLoadedBeaconRepeatingState(characterId);
+		}
+		return {
+			success: true,
+			existed: true,
+			rootName,
+			operation,
+			path: segments,
+			previousValue: deleted.previousValue,
+			recordPruned,
+			rowDeleted,
+			companionMaxDeleted: Boolean(companionMaxDeleted && companionMaxDeleted.existed),
+			writeRoute: rowDeleted
+				? `attribute.setWithWorker with empty canonical row pruning${companionMaxDeleted && companionMaxDeleted.existed ? " and companion max cleanup" : ""}`
+				: (recordPruned && operation === "max"
+					? "attribute.setWithWorker with empty maximum-record pruning"
+					: (typedCollectionResolution
+						? `typed collection ${typedCollectionResolution.collectionName}->${typedCollectionResolution.selector} translated to ${rootName}.${operation}->${segments.join("->")} for verified property deletion`
+						: "attribute.setWithWorker with verified property deletion"))
+		};
+	}
+
+	function cacheBeaconAttributeRepeatingRow(state, rowIndex) {
+		if (!state || !state.rows || !state.rows[rowIndex]) {
+			return;
+		}
+		const row = state.rows[rowIndex];
+		const key = `${state.characterId}\u0000${state.sectionName.toLowerCase()}\u0000${String(row.id)}`;
+		let record = row.record;
+		try {
+			record = JSON.parse(JSON.stringify(row.record));
+		} catch (error) {
+			// Use the unmodified snapshot when cloning is unavailable.
+		}
+		beaconAttributeRepeatingRowCache.set(key, {
+			characterId: String(state.characterId),
+			sectionName: state.sectionName,
+			row: {
+				...row,
+				record,
+				path: Array.isArray(row.path) ? row.path.slice() : row.path,
+				values: {}
+			}
+		});
+	}
+
+	function getCachedBeaconAttributeRepeatingTarget(characterId, requestedName) {
+		for (const cached of beaconAttributeRepeatingRowCache.values()) {
+			if (String(cached.characterId) !== String(characterId)) {
+				continue;
+			}
+			const prefix = `${cached.sectionName}_${cached.row.id}_`;
+			if (!requestedName.toLowerCase().startsWith(prefix.toLowerCase())) {
+				continue;
+			}
+			let fieldName = requestedName.substring(prefix.length);
+			let operation = "current";
+			if (/_max$/i.test(fieldName)) {
+				fieldName = fieldName.substring(0, fieldName.length - 4);
+				operation = "max";
+			}
+			return {
+				state: {
+					characterId: cached.characterId,
+					sectionName: cached.sectionName,
+					rows: [cached.row],
+					enumerationRoute: "attribute;set cached canonical row"
+				},
+				rowIndex: 0,
+				fieldName,
+				operation
+			};
+		}
+		return undefined;
+	}
+
+	function clearCachedBeaconAttributeRepeatingRow(characterId, sectionName, rowId) {
+		const key = `${characterId}\u0000${String(sectionName).toLowerCase()}\u0000${String(rowId)}`;
+		beaconAttributeRepeatingRowCache.delete(key);
+	}
+
+	async function resolveBeaconAttributeSetRepeatingTarget(characterId, attributeName, debug, options = {}) {
+		const requestedName = String(attributeName == null ? "" : attributeName).trim();
+		if (!/^repeating_/i.test(requestedName)) {
+			return { success: false, error: `the name is not a repeating attribute` };
+		}
+		const cachedTarget = options.allowCached === false
+			? undefined
+			: getCachedBeaconAttributeRepeatingTarget(characterId, requestedName);
+		if (cachedTarget) {
+			if (debug) {
+				log(`ScriptCards Beacon ${options.logPrefix || "attribute;set"}: ${requestedName} reused the cached canonical row path after its public projection changed.`);
+			}
+			return { success: true, ...cachedTarget };
+		}
+		const testState = async (state) => {
+			if (!state || !Array.isArray(state.rows)) {
+				return undefined;
+			}
+			const prefix = `${state.sectionName}_`;
+			if (!requestedName.toLowerCase().startsWith(prefix.toLowerCase())) {
+				return undefined;
+			}
+			const remainder = requestedName.substring(prefix.length);
+			const rows = state.rows.slice().sort((left, right) => String(right.id).length - String(left.id).length);
+			for (let rowIndex = 0; rowIndex < rows.length; rowIndex++) {
+				const rowPrefix = `${rows[rowIndex].id}_`;
+				if (remainder.startsWith(rowPrefix)) {
+					const actualIndex = state.rows.findIndex((row) => String(row.id) === String(rows[rowIndex].id));
+					let fieldName = remainder.substring(rowPrefix.length);
+					let operation = options.operationOverride || "current";
+					if (!options.operationOverride && /_max$/i.test(fieldName)) {
+						fieldName = fieldName.substring(0, fieldName.length - 4);
+						operation = "max";
+					}
+					return { state, rowIndex: actualIndex, fieldName, operation };
+				}
+			}
+			return undefined;
+		};
+
+		if (repeatingBeaconState && String(repeatingBeaconState.characterId) === String(characterId)) {
+			const loadedMatch = await testState(repeatingBeaconState);
+			if (loadedMatch) {
+				if (options.cache !== false) {
+					cacheBeaconAttributeRepeatingRow(loadedMatch.state, loadedMatch.rowIndex);
+				}
+				return { success: true, ...loadedMatch };
+			}
+		}
+
+		const underscorePositions = [];
+		for (let index = "repeating_".length; index < requestedName.length; index++) {
+			if (requestedName[index] === "_") {
+				underscorePositions.push(index);
+			}
+		}
+		for (const position of underscorePositions) {
+			const sectionName = requestedName.substring(0, position);
+			const state = await buildBeaconRepeatingState(characterId, sectionName, false);
+			const match = await testState(state);
+			if (match) {
+				if (options.cache !== false) {
+					cacheBeaconAttributeRepeatingRow(match.state, match.rowIndex);
+				}
+				if (debug) {
+					log(`ScriptCards Beacon ${options.logPrefix || "attribute;set"}: ${requestedName} resolved to ${state.sectionName} row ${state.rows[match.rowIndex].id} field ${match.fieldName}${match.operation === "max" ? " max" : ""}.`);
+				}
+				return { success: true, ...match };
+			}
+		}
+		return { success: false, error: `no Beacon repeating row matched "${requestedName}"` };
+	}
+
+	async function setExistingBeaconRepeatingAttribute(characterId, attributeName, value, operation, debug) {
+		const requestedName = String(attributeName == null ? "" : attributeName).trim();
+		const settingValue = String(value == null ? "" : value);
+		const target = await resolveBeaconAttributeSetRepeatingTarget(
+			characterId,
+			requestedName,
+			debug,
+			{
+				allowCached: false,
+				cache: false,
+				operationOverride: operation,
+				logPrefix: "--!a"
+			}
+		);
+		if (!target.success) {
+			return {
+				success: false,
+				error: `${target.error}; --!a does not create Beacon repeating rows. Create the row with --!or first.`
+			};
+		}
+
+		const writable = await getBeaconRepeatingWritablePath(
+			target.state,
+			target.rowIndex,
+			target.fieldName,
+			debug,
+			operation,
+			{ allowProtected: true }
+		);
+		if (!writable.success) {
+			return writable;
+		}
+
+		const row = target.state.rows[target.rowIndex];
+		let fieldExists = false;
+		let existingValue = "";
+		if (operation === "max") {
+			let rootAttribute = row.attributeId ? getObj("attribute", row.attributeId) : undefined;
+			if (!rootAttribute && row.rootAttributeName) {
+				rootAttribute = findObjs({
+					_type: "attribute",
+					_characterid: characterId,
+					name: row.rootAttributeName
+				}, { caseInsensitive: true })[0];
+			}
+			if (rootAttribute) {
+				const maxRoot = parseBeaconStructuredValue(rootAttribute.get("max"));
+				const located = getBeaconStructuredExistingLeaf(maxRoot, row.path.concat(writable.fieldName));
+				if (located.success) {
+					fieldExists = true;
+					existingValue = located.value;
+				}
+			}
+		} else {
+			const existingKey = beaconOwnPropertyKey(row.record, writable.fieldName);
+			if (existingKey !== undefined) {
+				fieldExists = true;
+				existingValue = row.record[existingKey];
+			}
+		}
+
+		let finalValue = settingValue;
+		if (settingValue.startsWith("+=") || settingValue.startsWith("-=")) {
+			const add = settingValue.startsWith("+=");
+			const delta = settingValue.substring(2);
+			if (!fieldExists) {
+				finalValue = add ? delta : `-${delta}`;
+				if (isNumber(finalValue)) {
+					finalValue = Number(finalValue);
+				}
+			} else if (isNumber(existingValue) && isNumber(delta)) {
+				finalValue = add
+					? Number(existingValue) + Number(delta)
+					: Number(existingValue) - Number(delta);
+			} else {
+				finalValue = `${existingValue == null ? "" : existingValue}${delta}`;
+			}
+		}
+
+		registerBeaconRepeatingWritableTarget(writable);
+		const result = await writeBeaconStructuredPath(
+			characterId,
+			writable.path,
+			finalValue,
+			operation,
+			{
+				createMissingLeaf: true,
+				sampleValue: writable.sampleValue,
+				preserveBlank: finalValue === ""
+			}
+		);
+		if (debug && result.success) {
+			log(`ScriptCards Beacon --!a repeating write: ${requestedName}.${operation} = ${JSON.stringify(finalValue)} through ${result.writeRoute || "canonical repeating write"}.`);
+		}
+		return result;
+	}
+
+	async function getBeaconAttributeSetSheetItemTarget(characterId, requestedName, operation) {
+		const explicitCustom = requestedName.toLowerCase().startsWith("user.");
+		const schemaProperty = explicitCustom ? undefined : getBeaconComputedTokenBarProperty(requestedName);
+		const nativeName = schemaProperty ? schemaProperty.property : requestedName;
+		try {
+			const nativeValue = await readBeaconSheetItem(characterId, nativeName, operation);
+			if (!beaconLookupIsUnresolved(nativeValue)) {
+				return { exists: true, targetName: nativeName, value: nativeValue, route: explicitCustom ? "custom sheet item" : "native sheet item" };
+			}
+		} catch (error) {
+			// Missing values continue to custom fallback or creation.
+		}
+		if (explicitCustom) {
+			return { exists: false, targetName: requestedName, value: undefined, route: "custom sheet item" };
+		}
+		const customName = `user.${requestedName}`;
+		try {
+			const customValue = await readBeaconSheetItem(characterId, customName, operation);
+			if (!beaconLookupIsUnresolved(customValue)) {
+				return { exists: true, targetName: customName, value: customValue, route: "custom sheet item" };
+			}
+		} catch (error) {
+			// Missing custom values can be created by a nonblank set.
+		}
+		return { exists: false, targetName: customName, value: undefined, route: "custom sheet item" };
+	}
+
+	async function waitForBeaconSheetItem(characterId, name, operation, expected, missing) {
+		const result = await pollBeaconUntilSuccess(async () => {
+			let value;
+			try {
+				value = await readBeaconSheetItem(characterId, name, operation, { fresh: true, cacheResult: false });
+			} catch (error) {
+				value = undefined;
+			}
+			const valueMatches = beaconStructuredWriteValuesMatch(value, expected)
+				|| (value !== undefined && value !== null && expected !== undefined && expected !== null
+					&& String(value) === String(expected));
+			return { success: missing ? beaconLookupIsUnresolved(value) : valueMatches, value };
+		});
+		return result.success ? result : { success: false };
+	}
+
+	async function setBeaconAttributeFunction(characterId, attributeName, value, debug) {
+		const character = getObj("character", characterId);
+		if (!character) {
+			return { success: false, error: `unable to find character ${characterId}` };
+		}
+		const requestedName = String(attributeName == null ? "" : attributeName).trim();
+		const settingValue = String(value == null ? "" : value).trim();
+		if (!requestedName) {
+			return { success: false, error: `an attribute name is required` };
+		}
+
+		if (/^(?:b-|c-)/i.test(requestedName)) {
+			return { success: false, error: `Beacon prefixes have been removed; use "${requestedName.substring(2)}"` };
+		}
+
+		const explicitBeacon = requestedName.includes("->");
+		if (!explicitBeacon) {
+			const exactClassicAttributes = findObjs({
+				_type: "attribute",
+				_characterid: characterId,
+				name: requestedName
+			});
+			if (exactClassicAttributes.length) {
+				exactClassicAttributes.forEach((attribute) => attribute.remove());
+				if (settingValue !== "") {
+					createObj("attribute", { _characterid: characterId, name: requestedName, current: settingValue });
+				}
+				invalidateBeaconCharacterCaches(characterId);
+				if (debug) {
+					log(`ScriptCards Beacon attribute;set: used exact classic Attribute replacement for ${requestedName}; ${settingValue === "" ? "deleted" : "recreated"} ${exactClassicAttributes.length} matching object(s).`);
+				}
+				return { success: true, route: "classic Attribute objects", deleted: settingValue === "" };
+			}
+		}
+
+		if (/^repeating_/i.test(requestedName)) {
+			const target = await resolveBeaconAttributeSetRepeatingTarget(characterId, requestedName, debug);
+			if (!target.success) {
+				return settingValue === "" ? { success: true, existed: false, route: "missing repeating attribute" } : target;
+			}
+			const writable = await getBeaconRepeatingWritablePath(
+				target.state,
+				target.rowIndex,
+				target.fieldName,
+				debug,
+				target.operation,
+				{ allowProtected: true, allowContainerDelete: settingValue === "" }
+			);
+			if (!writable.success) {
+				return writable;
+			}
+			registerBeaconRepeatingWritableTarget(writable);
+			const result = settingValue === ""
+				? await deleteBeaconStructuredPath(characterId, writable.path, target.operation)
+				: await writeBeaconStructuredPath(characterId, writable.path, settingValue, target.operation, { createMissingLeaf: true, sampleValue: writable.sampleValue });
+			if (debug && result.success) {
+				log(`ScriptCards Beacon attribute;set: ${requestedName} ${settingValue === "" ? "deleted" : "set"} through ${result.writeRoute || "canonical repeating write"}${result.rowDeleted ? "; the empty canonical row was removed" : ""}.`);
+			}
+			return result;
+		}
+
+		let operation = "current";
+		let beaconName = requestedName;
+		if (beaconName.endsWith("^")) {
+			operation = "max";
+			beaconName = beaconName.substring(0, beaconName.length - 1);
+		}
+		if (beaconName.includes("->")) {
+			const result = settingValue === ""
+				? await deleteBeaconStructuredPath(characterId, beaconName, operation)
+				: await writeBeaconStructuredPath(characterId, beaconName, settingValue, operation, { createMissingLeaf: true });
+			if (debug && result.success) {
+				log(`ScriptCards Beacon attribute;set: ${beaconName}${operation === "max" ? "^" : ""} ${settingValue === "" ? "deleted" : "set"} through ${result.writeRoute || "structured write"}.`);
+			}
+			return result;
+		}
+
+		const target = await getBeaconAttributeSetSheetItemTarget(characterId, beaconName, operation);
+		if (!target.exists && settingValue === "") {
+			return { success: true, existed: false, route: "missing sheet item" };
+		}
+
+		if (settingValue === "" && target.targetName.toLowerCase().startsWith("user.")) {
+			const backingAttributes = findObjs({
+				_type: "attribute",
+				_characterid: characterId,
+				name: target.targetName
+			});
+			if (backingAttributes.length) {
+				backingAttributes.forEach((attribute) => attribute.remove());
+				beaconSheetItemCache.delete(getBeaconSheetItemCacheKey(characterId, operation, target.targetName));
+				invalidateBeaconCharacterCaches(characterId);
+				const verified = await waitForBeaconSheetItem(characterId, target.targetName, operation, undefined, true);
+				if (!verified.success) {
+					return { success: false, error: `custom sheet item "${target.targetName}" remained after its backing Attribute object was removed` };
+				}
+				if (debug) {
+					log(`ScriptCards Beacon attribute;set: deleted custom sheet item ${target.targetName} by removing ${backingAttributes.length} backing Attribute object(s).`);
+				}
+				return { success: true, deleted: true, route: "custom Attribute object removal" };
+			}
+		}
+
+		try {
+			await setSheetItem(characterId, target.targetName, settingValue, operation, { allowThrow: true });
+			invalidateBeaconCharacterCaches(characterId);
+		} catch (error) {
+			return { success: false, error: error && error.message ? error.message : error };
+		}
+		const verified = await waitForBeaconSheetItem(characterId, target.targetName, operation, settingValue, false);
+		if (!verified.success) {
+			return { success: false, error: `${target.targetName}.${operation} did not persist as ${JSON.stringify(settingValue)}` };
+		}
+		if (debug) {
+			log(`ScriptCards Beacon attribute;set: ${settingValue === "" ? "cleared" : "set"} ${target.targetName}.${operation} through ${target.route}.`);
+		}
+		return { success: true, value: settingValue, route: target.route, cleared: settingValue === "" };
+	}
+
+	function beaconPrimitive(value) {
+		return value === null || value === undefined || ["string", "number", "boolean"].includes(typeof value);
+	}
+
+	function beaconFirstPrimitive(record, paths) {
+		for (const path of paths) {
+			let value = record;
+			for (const property of path) {
+				value = beaconProperty(value, property);
+				if (value === undefined || value === null) {
+					break;
+				}
+			}
+			if (beaconPrimitive(value) && value !== undefined && value !== null && String(value).trim() !== "") {
+				return value;
+			}
+		}
+		return undefined;
+	}
+
+	function beaconRecordIdentity(record) {
+		const identity = beaconFirstPrimitive(record, [["name"], ["label"], ["title"], ["slug"]]);
+		return identity === undefined ? "" : String(identity).trim();
+	}
+
+	function beaconRecordStableIdentity(record) {
+		const identity = beaconFirstPrimitive(record, [["shortID"], ["uuid"]]);
+		return identity === undefined ? "" : String(identity).trim();
+	}
+
+	function beaconRecordRawIdentity(record) {
+		const identity = beaconFirstPrimitive(record, [["_id"], ["id"], ["key"], ["uuid"]]);
+		return identity === undefined ? "" : String(identity).trim();
+	}
+
+	function beaconRecordEnabledState(record) {
+		for (const key of ["_enabled", "enabled"]) {
+			const value = beaconProperty(record, key);
+			if (value !== undefined) {
+				return ![false, 0, null, "false", "0", "off", "no"].includes(
+					typeof value === "string" ? value.trim().toLowerCase() : value
+				);
+			}
+		}
+		return undefined;
+	}
+
+	function beaconRecordOrder(record) {
+		for (const key of BEACON_RECORD_ORDER_FIELDS) {
+			const value = Number(beaconProperty(record, key));
+			if (Number.isFinite(value)) {
+				return value;
+			}
+		}
+		return Number.MAX_SAFE_INTEGER;
+	}
+
+	function pluralizeBeaconType(value) {
+		const phrase = String(value == null ? "" : value).trim();
+		if (!phrase) {
+			return "";
+		}
+		const words = phrase.split(/\s+/);
+		const word = words.pop();
+		let pluralWord;
+		if (/s$/i.test(word) && !/(ss|us|is)$/i.test(word)) {
+			return phrase;
+		}
+		if (/is$/i.test(word)) {
+			pluralWord = `${word.slice(0, -2)}es`;
+		} else if (/[^aeiou]y$/i.test(word)) {
+			pluralWord = `${word.slice(0, -1)}ies`;
+		} else if (/(s|x|z|ch|sh)$/i.test(word)) {
+			pluralWord = `${word}es`;
+		} else {
+			pluralWord = `${word}s`;
+		}
+		return words.concat(pluralWord).join(" ");
+	}
+
+	function readBeaconSubfields(value, subfields) {
+		let result = parseBeaconStructuredValue(value) || value;
+		for (const subfield of subfields) {
+			result = parseBeaconStructuredValue(result) || result;
+			if (Array.isArray(result) && !/^\d+$/.test(String(subfield))) {
+				const identity = normalizeBeaconLookupName(subfield);
+				const matches = result.filter((record) =>
+					record
+					&& typeof record === "object"
+					&& !Array.isArray(record)
+					&& beaconRecordEnabledState(record) !== false
+					&& normalizeBeaconLookupName(beaconRecordIdentity(record)) === identity
+				);
+				if (matches.length !== 1) {
+					return undefined;
+				}
+				result = matches[0];
+			} else {
+				result = beaconProperty(result, subfield);
+			}
+			if (result === undefined || result === null) {
+				return undefined;
+			}
+		}
+		return result;
+	}
+
+
+	function getBeaconTypedEntries(characterId, operation, collectionName) {
+		let indexed = getBeaconTypedCollectionIndex(characterId, operation, false);
+		let entries = indexed.index[operation].get(normalizeBeaconLookupName(collectionName));
+		if (!entries && !indexed.index.fallbackBuilt[operation]) {
+			indexed = getBeaconTypedCollectionIndex(characterId, operation, true);
+			entries = indexed.index[operation].get(normalizeBeaconLookupName(collectionName));
+		}
+		return entries || [];
+	}
+
+	function findBeaconTypedRecord(characterId, operation, collectionName, predicate) {
+		const entries = getBeaconTypedEntries(characterId, operation, collectionName);
+		for (const entry of entries) {
+			if (predicate(entry.record)) {
+				return entry.record;
+			}
+		}
+		return undefined;
+	}
+
+	function beaconProficiencyIsActive(value) {
+		if (value === undefined || value === null || value === false || value === 0) {
+			return false;
+		}
+		const normalized = normalizeBeaconLookupName(value);
+		return !["", "0", "false", "off", "no", "none", "notproficient", "untrained"].includes(normalized);
+	}
+
+
+	function getBeaconTypedRecords(characterId, operation, collectionName) {
+		return getBeaconTypedEntries(characterId, operation, collectionName).map((entry) => entry.record);
+	}
+
+	function beaconNumericPrimitive(record, paths) {
+		const value = beaconFirstPrimitive(record, paths);
+		const number = Number(value);
+		return Number.isFinite(number) ? number : undefined;
+	}
+
+	function beaconSingleNumericRecordValue(characterId, collectionName, predicate, valuePaths, operation = "current") {
+		const matches = getBeaconTypedRecords(characterId, operation, collectionName)
+			.filter((record) => !predicate || predicate(record))
+			.map((record) => beaconNumericPrimitive(record, valuePaths))
+			.filter((value) => value !== undefined);
+		return matches.length === 1 ? matches[0] : undefined;
+	}
+
+	function readDnd2024BeaconStoreValue(characterId, path, operation = "current") {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter) {
+			return undefined;
+		}
+		const index = getBeaconStructuredIndex(characterId);
+		const storeRoot = getBeaconStructuredRoot(index, operation, adapter.rootNames.store);
+		if (!storeRoot.found) {
+			return undefined;
+		}
+		const value = readBeaconSubfields(storeRoot.value, path);
+		return beaconLookupIsUnresolved(value) ? undefined : value;
+	}
+
+	function dnd2024ChallengeNumber(value) {
+		if (value === undefined || value === null || String(value).trim() === "") {
+			return undefined;
+		}
+		const text = String(value).trim();
+		if (text.includes("/")) {
+			const parts = text.split("/").map(Number);
+			if (parts.length === 2 && Number.isFinite(parts[0]) && Number.isFinite(parts[1]) && parts[1] !== 0) {
+				return parts[0] / parts[1];
+			}
+		}
+		const number = Number(text);
+		return Number.isFinite(number) ? number : undefined;
+	}
+
+	function dnd2024ChallengeXp(characterId, value) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		const challenge = dnd2024ChallengeNumber(value);
+		if (!adapter || challenge === undefined) {
+			return undefined;
+		}
+		return adapter.xpByChallenge.get(challenge);
+	}
+
+	function dnd2024BeaconProficiencyBonus(characterId) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter) {
+			return undefined;
+		}
+		const classLevels = getBeaconTypedRecords(characterId, "current", adapter.collections.classLevels)
+			.filter((record) => {
+				const classId = beaconProperty(record, adapter.fields.classID);
+				return classId !== undefined && classId !== null && String(classId).trim() !== "";
+			})
+			.map((record) => Number(beaconProperty(record, adapter.fields.totalLevel)))
+			.filter((value) => Number.isFinite(value) && value > 0);
+		let level;
+		if (classLevels.length) {
+			level = Math.max(...classLevels);
+		} else {
+			const challenge = dnd2024ChallengeNumber(readDnd2024BeaconStoreValue(characterId, adapter.storedAliases.npcchallenge));
+			if (challenge !== undefined) {
+				level = Math.max(1, challenge);
+			}
+		}
+		return level === undefined ? undefined : 2 + Math.floor((level - 1) / 4);
+	}
+
+	function dnd2024BeaconAbilityScore(characterId, abilityName) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter) {
+			return undefined;
+		}
+
+		const normalizedAbility = normalizeBeaconLookupName(abilityName);
+		const records = getBeaconTypedRecords(characterId, "current", adapter.collections.abilityScores)
+			.filter((record) =>
+				beaconRecordEnabledState(record) !== false
+				&& normalizeBeaconLookupName(beaconProperty(record, adapter.fields.ability)) === normalizedAbility
+			);
+
+		if (!records.length) {
+			return undefined;
+		}
+
+		let baseScore;
+		let modifyTotal = 0;
+		let minimumScore;
+
+		for (const record of records) {
+			const value = beaconNumericPrimitive(record, adapter.valuePaths.formulaFlatValue);
+			if (value === undefined) {
+				return undefined;
+			}
+
+			const calculation = normalizeBeaconLookupName(beaconProperty(record, "calculation"));
+			if (calculation === "setbase") {
+				// Multiple different base values are ambiguous. Defer to the native SDK result.
+				if (baseScore !== undefined && baseScore !== value) {
+					return undefined;
+				}
+				baseScore = value;
+				continue;
+			}
+
+			if (calculation === "modify") {
+				modifyTotal += value;
+				continue;
+			}
+
+			if (calculation === "minimum") {
+				minimumScore = minimumScore === undefined ? value : Math.max(minimumScore, value);
+				continue;
+			}
+
+			// A single simple score record supplies the base score.
+			if (!calculation && records.length === 1) {
+				baseScore = value;
+				continue;
+			}
+
+			return undefined;
+		}
+
+		if (baseScore === undefined) {
+			return undefined;
+		}
+
+		const combinedScore = baseScore + modifyTotal;
+		return minimumScore === undefined ? combinedScore : Math.max(combinedScore, minimumScore);
+	}
+
+	function dnd2024BeaconAbilityModifier(characterId, abilityName) {
+		const score = dnd2024BeaconAbilityScore(characterId, abilityName);
+		return score === undefined ? undefined : Math.floor((score - 10) / 2);
+	}
+
+	function dnd2024BeaconProficiencyMultiplier(value) {
+		if (!beaconProficiencyIsActive(value)) {
+			return 0;
+		}
+		const normalized = normalizeBeaconLookupName(value);
+		if (normalized.includes("expert") || normalized === "2" || normalized.includes("double")) {
+			return 2;
+		}
+		if (normalized.includes("half") || normalized === "0.5") {
+			return 0.5;
+		}
+		return 1;
+	}
+
+	function dnd2024BeaconHasRollBonuses(characterId) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		return !!adapter && getBeaconTypedRecords(characterId, "current", adapter.collections.rollBonuses).length > 0;
+	}
+
+	function dnd2024BeaconSkillTotal(characterId, skillName) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter) {
+			return undefined;
+		}
+		// Roll Bonus records can alter the final value in ways that cannot be safely
+		// reconstructed from a primitive-only local projection. Fall back to the SDK.
+		if (dnd2024BeaconHasRollBonuses(characterId)) {
+			return undefined;
+		}
+		const skillRecord = findBeaconTypedRecord(characterId, "current", adapter.collections.skills, (candidate) =>
+			normalizeBeaconLookupName(beaconProperty(candidate, "name")) === normalizeBeaconLookupName(skillName)
+		);
+		const abilityName = skillRecord && beaconProperty(skillRecord, "ability")
+			? String(beaconProperty(skillRecord, "ability"))
+			: adapter.standardSkillAbilities[normalizeBeaconLookupName(skillName)];
+		const abilityModifier = abilityName ? dnd2024BeaconAbilityModifier(characterId, abilityName) : undefined;
+		const proficiencyBonus = dnd2024BeaconProficiencyBonus(characterId);
+		if (abilityModifier === undefined || proficiencyBonus === undefined) {
+			return undefined;
+		}
+		const proficiencyRecord = findBeaconTypedRecord(characterId, "current", adapter.collections.proficiencies, (candidate) =>
+			normalizeBeaconLookupName(beaconProperty(candidate, adapter.fields.category)) === normalizeBeaconLookupName(adapter.proficiencyCategories.skill)
+			&& normalizeBeaconLookupName(beaconProperty(candidate, adapter.fields.proficiency)) === normalizeBeaconLookupName(skillName)
+		);
+		const multiplier = proficiencyRecord
+			? dnd2024BeaconProficiencyMultiplier(beaconProperty(proficiencyRecord, adapter.fields.proficiencyLevel))
+			: 0;
+		return abilityModifier + proficiencyBonus * multiplier;
+	}
+
+
+	function dnd2024BeaconFlattenText(value) {
+		if (Array.isArray(value)) {
+			return value.map((entry) => dnd2024BeaconFlattenText(entry)).filter(Boolean).join(", ");
+		}
+		if (value && typeof value === "object") {
+			return Object.values(value).map((entry) => dnd2024BeaconFlattenText(entry)).filter(Boolean).join(", ");
+		}
+		if (value === undefined || value === null) {
+			return "";
+		}
+		if (typeof value === "string") {
+			const trimmed = value.trim();
+			if ((trimmed.startsWith("[") && trimmed.endsWith("]"))
+				|| (trimmed.startsWith("{") && trimmed.endsWith("}"))) {
+				try {
+					return dnd2024BeaconFlattenText(JSON.parse(trimmed));
+				} catch (error) {
+					// Ordinary text may legitimately begin and end with brackets.
+				}
+			}
+			return trimmed;
+		}
+		return String(value);
+	}
+
+	function dnd2024BeaconValueIsTrue(value) {
+		return parseBeaconBooleanValue(value).value === true;
+	}
+
+	function dnd2024BeaconValueIsFalse(value) {
+		return parseBeaconBooleanValue(value).value === false;
+	}
+
+	function dnd2024BeaconCanonicalRecords(characterId) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter) {
+			return undefined;
+		}
+		const index = getBeaconStructuredIndex(characterId);
+		const storeRoot = getBeaconStructuredRoot(index, "current", adapter.rootNames.store);
+		if (!storeRoot.found) {
+			return undefined;
+		}
+		const records = readBeaconSubfields(storeRoot.value, adapter.storePaths.integrants);
+		return records && typeof records === "object" && !Array.isArray(records) ? records : undefined;
+	}
+
+	function dnd2024BeaconSpellcastingAbility(characterId) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter) {
+			return undefined;
+		}
+		const spellcastings = getBeaconTypedRecords(characterId, "current", adapter.collections.spellcastings);
+		if (!spellcastings.length) {
+			return undefined;
+		}
+		const abilities = new Set();
+		for (const record of spellcastings) {
+			const rawAbility = beaconFirstPrimitive(record, [["ability"], ["spellcastingAbility"]]);
+			const normalizedAbility = normalizeBeaconLookupName(rawAbility);
+			const abilityName = adapter.abilityNames[normalizedAbility];
+			if (!abilityName) {
+				return undefined;
+			}
+			abilities.add(abilityName);
+		}
+		return abilities.size === 1 ? [...abilities][0] : undefined;
+	}
+
+	function dnd2024BeaconSpellHeaderBonuses(characterId) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		const canonicalRecords = dnd2024BeaconCanonicalRecords(characterId);
+		if (!adapter || !canonicalRecords) {
+			return undefined;
+		}
+
+		let attack = 0;
+		let save = 0;
+		const rollBonuses = getBeaconTypedRecords(characterId, "current", adapter.collections.rollBonuses);
+		for (const record of rollBonuses) {
+			const categoryText = dnd2024BeaconFlattenText(beaconProperty(record, "bonusCategory")).toLowerCase();
+			const nameText = dnd2024BeaconFlattenText(beaconProperty(record, "bonusName")).toLowerCase();
+			const detailsText = dnd2024BeaconFlattenText(beaconProperty(record, "bonusDetails")).toLowerCase();
+			const targetText = `${categoryText}, ${nameText}`;
+			const targetsAttack = targetText.includes("spell attack") || targetText.includes("spellcasting");
+			const targetsSave = targetText.includes("spell save") || targetText.includes("spellcasting");
+			if (!targetsAttack && !targetsSave) {
+				continue;
+			}
+
+			const parentId = beaconProperty(record, adapter.fields.parentID);
+			if (typeof parentId === "string" && parentId.trim()) {
+				const parent = canonicalRecords[parentId];
+				if (parent && normalizeBeaconLookupName(beaconProperty(parent, adapter.fields.type)) === "condition"
+					&& !dnd2024BeaconValueIsTrue(beaconProperty(parent, "_active"))) {
+					continue;
+				}
+			}
+
+			if (detailsText.includes("keep highest") || detailsText.includes("keep lowest")) {
+				continue;
+			}
+
+			const bonusValue = Number(beaconProperty(record, "bonusValue"));
+			if (detailsText !== "modifier" || !Number.isFinite(bonusValue)
+				|| !dnd2024BeaconValueIsFalse(beaconProperty(record, "totalRoll"))) {
+				// An unsupported spell-targeted bonus calculation makes the local total unsafe.
+				// Defer to the native SDK result.
+				return undefined;
+			}
+			if (targetsAttack) {
+				attack += bonusValue;
+			}
+			if (targetsSave) {
+				save += bonusValue;
+			}
+		}
+		return { attack, save };
+	}
+
+	function dnd2024BeaconSpellHeader(characterId) {
+		const abilityName = dnd2024BeaconSpellcastingAbility(characterId);
+		const abilityModifier = abilityName ? dnd2024BeaconAbilityModifier(characterId, abilityName) : undefined;
+		const proficiencyBonus = dnd2024BeaconProficiencyBonus(characterId);
+		const bonuses = dnd2024BeaconSpellHeaderBonuses(characterId);
+		if (abilityModifier === undefined || proficiencyBonus === undefined || !bonuses) {
+			return undefined;
+		}
+		return {
+			attack: abilityModifier + proficiencyBonus + bonuses.attack,
+			save: 8 + abilityModifier + proficiencyBonus + bonuses.save
+		};
+	}
+
+	function dnd2024BeaconSpellSlotLevelNumber(value, adapter) {
+		const numeric = Number(value);
+		if (Number.isInteger(numeric) && numeric >= 1 && numeric <= 9) {
+			return numeric;
+		}
+		const normalized = normalizeBeaconLookupName(value);
+		for (const [level, ordinal] of Object.entries(adapter.spellSlotOrdinals)) {
+			if (normalizeBeaconLookupName(ordinal) === normalized) {
+				return Number(level);
+			}
+		}
+		return undefined;
+	}
+
+	function dnd2024BeaconNormalSpellSlotTotal(characterId, requestedLevel) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		const canonicalRecords = dnd2024BeaconCanonicalRecords(characterId);
+		if (!adapter || !canonicalRecords || !Number.isInteger(requestedLevel)
+			|| requestedLevel < 1 || requestedLevel > 9) {
+			return undefined;
+		}
+
+		const matchingRecords = getBeaconTypedRecords(characterId, "current", adapter.collections.spellSlots)
+			.filter((record) => {
+				const slotType = normalizeBeaconLookupName(beaconProperty(record, adapter.fields.slotType));
+				return !slotType.includes("pact")
+					&& dnd2024BeaconSpellSlotLevelNumber(
+						beaconProperty(record, adapter.fields.spellLevel),
+						adapter
+					) === requestedLevel;
+			});
+
+		// No active non-Pact entitlement record means that this normal slot level has
+		// zero capacity. Pact capacity is intentionally not projected through lvlN_slots_total.
+		if (!matchingRecords.length) {
+			return 0;
+		}
+
+		let baseValue;
+		let modifyValue = 0;
+		let minimumValue;
+		let simpleValue;
+		let hasCalculatedRecord = false;
+
+		for (const record of matchingRecords) {
+			const rawValue = beaconFirstPrimitive(record, adapter.valuePaths.formulaFlatValue);
+			if (rawValue === undefined || rawValue === null
+				|| (typeof rawValue === "string" && rawValue.trim() === "")) {
+				return undefined;
+			}
+			const value = Number(rawValue);
+			if (!Number.isFinite(value)) {
+				return undefined;
+			}
+
+			const calculation = normalizeBeaconLookupName(beaconProperty(record, "calculation"));
+			if (calculation === "setbase") {
+				hasCalculatedRecord = true;
+				// Conflicting live Set Base values are ambiguous. Defer to the native result.
+				if (baseValue !== undefined && baseValue !== value) {
+					return undefined;
+				}
+				baseValue = value;
+				continue;
+			}
+
+			if (calculation === "modify") {
+				hasCalculatedRecord = true;
+				modifyValue += value;
+				continue;
+			}
+
+			if (calculation === "minimum") {
+				hasCalculatedRecord = true;
+				minimumValue = minimumValue === undefined ? value : Math.max(minimumValue, value);
+				continue;
+			}
+
+			// One simple finite Spell Slot record may define the capacity. Mixing a simple
+			// value with formula records is ambiguous and requires the native alias.
+			if (!calculation && simpleValue === undefined) {
+				simpleValue = value;
+				continue;
+			}
+
+			return undefined;
+		}
+
+		if (simpleValue !== undefined) {
+			if (hasCalculatedRecord || matchingRecords.length !== 1) {
+				return undefined;
+			}
+			return Math.max(0, simpleValue);
+		}
+
+		let total = (baseValue === undefined ? 0 : baseValue) + modifyValue;
+		if (minimumValue !== undefined) {
+			total = Math.max(total, minimumValue);
+		}
+		return Math.max(0, total);
+	}
+
+	function resolveDnd2024BeaconComputedAlias(characterId, lookupName, operation) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter) {
+			return { handled: false };
+		}
+		const normalized = normalizeBeaconLookupName(lookupName);
+
+		if ((operation === "max" && normalized === "hp")
+			|| (operation === "current" && normalized === "hpmax")) {
+			const value = beaconSingleNumericRecordValue(
+				characterId,
+				adapter.collections.hitPoints,
+				(record) => normalizeBeaconLookupName(beaconProperty(record, adapter.fields.isTemp)) !== "true",
+				adapter.valuePaths.formulaFlatValue
+			);
+			return value === undefined ? { handled: false } : { handled: true, found: true, value: String(value), source: "dnd2024-local-hp-max" };
+		}
+		if (operation !== "current") {
+			return { handled: false };
+		}
+
+		if (["level", "baselevel"].includes(normalized)) {
+			const totals = getBeaconTypedRecords(characterId, "current", adapter.collections.classLevels)
+				.map((record) => Number(beaconProperty(record, adapter.fields.totalLevel)))
+				.filter((value) => Number.isFinite(value) && value > 0);
+			const value = totals.length ? Math.max(...totals) : undefined;
+			return value === undefined ? { handled: false } : { handled: true, found: true, value: String(value), source: "dnd2024-local-level" };
+		}
+
+		if (normalized === "npcxp") {
+			const customXp = readDnd2024BeaconStoreValue(characterId, adapter.storedAliases.npccustomxp);
+			if (customXp !== undefined && customXp !== null && String(customXp).trim() !== "" && Number.isFinite(Number(customXp))) {
+				return { handled: true, found: true, value: String(Number(customXp)), source: "dnd2024-local-npc-xp-override" };
+			}
+			const xp = dnd2024ChallengeXp(characterId, readDnd2024BeaconStoreValue(characterId, adapter.storedAliases.npcchallenge));
+			return xp === undefined ? { handled: false } : { handled: true, found: true, value: String(xp), source: "dnd2024-local-npc-xp" };
+		}
+
+		if (normalized === "pb") {
+			const value = dnd2024BeaconProficiencyBonus(characterId);
+			return value === undefined ? { handled: false } : { handled: true, found: true, value: String(value), source: "dnd2024-local-pb" };
+		}
+
+		if (["spellattackbonus", "spellsavedc"].includes(normalized)) {
+			const header = dnd2024BeaconSpellHeader(characterId);
+			if (!header) {
+				return { handled: false };
+			}
+			const value = normalized === "spellattackbonus" ? header.attack : header.save;
+			return { handled: true, found: true, value: String(value), source: "dnd2024-local-spell-header" };
+		}
+
+		const spellSlotTotalMatch = normalized.match(/^lvl([1-9])slotstotal$/);
+		if (spellSlotTotalMatch) {
+			const value = dnd2024BeaconNormalSpellSlotTotal(characterId, Number(spellSlotTotalMatch[1]));
+			return value === undefined
+				? { handled: false }
+				: { handled: true, found: true, value: String(value), source: "dnd2024-local-normal-spell-slot-total" };
+		}
+
+		if (["speed", "npcspeed"].includes(normalized)) {
+			const value = beaconSingleNumericRecordValue(
+				characterId,
+				adapter.collections.speeds,
+				(record) => normalizeBeaconLookupName(beaconProperty(record, adapter.fields.speed)) === normalizeBeaconLookupName(adapter.movementModes.walking),
+				adapter.valuePaths.formulaFlatValue
+			);
+			return value === undefined ? { handled: false } : { handled: true, found: true, value: String(value), source: "dnd2024-local-speed" };
+		}
+
+		if (["ac", "npcac"].includes(normalized)) {
+			const value = beaconSingleNumericRecordValue(
+				characterId,
+				adapter.collections.armorClasses,
+				null,
+				adapter.valuePaths.formulaFlatValue
+			);
+			return value === undefined ? { handled: false } : { handled: true, found: true, value: String(value), source: "dnd2024-local-ac" };
+		}
+
+		if (["npcvulnerabilities", "npcresistances", "npcimmunities", "npcconditionimmunities"].includes(normalized)) {
+			const defenses = getBeaconTypedRecords(characterId, "current", adapter.collections.defenses);
+			// Empty defense collections are exact and common. Non-empty collections retain
+			// the native formatter until every category/value representation is validated.
+			return defenses.length === 0
+				? { handled: true, found: true, value: "", source: "dnd2024-local-empty-defenses" }
+				: { handled: false };
+		}
+
+		if (["initiativebonus", "initmod"].includes(normalized)) {
+			if (dnd2024BeaconHasRollBonuses(characterId)) {
+				return { handled: false };
+			}
+			const value = dnd2024BeaconAbilityModifier(characterId, "Dexterity");
+			return value === undefined ? { handled: false } : { handled: true, found: true, value: String(value), source: "dnd2024-local-initiative" };
+		}
+
+		if (normalized === "npcstealthbase") {
+			const value = dnd2024BeaconSkillTotal(characterId, "Stealth");
+			return value === undefined ? { handled: false } : { handled: true, found: true, value: String(value), source: "dnd2024-local-stealth" };
+		}
+
+		if (["passivewisdom", "passiveperceptionmod"].includes(normalized)) {
+			const perception = dnd2024BeaconSkillTotal(characterId, "Perception");
+			return perception === undefined ? { handled: false } : { handled: true, found: true, value: String(10 + perception), source: "dnd2024-local-passive-wisdom" };
+		}
+
+
+		for (const [skillKey, skillName] of Object.entries(adapter.skillNames)) {
+			if ([`${skillKey}bonus`, `${skillKey}flat`, `npc${skillKey}`, `npc${skillKey}base`].includes(normalized)) {
+				const value = dnd2024BeaconSkillTotal(characterId, skillName);
+				return value === undefined ? { handled: false } : { handled: true, found: true, value: String(value), source: "dnd2024-local-skill-total" };
+			}
+		}
+
+		for (const abilityName of new Set(Object.values(adapter.abilityNames))) {
+			const abilityKey = normalizeBeaconLookupName(abilityName);
+			const abbreviation = abilityKey.slice(0, 3);
+			if ([`${abilityKey}savebonus`, `${abilityKey}savemod`, `npc${abbreviation}save`, `npc${abbreviation}savebase`].includes(normalized)) {
+				if (dnd2024BeaconHasRollBonuses(characterId)) {
+					return { handled: false };
+				}
+				const abilityModifier = dnd2024BeaconAbilityModifier(characterId, abilityName);
+				const proficiencyBonus = dnd2024BeaconProficiencyBonus(characterId);
+				if (abilityModifier === undefined || proficiencyBonus === undefined) {
+					return { handled: false };
+				}
+				const proficiencyRecord = findBeaconTypedRecord(characterId, "current", adapter.collections.proficiencies, (candidate) =>
+					normalizeBeaconLookupName(beaconProperty(candidate, adapter.fields.category)) === normalizeBeaconLookupName(adapter.proficiencyCategories.savingThrow)
+					&& normalizeBeaconLookupName(beaconProperty(candidate, adapter.fields.proficiency)) === abilityKey
+				);
+				const multiplier = proficiencyRecord
+					? dnd2024BeaconProficiencyMultiplier(beaconProperty(proficiencyRecord, adapter.fields.proficiencyLevel))
+					: 0;
+				return { handled: true, found: true, value: String(abilityModifier + proficiencyBonus * multiplier), source: "dnd2024-local-save-total" };
+			}
+		}
+
+		return { handled: false };
+	}
+
+	function beaconTypedCollectionKnownMissing(characterId, lookupName, operation, subfields) {
+		if (!Array.isArray(subfields) || subfields.length === 0) {
+			return false;
+		}
+		let indexed = getBeaconTypedCollectionIndex(characterId, operation, false);
+		const key = normalizeBeaconLookupName(lookupName);
+		let entries = indexed.index[operation].get(key);
+		if (!entries && !indexed.index.fallbackBuilt[operation]) {
+			indexed = getBeaconTypedCollectionIndex(characterId, operation, true);
+			entries = indexed.index[operation].get(key);
+		}
+		if (!entries) {
+			return false;
+		}
+		const entry = selectBeaconCollectionEntry(entries, subfields[0]);
+		if (!entry) {
+			return true;
+		}
+		return subfields.length > 1 && beaconLookupIsUnresolved(readBeaconSubfields(entry.record, subfields.slice(1)));
+	}
+
+	function resolveDnd2024BeaconStoredAlias(characterId, lookupName, operation, subfields) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter || operation !== "current") {
+			return { handled: false, found: false, value: undefined };
+		}
+		const normalizedLookupName = normalizeBeaconLookupName(lookupName);
+		const aliasPath = adapter.storedAliases[normalizedLookupName];
+		if (!aliasPath) {
+			return { handled: false, found: false, value: undefined };
+		}
+		const index = getBeaconStructuredIndex(characterId);
+		const storeRoot = getBeaconStructuredRoot(index, operation, adapter.rootNames.store);
+		if (!storeRoot.found) {
+			return { handled: false, found: false, value: undefined };
+		}
+		const value = readBeaconSubfields(storeRoot.value, aliasPath.concat(subfields || []));
+		if (beaconLookupIsUnresolved(value)) {
+			// Roll20 can omit the optional tempHP leaf entirely until the value has
+			// been used. Treat the known hp_temp compatibility alias as an existing
+			// blank value so reads stay local and a direct native write can initialize it.
+			return normalizedLookupName === "hptemp" && (!subfields || subfields.length === 0)
+				? { handled: true, found: true, value: "", source: "dnd2024-local-stored-empty" }
+				: { handled: false, found: false, value: undefined };
+		}
+		return {
+			handled: true,
+			found: true,
+			value: beaconPrimitive(value) ? String(value) : JSON.stringify(value),
+			source: "dnd2024-local-stored"
+		};
+	}
+
+	function resolveBeaconLocalCompatibilityLookup(character, lookupName, operation, subfields, debug) {
+		const started = Date.now();
+		addBeaconPerformanceStat("localCompatibilityRequests");
+		const normalized = normalizeBeaconLookupName(lookupName);
+		const localSubfields = Array.isArray(subfields) ? subfields : [];
+		const dnd2024Adapter = getDnd2024BeaconAdapter(character.id);
+		const dnd2024Sheet = !!dnd2024Adapter;
+		if (dnd2024Sheet) {
+			addBeaconPerformanceStat("dnd2024CompatibilityFastPathRequests");
+		}
+		let result = { handled: false, found: false, value: undefined };
+
+		// Explicit nested Beacon paths are canonical structured lookups. Resolving
+		// them locally avoids a redundant SDK request for the same Attribute root.
+		if (localSubfields.length > 0) {
+			const structured = resolveBeaconStructuredLookup(
+				character.id,
+				lookupName,
+				operation,
+				localSubfields,
+				debug
+			);
+			if (structured.found) {
+				result = { handled: true, found: true, value: structured.value, source: "beacon-local-structured" };
+			}
+		}
+
+		// A bare D&D typed-collection name is also a complete structured lookup.
+		// Resolve it locally before getSheetItem() so requests such as classes,
+		// subclasses, spells, and spellslots do not incur a failed native SDK call
+		// before falling back to the already indexed canonical records.
+		if (!result.handled && dnd2024Sheet && localSubfields.length === 0) {
+			const isKnownTypedCollection = Object.values(dnd2024Adapter.collections)
+				.some((collectionName) => normalizeBeaconLookupName(collectionName) === normalized);
+			if (isKnownTypedCollection) {
+				const structured = resolveBeaconStructuredLookup(
+					character.id,
+					lookupName,
+					operation,
+					[],
+					debug
+				);
+				result = structured.found
+					? { handled: true, found: true, value: structured.value, source: "dnd2024-local-typed-collection" }
+					: { handled: true, found: false, value: undefined, source: "dnd2024-local-typed-collection-miss" };
+				if (!structured.found) {
+					addBeaconPerformanceStat("localTypedCollectionMisses");
+				}
+			}
+		}
+
+		if (!result.handled && operation === "current") {
+			if (normalized === "charactername") {
+				result = { handled: true, found: true, value: character.get("name") || "", source: "character-object" };
+			} else if (dnd2024Sheet && normalized === "npcname") {
+				result = { handled: true, found: true, value: character.get("name") || "", source: "dnd2024-character-object" };
+			} else if (dnd2024Sheet && normalized === "npc") {
+				const appStateAttribute = findObjs({ _type: "attribute", _characterid: character.id, name: dnd2024Adapter.rootNames.appState })[0];
+				if (appStateAttribute) {
+					const appState = String(appStateAttribute.get("current") || "").trim().toLowerCase();
+					result = { handled: true, found: true, value: appState === "npc" ? "1" : "0", source: "dnd2024-appstate" };
+				}
+			} else if (dnd2024Sheet && normalized === "npcactype") {
+				// D&D 2024 Beacon has no independent 2014 npc_actype field.
+				result = { handled: true, found: true, value: "", source: "dnd2024-compatibility-empty" };
+			}
+		}
+
+		if (!result.handled && localSubfields.length > 0
+			&& beaconTypedCollectionKnownMissing(character.id, lookupName, operation, localSubfields)) {
+			result = { handled: true, found: false, value: undefined, source: "beacon-local-typed-miss" };
+			addBeaconPerformanceStat("localTypedCollectionMisses");
+		}
+
+		if (!result.handled && dnd2024Sheet) {
+			result = resolveDnd2024BeaconStoredAlias(character.id, lookupName, operation, localSubfields);
+		}
+
+		if (!result.handled && dnd2024Sheet) {
+			result = resolveDnd2024BeaconComputedAlias(character.id, lookupName, operation);
+			if (result.handled) {
+				addBeaconPerformanceStat("localComputedCompatibilityHits");
+			}
+		}
+
+		if (!result.handled && dnd2024Sheet && operation === "current") {
+			let abilityKey = normalized;
+			let wantsModifier = false;
+			if (abilityKey.endsWith("mod")) {
+				abilityKey = abilityKey.slice(0, -3);
+				wantsModifier = true;
+			}
+			const abilityName = dnd2024Adapter.abilityNames[abilityKey];
+			if (abilityName) {
+				const score = dnd2024BeaconAbilityScore(character.id, abilityName);
+				if (score !== undefined && Number.isFinite(Number(score))) {
+					const value = wantsModifier ? Math.floor((Number(score) - 10) / 2) : Number(score);
+					result = { handled: true, found: true, value: String(value), source: wantsModifier ? "beacon-local-ability-mod" : "beacon-local-ability" };
+				}
+			}
+		}
+
+		if (!result.handled && dnd2024Sheet && operation === "current") {
+			const saveFlagMatch = normalized.match(/^npc(str|dex|con|int|wis|cha)saveflag$/);
+			if (saveFlagMatch) {
+				const abilityName = dnd2024Adapter.abilityNames[saveFlagMatch[1]];
+				const record = findBeaconTypedRecord(character.id, operation, dnd2024Adapter.collections.proficiencies, (candidate) =>
+					normalizeBeaconLookupName(beaconProperty(candidate, dnd2024Adapter.fields.category)) === normalizeBeaconLookupName(dnd2024Adapter.proficiencyCategories.savingThrow)
+					&& normalizeBeaconLookupName(beaconProperty(candidate, dnd2024Adapter.fields.proficiency)) === normalizeBeaconLookupName(abilityName)
+				);
+				const level = record ? beaconProperty(record, dnd2024Adapter.fields.proficiencyLevel) : undefined;
+				result = { handled: true, found: true, value: beaconProficiencyIsActive(level) ? "1" : "0", source: "beacon-local-save-flag" };
+			}
+		}
+
+		if (!result.handled && dnd2024Sheet && operation === "current") {
+			const skillFlagMatch = normalized.match(/^npc(.+)flag$/);
+			if (skillFlagMatch && dnd2024Adapter.skillNames[skillFlagMatch[1]]) {
+				const skillName = dnd2024Adapter.skillNames[skillFlagMatch[1]];
+				const record = findBeaconTypedRecord(character.id, operation, dnd2024Adapter.collections.proficiencies, (candidate) =>
+					normalizeBeaconLookupName(beaconProperty(candidate, dnd2024Adapter.fields.category)) === normalizeBeaconLookupName(dnd2024Adapter.proficiencyCategories.skill)
+					&& normalizeBeaconLookupName(beaconProperty(candidate, dnd2024Adapter.fields.proficiency)) === normalizeBeaconLookupName(skillName)
+				);
+				const level = record ? beaconProperty(record, dnd2024Adapter.fields.proficiencyLevel) : undefined;
+				result = { handled: true, found: true, value: beaconProficiencyIsActive(level) ? "1" : "0", source: "beacon-local-skill-flag" };
+			}
+		}
+
+		if (!result.handled && dnd2024Sheet && operation === "current" && (normalized === "languages" || normalized === "npclanguages")) {
+			const structured = resolveBeaconStructuredLookup(character.id, dnd2024Adapter.collections.languages, operation, [], debug);
+			if (structured.found) {
+				result = { handled: true, found: true, value: structured.value, source: "beacon-local-languages" };
+			}
+		}
+
+		if (result.handled) {
+			addBeaconPerformanceStat("localCompatibilityHits");
+			addBeaconPerformanceStat("localCompatibilityBypassedSdk");
+			if (dnd2024Sheet && (String(result.source || "").startsWith("dnd2024")
+				|| String(result.source || "").startsWith("beacon-local"))) {
+				addBeaconPerformanceStat("dnd2024CompatibilityFastPathHits");
+			}
+		} else {
+			const missName = `${operation}:${String(lookupName)}${localSubfields.length ? `->${localSubfields.join("->")}` : ""}`;
+			addBeaconPerformanceDetail("localCompatibilityMissDetails", missName, { requests: 1 });
+		}
+		addBeaconPerformanceStat("localCompatibilityMilliseconds", Date.now() - started);
+		return result;
+	}
+
+	async function resolveBeaconReferenceValue(character, lookupName, operation, subfields, debug) {
+		const localLookup = resolveBeaconLocalCompatibilityLookup(character, lookupName, operation, subfields, debug);
+		if (localLookup.handled) {
+			return { found: localLookup.found, value: localLookup.value, source: localLookup.source };
+		}
+
+		const nativeLookupName = normalizeBeaconLookupName(lookupName) === "sheet" ? "store" : lookupName;
+		let nativeLookupError;
+		let nativeLookupValue;
+		try {
+			nativeLookupValue = await readBeaconSheetItem(character.id, nativeLookupName, operation);
+		} catch (error) {
+			nativeLookupError = error;
+			nativeLookupValue = undefined;
+		}
+
+		const nativeLookupUnresolved = beaconLookupIsUnresolved(nativeLookupValue);
+		let nativeResolvedValue = nativeLookupValue;
+		let nativeSubfieldUnresolved = false;
+		if (!nativeLookupUnresolved && subfields && subfields.length) {
+			nativeResolvedValue = readBeaconSubfields(nativeLookupValue, subfields);
+			nativeSubfieldUnresolved = beaconLookupIsUnresolved(nativeResolvedValue);
+		}
+
+		if (nativeLookupUnresolved || nativeSubfieldUnresolved || beaconLookupMayMaskCollection(nativeLookupValue)) {
+			const structuredLookup = resolveBeaconStructuredLookup(
+				character.id,
+				lookupName,
+				operation,
+				subfields || [],
+				debug
+			);
+			if (structuredLookup.found) {
+				return { found: true, value: structuredLookup.value, source: "beacon-structured" };
+			}
+		}
+
+		if (!nativeLookupUnresolved && !nativeSubfieldUnresolved) {
+			return { found: true, value: nativeResolvedValue, source: "beacon-native" };
+		}
+		if (debug && nativeLookupError) {
+			log(`ScriptCards Beacon lookup: native lookup for ${lookupName} failed and no structured value was found: ${nativeLookupError.message}`);
+		}
+		return { found: false, value: undefined, source: "beacon-unresolved" };
+	}
+
+	function formatBeaconRecord(record, operation) {
+		if (beaconPrimitive(record)) {
+			return record == null ? "" : String(record);
+		}
+		if (Array.isArray(record)) {
+			return record.map((item) => formatBeaconRecord(item, operation)).filter((item) => item !== "").join(", ");
+		}
+
+		const label = beaconRecordIdentity(record);
+		const valuePaths = operation === "max"
+			? [["max"], ["maximum"], ["maxValue"]]
+			: [["flatValue"], ["valueFormula", "flatValue"], ["formula", "flatValue"], ["displayValue"], ["display"], ["text"], ["current"], ["value"], ["calculatedValue"], ["computedValue"], ["amount"], ["quantity"]];
+		const value = beaconFirstPrimitive(record, valuePaths);
+		const unit = beaconFirstPrimitive(record, [["unit"], ["units"], ["suffix"], ["displayUnit"], ["valueUnit"]]);
+
+		if (label) {
+			return value !== undefined && String(value) !== label
+				? `${label} ${value}${unit === undefined ? "" : ` ${unit}`}`.trim()
+				: label;
+		}
+		return value === undefined ? "" : `${value}${unit === undefined ? "" : ` ${unit}`}`.trim();
+	}
+
+	function createBeaconStructuredIndex(characterId) {
+		const attributes = findObjs({ _type: "attribute", _characterid: characterId })
+			.map((attribute, discoveryIndex) => {
+				const rootAttributeName = attribute.get("name");
+				const rootName = normalizeBeaconLookupName(rootAttributeName);
+				return {
+					attribute,
+					attributeId: attribute.id,
+					rootName,
+					rootAttributeName,
+					priority: rootName === "store" ? 0 : rootName === "builder" ? 2 : 1,
+					discoveryIndex
+				};
+			})
+			.sort((left, right) => left.priority - right.priority || left.discoveryIndex - right.discoveryIndex);
+
+		return {
+			characterId,
+			attributes,
+			current: new Map(),
+			max: new Map(),
+			roots: { current: new Map(), max: new Map() },
+			rootMisses: { current: new Set(), max: new Set() },
+			parsedAttributeValues: { current: new Map(), max: new Map() },
+			candidates: { current: new Map(), max: new Map() },
+			allEntries: { current: [], max: [] },
+			byStableIdentity: { current: new Map(), max: new Map() },
+			scannedAttributes: { current: new Set(), max: new Set() },
+			primaryBuilt: { current: false, max: false },
+			fallbackBuilt: { current: false, max: false },
+			discoveryCounter: { current: 0, max: 0 },
+			deduplicated: 0,
+			disabled: 0,
+			operationStats: {
+				current: { deduplicated: 0, disabled: 0 },
+				max: { deduplicated: 0, disabled: 0 }
+			}
+		};
+	}
+
+	function getBeaconStructuredIndex(characterId) {
+		if (!beaconStructuredIndexCache.has(characterId)) {
+			beaconStructuredIndexCache.set(characterId, createBeaconStructuredIndex(characterId));
+		}
+		return beaconStructuredIndexCache.get(characterId);
+	}
+
+	function parseBeaconStructuredAttribute(index, source, operation) {
+		if (index.parsedAttributeValues[operation].has(source.attributeId)) {
+			return index.parsedAttributeValues[operation].get(source.attributeId);
+		}
+		const root = parseBeaconStructuredValue(source.attribute.get(operation));
+		index.parsedAttributeValues[operation].set(source.attributeId, root);
+		beaconPerformanceStats.structuredRootParses++;
+		return root;
+	}
+
+	function getBeaconStructuredRoot(index, operation, rootName) {
+		const normalizedRootName = normalizeBeaconLookupName(rootName) === "sheet"
+			? "store"
+			: normalizeBeaconLookupName(rootName);
+		if (index.roots[operation].has(normalizedRootName)) {
+			return { found: true, value: index.roots[operation].get(normalizedRootName).value, cacheHit: true };
+		}
+		if (index.rootMisses[operation].has(normalizedRootName)) {
+			return { found: false, value: undefined, cacheHit: true };
+		}
+
+		for (const source of index.attributes) {
+			if (source.rootName !== normalizedRootName) {
+				continue;
+			}
+			const root = parseBeaconStructuredAttribute(index, source, operation);
+			if (root === undefined) {
+				continue;
+			}
+			index.roots[operation].set(normalizedRootName, {
+				value: root,
+				priority: source.priority,
+				attributeId: source.attributeId,
+				rootAttributeName: source.rootAttributeName
+			});
+			return { found: true, value: root, cacheHit: false };
+		}
+
+		index.rootMisses[operation].add(normalizedRootName);
+		return { found: false, value: undefined, cacheHit: false };
+	}
+
+	function scanBeaconTypedAttribute(index, source, operation) {
+		if (index.scannedAttributes[operation].has(source.attributeId)) {
+			return;
+		}
+		index.scannedAttributes[operation].add(source.attributeId);
+		beaconPerformanceStats.typedAttributesScanned++;
+
+		const root = parseBeaconStructuredAttribute(index, source, operation);
+		if (root === undefined) {
+			return;
+		}
+		const existingRoot = index.roots[operation].get(source.rootName);
+		if (!existingRoot || source.priority < existingRoot.priority) {
+			index.roots[operation].set(source.rootName, {
+				value: root,
+				priority: source.priority,
+				attributeId: source.attributeId,
+				rootAttributeName: source.rootAttributeName
+			});
+		}
+
+		const seenObjects = new WeakSet();
+		const walk = (value, path) => {
+			if (!value || typeof value !== "object" || seenObjects.has(value)) {
+				return;
+			}
+			seenObjects.add(value);
+			beaconPerformanceStats.typedObjectsVisited++;
+
+			if (!Array.isArray(value)) {
+				const collectionKey = normalizeBeaconLookupName(pluralizeBeaconType(
+					beaconFirstPrimitive(value, [["type"], ["kind"], ["category"]])
+				));
+				if (collectionKey) {
+					if (!index.candidates[operation].has(collectionKey)) {
+						index.candidates[operation].set(collectionKey, []);
+					}
+					index.candidates[operation].get(collectionKey).push({
+						record: value,
+						discoveryIndex: index.discoveryCounter[operation]++,
+						stableIdentity: beaconRecordStableIdentity(value),
+						enabledState: beaconRecordEnabledState(value),
+						attributeId: source.attributeId,
+						rootName: source.rootName,
+						rootAttributeName: source.rootAttributeName,
+						priority: source.priority,
+						path: path.slice()
+					});
+				}
+			}
+
+			const children = Array.isArray(value) ? value.entries() : Object.entries(value);
+			for (const [childKey, child] of children) {
+				if (child && typeof child === "object") {
+					path.push(childKey);
+					walk(child, path);
+					path.pop();
+				}
+			}
+		};
+
+		walk(root, []);
+	}
+
+	function finalizeBeaconTypedOperation(index, operation) {
+		const collectionIndex = new Map();
+		const allEntries = [];
+		const allEntryKeys = new Set();
+		const byStableIdentity = new Map();
+		let deduplicated = 0;
+		let disabled = 0;
+
+		for (const [collectionKey, entries] of index.candidates[operation]) {
+			const identityGroups = new Map();
+			const activeEntries = [];
+			const enabledRawIdentities = new Set(entries
+				.filter((entry) => entry.enabledState !== false)
+				.map((entry) => beaconRecordRawIdentity(entry.record))
+				.filter(Boolean));
+
+			for (const entry of entries) {
+				const overwrittenBy = beaconFirstPrimitive(entry.record, [["overwrittenBy"]]);
+				if (overwrittenBy !== undefined
+					&& enabledRawIdentities.has(String(overwrittenBy).trim())) {
+					continue;
+				}
+
+				if (!entry.stableIdentity) {
+					if (entry.enabledState === false) {
+						disabled++;
+					} else {
+						activeEntries.push(entry);
+					}
+					continue;
+				}
+				if (!identityGroups.has(entry.stableIdentity)) {
+					identityGroups.set(entry.stableIdentity, []);
+				}
+				identityGroups.get(entry.stableIdentity).push(entry);
+			}
+
+			for (const group of identityGroups.values()) {
+				deduplicated += group.length - 1;
+				const usable = group.filter((entry) => entry.enabledState !== false);
+				if (!group.some((entry) => entry.enabledState === true) && usable.length !== group.length) {
+					disabled++;
+					continue;
+				}
+				activeEntries.push(usable.reduce((best, entry) =>
+					entry.priority < best.priority ? entry : best
+				));
+			}
+
+			activeEntries.sort((left, right) =>
+				beaconRecordOrder(left.record) - beaconRecordOrder(right.record)
+				|| left.discoveryIndex - right.discoveryIndex
+			);
+			collectionIndex.set(collectionKey, activeEntries);
+
+			for (const entry of activeEntries) {
+				const entryKey = `${entry.attributeId}\u0000${entry.path.join("\u0000")}`;
+				if (!allEntryKeys.has(entryKey)) {
+					allEntryKeys.add(entryKey);
+					allEntries.push(entry);
+				}
+				if (entry.stableIdentity) {
+					const existing = byStableIdentity.get(String(entry.stableIdentity));
+					if (!existing
+						|| entry.priority < existing.priority
+						|| (entry.priority === existing.priority && entry.discoveryIndex < existing.discoveryIndex)) {
+						byStableIdentity.set(String(entry.stableIdentity), entry);
+					}
+				}
+			}
+		}
+
+		allEntries.sort((left, right) =>
+			left.priority - right.priority
+			|| left.discoveryIndex - right.discoveryIndex
+		);
+		index[operation] = collectionIndex;
+		index.allEntries[operation] = allEntries;
+		index.byStableIdentity[operation] = byStableIdentity;
+		index.operationStats[operation] = { deduplicated, disabled };
+		index.deduplicated = index.operationStats.current.deduplicated + index.operationStats.max.deduplicated;
+		index.disabled = index.operationStats.current.disabled + index.operationStats.max.disabled;
+	}
+
+	function ensureBeaconTypedOperation(index, operation, includeFallback) {
+		const start = Date.now();
+		let built = false;
+		if (!index.primaryBuilt[operation]) {
+			for (const source of index.attributes) {
+				if (source.rootName !== "builder") {
+					scanBeaconTypedAttribute(index, source, operation);
+				}
+			}
+			index.primaryBuilt[operation] = true;
+			built = true;
+		}
+		if (includeFallback && !index.fallbackBuilt[operation]) {
+			for (const source of index.attributes) {
+				if (source.rootName === "builder") {
+					scanBeaconTypedAttribute(index, source, operation);
+				}
+			}
+			index.fallbackBuilt[operation] = true;
+			built = true;
+		}
+		if (built) {
+			finalizeBeaconTypedOperation(index, operation);
+			beaconPerformanceStats.typedIndexBuilds++;
+			beaconPerformanceStats.typedIndexMilliseconds += Date.now() - start;
+		}
+		return built;
+	}
+
+	function getBeaconTypedCollectionIndex(characterId, operation = "current", includeFallback = false) {
+		const index = getBeaconStructuredIndex(characterId);
+		const built = ensureBeaconTypedOperation(index, operation, includeFallback);
+		return { index, cacheHit: !built, operation, includeFallback };
+	}
+
+	function beaconRecordSelectorValues(record) {
+		if (!record || typeof record !== "object") {
+			return [];
+		}
+
+		// Typed records do not all expose their human identity as a top-level name or
+		// label. For example, a Speed record stores its movement mode in the speed value.
+		// Inspect identity fields recursively, then fall back to top-level primitives.
+		const preferredKeys = [
+			"shortID", "uuid", "name", "label", "title", "slug",
+			"ability", "speed", "skill", "proficiency", "currency",
+			"spellLevel", "actionType", "category", "type"
+		];
+		const nestedIdentityKeys = ["shortID", "uuid", "id", "key", "name", "label", "title", "slug", "value", "type"];
+		const values = [];
+		const seen = new Set();
+		const visited = new Set();
+		const addValue = (value) => {
+			if (value === undefined || value === null || !beaconPrimitive(value)) {
+				return;
+			}
+			const normalized = normalizeBeaconLookupName(value);
+			if (!normalized || seen.has(normalized)) {
+				return;
+			}
+			seen.add(normalized);
+			values.push(normalized);
+		};
+		const addIdentityValue = (value, depth = 0) => {
+			if (value === undefined || value === null) {
+				return;
+			}
+			if (beaconPrimitive(value)) {
+				addValue(value);
+				return;
+			}
+			if (depth >= 3 || typeof value !== "object" || visited.has(value)) {
+				return;
+			}
+			visited.add(value);
+			if (Array.isArray(value)) {
+				for (const item of value) {
+					addIdentityValue(item, depth + 1);
+				}
+				return;
+			}
+			for (const key of nestedIdentityKeys) {
+				const nestedValue = beaconProperty(value, key);
+				if (nestedValue !== undefined) {
+					addIdentityValue(nestedValue, depth + 1);
+				}
+			}
+			for (const nestedValue of Object.values(value)) {
+				addIdentityValue(nestedValue, depth + 1);
+			}
+		};
+
+		for (const key of preferredKeys) {
+			addIdentityValue(beaconProperty(record, key));
+		}
+		for (const value of Object.values(record)) {
+			addValue(value);
+		}
+		return values;
+	}
+
+	function findBeaconCollectionSelectorMatches(collectionEntries, selector) {
+		const identity = normalizeBeaconLookupName(selector);
+		if (!identity) {
+			return [];
+		}
+		return collectionEntries.filter((entry) =>
+			beaconRecordSelectorValues(entry.record).includes(identity)
+		);
+	}
+
+	function selectBeaconCollectionEntry(collectionEntries, selector) {
+		if (/^\d+$/.test(String(selector))) {
+			return collectionEntries[Number(selector)];
+		}
+		const matches = findBeaconCollectionSelectorMatches(collectionEntries, selector);
+		return matches.length === 1 ? matches[0] : undefined;
+	}
+
+
+	function beaconIndexStatus(indexed) {
+		const operation = indexed.operation || "current";
+		const stats = indexed.index.operationStats[operation] || { deduplicated: 0, disabled: 0 };
+		return indexed.cacheHit ? `reused cached ${operation} index`
+			: `built ${operation} index, removed ${stats.deduplicated} mirrored record(s), and excluded ${stats.disabled} disabled record(s)`;
+	}
+
+	function resolveBeaconStructuredLookup(characterId, lookupName, operation, subfields, debug) {
+		const normalizedLookupName = normalizeBeaconLookupName(lookupName) === "sheet"
+			? "store"
+			: normalizeBeaconLookupName(lookupName);
+		const structuredIndex = getBeaconStructuredIndex(characterId);
+		const structuredRoot = getBeaconStructuredRoot(structuredIndex, operation, normalizedLookupName);
+
+		if (structuredRoot.found) {
+			const rootValue = subfields.length
+				? readBeaconSubfields(structuredRoot.value, subfields)
+				: structuredRoot.value;
+			if (!beaconLookupIsUnresolved(rootValue)) {
+				if (debug) {
+					log(`ScriptCards Beacon lookup: ${lookupName} resolved from a structured ${operation} root; ${structuredRoot.cacheHit ? "reused cached root" : "parsed root only"}.`);
+				}
+				return {
+					found: true,
+					value: beaconPrimitive(rootValue) ? String(rootValue) : JSON.stringify(rootValue)
+				};
+			}
+		}
+
+		let indexed = getBeaconTypedCollectionIndex(characterId, operation, false);
+		let collectionEntries = indexed.index[operation].get(normalizedLookupName);
+		if (!collectionEntries && !indexed.index.fallbackBuilt[operation]) {
+			indexed = getBeaconTypedCollectionIndex(characterId, operation, true);
+			collectionEntries = indexed.index[operation].get(normalizedLookupName);
+		}
+
+		if (!collectionEntries) {
+			if (debug) {
+				log(`ScriptCards Beacon lookup: no structured root or typed ${operation} collection matched ${lookupName}; ${beaconIndexStatus(indexed)}.`);
+			}
+			return { found: false, value: undefined };
+		}
+
+		let selected;
+		if (!subfields.length) {
+			selected = collectionEntries.map((entry) => entry.record);
+		} else {
+			const entry = selectBeaconCollectionEntry(collectionEntries, subfields[0]);
+			selected = entry
+				? subfields.length === 1
+					? entry.record
+					: readBeaconSubfields(entry.record, subfields.slice(1))
+				: undefined;
+		}
+
+		if (selected === undefined || selected === null) {
+			if (debug) {
+				log(`ScriptCards Beacon lookup: ${lookupName} matched a typed ${operation} collection (${collectionEntries.length} record(s)), but ${subfields.join("->")} did not resolve to a value.`);
+			}
+			return { found: false, value: undefined };
+		}
+
+		if (debug) {
+			log(`ScriptCards Beacon lookup: ${lookupName} resolved from a typed ${operation} collection (${collectionEntries.length} record(s); ${beaconIndexStatus(indexed)}).`);
+		}
+		return { found: true, value: formatBeaconRecord(selected, operation) };
+	}
 	function extractKeyValuePairs(obj, prefix = '') {
 		let result = [];
 
@@ -8342,32 +15287,6 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		return text;
 	}
 
-	function NewGetAttrByName(characterId, attrName, valueType) {
-		if (!characterId || !attrName) {
-			return undefined;
-		}
-
-		let attrs = findObjs({
-			_type: "attribute",
-			_characterid: characterId
-		}) || [];
-
-		let targetName = String(attrName).toLowerCase();
-		let attrObj = attrs.find(function (attr) {
-			let name = attr.get("name");
-			return name && String(name).toLowerCase() === targetName;
-		});
-
-		if (!attrObj) {
-			return undefined;
-		}
-
-		if (valueType && String(valueType).toLowerCase() === "max") {
-			return attrObj.get("max");
-		}
-
-		return attrObj.get("current");
-	}
 })();
 
 // log(`Error setting z-order ${e.message}, thisTag: ${thisTag}, thisContent: ${thisContent}`)
