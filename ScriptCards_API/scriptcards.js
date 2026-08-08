@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.30-beacon-experimental.130 EXPERIMENTAL";
-	const NUMERIC_VERSION = "300301"
+	const APIVERSION = "3.0.25a-beacon-experimental.131 EXPERIMENTAL";
+	const NUMERIC_VERSION = "300251"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -511,9 +511,13 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			experience: true,
 			inspiration: true
 		};
+		const structuredWriteAliases = {};
 		for (let level = 1; level <= 9; level++) {
-			storedAliases[`lvl${level}slotsexpended`] = ["spellSlots", "currentByLevel", spellSlotOrdinals[level]];
-			writableStoredAliases[`lvl${level}slotsexpended`] = true;
+			const slotAlias = `lvl${level}slotsexpended`;
+			const slotPath = ["spellSlots", "currentByLevel", spellSlotOrdinals[level]];
+			storedAliases[slotAlias] = slotPath;
+			writableStoredAliases[slotAlias] = true;
+			structuredWriteAliases[slotAlias] = slotPath;
 		}
 
 		const repeatingSections = {};
@@ -606,6 +610,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			valuePaths,
 			storedAliases: Object.freeze(storedAliases),
 			writableStoredAliases: Object.freeze(writableStoredAliases),
+			structuredWriteAliases: Object.freeze(structuredWriteAliases),
 			abilityNames,
 			skillNames,
 			standardSkillAbilities,
@@ -760,6 +765,14 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	// a usable value exists.
 	var beaconSheetItemCache = new Map();
 	var beaconSheetItemMissCache = new Map();
+	var beaconSheetItemPending = new Map();
+	var beaconSheetItemQueue = [];
+	var beaconSheetItemActiveReads = 0;
+	var beaconSheetItemGeneration = new Map();
+	var beaconReadAheadPromises = new Set();
+	var beaconReadAheadReferenceCache = new Set();
+	const BEACON_NATIVE_READ_CONCURRENCY = 3;
+	const BEACON_READ_AHEAD_WINDOW = 8;
 	var beaconRepeatingStateCache = new Map();
 	var beaconRepeatingWritableTargetCache = new Map();
 	var beaconRepeatingWritableTargets = [];
@@ -785,26 +798,48 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		}
 	}
 
-	async function readBeaconSheetItem(characterId, name, operation = "current", options = {}) {
-		const normalizedOperation = String(operation || "current").toLowerCase();
-		const cacheKey = getBeaconSheetItemCacheKey(characterId, normalizedOperation, name);
-		const fresh = options.fresh === true;
-		const cacheResult = options.cacheResult !== false;
-		addBeaconPerformanceStat("sheetItemRequests");
+	function getBeaconSheetItemGeneration(characterId) {
+		return Number(beaconSheetItemGeneration.get(String(characterId)) || 0);
+	}
 
-		if (!fresh && beaconSheetItemCache.has(cacheKey)) {
-			addBeaconPerformanceStat("sheetItemCacheHits");
-			return beaconSheetItemCache.get(cacheKey);
+	function updateBeaconQueuePeak() {
+		const currentDepth = beaconSheetItemQueue.length;
+		const previousDepth = Number(beaconPerformanceStats.sheetItemQueueMaxDepth || 0);
+		if (currentDepth > previousDepth) {
+			beaconPerformanceStats.sheetItemQueueMaxDepth = currentDepth;
 		}
-		if (!fresh && beaconSheetItemMissCache.has(cacheKey)) {
-			addBeaconPerformanceStat("sheetItemNegativeCacheHits");
-			const cachedMiss = beaconSheetItemMissCache.get(cacheKey);
-			if (cachedMiss && cachedMiss.error) {
-				throw new Error(cachedMiss.error);
+	}
+
+	function pumpBeaconSheetItemQueue() {
+		while (beaconSheetItemActiveReads < BEACON_NATIVE_READ_CONCURRENCY && beaconSheetItemQueue.length > 0) {
+			const task = beaconSheetItemQueue.shift();
+			beaconSheetItemActiveReads++;
+			addBeaconPerformanceStat("sheetItemQueueStarts");
+			if (beaconSheetItemActiveReads > Number(beaconPerformanceStats.sheetItemConcurrentPeak || 0)) {
+				beaconPerformanceStats.sheetItemConcurrentPeak = beaconSheetItemActiveReads;
 			}
-			return cachedMiss ? cachedMiss.value : undefined;
+			const queueWait = Date.now() - task.queuedAt;
+			addBeaconPerformanceStat("sheetItemQueueWaitMilliseconds", queueWait);
+			Promise.resolve()
+				.then(task.run)
+				.then(task.resolve, task.reject)
+				.finally(() => {
+					beaconSheetItemActiveReads--;
+					pumpBeaconSheetItemQueue();
+				});
 		}
+	}
 
+	function enqueueBeaconSheetItemRead(run) {
+		addBeaconPerformanceStat("sheetItemQueuedReads");
+		return new Promise((resolve, reject) => {
+			beaconSheetItemQueue.push({ run, resolve, reject, queuedAt: Date.now() });
+			updateBeaconQueuePeak();
+			pumpBeaconSheetItemQueue();
+		});
+	}
+
+	async function executeBeaconSheetItemRead(characterId, name, normalizedOperation, cacheKey, cacheResult, generation) {
 		addBeaconPerformanceStat("sheetItemSdkCalls");
 		const detailName = `${normalizedOperation}:${String(name)}`;
 		const started = Date.now();
@@ -818,7 +853,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				milliseconds: elapsed,
 				unresolved: unresolved ? 1 : 0
 			});
-			if (cacheResult) {
+			if (cacheResult && generation === getBeaconSheetItemGeneration(characterId)) {
 				if (unresolved) {
 					beaconSheetItemMissCache.set(cacheKey, { value });
 					addBeaconPerformanceStat("sheetItemUnresolved");
@@ -837,10 +872,203 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				milliseconds: elapsed,
 				errors: 1
 			});
-			if (cacheResult) {
+			if (cacheResult && generation === getBeaconSheetItemGeneration(characterId)) {
 				beaconSheetItemMissCache.set(cacheKey, { error: error && error.message ? error.message : String(error) });
 			}
 			throw error;
+		}
+	}
+
+	async function readBeaconSheetItem(characterId, name, operation = "current", options = {}) {
+		const normalizedOperation = String(operation || "current").toLowerCase();
+		const cacheKey = getBeaconSheetItemCacheKey(characterId, normalizedOperation, name);
+		const fresh = options.fresh === true;
+		const cacheResult = options.cacheResult !== false;
+		const generation = getBeaconSheetItemGeneration(characterId);
+		addBeaconPerformanceStat("sheetItemRequests");
+
+		if (!fresh && beaconSheetItemCache.has(cacheKey)) {
+			addBeaconPerformanceStat("sheetItemCacheHits");
+			return beaconSheetItemCache.get(cacheKey);
+		}
+		if (!fresh && beaconSheetItemMissCache.has(cacheKey)) {
+			addBeaconPerformanceStat("sheetItemNegativeCacheHits");
+			const cachedMiss = beaconSheetItemMissCache.get(cacheKey);
+			if (cachedMiss && cachedMiss.error) {
+				throw new Error(cachedMiss.error);
+			}
+			return cachedMiss ? cachedMiss.value : undefined;
+		}
+
+		if (!fresh && beaconSheetItemPending.has(cacheKey)) {
+			const pending = beaconSheetItemPending.get(cacheKey);
+			if (pending && pending.generation === generation) {
+				addBeaconPerformanceStat("sheetItemPendingHits");
+				return pending.promise;
+			}
+		}
+
+		const promise = enqueueBeaconSheetItemRead(() => executeBeaconSheetItemRead(
+			characterId,
+			name,
+			normalizedOperation,
+			cacheKey,
+			cacheResult,
+			generation
+		));
+		if (!fresh) {
+			const pending = { promise, generation };
+			beaconSheetItemPending.set(cacheKey, pending);
+			promise.finally(() => {
+				if (beaconSheetItemPending.get(cacheKey) === pending) {
+					beaconSheetItemPending.delete(cacheKey);
+				}
+			}).catch(() => {});
+		}
+		return promise;
+	}
+
+	function trackBeaconReadAheadPromise(promise) {
+		if (!promise || typeof promise.then !== "function") {
+			return;
+		}
+		beaconReadAheadPromises.add(promise);
+		promise.finally(() => beaconReadAheadPromises.delete(promise)).catch(() => {});
+	}
+
+	async function settleBeaconReadAheadPromises() {
+		while (beaconReadAheadPromises.size > 0) {
+			const pending = Array.from(beaconReadAheadPromises);
+			await Promise.allSettled(pending);
+		}
+	}
+
+	function stripBeaconReadAheadProtectedBlocks(value) {
+		return String(value == null ? "" : value).replace(/\$\{[\s\S]*?\$\}/g, "");
+	}
+
+	function getBeaconReadAheadCharacter(selector, cardParameters) {
+		let activeCharacter = "";
+		const normalizedSelector = String(selector || "").trim();
+		if (normalizedSelector.toLowerCase() === "s") {
+			activeCharacter = cardParameters.sourcetoken || cardParameters.sourcecharacter || "";
+		} else if (normalizedSelector.toLowerCase() === "t") {
+			activeCharacter = cardParameters.targettoken || cardParameters.targetcharacter || "";
+		} else if (normalizedSelector.startsWith("-")) {
+			activeCharacter = normalizedSelector;
+		}
+		if (!activeCharacter) {
+			return undefined;
+		}
+		let character = getObj("character", activeCharacter);
+		if (!character) {
+			const token = getObj("graphic", activeCharacter);
+			if (token && token.get("represents")) {
+				character = getObj("character", token.get("represents"));
+			}
+		}
+		return character;
+	}
+
+	function beaconReadAheadLineIsBarrier(rawLine) {
+		const tag = String(getLineTag(rawLine, 0, false) || "").trim().toLowerCase();
+		if (!tag || tag.startsWith("/")) {
+			return false;
+		}
+		return tag.startsWith("?")
+			|| tag.startsWith("c")
+			|| tag.startsWith("^")
+			|| tag.startsWith(">")
+			|| tag.startsWith("<")
+			|| tag.startsWith("%")
+			|| tag.startsWith("]")
+			|| tag.startsWith("i")
+			|| tag.startsWith("w")
+			|| tag.startsWith("!")
+			|| tag.startsWith("~")
+			|| tag.startsWith("r")
+			|| tag.startsWith("x")
+			|| tag.startsWith("@")
+			|| tag.startsWith("#sourcetoken")
+			|| tag.startsWith("#sourcecharacter")
+			|| tag.startsWith("#targettoken")
+			|| tag.startsWith("#targetcharacter")
+			|| tag.startsWith("#beaconsheet");
+	}
+
+	function startBeaconReadAhead(cardLines, startLine, cardParameters) {
+		if (String(cardParameters && cardParameters.beaconsheet) !== "1" || !Array.isArray(cardLines)) {
+			return;
+		}
+		addBeaconPerformanceStat("readAheadWindowScans");
+		const endLine = Math.min(cardLines.length, Number(startLine) + BEACON_READ_AHEAD_WINDOW);
+		for (let index = Number(startLine); index < endLine; index++) {
+			const rawLine = stripBeaconReadAheadProtectedBlocks(cardLines[index]);
+			if (!rawLine || String(getLineTag(rawLine, index, false) || "").trim().startsWith("/")) {
+				continue;
+			}
+
+			const characterReferencePattern = /\[\*(S|T|-[^:\[\]]+):([^\[\]]+)\]/gi;
+			let match;
+			while ((match = characterReferencePattern.exec(rawLine)) !== null) {
+				addBeaconPerformanceStat("sheetItemPrefetchCandidates");
+				const character = getBeaconReadAheadCharacter(match[1], cardParameters);
+				let attributeName = String(match[2] || "").trim();
+				if (!character || !attributeName || attributeName.includes("[") || attributeName.includes("]")
+					|| attributeName.toLowerCase().startsWith("t-") || attributeName.endsWith("*")) {
+					continue;
+				}
+				if (attributeName.includes(":::")) {
+					attributeName = attributeName.substring(0, attributeName.indexOf(":::"));
+				}
+				const referenceKey = `character\u0000${character.id}\u0000${getBeaconSheetItemGeneration(character.id)}\u0000${attributeName.toLowerCase()}`;
+				if (beaconReadAheadReferenceCache.has(referenceKey)) {
+					addBeaconPerformanceStat("sheetItemPrefetchReused");
+					continue;
+				}
+				beaconReadAheadReferenceCache.add(referenceKey);
+				addBeaconPerformanceStat("sheetItemPrefetchStarted");
+				trackBeaconReadAheadPromise(
+					getPageTokenCharacterAttributeValue(character, attributeName, true, false).catch(() => ({ found: false }))
+				);
+			}
+
+			if (repeatingBeaconState && repeatingBeaconState.rows && repeatingBeaconState.rows[repeatingIndex]) {
+				const repeatingReferencePattern = /\[\*R:([^\[\]]+)\]/gi;
+				while ((match = repeatingReferencePattern.exec(rawLine)) !== null) {
+					let fieldName = String(match[1] || "").trim();
+					if (!fieldName || fieldName.includes(":") || fieldName.toLowerCase() === "$fieldlist$") {
+						continue;
+					}
+					let operation = "current";
+					if (fieldName.endsWith("^")) {
+						fieldName = fieldName.slice(0, -1);
+						operation = "max";
+					}
+					addBeaconPerformanceStat("sheetItemPrefetchCandidates");
+					const row = repeatingBeaconState.rows[repeatingIndex];
+					const referenceKey = `repeating\u0000${repeatingBeaconState.characterId}\u0000${getBeaconSheetItemGeneration(repeatingBeaconState.characterId)}\u0000${repeatingBeaconState.sectionName}\u0000${row.id}\u0000${operation}\u0000${fieldName.toLowerCase()}`;
+					if (beaconReadAheadReferenceCache.has(referenceKey)) {
+						addBeaconPerformanceStat("sheetItemPrefetchReused");
+						continue;
+					}
+					beaconReadAheadReferenceCache.add(referenceKey);
+					addBeaconPerformanceStat("sheetItemPrefetchStarted");
+					trackBeaconReadAheadPromise(
+						getBeaconRepeatingField(
+							repeatingBeaconState,
+							repeatingIndex,
+							fieldName,
+							operation,
+							false
+						).catch(() => undefined)
+					);
+				}
+			}
+
+			if (beaconReadAheadLineIsBarrier(rawLine)) {
+				break;
+			}
 		}
 	}
 
@@ -854,9 +1082,15 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	}
 
 	function invalidateBeaconCharacterCaches(characterId) {
+		const normalizedCharacterId = String(characterId);
+		beaconSheetItemGeneration.set(
+			normalizedCharacterId,
+			getBeaconSheetItemGeneration(normalizedCharacterId) + 1
+		);
 		beaconStructuredIndexCache.delete(characterId);
 		clearBeaconCacheEntriesForCharacter(beaconSheetItemCache, characterId);
 		clearBeaconCacheEntriesForCharacter(beaconSheetItemMissCache, characterId);
+		clearBeaconCacheEntriesForCharacter(beaconSheetItemPending, characterId);
 		clearBeaconCacheEntriesForCharacter(beaconRepeatingStateCache, characterId);
 	}
 
@@ -1236,6 +1470,16 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					sheetItemSdkCalls: 0,
 					sheetItemCacheHits: 0,
 					sheetItemNegativeCacheHits: 0,
+					sheetItemPendingHits: 0,
+					sheetItemQueuedReads: 0,
+					sheetItemQueueStarts: 0,
+					sheetItemQueueMaxDepth: 0,
+					sheetItemQueueWaitMilliseconds: 0,
+					sheetItemConcurrentPeak: 0,
+					sheetItemPrefetchCandidates: 0,
+					sheetItemPrefetchStarted: 0,
+					sheetItemPrefetchReused: 0,
+					readAheadWindowScans: 0,
 					sheetItemMilliseconds: 0,
 					sheetItemUnresolved: 0,
 					sheetItemErrors: 0,
@@ -1246,6 +1490,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					repeatingRowsEnumerated: 0,
 					repeatingFieldRequests: 0,
 					repeatingLocalFieldHits: 0,
+					repeatingLocalAliasHits: 0,
 					repeatingFieldSdkCalls: 0,
 					repeatingCanonicalFallbacks: 0,
 					sheetItemCallDetails: {},
@@ -1268,6 +1513,12 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				beaconStructuredIndexCache.clear();
 				beaconSheetItemCache.clear();
 				beaconSheetItemMissCache.clear();
+				beaconSheetItemPending.clear();
+				beaconSheetItemQueue = [];
+				beaconSheetItemActiveReads = 0;
+				beaconSheetItemGeneration.clear();
+				beaconReadAheadPromises.clear();
+				beaconReadAheadReferenceCache.clear();
 				beaconRepeatingStateCache.clear();
 				beaconRepeatingWritableTargetCache.clear();
 				beaconRepeatingWritableTargets = [];
@@ -1488,6 +1739,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				do {
 					while (lineCounter < cardLines.length) {
 
+						startBeaconReadAhead(cardLines, lineCounter, cardParameters);
 						let thisTag = await replaceVariableContent(getLineTag(cardLines[lineCounter], lineCounter, true), cardParameters, false);
 						const lowerTag = thisTag.toLowerCase();
 						const preserveObjectModificationEscapedPipes = lowerTag.startsWith("!a:")
@@ -1550,6 +1802,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 								case "w": await handleWaitStatements(thisTag, thisContent, cardParameters); break;
 								case "v": handleVisualEffectsCommand(thisTag, thisContent, cardParameters); break;
 								case "x": {
+									await settleBeaconReadAheadPromises();
 									if (cardParameters.functionbenchmarking == "1") { reportBenchmarkingData(); }
 									(cardParameters["reentrant"] !== 0) ? stashAScript(cardParameters["reentrant"], cardLines, cardParameters, stringVariables, rollVariables, returnStack, parameterStack, lineCounter + 1, outputLines, varList, "X", arrayVariables, arrayIndexes, gmonlyLines, bareoutputLines) : null
 									lineCounter = cardLines.length + 1;
@@ -1708,6 +1961,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					}
 				} while (repeatScriptCard)
 
+				await settleBeaconReadAheadPromises();
 				var subtitle = "";
 				if ((cardParameters.leftsub !== "") && (cardParameters.rightsub !== "")) {
 					subtitle = cardParameters.leftsub + cardParameters.subtitleseparator + cardParameters.rightsub;
@@ -1842,6 +2096,12 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				beaconStructuredIndexCache.clear();
 				beaconSheetItemCache.clear();
 				beaconSheetItemMissCache.clear();
+				beaconSheetItemPending.clear();
+				beaconSheetItemQueue = [];
+				beaconSheetItemActiveReads = 0;
+				beaconSheetItemGeneration.clear();
+				beaconReadAheadPromises.clear();
+				beaconReadAheadReferenceCache.clear();
 				beaconRepeatingStateCache.clear();
 				beaconRepeatingWritableTargetCache.clear();
 				beaconRepeatingWritableTargets = [];
@@ -5689,6 +5949,23 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 									}
 									var settingValue = thisSetting.join(':').replace(/\\\\\|/gi, "|");
 
+									if (beacon) {
+										const structuredAliasWrite = await writeDnd2024BeaconStructuredAlias(
+											charID,
+											settingName,
+											settingValue,
+											setType
+										);
+										if (structuredAliasWrite.handled) {
+											if (!structuredAliasWrite.success) {
+												log(`ScriptCards Error: Beacon compatibility write "${settingName}" failed: ${structuredAliasWrite.error}`);
+											} else if (cardParameters.debug === "1") {
+												log(`ScriptCards Beacon compatibility write: ${settingName}.${setType} = ${JSON.stringify(structuredAliasWrite.value)} through ${structuredAliasWrite.writeRoute}.`);
+											}
+											continue;
+										}
+									}
+
 									if (beacon && settingName.includes("->")) {
 										const nestedWrite = await writeBeaconStructuredPath(charID, settingName, settingValue, setType);
 										if (!nestedWrite.success) {
@@ -5887,6 +6164,23 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 										var settingValue = thisSetting.join(":").replace(/\\\\\|/gi, "|");
 										const explicitCustomAttribute = settingName.toLowerCase().startsWith("user.");
+										if (!explicitCustomAttribute && !/^repeating_/i.test(settingName)) {
+											const structuredAliasWrite = await writeDnd2024BeaconStructuredAlias(
+												characterObj.id,
+												settingName,
+												settingValue,
+												setType
+											);
+											if (structuredAliasWrite.handled) {
+												if (!structuredAliasWrite.success) {
+													log(`ScriptCards Error: Beacon --!a compatibility write "${settingName}" failed: ${structuredAliasWrite.error}`);
+												} else if (cardParameters.debug === "1") {
+													log(`ScriptCards Beacon --!a compatibility write: ${settingName}.${setType} = ${JSON.stringify(structuredAliasWrite.value)} through ${structuredAliasWrite.writeRoute}.`);
+												}
+												continue;
+											}
+										}
+
 										if (!explicitCustomAttribute && /^repeating_/i.test(settingName)) {
 											const repeatingResult = await setExistingBeaconRepeatingAttribute(
 												characterObj.id,
@@ -11181,18 +11475,26 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		}
 
 		// A projected repeating row has already been matched to its canonical Beacon
-		// record by stable identity. An exact primitive field on that record does not
-		// need a second SDK translation call. Structural/classifier fields, aliases,
-		// computed values, containers, and missing fields still use getSheetItem().
+		// record by stable identity. Exact primitive fields and unambiguous legacy
+		// aliases of primitive fields are read directly from that record. Structural
+		// classifiers, computed values, containers, and unresolved fields still use
+		// the native sheet-item route.
 		if (value === undefined && operation === "current") {
 			const normalizedField = normalizeBeaconLookupName(fieldName);
 			if (!BEACON_REPEATING_LOCAL_READ_EXCLUDED_FIELDS.has(normalizedField)) {
-				const canonicalField = beaconOwnPropertyKey(row.record, fieldName);
+				const canonicalField = resolveBeaconRepeatingCanonicalAliasField(
+					row.record,
+					fieldName,
+					state.sectionName
+				);
 				if (canonicalField !== undefined) {
 					const canonicalValue = row.record[canonicalField];
 					if (canonicalValue === null || beaconPrimitive(canonicalValue)) {
 						value = beaconRepeatingValue(canonicalValue);
 						addBeaconPerformanceStat("repeatingLocalFieldHits");
+						if (normalizeBeaconLookupName(canonicalField) !== normalizedField) {
+							addBeaconPerformanceStat("repeatingLocalAliasHits");
+						}
 					}
 				}
 			}
@@ -12456,9 +12758,10 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	}
 
 
-	// Generic typed-collection fallback for Beacon [*...] references. Native
-	// getSheetItem() lookups remain authoritative; this is only used when a
-	// direct Beacon lookup is unresolved or a zero may be masking a collection.
+	// Generic typed-collection support for Beacon [*...] references. Exact local
+	// structured and typed routes are preferred when they can answer safely; the
+	// native sheet-item route remains the fallback for values that are not mapped
+	// locally or whose sheet-defined computation must remain authoritative.
 	function beaconLookupIsUnresolved(value) {
 		if (value === undefined || value === null) {
 			return true;
@@ -13789,6 +14092,19 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			return result;
 		}
 
+		const structuredAliasWrite = await writeDnd2024BeaconStructuredAlias(
+			characterId,
+			beaconName,
+			settingValue,
+			operation
+		);
+		if (structuredAliasWrite.handled) {
+			if (debug && structuredAliasWrite.success) {
+				log(`ScriptCards Beacon attribute;set compatibility write: ${beaconName}.${operation} = ${JSON.stringify(structuredAliasWrite.value)} through ${structuredAliasWrite.writeRoute}.`);
+			}
+			return structuredAliasWrite;
+		}
+
 		const target = await getBeaconAttributeSetSheetItemTarget(characterId, beaconName, operation);
 		if (!target.exists && settingValue === "") {
 			return { success: true, existed: false, route: "missing sheet item" };
@@ -14456,6 +14772,16 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			return { handled: true, found: true, value: String(value), source: "dnd2024-local-spell-header" };
 		}
 
+		if (["spellattackmod", "spelldcmod"].includes(normalized)) {
+			const abilityName = dnd2024BeaconSpellcastingAbility(characterId);
+			const abilityModifier = abilityName
+				? dnd2024BeaconAbilityModifier(characterId, abilityName)
+				: undefined;
+			return abilityModifier === undefined
+				? { handled: false }
+				: { handled: true, found: true, value: String(abilityModifier), source: "dnd2024-local-spellcasting-modifier" };
+		}
+
 		const spellSlotTotalMatch = normalized.match(/^lvl([1-9])slotstotal$/);
 		if (spellSlotTotalMatch) {
 			const value = dnd2024BeaconNormalSpellSlotTotal(characterId, Number(spellSlotTotalMatch[1]));
@@ -14564,6 +14890,31 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			return true;
 		}
 		return subfields.length > 1 && beaconLookupIsUnresolved(readBeaconSubfields(entry.record, subfields.slice(1)));
+	}
+
+	async function writeDnd2024BeaconStructuredAlias(characterId, lookupName, settingValue, operation = "current") {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter || operation !== "current") {
+			return { handled: false };
+		}
+		const normalizedLookupName = normalizeBeaconLookupName(lookupName);
+		const aliasPath = adapter.structuredWriteAliases[normalizedLookupName];
+		if (!aliasPath) {
+			return { handled: false };
+		}
+		const result = await writeBeaconStructuredPath(
+			characterId,
+			`sheet->${aliasPath.join("->")}`,
+			settingValue,
+			operation
+		);
+		return {
+			handled: true,
+			...result,
+			writeRoute: result.success
+				? `D&D 2024 compatibility alias ${lookupName} -> sheet->${aliasPath.join("->")}`
+				: result.writeRoute
+		};
 	}
 
 	function resolveDnd2024BeaconStoredAlias(characterId, lookupName, operation, subfields) {
