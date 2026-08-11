@@ -27,8 +27,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	*/
 
 	const APINAME = "ScriptCards";
-	const APIVERSION = "3.0.25a-beacon-experimental.131 EXPERIMENTAL";
-	const NUMERIC_VERSION = "300251"
+	const APIVERSION = "3.0.25a-beacon-experimental.135 EXPERIMENTAL";
+	const NUMERIC_VERSION = "300252"
 	const APIAUTHOR = "Kurt Jaegers";
 	const debugMode = false;
 
@@ -603,7 +603,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				spellDisplayOrder: Object.freeze(["spells", "displayOrder"]),
 				equipmentDisplayOrder: Object.freeze(["inventory", "equipmentDisplayOrder"]),
 				otherPossessionsDisplayOrder: Object.freeze(["inventory", "otherPossessionsDisplayOrder"]),
-				weaponMasteryDisplayOrder: Object.freeze(["weaponMasteries", "masteryDisplayOrder"])
+				weaponMasteryDisplayOrder: Object.freeze(["weaponMasteries", "masteryDisplayOrder"]),
+				usedHitDiceData: Object.freeze(["rest", "usedHitDiceData"])
 			}),
 			collections,
 			fields,
@@ -2983,6 +2984,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 									attribute = returnID && characterLookup.attributeId
 										? characterLookup.attributeId
 										: characterLookup.value;
+								} else if (characterLookup.authoritativeMiss) {
+									attribute = undefined;
 								} else if (returnID) {
 									attribute = undefined;
 								} else {
@@ -12832,6 +12835,12 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			if (resolvedBeaconValue.found) {
 				return resolvedBeaconValue;
 			}
+			// A local authoritative miss means the requested Beacon value is known to
+			// be absent or deliberately unsupported. Preserve that result so the outer
+			// character-reference layer does not retry it as a native user.* field.
+			if (resolvedBeaconValue.authoritativeMiss) {
+				return resolvedBeaconValue;
+			}
 		}
 
 		const classicLookupName = lookupName;
@@ -13226,25 +13235,29 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		const leafPath = segments.slice(2);
 		let sourceOperation = operation;
 		let indexed = getBeaconTypedCollectionIndex(characterId, operation, false);
-		let collectionEntries = indexed.index[operation].get(normalizedCollectionName);
-		if (!collectionEntries && !indexed.index.fallbackBuilt[operation]) {
-			indexed = getBeaconTypedCollectionIndex(characterId, operation, true);
-			collectionEntries = indexed.index[operation].get(normalizedCollectionName);
+		let collectionEntries = getBeaconPreferredTypedEntries(indexed, operation, normalizedCollectionName, false);
+		if (!collectionEntries.length) {
+			if (!indexed.index.fallbackBuilt[operation]) {
+				indexed = getBeaconTypedCollectionIndex(characterId, operation, true);
+			}
+			collectionEntries = getBeaconPreferredTypedEntries(indexed, operation, normalizedCollectionName, true);
 		}
 
 		// Max trees are commonly empty even when a matching current record exists.
 		// Retain the current record's canonical path and scaffold the max parent path
 		// using the current tree when the write itself targets max.
-		if (!collectionEntries && operation === "max") {
+		if (!collectionEntries.length && operation === "max") {
 			sourceOperation = "current";
 			indexed = getBeaconTypedCollectionIndex(characterId, "current", false);
-			collectionEntries = indexed.index.current.get(normalizedCollectionName);
-			if (!collectionEntries && !indexed.index.fallbackBuilt.current) {
-				indexed = getBeaconTypedCollectionIndex(characterId, "current", true);
-				collectionEntries = indexed.index.current.get(normalizedCollectionName);
+			collectionEntries = getBeaconPreferredTypedEntries(indexed, "current", normalizedCollectionName, false);
+			if (!collectionEntries.length) {
+				if (!indexed.index.fallbackBuilt.current) {
+					indexed = getBeaconTypedCollectionIndex(characterId, "current", true);
+				}
+				collectionEntries = getBeaconPreferredTypedEntries(indexed, "current", normalizedCollectionName, true);
 			}
 		}
-		if (!collectionEntries) {
+		if (!collectionEntries.length) {
 			return { success: false, matched: false };
 		}
 
@@ -14177,9 +14190,30 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		return identity === undefined ? "" : String(identity).trim();
 	}
 
-	function beaconRecordRawIdentity(record) {
-		const identity = beaconFirstPrimitive(record, [["_id"], ["id"], ["key"], ["uuid"]]);
-		return identity === undefined ? "" : String(identity).trim();
+	function beaconEntryRawIdentities(entry) {
+		const identities = new Set();
+		if (entry && entry.record && typeof entry.record === "object") {
+			for (const key of ["_id", "id", "key", "uuid"]) {
+				const value = beaconProperty(entry.record, key);
+				if (value !== undefined && value !== null && String(value).trim() !== "") {
+					identities.add(String(value).trim());
+				}
+			}
+		}
+		const normalizedPath = entry && Array.isArray(entry.path)
+			? entry.path.map((segment) => normalizeBeaconLookupName(segment))
+			: [];
+		if (entry
+			&& normalizeBeaconLookupName(entry.rootName) === "store"
+			&& normalizedPath.length >= 3
+			&& normalizedPath[0] === "integrants"
+			&& normalizedPath[1] === "integrants") {
+			const pathKey = entry.path[entry.path.length - 1];
+			if (pathKey !== undefined && pathKey !== null && String(pathKey).trim() !== "") {
+				identities.add(String(pathKey).trim());
+			}
+		}
+		return identities;
 	}
 
 	function beaconRecordEnabledState(record) {
@@ -14255,24 +14289,18 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	}
 
 
-	function getBeaconTypedEntries(characterId, operation, collectionName) {
-		let indexed = getBeaconTypedCollectionIndex(characterId, operation, false);
-		let entries = indexed.index[operation].get(normalizeBeaconLookupName(collectionName));
-		if (!entries && !indexed.index.fallbackBuilt[operation]) {
-			indexed = getBeaconTypedCollectionIndex(characterId, operation, true);
-			entries = indexed.index[operation].get(normalizeBeaconLookupName(collectionName));
+	function getBeaconPreferredTypedEntries(indexed, operation, collectionName, allowBuilderFallback) {
+		if (!indexed || !indexed.index || !indexed.index[operation]) {
+			return [];
 		}
-		return entries || [];
+		const entries = indexed.index[operation].get(normalizeBeaconLookupName(collectionName)) || [];
+		const authoritative = entries.filter((entry) => normalizeBeaconLookupName(entry.rootName) !== "builder");
+		return authoritative.length || !allowBuilderFallback ? authoritative : entries;
 	}
 
-	function findBeaconTypedRecord(characterId, operation, collectionName, predicate) {
-		const entries = getBeaconTypedEntries(characterId, operation, collectionName);
-		for (const entry of entries) {
-			if (predicate(entry.record)) {
-				return entry.record;
-			}
-		}
-		return undefined;
+	function getBeaconAuthoritativeTypedEntries(characterId, operation, collectionName) {
+		const indexed = getBeaconTypedCollectionIndex(characterId, operation, false);
+		return getBeaconPreferredTypedEntries(indexed, operation, collectionName, false);
 	}
 
 	function beaconProficiencyIsActive(value) {
@@ -14284,8 +14312,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	}
 
 
-	function getBeaconTypedRecords(characterId, operation, collectionName) {
-		return getBeaconTypedEntries(characterId, operation, collectionName).map((entry) => entry.record);
+	function getBeaconAuthoritativeTypedRecords(characterId, operation, collectionName) {
+		return getBeaconAuthoritativeTypedEntries(characterId, operation, collectionName).map((entry) => entry.record);
 	}
 
 	function beaconNumericPrimitive(record, paths) {
@@ -14295,11 +14323,13 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	}
 
 	function beaconSingleNumericRecordValue(characterId, collectionName, predicate, valuePaths, operation = "current") {
-		const matches = getBeaconTypedRecords(characterId, operation, collectionName)
-			.filter((record) => !predicate || predicate(record))
-			.map((record) => beaconNumericPrimitive(record, valuePaths))
-			.filter((value) => value !== undefined);
-		return matches.length === 1 ? matches[0] : undefined;
+		const matches = getBeaconAuthoritativeTypedRecords(characterId, operation, collectionName)
+			.filter((record) => !predicate || predicate(record));
+		const activeMatches = dnd2024BeaconActiveRecords(characterId, matches);
+		if (!activeMatches || activeMatches.length !== 1) {
+			return undefined;
+		}
+		return beaconNumericPrimitive(activeMatches[0], valuePaths);
 	}
 
 	function readDnd2024BeaconStoreValue(characterId, path, operation = "current") {
@@ -14340,28 +14370,56 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		return adapter.xpByChallenge.get(challenge);
 	}
 
+	function dnd2024BeaconClassLevelTotal(characterId) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter) {
+			return undefined;
+		}
+		const candidates = getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.classLevels)
+			.filter((record) => {
+				const classId = beaconProperty(record, adapter.fields.classID);
+				return classId !== undefined && classId !== null && String(classId).trim() !== "";
+			});
+		const records = dnd2024BeaconActiveRecords(characterId, candidates);
+		if (!records) {
+			return undefined;
+		}
+		const classLevels = [];
+		for (const record of records) {
+			const value = Number(beaconProperty(record, adapter.fields.totalLevel));
+			if (!Number.isFinite(value) || value <= 0) {
+				return undefined;
+			}
+			classLevels.push(value);
+		}
+		return classLevels.length
+			? classLevels.reduce((total, contribution) => total + contribution, 0)
+			: undefined;
+	}
+
 	function dnd2024BeaconProficiencyBonus(characterId) {
 		const adapter = getDnd2024BeaconAdapter(characterId);
 		if (!adapter) {
 			return undefined;
 		}
-		const classLevels = getBeaconTypedRecords(characterId, "current", adapter.collections.classLevels)
-			.filter((record) => {
-				const classId = beaconProperty(record, adapter.fields.classID);
-				return classId !== undefined && classId !== null && String(classId).trim() !== "";
-			})
-			.map((record) => Number(beaconProperty(record, adapter.fields.totalLevel)))
-			.filter((value) => Number.isFinite(value) && value > 0);
-		let level;
-		if (classLevels.length) {
-			level = Math.max(...classLevels);
-		} else {
+		let level = dnd2024BeaconClassLevelTotal(characterId);
+		if (level === undefined) {
 			const challenge = dnd2024ChallengeNumber(readDnd2024BeaconStoreValue(characterId, adapter.storedAliases.npcchallenge));
 			if (challenge !== undefined) {
 				level = Math.max(1, challenge);
 			}
 		}
 		return level === undefined ? undefined : 2 + Math.floor((level - 1) / 4);
+	}
+
+	function dnd2024BeaconAbilityRecordKeys(record) {
+		const values = [
+			beaconProperty(record, "ability"),
+			beaconProperty(beaconProperty(record, "valueFormula"), "ability")
+		]
+			.filter((value) => value !== undefined && value !== null && String(value).trim() !== "")
+			.map((value) => normalizeBeaconLookupName(value));
+		return [...new Set(values)];
 	}
 
 	function dnd2024BeaconAbilityScore(characterId, abilityName) {
@@ -14371,13 +14429,14 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		}
 
 		const normalizedAbility = normalizeBeaconLookupName(abilityName);
-		const records = getBeaconTypedRecords(characterId, "current", adapter.collections.abilityScores)
-			.filter((record) =>
-				beaconRecordEnabledState(record) !== false
-				&& normalizeBeaconLookupName(beaconProperty(record, adapter.fields.ability)) === normalizedAbility
-			);
+		const candidates = getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.abilityScores)
+			.filter((record) => dnd2024BeaconAbilityRecordKeys(record).includes(normalizedAbility));
+		if (candidates.some((record) => dnd2024BeaconAbilityRecordKeys(record).length !== 1)) {
+			return undefined;
+		}
+		const records = dnd2024BeaconActiveRecords(characterId, candidates);
 
-		if (!records.length) {
+		if (!records || !records.length) {
 			return undefined;
 		}
 
@@ -14437,19 +14496,95 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		if (!beaconProficiencyIsActive(value)) {
 			return 0;
 		}
+		const numeric = Number(value);
+		if (Number.isFinite(numeric)) {
+			if (numeric === 0.5 || numeric === 1 || numeric === 2) {
+				return numeric;
+			}
+			return undefined;
+		}
 		const normalized = normalizeBeaconLookupName(value);
-		if (normalized.includes("expert") || normalized === "2" || normalized.includes("double")) {
+		if (normalized.includes("expert") || normalized.includes("double")) {
 			return 2;
 		}
-		if (normalized.includes("half") || normalized === "0.5") {
+		if (normalized.includes("half")) {
 			return 0.5;
 		}
-		return 1;
+		if (normalized.includes("proficien") || normalized.includes("trained")) {
+			return 1;
+		}
+		return undefined;
 	}
 
-	function dnd2024BeaconHasRollBonuses(characterId) {
+	function dnd2024BeaconProficiencyContribution(proficiencyBonus, multiplier) {
+		if (!Number.isFinite(proficiencyBonus) || !Number.isFinite(multiplier)) {
+			return undefined;
+		}
+		return multiplier === 0.5
+			? Math.floor(proficiencyBonus / 2)
+			: proficiencyBonus * multiplier;
+	}
+
+	function dnd2024BeaconRollBonusTargetText(record) {
+		return `${dnd2024BeaconFlattenText(beaconProperty(record, "bonusCategory"))}, ${dnd2024BeaconFlattenText(beaconProperty(record, "bonusName"))}`
+			.trim()
+			.toLowerCase();
+	}
+
+	function dnd2024BeaconRollBonusCouldAffect(record, targetType, targetName, abilityName) {
+		const targetText = dnd2024BeaconRollBonusTargetText(record);
+		if (!targetText.replace(/[\s,]/g, "")) {
+			// An unclassified Roll Bonus is not safe to dismiss from a local total.
+			return true;
+		}
+		if (targetText.includes("all roll") || targetText.includes("all check")) {
+			return true;
+		}
+		if (targetType === "skill") {
+			const skill = String(targetName || "").trim().toLowerCase();
+			const ability = String(abilityName || "").trim().toLowerCase();
+			return (skill && targetText.includes(skill))
+				|| targetText.includes("ability check")
+				|| targetText.includes("skill check")
+				|| targetText.includes("skills")
+				|| (ability && targetText.includes(`${ability} check`));
+		}
+		if (targetType === "save") {
+			const ability = String(abilityName || targetName || "").trim().toLowerCase();
+			return targetText.includes("saving throw")
+				|| (ability && (targetText.includes(`${ability} save`) || targetText.includes(`${ability} saving`)));
+		}
+		if (targetType === "initiative") {
+			return targetText.includes("initiative")
+				|| targetText.includes("ability check")
+				|| targetText.includes("dexterity check");
+		}
+		return true;
+	}
+
+	function dnd2024BeaconHasRelevantRollBonus(characterId, targetType, targetName, abilityName) {
 		const adapter = getDnd2024BeaconAdapter(characterId);
-		return !!adapter && getBeaconTypedRecords(characterId, "current", adapter.collections.rollBonuses).length > 0;
+		if (!adapter) {
+			return false;
+		}
+		const canonicalRecords = dnd2024BeaconCanonicalRecords(characterId);
+		const records = getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.rollBonuses);
+		for (const record of records) {
+			if (!dnd2024BeaconRollBonusCouldAffect(record, targetType, targetName, abilityName)) {
+				continue;
+			}
+			const detailsText = dnd2024BeaconFlattenText(beaconProperty(record, "bonusDetails")).toLowerCase();
+			// Advantage and disadvantage records affect dice selection, not the numeric
+			// compatibility totals projected by ScriptCards.
+			if (detailsText.includes("keep highest") || detailsText.includes("keep lowest")) {
+				continue;
+			}
+			// Unknown activation is deliberately conservative and preserves the SDK fallback.
+			if (dnd2024BeaconRecordActivationState(record, canonicalRecords, adapter) !== false) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	function dnd2024BeaconSkillTotal(characterId, skillName) {
@@ -14457,30 +14592,38 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		if (!adapter) {
 			return undefined;
 		}
-		// Roll Bonus records can alter the final value in ways that cannot be safely
-		// reconstructed from a primitive-only local projection. Fall back to the SDK.
-		if (dnd2024BeaconHasRollBonuses(characterId)) {
-			return undefined;
-		}
-		const skillRecord = findBeaconTypedRecord(characterId, "current", adapter.collections.skills, (candidate) =>
+		const skillSelection = findDnd2024BeaconActiveTypedRecord(characterId, adapter.collections.skills, (candidate) =>
 			normalizeBeaconLookupName(beaconProperty(candidate, "name")) === normalizeBeaconLookupName(skillName)
 		);
+		if (!skillSelection.resolved) {
+			return undefined;
+		}
+		const skillRecord = skillSelection.record;
 		const abilityName = skillRecord && beaconProperty(skillRecord, "ability")
 			? String(beaconProperty(skillRecord, "ability"))
 			: adapter.standardSkillAbilities[normalizeBeaconLookupName(skillName)];
+		// Only a Roll Bonus that could affect this skill makes the local total unsafe.
+		if (dnd2024BeaconHasRelevantRollBonus(characterId, "skill", skillName, abilityName)) {
+			return undefined;
+		}
 		const abilityModifier = abilityName ? dnd2024BeaconAbilityModifier(characterId, abilityName) : undefined;
 		const proficiencyBonus = dnd2024BeaconProficiencyBonus(characterId);
 		if (abilityModifier === undefined || proficiencyBonus === undefined) {
 			return undefined;
 		}
-		const proficiencyRecord = findBeaconTypedRecord(characterId, "current", adapter.collections.proficiencies, (candidate) =>
+		const proficiencySelection = findDnd2024BeaconActiveTypedRecord(characterId, adapter.collections.proficiencies, (candidate) =>
 			normalizeBeaconLookupName(beaconProperty(candidate, adapter.fields.category)) === normalizeBeaconLookupName(adapter.proficiencyCategories.skill)
 			&& normalizeBeaconLookupName(beaconProperty(candidate, adapter.fields.proficiency)) === normalizeBeaconLookupName(skillName)
 		);
+		if (!proficiencySelection.resolved) {
+			return undefined;
+		}
+		const proficiencyRecord = proficiencySelection.record;
 		const multiplier = proficiencyRecord
 			? dnd2024BeaconProficiencyMultiplier(beaconProperty(proficiencyRecord, adapter.fields.proficiencyLevel))
 			: 0;
-		return abilityModifier + proficiencyBonus * multiplier;
+		const contribution = dnd2024BeaconProficiencyContribution(proficiencyBonus, multiplier);
+		return contribution === undefined ? undefined : abilityModifier + contribution;
 	}
 
 
@@ -14531,13 +14674,459 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		return records && typeof records === "object" && !Array.isArray(records) ? records : undefined;
 	}
 
+	function dnd2024BeaconRecordActivationState(record, canonicalRecords, adapter) {
+		if (!record || typeof record !== "object" || !adapter) {
+			return undefined;
+		}
+
+		let current = record;
+		let requiresEquip = false;
+		let itemRecord;
+		let chainComplete = false;
+		const visitedParentIds = new Set();
+
+		for (let depth = 0; depth < 64; depth++) {
+			if (beaconRecordEnabledState(current) === false) {
+				return false;
+			}
+
+			const type = normalizeBeaconLookupName(beaconProperty(current, adapter.fields.type));
+			if (type === "condition" || type === "effect") {
+				const active = beaconProperty(current, "_active");
+				if (dnd2024BeaconValueIsFalse(active)) {
+					return false;
+				}
+				if (!dnd2024BeaconValueIsTrue(active)) {
+					return undefined;
+				}
+			}
+			if (type === "attunement") {
+				const attuned = beaconProperty(current, "_attuned");
+				if (dnd2024BeaconValueIsFalse(attuned)) {
+					return false;
+				}
+				if (!dnd2024BeaconValueIsTrue(attuned)) {
+					return undefined;
+				}
+			}
+			if (type === "item") {
+				itemRecord = current;
+			}
+
+			const requireEquip = beaconProperty(current, "requireEquip");
+			if (requireEquip !== undefined && requireEquip !== null && String(requireEquip).trim() !== "") {
+				if (dnd2024BeaconValueIsTrue(requireEquip)) {
+					requiresEquip = true;
+				} else if (!dnd2024BeaconValueIsFalse(requireEquip)) {
+					return undefined;
+				}
+			}
+
+			const parentIdValue = beaconProperty(current, adapter.fields.parentID);
+			const parentId = parentIdValue === undefined || parentIdValue === null
+				? ""
+				: String(parentIdValue).trim();
+			if (!parentId) {
+				chainComplete = true;
+				break;
+			}
+			if (!canonicalRecords || visitedParentIds.has(parentId)) {
+				return undefined;
+			}
+			visitedParentIds.add(parentId);
+			const parent = canonicalRecords[parentId];
+			if (!parent || typeof parent !== "object") {
+				return undefined;
+			}
+			current = parent;
+		}
+		if (!chainComplete) {
+			return undefined;
+		}
+
+		if (requiresEquip) {
+			if (!itemRecord) {
+				return undefined;
+			}
+			const equipped = beaconProperty(beaconProperty(itemRecord, "equipData"), "equipped");
+			if (dnd2024BeaconValueIsFalse(equipped)) {
+				return false;
+			}
+			if (!dnd2024BeaconValueIsTrue(equipped)) {
+				return undefined;
+			}
+		}
+
+		return true;
+	}
+
+	function dnd2024BeaconActiveRecords(characterId, records) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter || !Array.isArray(records)) {
+			return undefined;
+		}
+		const canonicalRecords = dnd2024BeaconCanonicalRecords(characterId);
+		const active = [];
+		for (const record of records) {
+			const state = dnd2024BeaconRecordActivationState(record, canonicalRecords, adapter);
+			if (state === undefined) {
+				return undefined;
+			}
+			if (state) {
+				active.push(record);
+			}
+		}
+		return active;
+	}
+
+	function findDnd2024BeaconActiveTypedRecord(characterId, collectionName, predicate, operation = "current") {
+		const candidates = getBeaconAuthoritativeTypedRecords(characterId, operation, collectionName)
+			.filter((record) => !predicate || predicate(record));
+		const active = dnd2024BeaconActiveRecords(characterId, candidates);
+		return active === undefined || active.length > 1
+			? { resolved: false, record: undefined }
+			: { resolved: true, record: active[0] };
+	}
+
+	function dnd2024BeaconClassProjection(characterId) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		const canonicalRecords = dnd2024BeaconCanonicalRecords(characterId);
+		if (!adapter || !canonicalRecords) {
+			return undefined;
+		}
+
+		const classEntries = getBeaconAuthoritativeTypedEntries(characterId, "current", adapter.collections.classes);
+		const activeClassRecords = dnd2024BeaconActiveRecords(characterId, classEntries.map((entry) => entry.record));
+		if (!activeClassRecords) {
+			return undefined;
+		}
+		const activeClassSet = new Set(activeClassRecords);
+		const classByIdentity = new Map();
+		for (const entry of classEntries) {
+			if (!activeClassSet.has(entry.record)) {
+				continue;
+			}
+			const name = dnd2024BeaconFlattenText(beaconProperty(entry.record, adapter.fields.name));
+			const identities = [...new Set([
+				...beaconEntryRawIdentities(entry),
+				name,
+				normalizeBeaconLookupName(name)
+			])];
+			if (!name || !identities.length) {
+				return undefined;
+			}
+			const classInfo = { name, identities, record: entry.record };
+			for (const identity of identities) {
+				const existing = classByIdentity.get(identity);
+				if (existing && existing.record !== entry.record) {
+					return undefined;
+				}
+				classByIdentity.set(identity, classInfo);
+			}
+		}
+
+		const levelEntries = getBeaconAuthoritativeTypedEntries(characterId, "current", adapter.collections.classLevels)
+			.filter((entry) => {
+				const classId = beaconProperty(entry.record, adapter.fields.classID);
+				return classId !== undefined && classId !== null && String(classId).trim() !== "";
+			});
+		const activeLevelRecords = dnd2024BeaconActiveRecords(characterId, levelEntries.map((entry) => entry.record));
+		if (!activeLevelRecords) {
+			return undefined;
+		}
+		const activeLevelSet = new Set(activeLevelRecords);
+		const activeLevelEntries = levelEntries.filter((entry) => activeLevelSet.has(entry.record));
+		const groupsByClassId = new Map();
+		for (const entry of activeLevelEntries) {
+			const classId = String(beaconProperty(entry.record, adapter.fields.classID)).trim();
+			const classInfo = classByIdentity.get(classId) || classByIdentity.get(normalizeBeaconLookupName(classId));
+			const contribution = Number(beaconProperty(entry.record, adapter.fields.totalLevel));
+			if (!classInfo || !Number.isFinite(contribution) || contribution <= 0) {
+				return undefined;
+			}
+			if (!groupsByClassId.has(classId)) {
+				groupsByClassId.set(classId, {
+					classId,
+					classInfo,
+					level: 0,
+					levelEntries: [],
+					subclassName: "",
+					subclassResolved: true
+				});
+			}
+			const group = groupsByClassId.get(classId);
+			group.level += contribution;
+			group.levelEntries.push(entry);
+		}
+		const groups = [...groupsByClassId.values()];
+		if (!groups.length) {
+			return undefined;
+		}
+
+		const subclassRecords = getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.subclasses);
+		const activeSubclassRecords = dnd2024BeaconActiveRecords(characterId, subclassRecords);
+		if (!activeSubclassRecords) {
+			return undefined;
+		}
+		for (const group of groups) {
+			const classIdentities = new Set([group.classId, ...group.classInfo.identities]);
+			const matchingSubclasses = activeSubclassRecords.filter((record) => {
+				const parentId = beaconProperty(record, adapter.fields.parentID);
+				return parentId !== undefined && parentId !== null && classIdentities.has(String(parentId).trim());
+			});
+			if (matchingSubclasses.length > 1) {
+				group.subclassResolved = false;
+			} else if (matchingSubclasses.length === 1) {
+				group.subclassName = dnd2024BeaconFlattenText(beaconProperty(matchingSubclasses[0], adapter.fields.name));
+				if (!group.subclassName) {
+					group.subclassResolved = false;
+				}
+			}
+		}
+
+		groups.sort((left, right) => left.classInfo.name.localeCompare(right.classInfo.name));
+		let primary;
+		if (groups.length === 1) {
+			primary = groups[0];
+		} else {
+			const hitPointRecords = dnd2024BeaconActiveRecords(
+				characterId,
+				getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.hitPoints)
+			);
+			const hitDiceRecords = dnd2024BeaconActiveRecords(
+				characterId,
+				getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.hitDices)
+			);
+			if (hitPointRecords && hitDiceRecords) {
+				const fullFirstLevelGroups = groups.filter((group) => group.levelEntries.some((entry) => {
+					if (Number(beaconProperty(entry.record, adapter.fields.level)) !== 1) {
+						return false;
+					}
+					const levelKeys = beaconEntryRawIdentities(entry);
+					const levelHitPoints = hitPointRecords.filter((record) => {
+						const parentId = beaconProperty(record, adapter.fields.parentID);
+						return parentId !== undefined && parentId !== null
+							&& levelKeys.has(String(parentId).trim())
+							&& !dnd2024BeaconValueIsTrue(beaconProperty(record, adapter.fields.isTemp));
+					});
+					const levelHitDice = hitDiceRecords.filter((record) => {
+						const parentId = beaconProperty(record, adapter.fields.parentID);
+						return parentId !== undefined && parentId !== null && levelKeys.has(String(parentId).trim());
+					});
+					return levelHitPoints.some((hitPointRecord) => {
+						const hitPointValue = beaconNumericPrimitive(hitPointRecord, adapter.valuePaths.formulaFlatValue);
+						return Number.isFinite(hitPointValue) && levelHitDice.some((hitDiceRecord) => {
+							const dieSize = Number(beaconProperty(hitDiceRecord, "dieSize"));
+							return Number.isFinite(dieSize) && dieSize > 0 && hitPointValue === dieSize;
+						});
+					});
+				}));
+				if (fullFirstLevelGroups.length === 1) {
+					primary = fullFirstLevelGroups[0];
+				}
+			}
+		}
+
+		return {
+			groups,
+			primary,
+			secondary: primary ? groups.filter((group) => group !== primary) : []
+		};
+	}
+
+	function dnd2024BeaconHitDiceTotals(characterId) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter) {
+			return undefined;
+		}
+		const records = dnd2024BeaconActiveRecords(
+			characterId,
+			getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.hitDices)
+		);
+		if (!records || !records.length) {
+			return undefined;
+		}
+
+		let maximum = 0;
+		const dieSizes = new Set();
+		for (const record of records) {
+			const dieCount = Number(beaconProperty(record, "dieCount"));
+			const dieSize = Number(beaconProperty(record, "dieSize"));
+			if (!Number.isFinite(dieCount) || dieCount < 0 || !Number.isFinite(dieSize) || dieSize <= 0) {
+				return undefined;
+			}
+			maximum += dieCount;
+			dieSizes.add(dieSize);
+		}
+
+		let used = 0;
+		const usedData = readDnd2024BeaconStoreValue(characterId, adapter.storePaths.usedHitDiceData);
+		if (usedData !== undefined) {
+			const parsedUsedData = parseBeaconStructuredValue(usedData) || usedData;
+			if (!parsedUsedData || typeof parsedUsedData !== "object" || Array.isArray(parsedUsedData)) {
+				return undefined;
+			}
+			for (const entry of Object.values(parsedUsedData)) {
+				const usedHitDice = Number(beaconProperty(entry, "usedHitDice"));
+				if (!Number.isFinite(usedHitDice) || usedHitDice < 0) {
+					return undefined;
+				}
+				used += usedHitDice;
+			}
+		}
+
+		return {
+			current: Math.max(0, maximum - used),
+			maximum,
+			dieSizes
+		};
+	}
+
+	function dnd2024BeaconAggregateProficiencyFlag(characterId, category) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter) {
+			return undefined;
+		}
+		const candidates = getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.proficiencies)
+			.filter((record) => normalizeBeaconLookupName(beaconProperty(record, adapter.fields.category)) === normalizeBeaconLookupName(category));
+		const records = dnd2024BeaconActiveRecords(characterId, candidates);
+		if (!records) {
+			return undefined;
+		}
+		for (const record of records) {
+			const multiplier = dnd2024BeaconProficiencyMultiplier(beaconProperty(record, adapter.fields.proficiencyLevel));
+			if (multiplier === undefined) {
+				return undefined;
+			}
+			if (multiplier > 0) {
+				return 1;
+			}
+		}
+		return 0;
+	}
+
+	function dnd2024BeaconReactionFlag(characterId) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter) {
+			return undefined;
+		}
+		const candidates = [
+			...getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.actions),
+			...getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.attacks)
+		].filter((record) => normalizeBeaconLookupName(beaconProperty(record, adapter.fields.actionType))
+			=== normalizeBeaconLookupName(adapter.actionTypes.reaction));
+		const records = dnd2024BeaconActiveRecords(characterId, candidates);
+		return records === undefined ? undefined : (records.length ? 1 : 0);
+	}
+
+	function dnd2024BeaconFormattedLanguages(characterId) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter) {
+			return undefined;
+		}
+		const records = dnd2024BeaconActiveRecords(
+			characterId,
+			getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.languages)
+		);
+		if (!records) {
+			return undefined;
+		}
+		const names = records.map((record) => dnd2024BeaconFlattenText(beaconProperty(record, adapter.fields.name)));
+		if (names.some((name) => !name)) {
+			return undefined;
+		}
+		return [...new Set(names)].sort((left, right) => left.localeCompare(right)).join(", ");
+	}
+
+	function dnd2024BeaconFormattedSenses(characterId) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter) {
+			return undefined;
+		}
+		const records = dnd2024BeaconActiveRecords(
+			characterId,
+			getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.senses)
+		);
+		if (!records) {
+			return undefined;
+		}
+		const formatted = [];
+		for (const record of records) {
+			const rawName = dnd2024BeaconFlattenText(beaconProperty(record, adapter.fields.name));
+			if (!rawName) {
+				return undefined;
+			}
+			const name = rawName.charAt(0).toUpperCase() + rawName.slice(1);
+			const ignoreValue = parseBeaconBooleanValue(beaconProperty(record, "ignoreValue"));
+			if (!ignoreValue.success) {
+				return undefined;
+			}
+			if (ignoreValue.value) {
+				formatted.push(name);
+				continue;
+			}
+			const value = beaconNumericPrimitive(record, adapter.valuePaths.formulaFlatValue);
+			if (!Number.isFinite(value)) {
+				return undefined;
+			}
+			formatted.push(`${name} ${value} ft.`);
+		}
+		return [...new Set(formatted)].sort((left, right) => left.localeCompare(right)).join(", ");
+	}
+
+	function dnd2024BeaconFormattedDefense(characterId, lookupName) {
+		const adapter = getDnd2024BeaconAdapter(characterId);
+		if (!adapter) {
+			return undefined;
+		}
+		const records = dnd2024BeaconActiveRecords(
+			characterId,
+			getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.defenses)
+		);
+		if (!records) {
+			return undefined;
+		}
+		const normalizedLookup = normalizeBeaconLookupName(lookupName);
+		const values = [];
+		for (const record of records) {
+			const defense = normalizeBeaconLookupName(beaconProperty(record, "defense"));
+			if (!["vulnerability", "resistance", "immunity"].includes(defense)) {
+				return undefined;
+			}
+			const damage = dnd2024BeaconFlattenText(beaconProperty(record, "damage"));
+			const condition = dnd2024BeaconFlattenText(beaconProperty(record, "condition"));
+			let selected = "";
+			if (normalizedLookup === "npcvulnerabilities" && defense === "vulnerability") {
+				selected = damage;
+			} else if (normalizedLookup === "npcresistances" && defense === "resistance") {
+				selected = damage;
+			} else if (normalizedLookup === "npcimmunities" && defense === "immunity" && damage) {
+				selected = damage;
+			} else if (normalizedLookup === "npcconditionimmunities" && defense === "immunity" && condition) {
+				selected = condition;
+			}
+			if ((normalizedLookup === "npcvulnerabilities" && defense === "vulnerability" && !damage)
+				|| (normalizedLookup === "npcresistances" && defense === "resistance" && !damage)
+				|| (normalizedLookup === "npcimmunities" && defense === "immunity" && !damage && !condition)) {
+				return undefined;
+			}
+			if (selected) {
+				values.push(selected);
+			}
+		}
+		return [...new Set(values)].sort((left, right) => left.localeCompare(right)).join(", ");
+	}
+
 	function dnd2024BeaconSpellcastingAbility(characterId) {
 		const adapter = getDnd2024BeaconAdapter(characterId);
 		if (!adapter) {
 			return undefined;
 		}
-		const spellcastings = getBeaconTypedRecords(characterId, "current", adapter.collections.spellcastings);
-		if (!spellcastings.length) {
+		const spellcastings = dnd2024BeaconActiveRecords(
+			characterId,
+			getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.spellcastings)
+		);
+		if (!spellcastings || !spellcastings.length) {
 			return undefined;
 		}
 		const abilities = new Set();
@@ -14562,7 +15151,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 
 		let attack = 0;
 		let save = 0;
-		const rollBonuses = getBeaconTypedRecords(characterId, "current", adapter.collections.rollBonuses);
+		const rollBonuses = getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.rollBonuses);
 		for (const record of rollBonuses) {
 			const categoryText = dnd2024BeaconFlattenText(beaconProperty(record, "bonusCategory")).toLowerCase();
 			const nameText = dnd2024BeaconFlattenText(beaconProperty(record, "bonusName")).toLowerCase();
@@ -14574,20 +15163,23 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				continue;
 			}
 
-			const parentId = beaconProperty(record, adapter.fields.parentID);
-			if (typeof parentId === "string" && parentId.trim()) {
-				const parent = canonicalRecords[parentId];
-				if (parent && normalizeBeaconLookupName(beaconProperty(parent, adapter.fields.type)) === "condition"
-					&& !dnd2024BeaconValueIsTrue(beaconProperty(parent, "_active"))) {
-					continue;
-				}
+			const activation = dnd2024BeaconRecordActivationState(record, canonicalRecords, adapter);
+			if (activation === false) {
+				continue;
+			}
+			if (activation === undefined) {
+				return undefined;
 			}
 
 			if (detailsText.includes("keep highest") || detailsText.includes("keep lowest")) {
 				continue;
 			}
 
-			const bonusValue = Number(beaconProperty(record, "bonusValue"));
+			const rawBonusValue = beaconProperty(record, "bonusValue");
+			const bonusValue = rawBonusValue === undefined || rawBonusValue === null
+				|| (typeof rawBonusValue === "string" && rawBonusValue.trim() === "")
+				? undefined
+				: Number(rawBonusValue);
 			if (detailsText !== "modifier" || !Number.isFinite(bonusValue)
 				|| !dnd2024BeaconValueIsFalse(beaconProperty(record, "totalRoll"))) {
 				// An unsupported spell-targeted bonus calculation makes the local total unsafe.
@@ -14640,7 +15232,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			return undefined;
 		}
 
-		const matchingRecords = getBeaconTypedRecords(characterId, "current", adapter.collections.spellSlots)
+		const candidates = getBeaconAuthoritativeTypedRecords(characterId, "current", adapter.collections.spellSlots)
 			.filter((record) => {
 				const slotType = normalizeBeaconLookupName(beaconProperty(record, adapter.fields.slotType));
 				return !slotType.includes("pact")
@@ -14649,6 +15241,10 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 						adapter
 					) === requestedLevel;
 			});
+		const matchingRecords = dnd2024BeaconActiveRecords(characterId, candidates);
+		if (!matchingRecords) {
+			return undefined;
+		}
 
 		// No active non-Pact entitlement record means that this normal slot level has
 		// zero capacity. Pact capacity is intentionally not projected through lvlN_slots_total.
@@ -14737,16 +15333,61 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			);
 			return value === undefined ? { handled: false } : { handled: true, found: true, value: String(value), source: "dnd2024-local-hp-max" };
 		}
+		if ((operation === "max" && normalized === "hitdice")
+			|| (operation === "current" && normalized === "hitdicemax")) {
+			const totals = dnd2024BeaconHitDiceTotals(characterId);
+			return totals === undefined
+				? { handled: false }
+				: { handled: true, found: true, value: String(totals.maximum), source: "dnd2024-local-hit-dice-max" };
+		}
 		if (operation !== "current") {
 			return { handled: false };
 		}
 
-		if (["level", "baselevel"].includes(normalized)) {
-			const totals = getBeaconTypedRecords(characterId, "current", adapter.collections.classLevels)
-				.map((record) => Number(beaconProperty(record, adapter.fields.totalLevel)))
-				.filter((value) => Number.isFinite(value) && value > 0);
-			const value = totals.length ? Math.max(...totals) : undefined;
+		if (normalized === "level") {
+			const value = dnd2024BeaconClassLevelTotal(characterId);
 			return value === undefined ? { handled: false } : { handled: true, found: true, value: String(value), source: "dnd2024-local-level" };
+		}
+
+		if (["class", "baselevel", "classdisplay"].includes(normalized)
+			|| /^multiclass[1-3](?:flag|lvl|subclass)?$/.test(normalized)) {
+			const projection = dnd2024BeaconClassProjection(characterId);
+			if (!projection) {
+				return { handled: false };
+			}
+			if (normalized === "classdisplay") {
+				const value = projection.groups.map((group) => `${group.classInfo.name} ${group.level}`).join(", ");
+				return { handled: true, found: true, value, source: "dnd2024-local-class-display" };
+			}
+			if (!projection.primary) {
+				return { handled: false };
+			}
+			if (normalized === "class") {
+				return { handled: true, found: true, value: projection.primary.classInfo.name, source: "dnd2024-local-primary-class" };
+			}
+			if (normalized === "baselevel") {
+				return { handled: true, found: true, value: String(projection.primary.level), source: "dnd2024-local-primary-class-level" };
+			}
+			const multiclassMatch = normalized.match(/^multiclass([1-3])(flag|lvl|subclass)?$/);
+			if (multiclassMatch) {
+				const secondary = projection.secondary[Number(multiclassMatch[1]) - 1];
+				const field = multiclassMatch[2] || "name";
+				if (field === "flag") {
+					return { handled: true, found: true, value: secondary ? "1" : "0", source: "dnd2024-local-multiclass-flag" };
+				}
+				if (!secondary) {
+					return { handled: true, found: true, value: "", source: "dnd2024-local-empty-multiclass-slot" };
+				}
+				if (field === "lvl") {
+					return { handled: true, found: true, value: String(secondary.level), source: "dnd2024-local-multiclass-level" };
+				}
+				if (field === "subclass") {
+					return secondary.subclassResolved
+						? { handled: true, found: true, value: secondary.subclassName, source: "dnd2024-local-multiclass-subclass" }
+						: { handled: false };
+				}
+				return { handled: true, found: true, value: secondary.classInfo.name, source: "dnd2024-local-multiclass-class" };
+			}
 		}
 
 		if (normalized === "npcxp") {
@@ -14782,6 +15423,38 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				: { handled: true, found: true, value: String(abilityModifier), source: "dnd2024-local-spellcasting-modifier" };
 		}
 
+		if (normalized === "spellcastingability") {
+			const abilityName = dnd2024BeaconSpellcastingAbility(characterId);
+			const abilityModifier = abilityName
+				? dnd2024BeaconAbilityModifier(characterId, abilityName)
+				: undefined;
+			return abilityModifier === undefined
+				? { handled: false }
+				: { handled: true, found: true, value: `${abilityModifier}+`, source: "dnd2024-local-spellcasting-ability" };
+		}
+
+		if (normalized === "hitdice") {
+			const totals = dnd2024BeaconHitDiceTotals(characterId);
+			return totals === undefined
+				? { handled: false }
+				: { handled: true, found: true, value: String(totals.current), source: "dnd2024-local-hit-dice-current" };
+		}
+
+		if (["hitdietype", "hitdiefinal"].includes(normalized)) {
+			const totals = dnd2024BeaconHitDiceTotals(characterId);
+			return totals && totals.dieSizes.size > 1
+				? { handled: true, found: false, value: undefined, source: "dnd2024-local-mixed-hit-dice-unsupported" }
+				: { handled: false };
+		}
+
+		if ([
+			"classresource", "classresourcemax", "classresourcename",
+			"otherresource", "otherresourcemax", "otherresourcename",
+			"defaultcriticalrange"
+		].includes(normalized)) {
+			return { handled: true, found: false, value: undefined, source: "dnd2024-local-unsupported-compatibility-alias" };
+		}
+
 		const spellSlotTotalMatch = normalized.match(/^lvl([1-9])slotstotal$/);
 		if (spellSlotTotalMatch) {
 			const value = dnd2024BeaconNormalSpellSlotTotal(characterId, Number(spellSlotTotalMatch[1]));
@@ -14811,16 +15484,49 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		}
 
 		if (["npcvulnerabilities", "npcresistances", "npcimmunities", "npcconditionimmunities"].includes(normalized)) {
-			const defenses = getBeaconTypedRecords(characterId, "current", adapter.collections.defenses);
-			// Empty defense collections are exact and common. Non-empty collections retain
-			// the native formatter until every category/value representation is validated.
-			return defenses.length === 0
-				? { handled: true, found: true, value: "", source: "dnd2024-local-empty-defenses" }
-				: { handled: false };
+			const value = dnd2024BeaconFormattedDefense(characterId, normalized);
+			return value === undefined
+				? { handled: false }
+				: { handled: true, found: true, value, source: "dnd2024-local-npc-defenses" };
+		}
+
+		if (normalized === "npcsavingflag") {
+			const value = dnd2024BeaconAggregateProficiencyFlag(characterId, adapter.proficiencyCategories.savingThrow);
+			return value === undefined
+				? { handled: false }
+				: { handled: true, found: true, value: String(value), source: "dnd2024-local-npc-saving-flag" };
+		}
+
+		if (normalized === "npcskillsflag") {
+			const value = dnd2024BeaconAggregateProficiencyFlag(characterId, adapter.proficiencyCategories.skill);
+			return value === undefined
+				? { handled: false }
+				: { handled: true, found: true, value: String(value), source: "dnd2024-local-npc-skills-flag" };
+		}
+
+		if (normalized === "npcreactionsflag") {
+			const value = dnd2024BeaconReactionFlag(characterId);
+			return value === undefined
+				? { handled: false }
+				: { handled: true, found: true, value: String(value), source: "dnd2024-local-npc-reactions-flag" };
+		}
+
+		if (normalized === "npcsenses") {
+			const value = dnd2024BeaconFormattedSenses(characterId);
+			return value === undefined
+				? { handled: false }
+				: { handled: true, found: true, value, source: "dnd2024-local-npc-senses" };
+		}
+
+		if (normalized === "npclanguages") {
+			const value = dnd2024BeaconFormattedLanguages(characterId);
+			return value === undefined
+				? { handled: false }
+				: { handled: true, found: true, value, source: "dnd2024-local-npc-languages" };
 		}
 
 		if (["initiativebonus", "initmod"].includes(normalized)) {
-			if (dnd2024BeaconHasRollBonuses(characterId)) {
+			if (dnd2024BeaconHasRelevantRollBonus(characterId, "initiative", "Initiative", "Dexterity")) {
 				return { handled: false };
 			}
 			const value = dnd2024BeaconAbilityModifier(characterId, "Dexterity");
@@ -14849,7 +15555,7 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			const abilityKey = normalizeBeaconLookupName(abilityName);
 			const abbreviation = abilityKey.slice(0, 3);
 			if ([`${abilityKey}savebonus`, `${abilityKey}savemod`, `npc${abbreviation}save`, `npc${abbreviation}savebase`].includes(normalized)) {
-				if (dnd2024BeaconHasRollBonuses(characterId)) {
+				if (dnd2024BeaconHasRelevantRollBonus(characterId, "save", abilityName, abilityName)) {
 					return { handled: false };
 				}
 				const abilityModifier = dnd2024BeaconAbilityModifier(characterId, abilityName);
@@ -14857,14 +15563,21 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 				if (abilityModifier === undefined || proficiencyBonus === undefined) {
 					return { handled: false };
 				}
-				const proficiencyRecord = findBeaconTypedRecord(characterId, "current", adapter.collections.proficiencies, (candidate) =>
+				const proficiencySelection = findDnd2024BeaconActiveTypedRecord(characterId, adapter.collections.proficiencies, (candidate) =>
 					normalizeBeaconLookupName(beaconProperty(candidate, adapter.fields.category)) === normalizeBeaconLookupName(adapter.proficiencyCategories.savingThrow)
 					&& normalizeBeaconLookupName(beaconProperty(candidate, adapter.fields.proficiency)) === abilityKey
 				);
+				if (!proficiencySelection.resolved) {
+					return { handled: false };
+				}
+				const proficiencyRecord = proficiencySelection.record;
 				const multiplier = proficiencyRecord
 					? dnd2024BeaconProficiencyMultiplier(beaconProperty(proficiencyRecord, adapter.fields.proficiencyLevel))
 					: 0;
-				return { handled: true, found: true, value: String(abilityModifier + proficiencyBonus * multiplier), source: "dnd2024-local-save-total" };
+				const contribution = dnd2024BeaconProficiencyContribution(proficiencyBonus, multiplier);
+				return contribution === undefined
+					? { handled: false }
+					: { handled: true, found: true, value: String(abilityModifier + contribution), source: "dnd2024-local-save-total" };
 			}
 		}
 
@@ -14877,12 +15590,14 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		}
 		let indexed = getBeaconTypedCollectionIndex(characterId, operation, false);
 		const key = normalizeBeaconLookupName(lookupName);
-		let entries = indexed.index[operation].get(key);
-		if (!entries && !indexed.index.fallbackBuilt[operation]) {
-			indexed = getBeaconTypedCollectionIndex(characterId, operation, true);
-			entries = indexed.index[operation].get(key);
+		let entries = getBeaconPreferredTypedEntries(indexed, operation, key, false);
+		if (!entries.length) {
+			if (!indexed.index.fallbackBuilt[operation]) {
+				indexed = getBeaconTypedCollectionIndex(characterId, operation, true);
+			}
+			entries = getBeaconPreferredTypedEntries(indexed, operation, key, true);
 		}
-		if (!entries) {
+		if (!entries.length) {
 			return false;
 		}
 		const entry = selectBeaconCollectionEntry(entries, subfields[0]);
@@ -14973,6 +15688,8 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			);
 			if (structured.found) {
 				result = { handled: true, found: true, value: structured.value, source: "beacon-local-structured" };
+			} else if (structured.authoritativeMiss) {
+				result = { handled: true, found: false, value: undefined, source: "beacon-local-structured-miss" };
 			}
 		}
 
@@ -15055,12 +15772,14 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			const saveFlagMatch = normalized.match(/^npc(str|dex|con|int|wis|cha)saveflag$/);
 			if (saveFlagMatch) {
 				const abilityName = dnd2024Adapter.abilityNames[saveFlagMatch[1]];
-				const record = findBeaconTypedRecord(character.id, operation, dnd2024Adapter.collections.proficiencies, (candidate) =>
+				const selection = findDnd2024BeaconActiveTypedRecord(character.id, dnd2024Adapter.collections.proficiencies, (candidate) =>
 					normalizeBeaconLookupName(beaconProperty(candidate, dnd2024Adapter.fields.category)) === normalizeBeaconLookupName(dnd2024Adapter.proficiencyCategories.savingThrow)
 					&& normalizeBeaconLookupName(beaconProperty(candidate, dnd2024Adapter.fields.proficiency)) === normalizeBeaconLookupName(abilityName)
 				);
-				const level = record ? beaconProperty(record, dnd2024Adapter.fields.proficiencyLevel) : undefined;
-				result = { handled: true, found: true, value: beaconProficiencyIsActive(level) ? "1" : "0", source: "beacon-local-save-flag" };
+				if (selection.resolved) {
+					const level = selection.record ? beaconProperty(selection.record, dnd2024Adapter.fields.proficiencyLevel) : undefined;
+					result = { handled: true, found: true, value: beaconProficiencyIsActive(level) ? "1" : "0", source: "beacon-local-save-flag" };
+				}
 			}
 		}
 
@@ -15068,19 +15787,14 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 			const skillFlagMatch = normalized.match(/^npc(.+)flag$/);
 			if (skillFlagMatch && dnd2024Adapter.skillNames[skillFlagMatch[1]]) {
 				const skillName = dnd2024Adapter.skillNames[skillFlagMatch[1]];
-				const record = findBeaconTypedRecord(character.id, operation, dnd2024Adapter.collections.proficiencies, (candidate) =>
+				const selection = findDnd2024BeaconActiveTypedRecord(character.id, dnd2024Adapter.collections.proficiencies, (candidate) =>
 					normalizeBeaconLookupName(beaconProperty(candidate, dnd2024Adapter.fields.category)) === normalizeBeaconLookupName(dnd2024Adapter.proficiencyCategories.skill)
 					&& normalizeBeaconLookupName(beaconProperty(candidate, dnd2024Adapter.fields.proficiency)) === normalizeBeaconLookupName(skillName)
 				);
-				const level = record ? beaconProperty(record, dnd2024Adapter.fields.proficiencyLevel) : undefined;
-				result = { handled: true, found: true, value: beaconProficiencyIsActive(level) ? "1" : "0", source: "beacon-local-skill-flag" };
-			}
-		}
-
-		if (!result.handled && dnd2024Sheet && operation === "current" && (normalized === "languages" || normalized === "npclanguages")) {
-			const structured = resolveBeaconStructuredLookup(character.id, dnd2024Adapter.collections.languages, operation, [], debug);
-			if (structured.found) {
-				result = { handled: true, found: true, value: structured.value, source: "beacon-local-languages" };
+				if (selection.resolved) {
+					const level = selection.record ? beaconProperty(selection.record, dnd2024Adapter.fields.proficiencyLevel) : undefined;
+					result = { handled: true, found: true, value: beaconProficiencyIsActive(level) ? "1" : "0", source: "beacon-local-skill-flag" };
+				}
 			}
 		}
 
@@ -15102,7 +15816,12 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 	async function resolveBeaconReferenceValue(character, lookupName, operation, subfields, debug) {
 		const localLookup = resolveBeaconLocalCompatibilityLookup(character, lookupName, operation, subfields, debug);
 		if (localLookup.handled) {
-			return { found: localLookup.found, value: localLookup.value, source: localLookup.source };
+			return {
+				found: localLookup.found,
+				value: localLookup.value,
+				source: localLookup.source,
+				authoritativeMiss: localLookup.found === false
+			};
 		}
 
 		const nativeLookupName = normalizeBeaconLookupName(lookupName) === "sheet" ? "store" : lookupName;
@@ -15332,15 +16051,26 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 		for (const [collectionKey, entries] of index.candidates[operation]) {
 			const identityGroups = new Map();
 			const activeEntries = [];
-			const enabledRawIdentities = new Set(entries
-				.filter((entry) => entry.enabledState !== false)
-				.map((entry) => beaconRecordRawIdentity(entry.record))
-				.filter(Boolean));
+			const entryScope = (entry) => normalizeBeaconLookupName(entry.rootName) === "builder"
+				? "builder"
+				: "authoritative";
+			const enabledRawIdentities = new Map([
+				["authoritative", new Set()],
+				["builder", new Set()]
+			]);
+			for (const entry of entries) {
+				if (entry.enabledState !== false) {
+					for (const rawIdentity of beaconEntryRawIdentities(entry)) {
+						enabledRawIdentities.get(entryScope(entry)).add(rawIdentity);
+					}
+				}
+			}
 
 			for (const entry of entries) {
+				const scope = entryScope(entry);
 				const overwrittenBy = beaconFirstPrimitive(entry.record, [["overwrittenBy"]]);
 				if (overwrittenBy !== undefined
-					&& enabledRawIdentities.has(String(overwrittenBy).trim())) {
+					&& enabledRawIdentities.get(scope).has(String(overwrittenBy).trim())) {
 					continue;
 				}
 
@@ -15352,10 +16082,11 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					}
 					continue;
 				}
-				if (!identityGroups.has(entry.stableIdentity)) {
-					identityGroups.set(entry.stableIdentity, []);
+				const scopedIdentity = `${scope}\u0000${entry.stableIdentity}`;
+				if (!identityGroups.has(scopedIdentity)) {
+					identityGroups.set(scopedIdentity, []);
 				}
-				identityGroups.get(entry.stableIdentity).push(entry);
+				identityGroups.get(scopedIdentity).push(entry);
 			}
 
 			for (const group of identityGroups.values()) {
@@ -15552,16 +16283,24 @@ const ScriptCards = (async () => { // eslint-disable-line no-unused-vars
 					value: beaconPrimitive(rootValue) ? String(rootValue) : JSON.stringify(rootValue)
 				};
 			}
+			if (subfields.length) {
+				if (debug) {
+					log(`ScriptCards Beacon lookup: ${lookupName} resolved to an authoritative structured ${operation} root, but ${subfields.join("->")} is not present.`);
+				}
+				return { found: false, value: undefined, authoritativeMiss: true };
+			}
 		}
 
 		let indexed = getBeaconTypedCollectionIndex(characterId, operation, false);
-		let collectionEntries = indexed.index[operation].get(normalizedLookupName);
-		if (!collectionEntries && !indexed.index.fallbackBuilt[operation]) {
-			indexed = getBeaconTypedCollectionIndex(characterId, operation, true);
-			collectionEntries = indexed.index[operation].get(normalizedLookupName);
+		let collectionEntries = getBeaconPreferredTypedEntries(indexed, operation, normalizedLookupName, false);
+		if (!collectionEntries.length) {
+			if (!indexed.index.fallbackBuilt[operation]) {
+				indexed = getBeaconTypedCollectionIndex(characterId, operation, true);
+			}
+			collectionEntries = getBeaconPreferredTypedEntries(indexed, operation, normalizedLookupName, true);
 		}
 
-		if (!collectionEntries) {
+		if (!collectionEntries.length) {
 			if (debug) {
 				log(`ScriptCards Beacon lookup: no structured root or typed ${operation} collection matched ${lookupName}; ${beaconIndexStatus(indexed)}.`);
 			}
