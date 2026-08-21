@@ -20,27 +20,29 @@
 7. [Conditionals](#conditionals)
 8. [Loops](#loops)
 9. [Procedures & Subroutines (GOSUB)](#procedures--subroutines-gosub)
-10. [Reentrant Scripts & Interactive Buttons](#reentrant-scripts--interactive-buttons)
+10. [Reentrant Scripts & Interactive Buttons](#reentrant-scripts--interactive-buttons) — including [Information Requests](#information-requests---i)
 11. [Output & Card Formatting](#output--card-formatting)
 12. [Card Settings Reference](#card-settings-reference)
 13. [Dice Rolling](#dice-rolling)
-14. [Object Modification](#object-modification)
-15. [Object Creation & Deletion](#object-creation--deletion)
-16. [Repeating Sections](#repeating-sections)
-17. [Hash Tables](#hash-tables)
-18. [DataGrids](#datagrids)
-19. [Pointers](#pointers)
-20. [Save / Load & Persistent Storage](#save--load--persistent-storage)
-21. [Triggers](#triggers)
-22. [Libraries](#libraries)
-23. [Running Scripts from Handouts](#running-scripts-from-handouts)
-24. [Beacon (D&D 2024 / New-Sheet) Support](#beacon-dd-2024--new-sheet-support)
-25. [API Integration (Calling Other Scripts)](#api-integration-calling-other-scripts)
-26. [String Functions Reference](#string-functions-reference)
-27. [Additional Command Families](#additional-command-families) — Case Statement, Data/Read Queue, GOTO, Emote, Wait/Delay, Visual Effects
-28. [Console Logging & Debugging](#console-logging--debugging)
-29. [Known Limitations](#known-limitations)
-30. [Version History Highlights](#version-history-highlights)
+14. [Dice Roll Formula Syntax](#dice-roll-formula-syntax)
+15. [Using Dice Rolls in Equations](#using-dice-rolls-in-equations)
+16. [Object Modification](#object-modification)
+17. [Object Creation & Deletion](#object-creation--deletion)
+18. [Repeating Sections](#repeating-sections)
+19. [Hash Tables](#hash-tables)
+20. [DataGrids](#datagrids)
+21. [Pointers](#pointers)
+22. [Save / Load & Persistent Storage](#save--load--persistent-storage)
+23. [Triggers](#triggers)
+24. [Libraries](#libraries)
+25. [Running Scripts from Handouts](#running-scripts-from-handouts)
+26. [Beacon (D&D 2024 / New-Sheet) Support](#beacon-dd-2024--new-sheet-support)
+27. [API Integration (Calling Other Scripts)](#api-integration-calling-other-scripts)
+28. [String Functions Reference](#string-functions-reference)
+29. [Additional Command Families](#additional-command-families) — Case Statement, Data/Read Queue, GOTO, Emote, Wait/Delay, Visual Effects
+30. [Console Logging & Debugging](#console-logging--debugging)
+31. [Known Limitations](#known-limitations)
+32. [Version History Highlights](#version-history-highlights)
 
 ---
 
@@ -93,6 +95,7 @@ Different tags interpret their content differently — as literal output text, a
 | `d` | **Data read queue** — see [Data / Read Queue](#data--read-queue) |
 | `e` | **Emote** (send chat as another name) — see [Additional Command Families](#additional-command-families) |
 | `h` | Hash table set |
+| `i` | **Information Request** — pause the script and ask the player for a target/query — see [Information Requests](#information-requests---i) |
 | `l` | Load (from persistent storage) |
 | `p` / `P` | Pointer read/write (`--Pr`, `--Ps`) |
 | `r` / `R` | Repeating section reference |
@@ -624,6 +627,43 @@ Example (from the changelog, a simple ability-copy menu):
 
 `--i` statements ("stash" scripts) and reentrant scripts both persist state in memory until cleared. Run `!sc-purgestashedscripts` to manually free that memory (it's also cleared automatically on a sandbox restart).
 
+### Information Requests — `--i`
+
+An Information Request lets a script pause and ask the sending player for additional input — a target token, a text answer, a dropdown choice — before continuing. It uses the tag portion of the line to define the prompt text and button caption shown to the player, and the content portion to define one or more requests for information:
+
+```
+--i<PromptText>;<ButtonLabel>|<Type>;<VariableName>;<Prompt>||<Type>;<VariableName>;<Prompt>||...
+```
+
+- `PromptText` (everything after `i` up to the first `;`) is whispered to the sending player. It's run through normal inline formatting if `--#formatinforequesttext|1` is set (default is off).
+- `ButtonLabel` is the caption of the button the player clicks to respond.
+- The content portion is a series of information requests, each in the form `Type;VariableName;Prompt`, separated by double vertical bars (`||`). Multiple requests, of the same or different types, can be combined on one `--i` line.
+
+Supported request types:
+
+| Type | Meaning |
+|---|---|
+| `t` | **Target** — prompts the player to select a token via Roll20's target query. `Prompt` is the label shown in the "Choose Target" window (e.g. `Choose Target: Missile1Target`). The selected token's ID is stored in the string variable `VariableName`. |
+| `q` | **Query** — prompts the player via a Roll20 roll query (`?{...}`). `Prompt` is the query text, without the surrounding `?{}`. The response is stored in the string variable `VariableName`. |
+
+When execution reaches an `--i` line, ScriptCards stashes the remainder of the script (resuming at the next line) in memory, hides the card for the current pass, and whispers the player the prompt with a button. Clicking the button responds to the requested targets/queries and resumes the script where it left off, with each result available as `[&VariableName]`.
+
+Example:
+
+```
+--iScriptCards needs additional information to continue;Click to select a target and provide information|t;MyNewTarget;Missile1Target||q;MyNameIs;What is your name?
+```
+
+This whispers "ScriptCards needs additional information to continue" along with a button labeled "Click to select a target and provide information". Clicking it asks the player to choose a target token (labeled `Missile1Target` in the target picker, stored in `[&MyNewTarget]`) and answer a text prompt ("What is your name?", stored in `[&MyNameIs]`).
+
+A `q` request's prompt can include dropdown options, using the same `Question|Option1|Option2|...` syntax as a normal Roll20 roll query:
+
+```
+q;UserName;What is your name?|Fred|Bob|Sally|Nancy
+```
+
+This presents a dropdown with four choices instead of a free-text field.
+
 ---
 
 ## Output & Card Formatting
@@ -795,7 +835,7 @@ A handful of setting names have accepted aliases — using either name has the s
 | `outputtagprefix` | `""` | Prefix added before every output line's tag/label |
 | `outputcontentprefix` | `" "` | Prefix added before every output line's content |
 | `enableattributesubstitution` | `0` | Enables recursive `@{...}` attribute substitution |
-| `formatinforequesttext` | `0` | — |
+| `formatinforequesttext` | `0` | Set to `1` to run an `--i` [Information Request](#information-requests---i)'s prompt text through inline formatting before whispering it |
 | `explodingonesandaces` | `0` | — |
 | `functionbenchmarking` | `0` | Logs per-procedure call counts and total execution time after the script finishes |
 | `limitmaxbarvalues` | `0` | Caps `--!t` bar-value writes at the bar's max |
@@ -808,11 +848,24 @@ A handful of setting names have accepted aliases — using either name has the s
 
 ### Parsing/processing toggles
 
-These all default to `"0"` (off) and, when set to `1`, disable a specific stage of the interpreter's normal processing — useful for edge cases where a script's literal text is being misinterpreted:
+Each of these gates a specific stage of the interpreter's normal processing — useful for edge cases where a script's literal text is being misinterpreted. Traced against the current source:
 
-`allowplaintextinrolls`, `showfromfornonwhispers`, `allowinlinerollsinoutput`, `nominmaxhighlight`, `norollhighlight`, `disablestringexpansion`, `disablerollvariableexpansion`, `disableparameterexpansion`, `disablerollprocessing`, `disableattributereplacement`, `attemptattributeparsing`, `disableinlineformatting`.
+| Setting | Default | Description |
+|---|---|---|
+| `allowplaintextinrolls` | `0` | Governs whether a trailing bare word at the end of a roll expression is passed through as literal text rather than rejected. See note below. |
+| `showfromfornonwhispers` | `0` | When enabled, non-whispered card output shows the sending player's name as the chat "from" speaker (normally blank/anonymous). |
+| `allowinlinerollsinoutput` | `0` | When off (default), strips any literal `[[`/`]]` left in rendered output (replaced with spaces) so Roll20 doesn't mistake it for a native inline roll. Enabling it leaves them intact. |
+| `nominmaxhighlight` | `0` | Forces a roll's display style to "normal" even if it would otherwise qualify for crit/fumble (min/max) highlighting. |
+| `norollhighlight` | `0` | Forces a roll's display style to "none," overriding crit/fumble/normal highlighting entirely. |
+| `disablestringexpansion` | `0` | *Currently inert* — declared and saved as a setting, but not read anywhere in the current source. |
+| `disablerollvariableexpansion` | `0` | *Currently inert* — declared and saved as a setting, but not read anywhere in the current source. |
+| `disableparameterexpansion` | `0` | *Currently inert* — declared and saved as a setting, but not read anywhere in the current source. |
+| `disablerollprocessing` | `0` | When enabled, skips dice-roll parsing/execution entirely. |
+| `disableattributereplacement` | `0` | *Currently inert* — declared and saved as a setting, but not read anywhere in the current source. |
+| `attemptattributeparsing` | `0` | When enabled, attempts to resolve calculated/auto-calc character-sheet attributes instead of returning their raw stored value. |
+| `disableinlineformatting` | `0` | When enabled, skips ScriptCards' own inline formatting tags (`[b]`, `[i]`, etc.) and returns the output line unprocessed. |
 
-> **AUTHOR TODO:** I have the *names* and *defaults* of these processing toggles straight from source, but not a plain-English description of each — the code paths that check them are scattered and would take real spelunking to describe accurately from source alone. You're best positioned to write one line each.
+> **Potential issue under review:** `allowplaintextinrolls` is checked as `cardParameters.allowplaintextinrolls !== 0` — comparing the setting (a string, `"0"`/`"1"`) to the *number* `0` with strict inequality. A string is never strictly equal to a number, so this condition is `true` regardless of the setting's actual value — in the current source, this flag appears to always behave as if enabled. Flagged here for confirmation rather than treated as a fixed bug.
 
 ### Fonts, colors, and card visual styling
 
@@ -918,6 +971,90 @@ Rolled/kept/dropped dice from a roll (e.g., advantage rolls, keep-highest expres
 where `type` is `rolled`, `kept`, or `dropped`.
 
 Rollable Table references use `[T#TableName]`. As of v3.0.0a, table roll results include a `.tableEntryWeight` property reflecting the weight value of the matched table entry.
+
+---
+
+## Dice Roll Formula Syntax
+
+Each `NdX`-style term inside a `--=VariableName|...` roll expression is matched against a single
+combined format regex before being rolled (confirmed in `handleDiceFormats`), so modifiers must
+appear as a single unbroken token — no spaces inside `3d8kh1r<2`, for example.
+
+### Customizing dice rolls
+
+| Format Pattern | Example | Description |
+|---|---|---|
+| `XdY` | `3d8` | Simple format. Roll a Y-sided die X times |
+| `XdYkhZ` | `2d20kh1` | Roll Y-sided die X times and keep the highest Z number of dice |
+| `XdYklZ` | `4d6kl3` | Roll Y-sided die X times and keep the lowest Z number of dice |
+| `XdY>Z` | `5d6>3` | Roll Y-sided die X times and count a 1 for each roll greater than Z |
+| `XdY<Z` | `5d6<3` | Roll Y-sided die X times and count a 1 for each roll less than Z |
+| `XdYr<Q` and `XdYr>Q` | `10d6r<2` | Roll a Y-sided die X times, rerolling results less than or equal (or greater than or equal) to Q |
+| `XdYro<Q` and `XdYro>Q` | `10d6ro<2` | Roll a Y-sided die X times, rerolling results less than or equal (or greater than or equal) to Q one time, keeping the reroll result |
+| `XdY!` and `XdY!>Q` and `XdY!<Q` | `8d6!` | Roll a Y-sided die X times, rerolling max results and adding them to the total for the die (or rerolling results >= or <= Q and adding) — exploding dice |
+| `XdYkhZr<Q` and `XdYkhZr>Q` | `4d6kh3r<1` | Roll a Y-sided die X times, rerolling results less than or equal to (or greater than or equal to) Q, and keep the highest Z results |
+| `XdY!h` and `XdY!l` | `4d6!h` | Roll 1dY X times. If the max number on the die is rolled, roll it again and add to that die's total. Return only the highest (h) or lowest (l) die roll (Deadlands skill checks) |
+| `XdF` | `4dF` | Fudge dice support. Roll a Fudge die X times, with possible values of `+`, `-`, or blank. Roll hover text and `.Text` display the values appropriately |
+| `XdYW`, `XdYWS`, `XdYWH`, `XdYWSH` | `4d6W` | Wild dice support (as seen in games like the d6 System). X‑1 dice of Y sides are rolled normally. 1 die of Y sides is rolled as an exploding die. The `S` modifier makes the Wild die eliminate itself from the total if its first roll is a 1. The `H` modifier makes a first roll of 1 on the Wild die remove the highest die among the non‑wild dice. None, one, or both can be specified |
+| `XuY` | `3u8` | Roll a Y-sided die X times, but only generate unique values. If X is greater than Y, only Y dice will be rolled |
+| `XmY` | `3m8` | Roll a Y-sided die X times, but always use the highest number on the die. E.g. `3m8` will always roll 24 |
+
+> **Note (carried over from the original wiki text, not independently re-verified against this source dump):** `Y` cannot equal `0`; rolling `Xd0` reportedly produced a `NaN` result as of v1.7.7.
+
+**Additional modifiers confirmed directly from the format regex in `handleDiceFormats`, not present in the original wiki table:**
+
+| Format Pattern | Description |
+|---|---|
+| `XdYe` | "Emphasis" roll — keeps only the die result closest to the middle of the die's range, dropping the rest |
+| `XdY#` | Trailing `#` suppresses this term's crit/fumble highlighting and excludes it from `.Base` tracking (`dontHilight`/`dontBase`) |
+| `XdYf<Q` | Failure counting — subtracts 1 from the total for each die at or below Q, alongside `>Z` success counting, and marks the roll as a failure highlight |
+
+**Potential issues under review** — the following points were noticed while cross-referencing the wiki text against the source's `handleDiceFormats` function, and are flagged here for the team to confirm intended behavior before this documentation is finalized:
+
+- **`XdY<Z` vs `XdY>Z`:** the outer format regex captures the threshold digits but not the `<`/`>` character itself (`successThreshold = Number(matches[x].substring(1))`), and the success test later in the function is unconditionally `rollSet[x] > successThreshold`. As written, `<Z` does not appear to invert the comparison the way the wiki text describes — both forms currently seem to count successes as "greater than Z." Under review.
+- **`XdYf<Q` / `XdYf>Q`:** the inner handler code checks for both `f<Q` and `f>Q`, but the top-level format-recognition regex only includes `(f\<\d+)?` — no `f>` variant — so `f>Q` may not actually reach the failure-counting logic. Under review.
+- **`XdY!h` / `XdY!l`:** in the source, both branches of the `!h`/`!l` handler set `keeptype = "h"` (keep highest); only the explosion trigger value differs (`sides` for `!h`, `1` for `!l`). `!l` may not currently return the lowest die as the wiki text describes. Under review.
+
+---
+
+## Using Dice Rolls in Equations
+
+The following operators are supported between dice/number terms in a roll equation:
+
+| Operator | Operation |
+|---|---|
+| `+` | Addition |
+| `-` | Subtraction |
+| `*` | Multiplication |
+| `/` | Division |
+| `\` | Integer Division (rounds down by default) |
+| `%` | Modulo (remainder of division) |
+
+The `\` integer-division operator respects the `roundup` [card setting](#card-settings-reference):
+when `roundup` is `0` (the default) results are floored (rounded down); when `roundup` is `1`,
+results are ceiled (rounded up) instead.
+
+**Additional post-roll math functions confirmed from source, not in the original wiki text:** after
+the dice/number terms are totaled, a single trailing `{function}` term can transform the running
+total:
+
+| Function | Effect |
+|---|---|
+| `{abs}` | Absolute value |
+| `{sqrt}` / `{squareroot}` | Square root |
+| `{ceil}` | Round up |
+| `{floor}` | Round down |
+| `{round}` | Round to nearest integer |
+| `{round:N}` | Round to N decimal places (max 6) |
+| `{neg}` / `{negate}` | Negate the value |
+| `{sin}`, `{cos}`, `{tan}`, `{asin}`, `{acos}`, `{atan}` | Trigonometric functions |
+| `{square}` | Square the value |
+| `{cube}` / `{cubed}` | Cube the value |
+| `{cbrt}` / `{cuberoot}` | Cube root |
+| `{pad:N}` | Zero-pad the displayed total to N digits (sets `.PaddingDigits`) |
+| `{min:N}` | Clamp the total to a minimum of N |
+| `{max:N}` | Clamp the total to a maximum of N |
+| `{clamp:N:M}` | Clamp the total between N and M |
 
 ---
 
@@ -1290,7 +1427,7 @@ Triggers let a ScriptCards script (defined as an **ability** on a special charac
 - `add:graphic`, `change:graphic`, `destroy:graphic`
 - `add:door`, `change:door`, `destroy:door`
 - `add:pin`, `change:pin`, `destroy:pin`
-- `add:page` / other page events — **AUTHOR TODO: confirm, not directly sourced**
+- `add:page`, `change:page`, `destroy:page`
 - `change:attribute` (and, as of v2.7.19+, **multiple** triggers can be registered for the same attribute)
 - `chat:message` (marked **EXPERIMENTAL** at introduction, v2.7.36)
 
@@ -1308,6 +1445,9 @@ Each trigger type populates its own set of string variables for use inside the a
 - `change:door` → `&OldDoor[property]`, `&NewDoor[property]` (e.g. `&NewDoorisOpen`, `&OldDoor_id`)
 - `add:door` → `&DoorAdded` (the ID of the new door)
 - `destroy:door` → `&DoorRemoved[property]` for each property the object had before deletion
+- `change:page` → `&PageOld[property]`, `&PageNew[property]`
+- `add:page` → `&PageAdded` (the ID of the new page)
+- `destroy:page` → `&PageRemoved[property]` for each property the page had before deletion
 - `add:character` → `&CharAdded`
 - `change:character` → `&CharChanged` plus `&CharOld...`/`&CharNew...` per changed property
 
@@ -1690,6 +1830,7 @@ A small related utility found in source but not documented anywhere: reads the c
 - **API-invoked actions lack player/session context** (selected tokens, sending player ID) unless explicitly passed — relevant when using `system;runaction` to call another script's macro.
 - **DataGrids** are experimental, with a known text-qualifier parsing issue when using `"` as the qualifier character (use `` ` `` instead for now).
 - Roll20's own sandbox will detect and halt genuine infinite loops automatically.
+- **Dice formula edge cases:** several dice-formula modifiers documented under [Dice Roll Formula Syntax](#dice-roll-formula-syntax) — the `<`/`>` direction on success counting, the `f>Q` failure-counting variant, and the `!l` (keep-lowest) exploding-die modifier — appear to behave differently from their documented description when read against the current source. These are flagged there as potential issues under review rather than confirmed bugs.
 
 ---
 

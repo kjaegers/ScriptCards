@@ -1,0 +1,2631 @@
+= ScriptCards Wiki Documentation =
+
+{{cleanup-msg|This documentation is currently being revised. The original wiki page was built up organically over time and was ironically both too large and incomplete at the same time. I've replaced the previous version with a version composed by having an LLM analyze the existing wiki, the ScriptCards source code, and the excellent tutorials by Gravitas3k here: https://github.com/Hosweay/roll20_scriptcards_tutorial/tree/main. Check for the lates version (pre-OneClick deployment on the [https://github.com/kjaegers/ScriptCards ScriptCards GitHub page].I am slowly reviewing the changes - ''I'm sure there are going to be ommissions and errors'', and if you spot issues or inaccuracies with this documentation, please let me know in the [https://discord.gg/jSB4wTNpXb ScriptCards Discord]!<br />
+
+|August 2026}}
+
+ScriptCards GitHub: https://github.com/kjaegers/ScriptCards
+
+ScriptCards Discord: https://discord.gg/jSB4wTNpXb
+
+<div style="float:right;">
+{{revdate}}
+
+{{script overview
+|name=ScriptCards
+|author=[[Kurt J.]]
+|code=ScriptCards
+|version=3.0.30
+|lastmodified=2026-06-16}}
+
+</div>
+
+<span style="font-size:medium;">{{toc | clear=none | width=400px | align=left}}</span>
+
+{{toc}}
+
+== Overview ==
+
+ScriptCards is a Roll20 Mod (API Script) that implements a scripting language interpreter. It executes macros ("scripts") with variables, loops, branching, and other standard programming-language features. It is widely considered the spiritual successor to the older PowerCards script, and is used to generate richly formatted "cards" in the chat window — for attack rolls, spell effects, NPC stat blocks, menus, and more — independent of a character sheet's built-in roll templates.
+
+Output is typically displayed as a formatted card in the chat window, though output can be suppressed entirely when a script is only making changes to tokens, attributes, or other behind-the-scenes game state.
+
+ScriptCards is system-neutral — it isn't built around any single game system's character sheet, though the community has built extensive libraries and example scripts for D&D 5E (2014), and Beacon-sheet (D&D 2024) support is in active development as of v3.0.x.
+
+: ''As with all Roll20 API scripts, ScriptCards requires a Pro-tier subscription to use in a game, and is not available in the free or Plus tiers.''
+
+----
+
+== Requirements & Installation ==
+
+# A Roll20 game with API Mod access (Pro-tier subscription, at time of writing).
+# From the game's '''API Scripts''' page, search for "ScriptCards" and either:
+** '''Add Script''', to install and receive automatic updates via Roll20's OneClick system, or
+** '''Import''' a copy from the GitHub repository if you need the latest development/experimental build.
+# For '''Beacon sheet support (D&D 2024 and other new-format character sheets)''', you must switch your game to the '''Experimental sandbox''' under Game Settings → API Scripts → Sandbox. The default sandbox does not expose Beacon sheet fields to the API. You'll also need to install the latest version oF ScriptCards from GitHub, since the OneClick version is currently behind the Beacon-support branch.
+
+----
+
+== Basic Script Structure ==
+
+A ScriptCards script is invoked in Roll20 chat (or from a macro/ability) using the <code>!script</code> command, with the body wrapped in double curly braces:
+
+<pre>
+!script {{
+--#title|My Card Title
+--+Hello|World
+}}
+</pre>
+
+Each line of a script begins with two dashes (<code>--</code>) followed by a '''tag''' identifying what kind of operation the line performs, then a pipe (<code>|</code>) separating the tag from its '''content'''. Roughly:
+
+<pre>
+--TAG|content
+</pre>
+
+Different tags interpret their content differently — as literal output text, as a variable assignment, as a dice expression, as a conditional test, and so on. The table below lists all currently implemented statement tags, with a brief description of their purpose. See the linked sections below for full details and examples.:
+
+{| class="wikitable"
+|-
+! First char
+! Purpose
+|-
+| <code>!</code>
+| Object modification/creation (tokens, attributes, handouts, tables, characters, abilities)
+|-
+| <code>a</code>
+| Play a Jukebox track — <code>--aTrackName\|</code>
+|-
+| <code>c</code>
+| '''Case/switch statement''' — see Case Statement
+|-
+| <code>d</code>
+| '''Data read queue''' — see Data / Read Queue
+|-
+| <code>e</code>
+| '''Emote''' (send chat as another name) — see Additional Command Families
+|-
+| <code>h</code>
+| Hash table set
+|-
+| <code>i</code>
+| '''Information Request''' — pause the script and ask the player for a target/query — see Information Requests
+|-
+| <code>l</code>
+| Load (from persistent storage)
+|-
+| <code>p</code> / <code>P</code>
+| Pointer read/write (<code>--Pr</code>, <code>--Ps</code>)
+|-
+| <code>r</code> / <code>R</code>
+| Repeating section reference
+|-
+| <code>s</code>
+| Save/stash (persistent storage, or stash a reentrant script)
+|-
+| <code>w</code>
+| '''Wait/delay''' a command — see Additional Command Families
+|-
+| <code>v</code>
+| '''Visual effects''' (Roll20 spell-effect animations)
+|-
+| <code>x</code> / <code>X</code>
+| End/Exit script
+|-
+| <code>z</code>
+| Z-order (front/back)
+|-
+| <code>~</code>
+| Function call (arrays, hashtables, strings, system, object, repeatingrow, roll, datagrid, etc.)
+|-
+| <code>^</code>
+| '''GOTO''' — jump to a label without pushing a return address
+|-
+| <code>@</code>
+| '''API Integration''' — call another API script directly
+|-
+| <code>#</code>
+| Card settings (title, subtitles, whisper target, etc. — any key in the settings table)
+|-
+| <code>+</code> / <code>*</code>
+| Output line (<code>+</code> = normal card output; <code>*</code> = GM-only/whisper-only output)
+|-
+| <code>=</code>
+| Roll (dice) variable assignment
+|-
+| <code>&amp;</code>
+| String or array-element assignment
+|-
+| <code>\\</code>
+| '''Console log''' (writes to the API console — this is a ''different'' tag from <code>--/</code> comments)
+|-
+| <code>&lt;</code>
+| Return from a GOSUB (<code>--&gt;</code>) call
+|-
+| <code>&gt;</code>
+| GOSUB — call a procedure at a label, pushing a return address
+|-
+| <code>]</code>
+| Block-end (closes a <code>[</code>-bracketed conditional true/false block)
+|-
+| <code>?</code>
+| Conditional
+|-
+| <code>%</code>
+| Loop (<code>foreach</code>, <code>while</code>, <code>until</code>, or numeric <code>fornext</code> — see Loops)
+|-
+| <code>:</code>
+| Label definition (target for <code>--&gt;</code> GOSUB and <code>--^</code> GOTO)
+|-
+| <code>/</code>
+| Comment (Does not impact script execution)
+|}
+
+----
+
+== Comments ==
+
+Lines beginning with <code>--/</code> are treated as comments and are skipped entirely during processing — they have no effect on execution or performance.
+
+<pre>
+!script {{
+--/|This is a comment
+--/|Script Name: Magic Missile v2.1
+--/|Author: Me
+--/|===============================
+--/|This script handles Magic Missile casting
+--/|Prompts for spell level and target count
+--/|Applies damage to up to 9 targets
+}}
+</pre>
+
+'''Best practice:''' document ''why'' code does something, not just ''what'' it does. A comment like "reduce target HP by damage rolled, checking for defeat" is more useful than "subtract damage." Many experienced ScriptCards authors open complex scripts with a comment block outlining overall flow before the actual code, and place comments before procedures (to document parameters) and before conditionals (to explain the logic being tested).
+
+----
+
+== Variable Types ==
+
+ScriptCards has several distinct variable types, each with its own assignment/reference syntax and its own namespace (so a String Variable and a Roll Variable can share the same name without colliding).
+
+=== String Variables ===
+
+* '''Assign:''' <code>--&amp;VariableName|Value</code>
+* '''Reference:''' <code>[&amp;VariableName]</code>
+* '''Append/concatenate:''' start the content with <code>+</code> to append to the existing value rather than replace it.
+
+<pre>
+!script {{
+--&amp;Greeting|Hello
+--&amp;Greeting|+, World
+--+Output|[&amp;Greeting]
+}}
+</pre>
+
+String Variables can be used almost anywhere — output lines, roll expressions, conditionals, function parameters, and even to construct other variable names or object references dynamically.
+
+'''Best practice:''' use String Variables for all non-random numeric values (character attributes, calculated values, static numbers) rather than Roll Variables. String Variables are simpler — the same symbol (<code>&amp;</code>) is used for both assignment and reference, versus Roll Variables' distinct <code>=</code>/<code>$</code> — and they don't carry the overhead/semantics of a dice roll.
+
+A per-line '''concatenation character''' setting lets you change the append trigger from <code>+</code> to something else if you need string values that begin with a literal <code>+</code>:
+
+<pre>
+--#concatenationcharacter|~
+</pre>
+(alias: the misspelled <code>concatonationcharacter</code> is also accepted for backward compatibility.)
+
+Note: simply ''referencing'' a string variable with <code>[&amp;Name]</code> does not change its value.
+
+=== Roll (Dice) Variables ===
+
+* '''Assign:''' <code>--=VariableName|DiceExpression</code>
+* '''Reference:''' <code>[$VariableName]</code> (full HTML-formatted result), or with a modifier suffix:
+** <code>.Raw</code> — the raw numeric total (safe to use in math/conditionals)
+** <code>.Base</code> — the base die result before modifiers (useful for crit/fumble checks)
+** <code>.Total</code> — full formatted total (equivalent to no suffix in most contexts — avoid using in conditionals since it may include HTML)
+
+<pre>
+!script {{
+--=Attack|1d20+5
+--+Attack Roll|[$Attack]
+--?[$Attack.Base] -eq 20|CRIT_LABEL|NORMAL_LABEL
+}}
+</pre>
+
+You can also assign inline within a variable reference using <code>[=VariableName:DiceExpression]</code>.
+
+Every roll variable is actually a small object with several properties on it, and '''any''' of them can be pulled out with <code>[$VariableName.PropertyName]</code>. This is the complete, authoritative list, taken directly from the object the interpreter builds for every dice roll:
+
+{| class="wikitable"
+|-
+! Suffix
+! Type
+! Meaning
+|-
+| ''(none)'' — defaults to <code>.Total</code>
+| number
+| Same as <code>.Total</code> below, but includes HTML formatting when output
+|-
+| <code>.Raw</code>
+| number
+| Alias for <code>.Total</code> — the final numeric result, safe to use in math/conditionals
+|-
+| <code>.Total</code>
+| number
+| Final numeric result after all modifiers
+|-
+| <code>.Base</code>
+| number
+| The base die result before flat modifiers are applied (useful for crit/fumble checks)
+|-
+| <code>.Text</code>
+| string
+| Full HTML-formatted result as shown on the card
+|-
+| <code>.Style</code>
+| string
+| The CSS style block currently applied to this roll's highlight (normal/crit/fumble/both)
+|-
+| <code>.RollText</code>
+| string
+| The original dice expression that was rolled, after variable substitution
+|-
+| <code>.PaddingDigits</code>
+| number
+| Zero-padding width applied to the displayed total, if set
+|-
+| <code>.DiceFont</code>
+| string
+| Font override for this roll's dice display, if set
+|-
+| <code>.Ones</code>
+| number
+| Count of natural 1s rolled
+|-
+| <code>.Aces</code>
+| number
+| Count of "aces" (exploding-die triggers) rolled
+|-
+| <code>.Odds</code>
+| number
+| Count of odd results rolled
+|-
+| <code>.Evens</code>
+| number
+| Count of even results rolled
+|-
+| <code>.RollCount</code>
+| number
+| Total number of individual dice rolled
+|-
+| <code>.KeptCount</code>
+| number
+| Number of dice kept (relevant for keep-highest/lowest expressions)
+|-
+| <code>.DroppedCount</code>
+| number
+| Number of dice dropped
+|-
+| <code>.RolledDice</code>
+| array
+| Every individual die result rolled, in order
+|-
+| <code>.KeptDice</code>
+| array
+| Just the dice that were kept
+|-
+| <code>.DroppedDice</code>
+| array
+| Just the dice that were dropped
+|-
+| <code>.tableEntryText</code>
+| string
+| Text of the matched entry, for a Rollable Table roll (<code>[T#TableName]</code>)
+|-
+| <code>.tableEntryImgURL</code>
+| string
+| Image URL of the matched table entry, if any
+|-
+| <code>.tableEntryValue</code>
+| number
+| Numeric value of the matched table entry's text, if it parses as a number (<code>0</code> otherwise)
+|-
+| <code>.tableEntryWeight</code>
+| number
+| Weight of the matched table entry (added v3.0.0a)
+|}
+
+Individual dice from <code>.RolledDice</code>/<code>.KeptDice</code>/<code>.DroppedDice</code> can also be indexed directly: <code>[$VariableName.RolledDice(N)]</code> returns the Nth die (1-based) from that set. The same three arrays can be pulled out as standalone array variables with <code>--~|array;fromrollvar;ArrayName;RollVariableName;type</code>, where <code>type</code> is <code>rolled</code>, <code>kept</code>, or <code>dropped</code>.
+
+When using a roll variable inside a conditional or as part of math, use <code>.Raw</code>, <code>.Base</code>, or another non-HTML property — '''not''' the bare reference or <code>.Total</code> printed directly into HTML-bearing contexts — since <code>.Text</code> and the unsuffixed default may carry HTML/styling markup that breaks numeric comparisons.
+
+=== Arrays ===
+
+Arrays store ordered collections of values, referenced with <code>[@ArrayName(index)]</code> (zero-based). Common construction functions (via <code>--~|array;...</code>):
+
+* <code>array;define;ArrayName;Item1;Item2;...</code> — define a static array
+* <code>array;attributes;ArrayName;CharacterID;(optional name-starts-with filter)</code> — array of attribute IDs on a character
+* <code>array;abilities;ArrayName;CharacterID;(optional filter)</code> — array of ability object IDs
+* <code>array;pagetokens;ArrayName;TokenID;(optional filters)</code> — array of token IDs on the same page as the given token, with filtering (see below)
+* <code>array;fromkeys;ArrayName;HashTableName</code> — array of all keys in a hash table
+* <code>array;fromplayerlist;ArrayName</code> — array of non-GM player IDs in the game
+* <code>array;fromgmplayerlist;ArrayName</code> — array of GM player IDs
+* <code>array;fromcontrolledcharacters;ArrayName;PlayerID</code> — array of character IDs controlled by a player
+* <code>array;fromrollvar;ArrayName;RollVariableName;type</code> — extract <code>rolled</code>, <code>kept</code>, or <code>dropped</code> dice from a roll variable into an array
+* <code>array;statusmarkers;...</code> — array of active status markers on a token (empty markers excluded)
+
+Special built-in array <code>[@args(...)]</code> is populated automatically inside a called procedure with the parameters passed via GOSUB (see Procedures); <code>[@args(length)]</code> / <code>[@args(maxindex)]</code> return the parameter count / max index.
+
+'''<code>array;pagetokens</code> filter syntax''' (as of v2.7.11): multiple filters can be chained, separated by semicolons; filters are cumulative and can only ''remove'' items (so <code>npc;pc</code> together always returns nothing, since each filter removes what the other would keep). Filter types:
+
+* <code>npc</code> / <code>pc</code> — token type
+* <code>attr:AttributeName=Value</code> or <code>attr:AttributeName~=PartialValue</code> — character attribute match (exact or partial, case-insensitive on value)
+* <code>prop:PropertyName=Value</code> / <code>prop:PropertyName~=PartialValue</code> — character property match
+* <code>tprop:PropertyName=Value</code> / <code>tprop:PropertyName~=PartialValue</code> — token property match
+
+<pre>
+--~|array;pagetokens;Tokens;@{selected|token_id};tprop:tooltip~=hello
+--~|array;pagetokens;Tokens;@{selected|token_id};attr:npc_type~=undead
+--~|array;pagetokens;Tokens;@{selected|token_id};npc;tprop:name~=Dr
+</pre>
+
+=== Hash Tables (Associative Arrays) ===
+
+* '''Set:''' <code>--h:HashTableName("Key")|Value</code> (creates the hash table if it doesn't exist)
+* '''Reference:''' <code>[:HashTableName("Key")]</code>
+* Setting a key's value to an empty string removes that key from the table entirely.
+* <code>--~|hash;clear;HashTableName</code> clears all keys.
+* <code>--~|hash;set;HashTableName;Key1==Value1;Key2==Value2;...</code> bulk-sets multiple keys (the function group accepts both <code>hash</code> and <code>hashtable</code> as aliases).
+
+<pre>
+!script {{
+--h:Fruits("Mango-Cost")|2sp
+--h:Fruits("Mango-Size")|Medium
+--&amp;Fruit|Mango
+--+[&amp;Fruit] Cost|[:Fruits("[&amp;Fruit]-Cost")]
+}}
+</pre>
+
+Hash tables can also be built automatically from existing game objects:
+
+* <code>--~|hashtable;fromobject;HashTableName;objecttype;objectid</code> — parses all attributes (except bio/notes/gmnotes) of a character/graphic into key-value pairs.
+* <code>--~|hashtable;fromrepeatingsection;CharacterID;repeating_section_name;key_field;HashTableName</code> — builds a lookup table from a repeating section, keyed as <code>RowIdentifier_AttributeName</code> (see Repeating Sections for details and caveats).
+* <code>--~|hashtable;fromrepeatingrow;CharacterID;repeating_section_name;RowID;HashTableName</code> — one specific row's fields.
+* <code>--~|hashtable;fromjson;HashTableName;JSONString</code> — parse a JSON string into a hash table.
+* <code>--~|hashtable;getjukeboxtracks;HashTableName</code> — populates keys for every Jukebox track name → object ID, plus <code>TrackName-playing</code>, <code>TrackName-loop</code>, <code>TrackName-Volume</code> keys.
+* <code>--~|hashtable;getplayerspecificpages;HashTableName</code> / <code>setplayerspecificpages</code> — read/write the campaign's per-player current-page assignments.
+
+=== DataGrids ===
+
+''(Added v3.0.25, experimental as of this writing.)'' DataGrids are a CSV-backed tabular variable type, currently loadable only from a handout:
+
+<pre>
+--~|datagrid;fromhandout;DataGridName;HandoutNameOrID;field;qualifier;delimiter
+</pre>
+
+* <code>field</code> (optional, default <code>notes</code>) — which handout field holds the CSV data (<code>notes</code> or <code>gmnotes</code>).
+* <code>qualifier</code> (optional, no default) — text qualifier character, e.g. <code>`</code> or <code>"</code>, needed if your data contains the delimiter character within a field. (As of v3.0.25a, using <code>"</code> as the qualifier can confuse parameter parsing — using <code>`</code> is recommended until this is resolved.)
+* <code>delimiter</code> (optional, default <code>,</code>) — field separator.
+
+The handout's first line should contain column headers; subsequent lines are data rows.
+
+'''Reference syntax:''' <code>[^DataGridName;RowReference;ColumnName]</code>
+* <code>RowReference</code> can be a 1-based row number (row 1 = first data row, not the header), or a <code>ColumnName=Value</code> match.
+* Returns an empty string if no match is found.
+
+
+=== Datagrid example ===
+
+Given this content in the <code>notes</code> field of a handout named <code>SkillsTable</code>:
+
+<syntaxhighlight lang="csv">
+Ability,Skill,AttributeName
+Strength,Athletics,Athletics
+Dexterity,Acrobatics,Acrobatics
+Dexterity,Sleight of Hand,SleightofHand
+Dexterity,Stealth,Stealth
+Intelligence,Arcana,Arcana
+</syntaxhighlight>
+
+Load it into a DataGrid named <code>Skills</code>:
+
+<pre>
+--~|datagrid;fromhandout;Skills;SkillsTable
+</pre>
+
+Then these references resolve as follows:
+
+{| class="wikitable"
+|-
+! Reference
+! Result
+|-
+| <code>[^Skills;4;Ability]</code>
+| <code>Dexterity</code>
+|-
+| <code>[^Skills;1;Skill]</code>
+| <code>Acrobatics</code>
+|-
+| <code>[^Skills;2;AttributeName]</code>
+| <code>SleightofHand</code>
+|-
+| <code>[^Skills;Skill=Stealth;Ability]</code>
+| <code>Dexterity</code>
+|}
+
+----
+
+== Object & Property References ==
+
+The <code>[*...]</code> syntax is ScriptCards' general-purpose way to read properties from characters, tokens, pages, campaign settingsm, and arbitrary game objects.
+
+=== Basic forms ===
+
+{| class="wikitable"
+|-
+! Syntax
+! Meaning
+|-
+| <code>[*S:AttributeName]</code>
+| Attribute on the '''source''' character (set via <code>--#sourcetoken</code> or similar)
+|-
+| <code>[*T:AttributeName]</code>
+| Attribute on the '''target''' character
+|-
+| <code>[*CharacterID:AttributeName]</code>
+| Attribute on an explicit character ID
+|-
+| <code>[*C:PropertyName]</code>
+| Campaign-level property
+|-
+| <code>[*P:PropertyName]</code>
+| Page property
+|-
+| <code>[*O:ObjectID:objecttype:PropertyName]</code>
+| Generic object property lookup by explicit type (<code>character</code>, <code>graphic</code>, <code>player</code>, <code>ability</code>, etc.)
+|}
+
+=== Prefixes for non-attribute data ===
+
+* <code>t-PropertyName</code> — token (Graphic) property, e.g. <code>[*S:t-left]</code>, rather than a character-sheet attribute.
+* <code>b-</code> / <code>c-</code> — '''Beacon''' sheet fields (D&D 2024 and other new-format sheets). <code>c-</code> stands for "computed" (the internal field name); <code>b-</code> is an alias meant to read more naturally as "Beacon." Example: <code>[*S:c-hp]</code>. See Beacon Support. 
+
+: '''NOTE''' Beacon support is undergoing a large revision in ScriptCards 3.0.30 and beyond. The <code>c-</code> and <code>b-</code> are no longer available in favor of direct alias syntax.
+
+=== Special/pseudo fields ===
+
+* <code>_defaulttoken</code> — treated the same as a bio-style field internally.
+* <code>[*O:PlayerID:player:isgm]</code> — returns <code>1</code> if the player is a GM, <code>0</code> otherwise.
+* <code>[*C:...]</code> supports at least <code>playerpageid</code>, <code>nodeVersion</code>, and <code>sandboxVersion</code> among campaign properties. The number of properties associated with campaigns is limited.
+
+=== Nested (Beacon-style) references ===
+
+Some newer, "Beacon SDK"-based character sheets store attribute data as nested JSON rather than flat attributes. ScriptCards supports drilling into these with <code>-&gt;</code>:
+
+<pre>
+[*S:role-&gt;role-&gt;name]
+[*S:role-&gt;specialty-&gt;name]
+</pre>
+
+If an intermediate field doesn't exist, you'll get <code>undefined</code> (missing base attribute) or <code>Object.object</code> (missing nested field) rather than an error.
+
+=== Default values ===
+
+Append <code>:::DefaultValue</code> to an <code>[*S:...]</code>, <code>[*T:...]</code>, or ID-based reference to supply a fallback if the attribute isn't found:
+
+<pre>
+[*S:Height:::50]
+</pre>
+
+=== Object references beyond <code>[*...]</code> ===
+
+* <code>[*R:...]</code> — repeating section reference (see Repeating Sections).
+* Pointer variables (<code>--P</code>) exist specifically to move values between objects ''without'' going through string-variable parsing, for content that might otherwise get mangled (e.g., an ability's action text that itself contains ScriptCards syntax). See Pointers.
+
+----
+
+== Conditionals ==
+
+=== Block conditional ===
+
+<pre>
+--?"[&amp;Value]" -eq "Target"|LABEL_OR_TAG
+</pre>
+
+The general form is a condition followed by <code>|</code> and then either a jump target/label, or (in some contexts) <code>+True|+False</code> -style branches, e.g.:
+
+<pre>
+--?1 -eq 2|+True|+False
+</pre>
+
+=== Inline conditional ===
+
+<code>[?condition|TrueResult|FalseResult]</code> can be used '''inline''', anywhere a value is expected:
+
+<pre>
+--=Roll|1d20
+--+Test|Evaluation: [?[$Roll.Raw] -gt 10|Roll 1 is HIGH|Roll 1 is Low]
+</pre>
+
+Inline conditionals can be '''nested''':
+
+<pre>
+--&amp;HitType|[?[$Roll.Base] -eq 20|Crit|[?[$Roll.Base] -eq 1|Fumble|[?[$Roll.Base] -ge @{target|npc_ac}|Hit|Miss] ] ]
+</pre>
+
+'''Important gotcha:''' Roll20 treats <code>[[</code> and <code>]]</code> as the start/end of an inline roll and will error/misbehave if they appear adjacent — including ''incidentally'', from nested brackets in conditionals. When nesting brackets deeply, separate adjacent closing brackets with spaces (<code>] ] ]</code> instead of <code>]]]</code>). There is no way around this — it's a Roll20-level limitation, not a ScriptCards one.
+
+When using Roll Variable references inside conditionals, use <code>.Raw</code>, <code>.Base</code>, or another non-HTML modifier — '''not''' the bare reference or <code>.Total</code>, since those may contain HTML that breaks the comparison.
+
+=== Conditional blocks (if / else) ===
+
+A <code>--?</code> conditional can execute '''multiple lines''', not just a single branch target, by using <code>[</code> as the destination and closing the block with <code>--]|</code>. Confirmed against source (<code>blockDepth</code>/<code>blockSkip</code> handling in the conditional-block dispatcher) and used constantly throughout real scripts:
+
+<pre>
+--?Condition|[
+... lines that run only if Condition is true ...
+--]|
+</pre>
+
+For an if/else, close the true-block and immediately reopen a false-block on the same line:
+
+<pre>
+--?Condition|[
+... lines that run only if Condition is true ...
+--]|[
+... lines that run only if Condition is false ...
+--]|
+</pre>
+
+This is the idiomatic way to guard several lines behind one test, rather than repeating the same condition on every line or restructuring around labels. Blocks can be nested. Real example, from the 5E Character Action Menu:
+
+<pre>
+--?[&amp;sendGmInfo] -eq 1|[
+  --+[*R:atkname] Attack|rolled [$ToHit] vs the target's AC[br][br]
+  --*[*R:atkname] Attack|rolled [$ToHit] vs AC [b][$AC.Raw][/b]
+--]|[
+  --+[*R:atkname] Attack|rolled [$ToHit] vs AC [b][$AC.Raw][/b][br][br]
+--]|
+</pre>
+
+A <code>--?</code> line can also branch straight to <code>&lt;</code> (return) as a guard clause, without a block at all — handy for bailing out of a procedure early:
+
+<pre>
+--?[&amp;UseEmojisToReplaceText] -ne 1|&lt;
+</pre>
+
+=== Conditional operators ===
+
+This is the '''complete, verified list''' from the source's comparison-operator dispatcher — both sides are numeric-coerced when possible before comparing, otherwise compared as strings:
+
+{| class="wikitable"
+|-
+! Operator
+! Meaning
+|-
+| <code>-gt</code>
+| Greater than
+|-
+| <code>-ge</code>
+| Greater than or equal
+|-
+| <code>-lt</code>
+| Less than
+|-
+| <code>-le</code>
+| Less than or equal
+|-
+| <code>-eq</code>
+| Equal
+|-
+| <code>-eqi</code>
+| Equal, case-insensitive (string comparison)
+|-
+| <code>-ne</code>
+| Not equal
+|-
+| <code>-nei</code>
+| Not equal, case-insensitive
+|-
+| <code>-inc</code>
+| Left side includes/contains right side (case-insensitive)
+|-
+| <code>-ninc</code>
+| Left side does not include right side (case-insensitive)
+|-
+| <code>-csinc</code>
+| Includes, case-'''sensitive'''
+|-
+| <code>-csninc</code>
+| Does not include, case-'''sensitive'''
+|-
+| <code>-match</code>
+| Right side is a regex; case-sensitive match against left side
+|-
+| <code>-imatch</code>
+| Right side is a regex; case-'''insensitive''' match
+|}
+
+Joiners: <code>-and</code>, <code>-or</code> combine multiple conditions in one <code>--?</code> line.
+
+'''Regex operators''' (<code>-match</code>/<code>-imatch</code>, added v2.7.28) accept a regular expression as the right-hand side.
+
+<pre>
+--?"[&amp;name]" -match "(Medusa\|Fred\|Pixie)"|+Yes|+No
+--?"[&amp;name]" -imatch "^(Medusa\|Fred\|Pixie)"|+Yes|+No
+--?"[&amp;name]" -imatch "^a.*n$"|+Yes|+No
+--?[$Roll.Raw] -match "^[1-2]$"|+Yes|+No
+</pre>
+
+Regex values should be quoted. Escape a literal <code>|</code> inside the pattern with <code>\|</code>; if you need a literal backslash-pipe sequence, use <code>\\|</code>.
+
+----
+
+== Loops ==
+
+A loop is opened with <code>--%LoopVar|...</code> and closed with a matching <code>--%|</code> (empty content). Loops track state on an internal stack, so nesting works as long as every opened loop has a matching close.
+
+=== <code>foreach</code> ===
+
+<pre>
+--%LoopVar|foreach;ArrayName
+... body ...
+--%|
+</pre>
+
+Iterates <code>LoopVar</code> over each element of <code>ArrayName</code>. The array must be non-empty — an empty or undefined array logs an error and the loop body never executes.
+
+<pre>
+!script {{
+--#title|Party Report
+--#whisper|gm
+--%tokenid|foreach;SC_SelectedTokens
+--+[*[&amp;tokenid]:character_name]|
+--%|
+}}
+</pre>
+
+=== <code>while</code> / <code>until</code> ===
+
+<pre>
+--%LoopVar|while;Condition
+... body ...
+--%|
+</pre>
+<pre>
+--%LoopVar|until;Condition
+... body ...
+--%|
+</pre>
+
+The condition is evaluated with the same syntax as a <code>--?</code> conditional (<code>Left -op Right</code>). <code>while</code> runs the body as long as the condition is true; <code>until</code> runs the body until the condition becomes true (i.e., it's the inverse test). The condition is re-evaluated at the top of every pass, including before the very first one — if it's false on entry for <code>while</code> (or true on entry for <code>until</code>), the loop body is skipped entirely and execution jumps straight past the matching <code>--%|</code>.
+
+=== Numeric range (<code>fornext</code>) ===
+
+<pre>
+--%LoopVar|Start;End;Step
+</pre>
+or, with an implied step of <code>1</code>:
+<pre>
+--%LoopVar|Start;End
+</pre>
+
+All values must be numeric. <code>LoopVar</code> starts at <code>Start</code> and is incremented by <code>Step</code> each pass (referenced as a normal string variable, <code>[&amp;LoopVar]</code>) until it passes <code>End</code>. A <code>Step</code> of <code>0</code> is an error. This numeric form has '''no dedicated example anywhere in the changelog or wiki''' — it appears to be a long-standing but never-publicized feature.
+
+<pre>
+!script {{
+--%i|1;10;2
+--+Value|[&amp;i]
+--%|
+}}
+</pre>
+(Outputs 1, 3, 5, 7, 9.)
+
+=== Breaking out of a loop early ===
+
+<code>%!</code> is a recognized '''loop-control destination''', not just a special form of the closing tag — it can be used inline, at any point inside a loop body, as the direct target of a conditional (or case statement) result, immediately exiting the current innermost loop from wherever it's triggered:
+
+This is the idiomatic way to break out of a loop early — no separate label or jump is needed. The moment <code>Condition</code> evaluates true, execution exits the loop immediately, regardless of loop type (<code>foreach</code>, <code>while</code>, <code>until</code>, or numeric) or how many iterations remain, and continues with whatever follows the loop's closing <code>--%|</code>.
+
+<pre>
+!script {{
+--%i|foreach;SomeArray
+--?"[&amp;i]" -eq "StopHere"|%!
+--+Still going|[&amp;i]
+--%|
+--+After the loop|Done
+}}
+</pre>
+
+The plain closing form, <code>--%|</code> (with no condition), still works as the normal per-iteration "advance and loop" line as documented above — <code>%!</code> specifically means "stop the loop now," and both can appear in the same loop as long as the loop still has exactly one matching <code>--%|</code> to mark where its body ends.
+
+Both <code>--?</code> (conditionals) and <code>--c</code> (case statements) share this same destination mini-language — <code>%</code> advances the current loop's iteration counter, and <code>%!</code> (checked via the second character) forces it to exit — so a case statement can break a loop the same way a conditional can:
+<code>--cSomeVar|StopHere:%!</code>
+
+== Procedures & Subroutines (GOSUB) ==
+
+<pre>
+!script {{
+--&amp;Name|World
+--&gt;SayHello|[&amp;Name]
+--+After the call|We're back
+--X|
+
+--:SayHello|
+--+Hello|[%1%]
+--&lt;|
+}}
+</pre>
+
+* Parameters passed via a GOSUB call are available two ways inside the called block: as <code>[%1%]</code>, <code>[%2%]</code>, etc. (1-based positional references), '''or''' via the <code>args</code> array — <code>[@args(0)]</code>, <code>[@args(1)]</code>, ... (0-based). <code>[@args(length)]</code>/<code>[@args(maxindex)]</code> give the parameter count.
+* <code>--X|</code> ends the main script body (or, inside a called block, acts as a hard stop rather than a normal return — use <code>--&lt;|</code> to return properly to the caller).
+* A GOSUB into an undefined label logs an error and does not jump.
+
+'''Benchmarking:''' set <code>--#functionbenchmarking|1</code> to have ScriptCards log call counts per procedure (labels reached via <code>--&gt;</code>) and total script execution time (ms) to the API console after the script finishes.
+
+----
+
+== Reentrant Scripts & Interactive Buttons ==
+
+ScriptCards supports building interactive, multi-step chat menus using clickable buttons that re-invoke the script with a specific label to jump to.
+
+* <code>--#reentrant|UniqueKey</code> — marks the script as reentrant, stashing its state under <code>UniqueKey</code> so it can resume later (e.g., after a button click). Using a value derived from the sending player's ID (e.g. <code>CopyAbilities-[&amp;SendingPlayerID]</code>) keeps concurrent sessions from different players from colliding.
+* <code>[rbutton]Label::LABEL_TARGET;OptionalPayload[/rbutton]</code> — a clickable button. Clicking it re-runs the script, jumping to the <code>--:LABEL_TARGET|</code> label, with the payload available as <code>[&amp;reentryval]</code>.
+* <code>--:LabelName|</code> — defines a jump target (used both for reentrant button targets and general <code>GOTO</code>-style branching from conditionals).
+* <code>--#hidecard|1</code> — suppress card output for a given execution pass (useful when a reentrant script's first pass is only building a menu, or a later pass is only performing an action with no visible output).
+
+Example (from the changelog, a simple ability-copy menu):
+
+<pre>
+!script {{
+--#reentrant|CopyAbilities-[&amp;SendingPlayerID]
+--&amp;id|@{selected|character_id}
+--&amp;tid|@{target|character_id}
+--#title|Ability Copy
+--#leftsub|From [*[&amp;id]:name]
+--#rightsub|To [*[&amp;tid]:name]
+--+|[c][b]Click abilities to copy[/b][/c]
+--~dummy|array;abilities;ability_list;[&amp;id]
+--%abils|foreach;ability_list
+--&amp;Name|[*O:[&amp;abils]:ability:name]
+--+|[c][rbutton][&amp;Name]::COPY;[&amp;abils][/rbutton][/c]
+--%|
+--X|
+--:COPY|
+--&amp;Name|[*O:[&amp;reentryval]:ability:name]
+--+|Copied [&amp;Name]
+--X|
+}}
+</pre>
+
+<code>--i</code> statements ("stash" scripts) and reentrant scripts both persist state in memory until cleared. Run <code>!sc-purgestashedscripts</code> to manually free that memory (it's also cleared automatically on a sandbox restart).
+
+=== Information Requests — <code>--i</code> ===
+
+An Information Request lets a script pause and ask the sending player for additional input — a target token, a text answer, a dropdown choice — before continuing. It uses the tag portion of the line to define the prompt text and button caption shown to the player, and the content portion to define one or more requests for information:
+
+<pre>
+--i&lt;PromptText&gt;;&lt;ButtonLabel&gt;|&lt;Type&gt;;&lt;VariableName&gt;;&lt;Prompt&gt;||&lt;Type&gt;;&lt;VariableName&gt;;&lt;Prompt&gt;||...
+</pre>
+
+* <code>PromptText</code> (everything after <code>i</code> up to the first <code>;</code>) is whispered to the sending player. It's run through normal inline formatting if <code>--#formatinforequesttext|1</code> is set (default is off).
+* <code>ButtonLabel</code> is the caption of the button the player clicks to respond.
+* The content portion is a series of information requests, each in the form <code>Type;VariableName;Prompt</code>, separated by double vertical bars (<code>||</code>). Multiple requests, of the same or different types, can be combined on one <code>--i</code> line.
+
+Supported request types:
+
+{| class="wikitable"
+|-
+! Type
+! Meaning
+|-
+| <code>t</code>
+| '''Target''' — prompts the player to select a token via Roll20's target query. <code>Prompt</code> is the label shown in the "Choose Target" window (e.g. <code>Choose Target: Missile1Target</code>). The selected token's ID is stored in the string variable <code>VariableName</code>.
+|-
+| <code>q</code>
+| '''Query''' — prompts the player via a Roll20 roll query (<code>?{...}</code>). <code>Prompt</code> is the query text, without the surrounding <code>?{}</code>. The response is stored in the string variable <code>VariableName</code>.
+|}
+
+When execution reaches an <code>--i</code> line, ScriptCards stashes the remainder of the script (resuming at the next line) in memory, hides the card for the current pass, and whispers the player the prompt with a button. Clicking the button responds to the requested targets/queries and resumes the script where it left off, with each result available as <code>[&amp;VariableName]</code>.
+
+Example:
+
+<pre>
+--iScriptCards needs additional information to continue;Click to select a target and provide information|t;MyNewTarget;Missile1Target||q;MyNameIs;What is your name?
+</pre>
+
+This whispers "ScriptCards needs additional information to continue" along with a button labeled "Click to select a target and provide information". Clicking it asks the player to choose a target token (labeled <code>Missile1Target</code> in the target picker, stored in <code>[&amp;MyNewTarget]</code>) and answer a text prompt ("What is your name?", stored in <code>[&amp;MyNameIs]</code>).
+
+A <code>q</code> request's prompt can include dropdown options, using the same <code>Question|Option1|Option2|...</code> syntax as a normal Roll20 roll query:
+
+<pre>
+q;UserName;What is your name?|Fred|Bob|Sally|Nancy
+</pre>
+
+This presents a dropdown with four choices instead of a free-text field.
+
+----
+
+== Output & Card Formatting ==
+
+=== Basic output line ===
+
+<pre>
+--+Label|Content
+</pre>
+
+Produces a labeled row on the card. An unlabeled row can be produced with <code>--+|Content</code> (empty label).
+
+=== Inline formatting tags ===
+
+This is the complete, verified list from the source's inline-formatting processor — every one of these is a straight text replacement performed on output content before it's placed on the card.
+
+'''Text style'''
+
+{| class="wikitable"
+|-
+! Tag
+! Renders as
+|-
+| <code>[B]...[/B]</code>
+| Bold
+|-
+| <code>[I]...[/I]</code>
+| Italic
+|-
+| <code>[U]...[/U]</code>
+| Underline
+|-
+| <code>[S]...[/S]</code>
+| Strikethrough
+|-
+| <code>[Q]...[/Q]</code>
+| Blockquote (indented)
+|-
+| <code>[#xxx]...[/#]</code> or <code>[#xxxxxx]...[/#]</code>
+| Colored text — 3- or 6-digit hex code, no <code>#</code> needed inside the closing tag
+|-
+| <code>[F123]...[/F]</code>
+| Font size in px — e.g. <code>[F18]big text[/F]</code>
+|-
+| <code>[F:FontName:123]...[/F]</code>
+| Font family, with optional size in px — e.g. <code>[F:Georgia:16]...[/F]</code>
+|}
+
+'''Alignment / layout'''
+
+{| class="wikitable"
+|-
+! Tag
+! Renders as
+|-
+| <code>[C]...[/C]</code>
+| Centered block
+|-
+| <code>[L]...[/L]</code>
+| Left-aligned block
+|-
+| <code>[R]...[/R]</code>
+| Right-aligned block (floated right, with a clearing div after)
+|-
+| <code>[J]...[/J]</code>
+| Justified block
+|-
+| <code>[hr]</code>
+| Horizontal rule
+|-
+| <code>[hr #color]</code>
+| Horizontal rule with a custom border color
+|-
+| <code>[br]</code>
+| Line break
+|}
+
+'''Tables'''
+
+{| class="wikitable"
+|-
+! Tag
+! Renders as
+|-
+| <code>[t]...[/t]</code> or <code>[t attrs]...[/t]</code>
+| <code>&lt;table&gt;</code>
+|-
+| <code>[tr attrs]...[/tr]</code>
+| Table row, styled with the <code>tablestyle</code> template piece
+|-
+| <code>[td attrs]...[/td]</code>
+| Table cell, styled with the <code>tdstyle</code> template piece
+|-
+| <code>[th attrs]...[/th]</code>
+| Table header cell, styled with the <code>thstyle</code> template piece
+|-
+| <code>[p]...[/p]</code> or <code>[p attrs]...[/p]</code>
+| Paragraph
+|}
+
+Any <code>attrs</code> you include (e.g. <code>colspan="2"</code>) pass straight through onto the generated HTML tag.
+
+'''Headers'''
+
+<code>[h1]...[/h1]</code> through <code>[h5]...[/h5]</code> — each styled via its own template piece (<code>h1style</code> through <code>h5style</code>).
+
+'''Media'''
+
+{| class="wikitable"
+|-
+! Tag
+! Renders as
+|-
+| <code>[img ...]url[/img]</code>
+| <code>&lt;img ... src="url"&gt;</code> — attributes like <code>width=</code> / <code>height=</code> go inside the opening tag as usual
+|-
+| <code>[webm]url[/webm]</code>
+| An autoplaying, looping, muted-by-default <code>&lt;video&gt;</code> element
+|-
+| <code>[sm]MarkerName[/sm]</code>
+| Renders the named status-marker icon inline as an image
+|}
+
+'''Fake/decorative roll display'''
+
+<pre>
+[roll]Text[/roll]
+[roll:c]Text[/roll]   -- styled as a crit
+[roll:f]Text[/roll]   -- styled as a fumble
+</pre>
+
+Wraps arbitrary text in the same tooltip/highlight styling used for real dice rolls (normal/crit/fumble), without it being an actual roll — useful for displaying a precomputed or narrative "roll-looking" value.
+
+'''Dice-font glyphs'''
+
+<code>[d4]N[/d4]</code>, <code>[d6]N[/d6]</code>, <code>[d8]N[/d8]</code>, <code>[d10]N[/d10]</code>, <code>[d12]N[/d12]</code>, <code>[d20]N[/d20]</code> — renders the number <code>N</code> as a themed die-face glyph in the corresponding die's font, colored/sized via the <code>dicefontcolor</code>/<code>dicefontsize</code> settings. Setting <code>usehollowdice</code> to a non-default value switches to the font's lowercase (hollow-style) glyph set.
+
+'''Buttons'''
+
+Three distinct button tags, all sharing the same optional customization syntax:
+
+<pre>
+[button]Title::Action[/button]
+[button:#TextColor:#BgColor:NNNpx:Hover Text]Title::Action[/button]
+</pre>
+
+The customization segment (everything between <code>button</code> and the closing <code>]</code>) is optional and order-flexible — the parser just scans each <code>:</code>-separated piece: the first one starting with <code>#</code> is treated as text color, a second <code>#</code> piece as background color, a piece ending in <code>px</code> as font size, and anything else as hover-text. Omit whichever you don't need.
+
+{| class="wikitable"
+|-
+! Tag
+! Behavior
+|-
+| <code>[button]Title::Action[/button]</code>
+| Clicking sends <code>Action</code> as a chat command (with leading-underscore-to-<code>--</code> escaping applied unless <code>dontcheckbuttonsforapi</code> is set)
+|-
+| <code>[sheetbutton]Title::CharacterOrTokenID::AbilityName[/sheetbutton]</code>
+| Runs an ability on a specific character sheet. The middle parameter is resolved flexibly — it's tried as a character ID, then as a token ID (using the token's represented character), then as a character name match, in that order
+|-
+| <code>[rbutton]Title::ReentryLabel[/rbutton]</code>
+| Reentrant button — clicking re-invokes the script via <code>!sc-reentrant</code>, jumping to the `--:ReentryLabel
+| <code>label with the current</code>reentrant` key
+|}
+
+Example with full customization:
+<pre>
+[button:#FFFFFF:#8B0000:14px:Click to attack!]Attack::!script {{ --+|Attack rolled! }}[/button]
+</pre>
+
+'''Colors can be dynamic, not just literal hex codes''' — variable expansion happens ''before'' the button-tag regex runs, so a customization slot can be a variable reference that resolves to a color at runtime. This is used extensively in the 5E Character Action Menu to toggle button colors on/off (e.g., active vs. inactive modifier buttons):
+
+<pre>
+--&amp;nbuttoncolor|#[&amp;GAM_Button_Inactive_Color]
+--C[&amp;currentAdvantageMode]|0:&amp;nbuttoncolor;#[&amp;GAM_Button_Active_Color]|...
+[rbutton:#FFFFFF:[&amp;nbuttoncolor]]N::SET_ADV_MODE;0[/rbutton]
+</pre>
+
+Here the background-color slot is <code>[&amp;nbuttoncolor]</code> rather than a literal <code>#RRGGBB</code> — a case statement (see Additional Command Families → Case Statement) sets <code>nbuttoncolor</code> to one hex value or another depending on current state, and the button picks that up when the line is output.
+
+=== Literal/unprocessed text blocks ===
+
+Text wrapped in <code>${ ... $}</code> is treated as '''literal''' and is not split into separate script lines or run through variable-replacement processing. This is essential when embedding another ScriptCards script (or any content containing <code>--</code>, <code>{{</code>/<code>}}</code>, or characters that would otherwise be parsed) inside a value:
+
+<pre>
+--!t:[&amp;TID]|tooltip:${ !script !{!{ --+Hello|Tooltip! !}!} $}|name:Just For Fun
+</pre>
+
+Because Roll20 treats a literal <code>{{</code>/<code>}}</code> pair specially, use the escape sequences <code>!{!{</code> and <code>!}!}</code> to represent literal <code>{{</code> and <code>}}</code> characters inside a script (this became reliable/supported as of v3.0.22a; prior versions only extracted the outermost <code>{{</code>/<code>}}</code> pair).
+
+----
+
+== Card Settings Reference ==
+
+Settings are configured with <code>--#SettingName|Value</code>. '''Any key in the source's <code>defaultParameters</code> object can be set this way''' — there's no separate whitelist; the settings handler just checks whether the name (after alias resolution) exists in the parameters table. Below is the '''complete list, pulled directly from source''', organized by purpose, with the real default value for each. This replaces the earlier skeleton table entirely.
+
+=== Aliases ===
+
+A handful of setting names have accepted aliases — using either name has the same effect:
+
+{| class="wikitable"
+|-
+! Alias
+! Resolves to
+|-
+| <code>tablebackgroundcolor</code>
+| <code>tablebgcolor</code>
+|-
+| <code>titlecardbackgroundcolor</code>
+| <code>titlecardbackground</code>
+|-
+| <code>nominmaxhilight</code>
+| <code>nominmaxhighlight</code>
+|-
+| <code>norollhilight</code>
+| <code>norollhighlight</code>
+|-
+| <code>buttonbackgroundcolor</code>
+| <code>buttonbackground</code>
+|-
+| <code>concatentioncharacter</code> ''(sic, misspelled in source)''
+| <code>concatenationcharacter</code>
+|-
+| <code>reentry</code>
+| <code>reentrant</code>
+|}
+
+=== Card structure & behavior ===
+
+{| class="wikitable"
+|-
+! Setting
+! Default
+! Purpose
+|-
+| <code>reentrant</code>
+| <code>0</code>
+| Enables reentrant/stashed-state behavior, keyed by the given string
+|-
+| <code>title</code>
+| <code>ScriptCards</code>
+| Card title text
+|-
+| <code>leftsub</code> / <code>rightsub</code>
+| <code>""</code>
+| Left/right subtitle text
+|-
+| <code>subtitleseparator</code>
+| <code>♦</code>
+| Separator shown between subtitle elements
+|-
+| <code>tooltip</code>
+| <code>Sent by ScriptCards</code>
+| Tooltip text on the card
+|-
+| <code>whisper</code>
+| <code>""</code>
+| Whisper target (blank = public)
+|-
+| <code>sourcetoken</code> / <code>targettoken</code>
+| <code>""</code>
+| Sets the token used for <code>[*S:...]</code>/<code>[*T:...]</code>; also auto-populates <code>sourcecharacter</code>/<code>targetcharacter</code> if the token represents a character
+|-
+| <code>activepage</code>
+| <code>""</code>
+| Set to <code>playerpage</code> to use the campaign's current player-ribbon page, or a page ID directly
+|-
+| <code>debug</code>
+| <code>0</code>
+| Enables verbose console logging of internal processing
+|-
+| <code>hidecard</code>
+| <code>0</code>
+| Suppress the entire card for this pass
+|-
+| <code>hidetitlecard</code>
+| <code>0</code>
+| Suppress just the title portion
+|-
+| <code>dontcheckbuttonsforapi</code>
+| <code>0</code>
+| —
+|-
+| <code>roundup</code>
+| <code>0</code>
+| Rounds fractional dice results up instead of down
+|-
+| <code>overridetemplate</code>
+| <code>none</code>
+| Use an alternate visual template instead of default card styling
+|-
+| <code>parameterdelimiter</code>
+| <code>;</code>
+| Delimiter character used to split function parameters
+|-
+| <code>concatenationcharacter</code>
+| <code>+</code>
+| Character that triggers string-variable append instead of replace
+|-
+| <code>formatoutputforobjectmodification</code>
+| <code>0</code>
+| —
+|-
+| <code>executionlimit</code>
+| <code>40000</code>
+| Max processing iterations before the script is halted (loop-safety limit)
+|-
+| <code>inlineconditionseparator</code>
+| <code>\|</code>
+| Separator used in inline <code>[?...]</code> conditionals
+|-
+| <code>deferralcharacter</code>
+| <code>^</code>
+| Escape character used when building deferred calls to other APIs (SelectManager/ZeroFrame/Fetch) via <code>--@</code>
+|-
+| <code>locale</code>
+| <code>en-US</code>
+| ''(Not actually supported by Roll20's JS sandbox per an inline source comment)''
+|-
+| <code>timezone</code>
+| <code>America/New_York</code>
+| —
+|-
+| <code>hpbar</code>
+| <code>3</code>
+| Which token bar (1–3) is treated as HP by default
+|-
+| <code>outputtagprefix</code>
+| <code>""</code>
+| Prefix added before every output line's tag/label
+|-
+| <code>outputcontentprefix</code>
+| <code>" "</code>
+| Prefix added before every output line's content
+|-
+| <code>enableattributesubstitution</code>
+| <code>0</code>
+| Enables recursive <code>@{...}</code> attribute substitution
+|-
+| <code>formatinforequesttext</code>
+| <code>0</code>
+| Set to <code>1</code> to run an <code>--i</code> Information Request's prompt text through inline formatting before whispering it
+|-
+| <code>explodingonesandaces</code>
+| <code>0</code>
+| —
+|-
+| <code>functionbenchmarking</code>
+| <code>0</code>
+| Logs per-procedure call counts and total execution time after the script finishes
+|-
+| <code>limitmaxbarvalues</code>
+| <code>0</code>
+| Caps <code>--!t</code> bar-value writes at the bar's max
+|-
+| <code>gmoutputtarget</code>
+| <code>gm</code>
+| Where <code>--*</code> (GM-only output) lines are sent; set to <code>self</code> to whisper the executing player instead
+|-
+| <code>storagecharid</code>
+| <code>""</code>
+| Character ID used for subsequent <code>--s</code>/<code>--l</code> persistent-storage statements
+|-
+| <code>beaconsheet</code>
+| <code>0</code>
+| Enables Beacon (new-format) sheet field support (<code>b-</code>/<code>c-</code> prefixes)
+|-
+| <code>dontnotifyobservers</code>
+| <code>0</code>
+| Suppresses notifying other API scripts of token changes made by this script
+|-
+| <code>titletextalign</code>
+| <code>center</code>
+| CSS <code>text-align</code> for the title text specifically
+|-
+| <code>disablevariableexpansion</code>
+| <code>0</code>
+| Disables <code>[...]</code> variable expansion globally for the script
+|}
+
+=== Parsing/processing toggles ===
+
+Each of these gates a specific stage of the interpreter's normal processing — useful for edge cases where a script's literal text is being misinterpreted. Traced against the current source:
+
+{| class="wikitable"
+|-
+! Setting
+! Default
+! Description
+|-
+| <code>allowplaintextinrolls</code>
+| <code>0</code>
+| Governs whether a trailing bare word at the end of a roll expression is passed through as literal text rather than rejected. See note below.
+|-
+| <code>showfromfornonwhispers</code>
+| <code>0</code>
+| When enabled, non-whispered card output shows the sending player's name as the chat "from" speaker (normally blank/anonymous).
+|-
+| <code>allowinlinerollsinoutput</code>
+| <code>0</code>
+| When off (default), strips any literal <code>[[</code>/<code>]]</code> left in rendered output (replaced with spaces) so Roll20 doesn't mistake it for a native inline roll. Enabling it leaves them intact.
+|-
+| <code>nominmaxhighlight</code>
+| <code>0</code>
+| Forces a roll's display style to "normal" even if it would otherwise qualify for crit/fumble (min/max) highlighting.
+|-
+| <code>norollhighlight</code>
+| <code>0</code>
+| Forces a roll's display style to "none," overriding crit/fumble/normal highlighting entirely.
+|-
+| <code>disablestringexpansion</code>
+| <code>0</code>
+| ''Currently inert'' — declared and saved as a setting, but not read anywhere in the current source.
+|-
+| <code>disablerollvariableexpansion</code>
+| <code>0</code>
+| ''Currently inert'' — declared and saved as a setting, but not read anywhere in the current source.
+|-
+| <code>disableparameterexpansion</code>
+| <code>0</code>
+| ''Currently inert'' — declared and saved as a setting, but not read anywhere in the current source.
+|-
+| <code>disablerollprocessing</code>
+| <code>0</code>
+| When enabled, skips dice-roll parsing/execution entirely.
+|-
+| <code>disableattributereplacement</code>
+| <code>0</code>
+| ''Currently inert'' — declared and saved as a setting, but not read anywhere in the current source.
+|-
+| <code>attemptattributeparsing</code>
+| <code>0</code>
+| When enabled, attempts to resolve calculated/auto-calc character-sheet attributes instead of returning their raw stored value.
+|-
+| <code>disableinlineformatting</code>
+| <code>0</code>
+| When enabled, skips ScriptCards' own inline formatting tags (<code>[b]</code>, <code>[i]</code>, etc.) and returns the output line unprocessed.
+|}
+
+: '''Potential issue under review:''' <code>allowplaintextinrolls</code> is checked as <code>cardParameters.allowplaintextinrolls !== 0</code> — comparing the setting (a string, <code>"0"</code>/<code>"1"</code>) to the ''number'' <code>0</code> with strict inequality. A string is never strictly equal to a number, so this condition is <code>true</code> regardless of the setting's actual value — in the current source, this flag appears to always behave as if enabled. Flagged here for confirmation rather than treated as a fixed bug.
+
+=== Fonts, colors, and card visual styling ===
+
+{| class="wikitable"
+|-
+! Setting
+! Default
+|-
+| <code>tableborder</code>
+| <code>2px solid #000000;</code>
+|-
+| <code>tablebgcolor</code>
+| <code>#EEEEEE</code>
+|-
+| <code>tableborderradius</code>
+| <code>6px;</code>
+|-
+| <code>tableshadow</code>
+| <code>5px 3px 3px 0px #aaa;</code>
+|-
+| <code>titlecardbackground</code>
+| <code>#1C6EA4</code>
+|-
+| <code>titlecardgradient</code>
+| <code>0</code>
+|-
+| <code>titlecardbackgroundimage</code>
+| <code>""</code>
+|-
+| <code>titlecardbottomborder</code>
+| <code>2px solid #444444;</code>
+|-
+| <code>titlefontface</code>
+| <code>Contrail One</code>
+|-
+| <code>titlefontsize</code>
+| <code>1.2em</code>
+|-
+| <code>titlefontlineheight</code>
+| <code>1.2em</code>
+|-
+| <code>titlefontweight</code>
+| <code>strong</code>
+|-
+| <code>titlefontstyle</code>
+| <code>normal</code>
+|-
+| <code>titlefontshadow</code>
+| <code>-1px 1px 0 #000, 1px 1px 0 #000, 1px -1px 0 #000, -1px -1px 0 #000;</code>
+|-
+| <code>titlefontcolor</code>
+| <code>#FFFFFF</code>
+|-
+| <code>lineheight</code>
+| <code>normal</code>
+|-
+| <code>subtitlefontsize</code>
+| <code>13px</code>
+|-
+| <code>subtitlefontface</code>
+| <code>Tahoma</code>
+|-
+| <code>subtitlefontcolor</code>
+| <code>#FFFFFF</code>
+|-
+| <code>bodyfontsize</code>
+| <code>14px;</code>
+|-
+| <code>bodyfontface</code>
+| <code>Helvetica</code>
+|-
+| <code>bodybackgroundimage</code>
+| <code>""</code>
+|-
+| <code>oddrowbackground</code> / <code>evenrowbackground</code>
+| <code>#D0E4F5</code> / <code>#eeeeee</code>
+|-
+| <code>oddrowbackgroundimage</code> / <code>evenrowbackgroundimage</code>
+| <code>""</code>
+|-
+| <code>oddrowfontcolor</code> / <code>evenrowfontcolor</code>
+| <code>#000000</code>
+|-
+| <code>rollfontface</code>
+| <code>helvetica</code>
+|-
+| <code>dicefontcolor</code>
+| <code>#1C6EA4</code>
+|-
+| <code>dicefontsize</code>
+| <code>3.0em</code>
+|-
+| <code>usehollowdice</code>
+| <code>0</code>
+|}
+
+=== Roll highlight colors (crit/fumble) ===
+
+{| class="wikitable"
+|-
+! Setting
+! Default
+|-
+| <code>rollhilightlineheight</code>
+| <code>1.0em</code>
+|-
+| <code>rollhilightcolornormal</code>
+| <code>#FFFEA2</code>
+|-
+| <code>rollhilightcolorcrit</code>
+| <code>#88CC88</code>
+|-
+| <code>rollhilightcolorfumble</code>
+| <code>#FFAAAA</code>
+|-
+| <code>rollhilightcolorboth</code>
+| <code>#8FA4D4</code>
+|}
+
+=== Crit/fumble thresholds by die size ===
+
+These default to the die's natural max (crit) and <code>1</code> (fumble) — override any of these to change what counts as a crit/fumble for a given die size when using <code>--~|roll;setrollhighlight</code>:
+
+<code>critd20</code> (20), <code>critd100</code> (100), <code>critd10</code> (10), <code>critd8</code> (8), <code>critd6</code> (6), <code>critd4</code> (4), <code>fumbled20</code> (1), <code>fumbled100</code> (1), <code>fumbled10</code> (1), <code>fumbled8</code> (1), <code>fumbled6</code> (1), <code>fumbled4</code> (1).
+
+=== Emote block styling ===
+
+{| class="wikitable"
+|-
+! Setting
+! Default
+|-
+| <code>emotetext</code>
+| <code>""</code>
+|-
+| <code>emotebackground</code>
+| <code>#f5f5ba</code>
+|-
+| <code>emotefont</code>
+| <code>Georgia</code>
+|-
+| <code>emotefontweight</code>
+| <code>bold</code>
+|-
+| <code>emotefontsize</code>
+| <code>14px</code>
+|-
+| <code>emotestate</code>
+| <code>visible</code>
+|-
+| <code>emotefontcolor</code>
+| <code>""</code>
+|-
+| <code>emotesourcetokensize</code> / <code>emotetargettokensize</code>
+| <code>50</code>
+|-
+| <code>emotesourcetokenoverride</code> / <code>emotetargettokenoverride</code>
+| <code>0</code>
+|}
+
+=== Buttons ===
+
+{| class="wikitable"
+|-
+! Setting
+! Default
+|-
+| <code>buttonbackground</code>
+| <code>#1C6EA4</code>
+|-
+| <code>buttonbackgroundimage</code>
+| <code>""</code>
+|-
+| <code>buttontextcolor</code>
+| <code>White</code>
+|-
+| <code>buttonbordercolor</code>
+| <code>#999999</code>
+|-
+| <code>buttonfontsize</code>
+| <code>x-small</code>
+|-
+| <code>buttonfontface</code>
+| <code>Tahoma</code>
+|-
+| <code>buttonpadding</code>
+| <code>5px</code>
+|-
+| <code>buttonwidth</code>
+| <code>auto</code>
+|}
+
+=== User-defined free storage ===
+
+<code>usersetting0</code> through <code>usersetting9</code> — all default to <code>""</code>. ScriptCards itself never reads these; they exist purely as ten free slots for script authors' own use, and are included when saving/loading "allsettings."
+
+----
+
+== Dice Rolling ==
+
+ScriptCards has its own built-in dice roller, invoked via <code>--=VariableName|Expression</code> (see Roll Variables above).
+
+: ⚠️ '''Critical:''' ScriptCards does '''not''' parse Roll20 native inline rolls (<nowiki>[[ ... ]]</nowiki>). Use ScriptCards' own <code>--=</code> roll statements instead. Mixing native inline-roll syntax into a ScriptCards script will not produce the expected result.
+
+Roll results can be styled with a highlight for crits/fumbles:
+
+<pre>
+--~|roll;setrollhighlight;RollVarName;identifier
+</pre>
+where <code>identifier</code> is one of <code>none</code>, <code>crit</code>, <code>fumble</code>, or <code>both</code>. (<code>sethighlight</code> is an accepted alias for this same function.)
+
+Rolled/kept/dropped dice from a roll (e.g., advantage rolls, keep-highest expressions) can be extracted into a standalone array:
+
+<pre>
+--~|array;fromrollvar;ArrayName;RollVariableName;type
+</pre>
+where <code>type</code> is <code>rolled</code>, <code>kept</code>, or <code>dropped</code>.
+
+Rollable Table references use <code>[T#TableName]</code>. As of v3.0.0a, table roll results include a <code>.tableEntryWeight</code> property reflecting the weight value of the matched table entry.
+
+----
+
+== Dice Roll Formula Syntax ==
+
+Each <code>NdX</code>-style term inside a <code>--=VariableName|...</code> roll expression is matched against a single combined format regex before being rolled (confirmed in <code>handleDiceFormats</code>), so modifiers must appear as a single unbroken token — no spaces inside <code>3d8kh1r&lt;2</code>, for example.
+
+=== Customizing dice rolls ===
+
+{| class="wikitable"
+|-
+! Format Pattern
+! Example
+! Description
+|-
+| <code>XdY</code>
+| <code>3d8</code>
+| Simple format. Roll a Y-sided die X times
+|-
+| <code>XdYkhZ</code>
+| <code>2d20kh1</code>
+| Roll Y-sided die X times and keep the highest Z number of dice
+|-
+| <code>XdYklZ</code>
+| <code>4d6kl3</code>
+| Roll Y-sided die X times and keep the lowest Z number of dice
+|-
+| <code>XdY&gt;Z</code>
+| <code>5d6&gt;3</code>
+| Roll Y-sided die X times and count a 1 for each roll greater than Z
+|-
+| <code>XdY&lt;Z</code>
+| <code>5d6&lt;3</code>
+| Roll Y-sided die X times and count a 1 for each roll less than Z
+|-
+| <code>XdYr&lt;Q</code> and <code>XdYr&gt;Q</code>
+| <code>10d6r&lt;2</code>
+| Roll a Y-sided die X times, rerolling results less than or equal (or greater than or equal) to Q
+|-
+| <code>XdYro&lt;Q</code> and <code>XdYro&gt;Q</code>
+| <code>10d6ro&lt;2</code>
+| Roll a Y-sided die X times, rerolling results less than or equal (or greater than or equal) to Q one time, keeping the reroll result
+|-
+| <code>XdY!</code> and <code>XdY!&gt;Q</code> and <code>XdY!&lt;Q</code>
+| <code>8d6!</code>
+| Roll a Y-sided die X times, rerolling max results and adding them to the total for the die (or rerolling results &gt;= or &lt;= Q and adding) — exploding dice
+|-
+| <code>XdYkhZr&lt;Q</code> and <code>XdYkhZr&gt;Q</code>
+| <code>4d6kh3r&lt;1</code>
+| Roll a Y-sided die X times, rerolling results less than or equal to (or greater than or equal to) Q, and keep the highest Z results
+|-
+| <code>XdY!h</code> and <code>XdY!l</code>
+| <code>4d6!h</code>
+| Roll 1dY X times. If the max number on the die is rolled, roll it again and add to that die's total. Return only the highest (h) or lowest (l) die roll (Deadlands skill checks)
+|-
+| <code>XdF</code>
+| <code>4dF</code>
+| Fudge dice support. Roll a Fudge die X times, with possible values of <code>+</code>, <code>-</code>, or blank. Roll hover text and <code>.Text</code> display the values appropriately
+|-
+| <code>XdYW</code>, <code>XdYWS</code>, <code>XdYWH</code>, <code>XdYWSH</code>
+| <code>4d6W</code>
+| Wild dice support (as seen in games like the d6 System). X‑1 dice of Y sides are rolled normally. 1 die of Y sides is rolled as an exploding die. The <code>S</code> modifier makes the Wild die eliminate itself from the total if its first roll is a 1. The <code>H</code> modifier makes a first roll of 1 on the Wild die remove the highest die among the non‑wild dice. None, one, or both can be specified
+|-
+| <code>XuY</code>
+| <code>3u8</code>
+| Roll a Y-sided die X times, but only generate unique values. If X is greater than Y, only Y dice will be rolled
+|-
+| <code>XmY</code>
+| <code>3m8</code>
+| Roll a Y-sided die X times, but always use the highest number on the die. E.g. <code>3m8</code> will always roll 24
+|}
+
+: '''Note (carried over from the original wiki text, not independently re-verified against this source dump):''' <code>Y</code> cannot equal <code>0</code>; rolling <code>Xd0</code> reportedly produced a <code>NaN</code> result as of v1.7.7.
+
+'''Additional modifiers confirmed directly from the format regex in <code>handleDiceFormats</code>, not present in the original wiki table:'''
+
+{| class="wikitable"
+|-
+! Format Pattern
+! Description
+|-
+| <code>XdYe</code>
+| "Emphasis" roll — keeps only the die result closest to the middle of the die's range, dropping the rest
+|-
+| <code>XdY#</code>
+| Trailing <code>#</code> suppresses this term's crit/fumble highlighting and excludes it from <code>.Base</code> tracking (<code>dontHilight</code>/<code>dontBase</code>)
+|-
+| <code>XdYf&lt;Q</code>
+| Failure counting — subtracts 1 from the total for each die at or below Q, alongside <code>&gt;Z</code> success counting, and marks the roll as a failure highlight
+|}
+
+'''Potential issues under review''' — the following points were noticed while cross-referencing the wiki text against the source's <code>handleDiceFormats</code> function, and are flagged here for the team to confirm intended behavior before this documentation is finalized:
+
+* '''<code>XdY&lt;Z</code> vs <code>XdY&gt;Z</code>:''' the outer format regex captures the threshold digits but not the <code>&lt;</code>/<code>&gt;</code> character itself (<code>successThreshold = Number(matches[x].substring(1))</code>), and the success test later in the function is unconditionally <code>rollSet[x] &gt; successThreshold</code>. As written, <code>&lt;Z</code> does not appear to invert the comparison the way the wiki text describes — both forms currently seem to count successes as "greater than Z." Under review.
+* '''<code>XdYf&lt;Q</code> / <code>XdYf&gt;Q</code>:''' the inner handler code checks for both <code>f&lt;Q</code> and <code>f&gt;Q</code>, but the top-level format-recognition regex only includes <code>(f\&lt;\d+)?</code> — no <code>f&gt;</code> variant — so <code>f&gt;Q</code> may not actually reach the failure-counting logic. Under review.
+* '''<code>XdY!h</code> / <code>XdY!l</code>:''' in the source, both branches of the <code>!h</code>/<code>!l</code> handler set <code>keeptype = "h"</code> (keep highest); only the explosion trigger value differs (<code>sides</code> for <code>!h</code>, <code>1</code> for <code>!l</code>). <code>!l</code> may not currently return the lowest die as the wiki text describes. Under review.
+
+----
+
+== Using Dice Rolls in Equations ==
+
+The following operators are supported between dice/number terms in a roll equation:
+
+{| class="wikitable"
+|-
+! Operator
+! Operation
+|-
+| <code>+</code>
+| Addition
+|-
+| <code>-</code>
+| Subtraction
+|-
+| <code>*</code>
+| Multiplication
+|-
+| <code>/</code>
+| Division
+|-
+| <code>\</code>
+| Integer Division (rounds down by default)
+|-
+| <code>%</code>
+| Modulo (remainder of division)
+|}
+
+The <code>\</code> integer-division operator respects the <code>roundup</code> card setting (see Card Settings Reference above): when <code>roundup</code> is <code>0</code> (the default) results are floored (rounded down); when <code>roundup</code> is <code>1</code>, results are ceiled (rounded up) instead.
+
+'''Additional post-roll math functions confirmed from source, not in the original wiki text:''' after the dice/number terms are totaled, a single trailing <code>{function}</code> term can transform the running total:
+
+{| class="wikitable"
+|-
+! Function
+! Effect
+|-
+| <code>{abs}</code>
+| Absolute value
+|-
+| <code>{sqrt}</code> / <code>{squareroot}</code>
+| Square root
+|-
+| <code>{ceil}</code>
+| Round up
+|-
+| <code>{floor}</code>
+| Round down
+|-
+| <code>{round}</code>
+| Round to nearest integer
+|-
+| <code>{round:N}</code>
+| Round to N decimal places (max 6)
+|-
+| <code>{neg}</code> / <code>{negate}</code>
+| Negate the value
+|-
+| <code>{sin}</code>, <code>{cos}</code>, <code>{tan}</code>, <code>{asin}</code>, <code>{acos}</code>, <code>{atan}</code>
+| Trigonometric functions
+|-
+| <code>{square}</code>
+| Square the value
+|-
+| <code>{cube}</code> / <code>{cubed}</code>
+| Cube the value
+|-
+| <code>{cbrt}</code> / <code>{cuberoot}</code>
+| Cube root
+|-
+| <code>{pad:N}</code>
+| Zero-pad the displayed total to N digits (sets <code>.PaddingDigits</code>)
+|-
+| <code>{min:N}</code>
+| Clamp the total to a minimum of N
+|-
+| <code>{max:N}</code>
+| Clamp the total to a maximum of N
+|-
+| <code>{clamp:N:M}</code>
+| Clamp the total between N and M
+|}
+
+----
+
+== Object Modification ==
+
+Object modification commands use the <code>--!</code> prefix family, targeting characters (<code>--!a</code>, <code>--!c</code>), tokens (<code>--!t</code>), handouts (<code>--!h</code>/<code>--!oh</code>), and more. General conventions:
+
+* Values containing a <code>:</code> should be double-quoted.
+* Values containing a literal <code>|</code> should be escaped as <code>\|</code> (double-backslash-pipe, i.e. <code>\\|</code> in raw text) — supported in <code>--!a</code>, <code>--!t</code>, and <code>--c</code> statements since v2.7.27.
+* Setting an attribute that doesn't exist and prefixing the name with <code>!</code> will auto-create it (as of v2.7.27a, this also works via the sheetworker path without requiring the <code>!</code> prefix in repeating-section value-setting contexts — see v2.6.6b).
+
+=== Attributes — <code>--!a</code> ===
+
+<pre>
+--!a:CharacterID|AttributeName:NewValue
+</pre>
+Sets a character-sheet attribute. Prefix the attribute name with <code>!</code> to create it if missing, e.g. <code>--!a:CharacterID|!AttributeName:NewValue</code>.
+
+=== Token/Graphic properties — <code>--!t</code> ===
+
+<pre>
+--!t:TokenID|PropertyName:Value|PropertyName2:Value2
+</pre>
+Property names can optionally be prefixed with <code>t-</code>/<code>T-</code> and will be mapped correctly either way (v2.7.31+). Supports <code>bar1</code>–<code>bar4</code> and their linked properties (<code>bar#_value</code>, <code>bar#_max</code>, <code>bar#_link</code>). Setting bar values respects the optional <code>limitmaxbarvalues</code> setting, which — if enabled — caps a bar's value at its max when set via <code>--!t</code>.
+
+If HealthColors (a separate API script) is installed, <code>--!t</code> bar changes will trigger its update.
+
+=== Beacon/computed fields — <code>--!c</code> ===
+
+<pre>
+--!c:CharacterID|c-hp:10
+</pre>
+Sets a Beacon-sheet ("computed") field, prefixing the field name with <code>c-</code> or <code>b-</code>. Supports <code>+=</code>/<code>-=</code> relative adjustment the same as non-Beacon values. Requires the Experimental sandbox. Some Beacon fields are read-only; attempting to set one logs a console message rather than failing silently.
+
+=== Handouts — <code>--!oh</code> (create) / <code>--!h</code> (modify) ===
+
+<pre>
+--!oh:NewHandoutID|name:"My Handout"|notes:"This is a handout note"
+--!h:[&amp;NewHandoutID]|gmnotes:"Appended after creation"
+</pre>
+Multiple properties are <code>|</code>-separated as <code>PropertyName:Value</code>; quote values containing spaces. As of v3.0.19b, handout creation/modification processes inline formatting (bold/italic/etc.) in the <code>notes</code> property.
+
+=== Deletion — <code>--!x</code> ===
+
+<pre>
+--!x:TokenID|Optional reason for deletion
+</pre>
+Deletes a graphic object (token). At present, '''only graphic objects''' can be deleted via <code>--!x</code>. A log message records what was deleted and by whom.
+
+=== Z-order — <code>--z</code> ===
+
+<pre>
+--z:objecttype:objectid|operation
+</pre>
+Supports <code>tofront</code> and <code>toback</code> for graphics.
+
+=== Creating abilities — <code>--!ob</code> ===
+
+'''Resolved from source.''' Confirmed syntax:
+
+<pre>
+--!ob:ReturnVariable:CharacterID:AbilityName:IsTokenAction|ActionText
+</pre>
+
+* <code>IsTokenAction</code> — pass <code>y</code> to make it a token action button; anything else is treated as false.
+* <code>ActionText</code> (the line's content, after <code>|</code>) becomes the ability's macro text.
+* The new ability's object ID is written into the string variable named by <code>ReturnVariable</code>.
+* On failure (e.g. character not found, or fewer than 3 colon-separated parts before the <code>|</code>), the return variable is set to the literal string <code>OBJECT_CREATION_ERROR</code> — this same sentinel value is used by every other <code>--!o*</code> object-creation command, so it's worth checking for generically after any creation call.
+
+<pre>
+!script {{
+--&amp;id|@{selected|character_id}
+--!ob:NewAbilityID:[&amp;id]:Fireball:y|!script {{ --+|Casting Fireball! }}
+--+Created|[&amp;NewAbilityID]
+}}
+</pre>
+
+=== Creating characters — <code>--!oc</code> ===
+
+<pre>
+--!oc:ReturnVariable|CharacterName;...
+</pre>
+Creates a new character object; the new character's ID is written to <code>ReturnVariable</code>.
+
+----
+
+== Object Creation & Deletion ==
+
+=== Tokens/graphics — <code>--!ot</code> ===
+
+<pre>
+--!ot:ReturnVariable|Property1=Value1|Property2=Value2;...
+</pre>
+* Quote any value that contains (or could contain) a colon.
+* Numeric properties are validated; an invalid value defaults to 0 (e.g., <code>left=HELLO</code> → <code>left=0</code>).
+* Boolean properties accept <code>true</code>, <code>yes</code>, <code>on</code>, or <code>1</code> (anything else evaluates false).
+* Defaults if unspecified: <code>subtype=token</code>, <code>layer=objects</code>, <code>pageid=&lt;current player ribbon page&gt;</code>, <code>left=200</code>, <code>top=200</code>, <code>width=70</code>, <code>height=70</code>.
+* Each <code>sides</code> image (for multi-sided tokens) is validated for Roll20 URL correctness (must end in a valid <code>?...</code> query string). Attempting to set <code>imgsrc</code> to a Marketplace-hosted image logs a warning, since the API cannot use Marketplace images this way.
+
+Example — duplicate a token, offset one grid square to the right:
+
+<pre>
+!script {{
+--&amp;sourceTID|@{selected|token_id}
+--#sourcetoken|[&amp;sourceTID]
+--!ot:NewTID|name:"[*S:t-name] Copy"|left:[=[*S:t-left]+70]|top:[*S:t-top]|width:[*S:t-width]|height:[*S:t-height]|imgsrc:"[*S:t-imgsrc]"|tooltip:"[*S:t-tooltip]"|bar1_value:"[*S:t-bar1_value]"|bar1_max:"[*S:t-bar1_max]"|bar2_value:"[*S:t-bar2_value]"|bar2_max:"[*S:t-bar2_max]"|bar3_value:"[*S:t-bar3_value]"|bar3_max:"[*S:t-bar3_max]"|represents:[*S:t-represents]|controlledby:[*S:t-controlledby]|showname:1|statusmarkers:[*S:t-statusmarkers]
+--+TID|[&amp;NewTID]
+}}
+</pre>
+
+=== Deletion — <code>--~|object;token;delete</code> ===
+
+<pre>
+--~|object;token;delete;tokenid1;tokenid2;...
+</pre>
+Logs an entry noting the deleting player and token ID(s). (Note this predates and functions alongside the newer, single-object <code>--!x</code> command above.)
+
+=== Rollable tables and entries ===
+
+<pre>
+--!o#:ReturnTableID|TableName;ShowToPlayers
+--!oe:ReturnEntryID|TableID;EntryText;Weight;AvatarURL
+</pre>
+* <code>ShowToPlayers</code> defaults to no; accepts <code>true</code>/<code>yes</code>/<code>1</code>.
+* <code>Weight</code> defaults to 1. An avatar image '''requires''' a weight to be specified.
+
+<pre>
+!script {{
+--!o#:tableid|MySCTable
+--!oe:entryid|[&amp;tableid];Entry 1
+--!oe:entryid|[&amp;tableid];Entry 2
+--!oe:entryid|[&amp;tableid];Entry 3;2
+--!oe:entryid|[&amp;tableid];Entry 4;6
+--!oe:entryid|[&amp;tableid];Entry 5;10
+}}
+</pre>
+
+----
+
+== Repeating Sections ==
+
+=== Direct reference — <code>--R</code> ===
+
+<pre>
+--Rfirst|CharacterID;repeating_section_name
+[*R:AttributeName]
+</pre>
+Positions an internal "cursor" at the first row of the named repeating section; <code>[*R:AttributeName]</code> then reads a field from that row.
+
+'''Find a specific row by ID:'''
+<pre>
+--Rbysectionid|CharacterID;repeating_section_name;RowID
+</pre>
+Optionally append <code>;1</code> for a case-insensitive match on the row ID.
+
+'''Search by field value:'''
+<pre>
+--rfind|CharacterID;SearchText;repeating_section_name;field_name
+--rsearch|CharacterID;SearchText;repeating_section_name;field_name
+</pre>
+<code>--rfind</code> requires an exact-ish match; <code>--rsearch</code> does a case-insensitive partial match compiled as a regex (escape special regex characters like <code>+</code> with a backslash).
+
+=== Iterating every row — <code>--Rnext</code> ===
+
+<pre>
+--Rnext|
+</pre>
+
+Advances the cursor to the next row in whatever repeating section <code>--Rfirst</code>/<code>--Rbysectionid</code>/etc. last positioned it on. Combined with a sentinel check, this is the standard way to loop over an entire repeating section:
+
+<pre>
+--Rfirst|[&amp;CharID];repeating_traits
+--:TRAIT_LOOP|
+--?"[*R:name]" -eq "NoRepeatingAttributeLoaded"|TRAIT_LOOP_DONE
+--+Trait|[*R:name]
+--Rnext|
+--^TRAIT_LOOP|
+--:TRAIT_LOOP_DONE|
+</pre>
+
+<code>"NoRepeatingAttributeLoaded"</code> is the literal sentinel value <code>[*R:...]</code> resolves to once the cursor runs past the last row (or when a <code>find</code>/<code>search</code> positioning command matches nothing) — check for it by name, as shown above, to detect the end of the section. This exact pattern (cursor loop + sentinel check) appears repeatedly throughout the 5E Character Action Menu script for walking traits, actions, spells, and inventory sections.
+
+=== Jump to a row by index — <code>--Rbyindex</code> ===
+
+<pre>
+--Rbyindex|CharacterID;repeating_section_name;RowIndex
+</pre>
+
+Positions the cursor directly at a specific 0-based row index, without needing to know that row's section ID.
+
+=== Debug dump — <code>--Rdump</code> ===
+
+<pre>
+--Rdump|
+</pre>
+
+Logs every field of the row currently under the cursor to the API console — useful for checking what fields/values actually exist on a row while developing a script.
+
+'''Explicit indexed forms''' (v2.4.3+):
+<pre>
+[*R:CharacterID:section_name:rowindex:attribute]
+[*R&gt;CharacterID:section_name:rowindex:attribute]
+[*R:CharacterID:section_name:rowcount]
+</pre>
+* The first form reads a value directly by numeric row index.
+* The <code>&gt;</code> form instead returns the '''full attribute name''' (suitable for use as the target of a <code>--!a</code> command) rather than the value.
+* The <code>rowcount</code> form returns the number of rows in the section.
+
+Example — finding a related row in another repeating section via a shared ID field (D&D 5E sheet pattern, linking <code>repeating_attack</code> to <code>repeating_inventory</code>):
+
+<pre>
+!script {{
+--Rfirst|@{selected|character_id};repeating_attack
+--&amp;ItemID|[*R:itemid]
+--Rbysectionid|@{selected|character_id};repeating_inventory;[&amp;ItemID]
+--+Item Name|[*R:itemname]
+--+Properties|[*R:itemproperties]
+}}
+</pre>
+
+=== Bulk hash-table conversion ===
+
+<pre>
+--~|hashtable;fromrepeatingsection;CharacterID;repeating_section_name;key_field;HashTableName
+</pre>
+Builds a lookup table keyed as <code>RowIdentifier_AttributeName</code> (plus a <code>_max</code> variant per key, usually empty). Unsupported field types (attributes containing <code>@{...}</code> references, inline rolls <code>[[</code>, or template references <code>{{</code>) are still represented in the table, but with placeholder values: <code>Unsupported (AttrRef)</code>, <code>Unsupported (InlineRoll)</code>, or <code>Unsupported (TemplateRef)</code>.
+
+<pre>
+--~|hashtable;fromrepeatingrow;CharacterID;repeating_section_name;RowID;HashTableName
+</pre>
+Same, scoped to one specific row (includes a <code>_sectionid</code> key).
+
+=== Copying rows between characters ===
+
+<pre>
+--~|repeatingrow;copybyindex;SourceCharacterID;DestinationCharacterID;repeating_section_name;rowindex
+--~|repeatingrow;copybyfieldmatch;SourceCharacterID;DestinationCharacterID;repeating_section_name;field_name;field_value
+</pre>
+Both accept an optional trailing parameter specifying a '''different''' target repeating section name on the destination character (rather than mirroring the source section name) — e.g., copying a 1st-level spell into a 2nd-level spell section:
+
+<pre>
+--~|repeatingrow;copybyfieldmatch;@{selected|character_id};@{target|character_id};repeating_spell-1;spellname;Hunter's Mark;repeating_spell-2
+</pre>
+
+=== Repeating section attribute discovery ===
+
+<pre>
+--~|array;attributes;ArrayName;CharacterID;(optional name-starts-with filter)
+</pre>
+
+----
+
+== Hash Tables ==
+
+See Variable Types → Hash Tables above for core syntax. Additional notes:
+
+* Function group name accepts both <code>hash</code> and <code>hashtable</code>.
+* Storing an empty string as a key's value removes that key.
+
+----
+
+== DataGrids ==
+
+See Variable Types → DataGrids above.
+
+----
+
+== Pointers ==
+
+Pointer variables move a value directly between two object properties, bypassing normal string-variable parsing — useful when the value might contain content (like embedded ScriptCards syntax) that would otherwise get mangled by normal variable substitution.
+
+<pre>
+--Pr|PointerName::ObjectID::PropertyName    (read: pointer ← object property)
+--Ps|PointerName::ObjectID::PropertyName    (set: object property ← pointer)
+</pre>
+
+One more source-confirmed detail not in the changelog: you don't need to know or specify the object's type. The pointer functions try <code>graphic</code>, <code>text</code>, <code>path</code>, <code>card</code>, <code>character</code>, <code>handout</code>, <code>ability</code>, and <code>attribute</code> in turn until one matches the given ID.
+
+<pre>
+!script {{
+--Pr|TestPtr::@{selected|character_id}::name
+--Ps|TestPtr::@{target|token_id}::tooltip
+}}
+</pre>
+This reads the selected character's name into pointer <code>TestPtr</code>, then writes that value into the targeted token's tooltip.
+
+A more complete example — copying an ability (including its raw action text) from one character to another, using a reentrant menu:
+
+<pre>
+!script {{
+--#reentrant|CopyAbilities-[&amp;SendingPlayerID]
+--&amp;id|@{selected|character_id}
+--&amp;tid|@{target|character_id}
+--~dummy|array;abilities;ability_list;[&amp;id]
+--%abils|foreach;ability_list
+--&amp;Name|[*O:[&amp;abils]:ability:name]
+--+|[c][rbutton][&amp;Name]::COPY;[&amp;abils][/rbutton][/c]
+--%|
+--X|
+--:COPY|
+--&amp;Name|[*O:[&amp;reentryval]:ability:name]
+--&amp;Desc|[*O:[&amp;reentryval]:ability:description]
+--&amp;IsAction|[*O:[&amp;reentryval]:ability:istokenaction]
+--Pread|ActionPointer::[&amp;reentryval]::action
+--!ob:NewID:[&amp;tid]:[&amp;Name]:[&amp;isAction]|temp
+--Pset|ActionPointer::[&amp;NewID]::action
+--+|Copied action [&amp;Name] from [*[&amp;id]:name] to [*[&amp;tid]:name]
+--X|
+}}
+</pre>
+
+----
+
+== Save / Load & Persistent Storage ==
+
+ScriptCards can persist data between script runs (and between Roll20 sessions) using a dedicated storage character.
+
+'''Setup:''' create a character named exactly <code>ScriptCards_Storage</code>, then '''restart the sandbox''' once before using it.
+
+=== Typed save/load commands ===
+
+<pre>
+--s$optionalprefix|VarName1;VarName2;...   (save Roll Variables)
+--s&amp;optionalprefix|VarName1;VarName2;...   (save String Variables)
+--s@optionalprefix|VarName1;VarName2;...   (save Arrays)
+--s:optionalprefix|VarName1;VarName2;...   (save Hash Tables)
+--s#optionalprefix|SettingName1;...        (save Settings)
+
+--l$optionalprefix|VarName1;VarName2;...   (load Roll Variables)
+--l&amp;optionalprefix|VarName1;VarName2;...   (load String Variables)
+--l@optionalprefix|VarName1;VarName2;...   (load Arrays)
+--l:optionalprefix|VarName1;VarName2;...   (load Hash Tables)
+--l#optionalprefix|SettingName1;...        (load Settings)
+</pre>
+
+'''Important:''' when saving/loading, refer to the '''variable name itself''' — not a <code>[&amp;...]</code>/<code>[$...]</code>-style reference, since that would be replaced with the variable's current ''value'' before the save command ever ran.
+
+Values are stored as attributes on the <code>ScriptCards_Storage</code> character with a type-specific prefix:
+* <code>SCR_</code> — Roll Variable
+* <code>SCS_</code> — String Variable
+* <code>SCA_</code> — Array
+* <code>SCH_</code> — Hash Table
+* <code>SCT_</code> — ScriptCards Setting
+
+The optional prefix lets you namespace multiple stored copies of the same variable name (e.g., per-character or per-script). <code>--s&amp;fred|charactername</code> stores under attribute <code>SCS_fred-charactername</code>; omitting the prefix stores under <code>SCS_-charactername</code>.
+
+'''All settings at once:'''
+<pre>
+--s#Name|allsettings     (saves title, leftsub, rightsub, whisper as a set)
+--l#Name|allsettings     (loads them all back)
+--l#Name|title           (or load just one setting from a saved set)
+</pre>
+
+'''Storage character override for the current script:'''
+<pre>
+--#storagecharid|SomeCharacterID
+</pre>
+
+'''Ten free-form user settings''' (<code>usersetting0</code> through <code>usersetting9</code>) are available for arbitrary configurable storage alongside named settings sets — ScriptCards itself doesn't use these, they're purely for script authors' own use.
+
+----
+
+== Triggers ==
+
+Triggers let a ScriptCards script (defined as an '''ability''' on a special character, conventionally referred to as your "Triggers mule" — commonly named <code>ScriptCards_Triggers</code>) run automatically in response to Roll20 events, rather than being invoked manually.
+
+=== Supported trigger events (as documented in the changelog) ===
+
+* <code>add:character</code>, <code>change:character</code>
+* <code>add:graphic</code>, <code>change:graphic</code>, <code>destroy:graphic</code>
+* <code>add:door</code>, <code>change:door</code>, <code>destroy:door</code>
+* <code>add:pin</code>, <code>change:pin</code>, <code>destroy:pin</code>
+* <code>add:page</code>, <code>change:page</code>, <code>destroy:page</code>
+* <code>change:attribute</code> (and, as of v2.7.19+, '''multiple''' triggers can be registered for the same attribute)
+* <code>chat:message</code> (marked '''EXPERIMENTAL''' at introduction, v2.7.36)
+
+=== Naming and variable conventions ===
+
+Ability names on the Triggers character follow the pattern:
+<pre>
+change:attribute:AttributeName
+add:graphic
+chat:message:SomeTextToWatchFor
+</pre>
+
+Each trigger type populates its own set of string variables for use inside the ability's action, generally following the pattern <code>&amp;Old...</code>/<code>&amp;New...</code> for change events and <code>&amp;XAdded</code>/<code>&amp;XRemoved</code> for add/destroy events. For example:
+
+* <code>change:door</code> → <code>&amp;OldDoor[property]</code>, <code>&amp;NewDoor[property]</code> (e.g. <code>&amp;NewDoorisOpen</code>, <code>&amp;OldDoor_id</code>)
+* <code>add:door</code> → <code>&amp;DoorAdded</code> (the ID of the new door)
+* <code>destroy:door</code> → <code>&amp;DoorRemoved[property]</code> for each property the object had before deletion
+* <code>change:page</code> → <code>&amp;PageOld[property]</code>, <code>&amp;PageNew[property]</code>
+* <code>add:page</code> → <code>&amp;PageAdded</code> (the ID of the new page)
+* <code>destroy:page</code> → <code>&amp;PageRemoved[property]</code> for each property the page had before deletion
+* <code>add:character</code> → <code>&amp;CharAdded</code>
+* <code>change:character</code> → <code>&amp;CharChanged</code> plus <code>&amp;CharOld...</code>/<code>&amp;CharNew...</code> per changed property
+
+'''<code>chat:message</code> triggers''' are special:
+* Detected only at sandbox start — adding your ''first'' <code>chat:message</code> trigger requires a sandbox restart to activate; once enabled, additional ones can be added without restarting. Removing all of them does '''not''' disable the feature until the next restart.
+* Spaces are not allowed in ability names, so use dashes; the matching code treats dashes and spaces as equivalent when checking for a match (but doesn't alter the actual message content).
+* Must be a ScriptCards script and '''must''' include a <code>--/|TRIGGER_REPLACEMENTS</code> comment line — this is required because the implementation inserts a hidden marker in output to prevent a <code>chat:message</code> trigger from re-triggering itself off its own output.
+* Matching is '''case sensitive'''.
+* Populates: <code>&amp;TriggerWho</code> (display name of sender), <code>&amp;TriggerPlayerID</code>, <code>&amp;TriggerType</code> (<code>general</code>, <code>rollresult</code>, <code>gmrollresult</code>, <code>emote</code>, <code>whisper</code>, <code>desc</code>, or <code>api</code>), <code>&amp;TriggerContent</code> (full message text).
+
+<pre>
+Ability Name: chat:message:FAILED-1-of-3
+Action:
+!script {{
+--/|TRIGGER_REPLACEMENTS
+--+Player [&amp;TriggerWho]|failed their first death save!
+}}
+</pre>
+
+=== TokenMod integration ===
+
+If a <code>ScriptCards_Triggers</code> character exists when the sandbox starts, ScriptCards will register to observe TokenMod's changes and fire a <code>change:graphic</code> trigger when TokenMod reports one. This is '''off by default''' to avoid surprising existing setups — enable it by setting the attribute <code>listen_to_tokenmod</code> to <code>1</code> (current value) on the <code>ScriptCards_Triggers</code> character.
+
+----
+
+== Libraries ==
+
+Libraries are reusable collections of ScriptCards procedures distributed as '''handout''' content, so they can be shared across scripts without copy-pasting.
+
+'''To use a library:'''
+# Paste the library's contents into a '''handout''' whose name matches what the library expects (by convention, <code>ScriptCards Library &lt;shortname&gt;</code>, e.g. <code>ScriptCards Library snlib</code>).
+# Reference it in your script with the inclusion marker <code>+++libraryshortname+++</code> (e.g. <code>+++snlib+++</code>), which makes the library's procedures available for use within your script via normal <code>--&gt;</code>/GOSUB calls.
+
+The community-maintained <code>systemneutrallib</code> (<code>snlib</code>) is a good example, consolidating general-purpose utility procedures (status-marker increment/decrement helpers, turn-order lookups, etc.) that aren't tied to a specific game system, gathered from various individual sample scripts.
+
+=== Checking whether an optional library is actually present ===
+
+Since a <code>+++libname+++</code> inclusion silently does nothing if the expected handout doesn't exist, a script that wants to treat a library as ''optional'' needs its own way to detect that. The 5E Character Action Menu's approach: the library itself defines a trivial "ping" procedure, and the consuming script calls it and checks whether a marker variable got set:
+
+<pre>
++++ActionMenuAddons+++
+--&gt;LibAMA_CHECK_FOR_LIBRARY|UseAddons
+</pre>
+
+Inside <code>ActionMenuAddons</code>, <code>LibAMA_CHECK_FOR_LIBRARY</code> sets the string variable named by its parameter (here, <code>UseAddons</code>) to <code>1</code>. If the library handout isn't present, the GOSUB target doesn't exist, the call silently fails, and <code>UseAddons</code> is left unset — so the rest of the script can gate optional behavior behind <code>--?[&amp;UseAddons] -eq "1"|[ ... --]|</code>. This is a reusable pattern worth documenting for anyone writing a library meant to be optional.
+
+----
+
+== Running Scripts from Handouts ==
+
+''(Added v3.0.24a, experimental at introduction.)'' Beyond running scripts from chat or abilities, <code>!sc-runhandout</code> executes ScriptCards content stored in a handout's <code>notes</code> or <code>gmnotes</code> field:
+
+<pre>
+!sc-runhandout &lt;HandoutName OR HandoutID&gt; [--option|value ...]
+</pre>
+
+Options:
+
+{| class="wikitable"
+|-
+! Option
+! Purpose
+|-
+| `--field
+| <notes\|gmnotes>`
+| Which handout field holds the script (default <code>notes</code>)
+|-
+| `--select
+| <tokenid or comma-separated list>`
+| Populates <code>SC_SelectedTokens</code>
+|-
+| `--target
+| <tokenid or comma-separated list>`
+| Populates <code>SC_TargetTokens</code> (a target-equivalent of <code>SC_SelectedTokens</code>)
+|-
+| `--var
+| Name
+| Value`
+| Creates a string variable; repeatable for multiple variables
+|-
+| `--mergeselect
+| <true\|1>`
+| Merges <code>--select</code> tokens with the currently VTT-selected tokens instead of replacing them (VTT selection appears first in the merged array; duplicates are not repeated)
+|}
+
+<pre>
+!sc-runhandout ScriptCards_MagicMissile
+!sc-runhandout ScriptCards_MagicMissile --select|@{selected|token_id} --target|@{target|token_id} --var|SpellLevel|3
+</pre>
+
+'''Important caveats:'''
+# Scripts read from a handout do '''not''' pass through Roll20's chat server, so <code>@{selected|...}</code>-style inline references and <code>?{...}</code> roll-queries are '''not''' processed automatically — pass any needed values explicitly via <code>--select</code>/<code>--target</code>/<code>--var</code> instead.
+# All HTML/rich-text formatting is stripped when the handout is read — you can use Roll20's rich-text editor (bold, italics, etc.) purely to make the handout easier to ''read and maintain'', but that formatting will not appear in the executed script. ScriptCards' own inline formatting tags in your '''output''' lines still work normally.
+# Anything possible in a chat-window ScriptCard should also work from a handout; if you find an exception, it's considered a bug worth reporting.
+
+----
+
+== Beacon (D&D 2024 / New-Sheet) Support ==
+
+"Beacon" is Roll20's newer character-sheet SDK/architecture (used by D&D 2024 and some newer community sheets), with a hierarchical internal data structure rather than the older flat attribute model. Support for it is a major, still-evolving area of ScriptCards as of v3.0.x.
+
+=== Enabling ===
+
+* Requires the '''Experimental sandbox''' (Game Settings → API Scripts → Sandbox). The default sandbox does not expose Beacon fields to the API at all.
+* Set <code>--#beaconsheet|1</code> in your script to enable Beacon-specific handling.
+
+=== Reading and writing fields ===
+
+* Read: <code>[*S:c-hp]</code> or <code>[*S:b-hp]</code> (the <code>c-</code>/<code>b-</code> prefixes are interchangeable; <code>c-</code> reflects the internal "computed" field name, <code>b-</code> is offered as a friendlier alias).
+* Write: <code>--!c:CharacterID|c-hp:10</code> (supports <code>+=</code>/<code>-=</code> relative adjustment).
+* Some fields are '''read-only'''; writing to one logs a console message rather than erroring silently.
+
+<pre>
+!script {{
+--&amp;id|@{selected|character_id}
+--+Current HP|[*[&amp;id]:c-hp]
+--=NewHP|1d20
+--!c:[&amp;id]|c-hp:[$NewHP.Raw]
+--+New HP|[*[&amp;id]:c-hp]
+}}
+</pre>
+
+=== Field-name mapping differences ===
+
+Beacon's hierarchical structure means many field names differ from their D&D 2014 flat-attribute equivalents. For example, <code>hp</code> in the 2014 sheet corresponds to <code>sheet-&gt;hitpoints-&gt;currentHP</code> internally in the 2024 sheet (though a flat <code>hp</code> alias is provided for convenience). A reference table of known field mappings is being maintained in the GitHub repo as <code>DND2024_beacon_sheet_reference.md</code>, described as a living/growing document.
+
+=== Known limitations (experimental as of v3.0.30) ===
+
+* <code>c-</code>/<code>b-</code> prefixed reads/writes are '''not currently supported''' for non-D&D Beacon sheets (community sheets built on the Beacon SDK generally have much simpler structures than the D&D 2024 sheet, but ScriptCards' current field-mapping tables are D&D-2024-focused).
+* Because this breaks scripts written against non-D&D Beacon sheets that expected <code>c-</code>/<code>b-</code> to work generically, a future update is expected to make ScriptCards gracefully strip/ignore unsupported prefixes rather than fail.
+* v3.0.30 credits '''Timothy B.''' (creator of Tim's Spellbook Mod and Tim's NPC Stat Block Mod) as the primary author of this expanded Beacon support.
+
+----
+
+== API Integration (Calling Other Scripts) ==
+
+ScriptCards has '''two distinct ways''' to integrate with other API scripts, confirmed from source. The first draft only had the first of these.
+
+=== Calling another script's ability directly — <code>--@</code> ===
+
+See Additional Command Families → API Integration for the general-purpose form (<code>--@apicommandname|params...</code>), which builds and sends a <code>!apicommandname ...</code> chat command directly — this is what the wiki's "API Integration (call other API scripts)" feature bullet refers to.
+
+=== Running an ability on a character — <code>system;runaction</code> ===
+
+A second, different mechanism: rather than calling another API script's command syntax directly, this looks up and runs an '''ability''' (macro) defined on a character, which may itself contain a call into another API script:
+
+<pre>
+--~|system;runaction;CharacterID;AbilityName;param1;param2;param3;param4;...
+</pre>
+
+This looks up ability <code>AbilityName</code> (case sensitive) on the given character, reads its Action text, and replaces <code>[REPL1]</code>, <code>[REPL2]</code>, etc. with the supplied parameters. The sequence <code>-_-_</code> in the target ability's action gets replaced with a double-dash (<code>--</code>) in the final generated macro, letting the called action safely include tag-prefix-like sequences.
+
+Because these calls are issued by the API directly (not by a player sending a chat message), there is no "current player" context — interactive elements (targets, roll queries) in the called action won't work, but you can still pass IDs explicitly as <code>[REPL]</code> parameters.
+
+<pre>
+--~|system;runaction;@{Macro_Mule|character_id};SetMarker;@{selected|token_id};+;blue
+</pre>
+(<code>runability</code> is an accepted alias for <code>runaction</code>.)
+
+'''Known limitation:''' the Roll20 API does not expose certain context (the sending player's ID, currently selected tokens) to a script invoked this way, unless that context is passed explicitly. If a target script relies on reading that context itself, it cannot be reliably driven this way.
+
+=== Which one to use ===
+
+* '''<code>--@</code>''' — call another API script's <code>!command</code> syntax directly, as if you'd typed it in chat yourself. Best when you just need to trigger another script's existing chat command (e.g. <code>--@token-mod|--ids [&amp;TID] --set statusmarkers|blue</code>).
+* '''<code>system;runaction</code>''' — run a specific ability/macro stored on a character sheet, with parameter substitution. Best when the integration logic already lives in a character ability you want to reuse/parameterize.
+
+----
+
+== String Functions Reference ==
+
+'''There are two separate, complete string-function systems in ScriptCards''', confirmed directly from source. The first draft conflated them; they're distinct.
+
+=== System 1 — Inline modifiers: <code>[&amp;VariableName(function)]</code> ===
+
+Applied directly inside a variable reference. This is the complete list from the source dispatcher:
+
+{| class="wikitable"
+|-
+! Function
+! Effect
+|-
+| <code>length</code>
+| String length
+|-
+| <code>tolowercase</code> (aliases <code>lower</code>, <code>tolower</code>, <code>lowercase</code>)
+| Lowercase
+|-
+| <code>touppercase</code> (aliases <code>upper</code>, <code>toupper</code>, <code>uppercase</code>)
+| Uppercase
+|-
+| <code>totitlecase</code> (aliases <code>titlecase</code>, <code>title</code>)
+| Title Case
+|-
+| <code>reverse</code>
+| Reverses the string front-to-back
+|-
+| <code>contains</code> / <code>includes</code> (case-sensitive), <code>icontains</code> / <code>iincludes</code> (case-insensitive)
+| <code>[&amp;Var(contains,text)]</code> → <code>1</code> or <code>0</code>
+|-
+| <code>word</code>
+| <code>[&amp;Var(word,N)]</code> — Nth space-separated word (1-based); negative N counts from the end; <code>0</code> returns the full string
+|-
+| <code>indexof</code> / <code>iindexof</code>
+| Position of a substring (case-sensitive / insensitive); <code>-1</code> if not found
+|-
+| <code>lastindexof</code> / <code>ilastindexof</code>
+| Position of the ''last'' occurrence
+|-
+| <code>replace</code>
+| <code>[&amp;Var(replace,find,replacement)]</code> — replaces the first occurrence
+|-
+| <code>replaceall</code>
+| Replaces every occurrence (guards against the replacement text containing the search text, to avoid an infinite loop — logs an error and leaves the value unchanged if so)
+|-
+| <code>before</code>
+| Everything before the first occurrence of a substring (returns the full string if not found)
+|-
+| <code>after</code>
+| Everything after the first occurrence
+|-
+| <code>split</code>
+| <code>[&amp;Var(split,delimiter,index)]</code> — splits and returns one piece
+|-
+| <code>numbersonly</code>
+| Keeps only digits <code>0</code>–<code>9</code>
+|-
+| <code>nonumbers</code>
+| Removes digits
+|-
+| <code>numericonly</code>
+| Keeps only <code>-</code>, <code>.</code>, and digits
+|-
+| <code>alphaonly</code>
+| Keeps only letters
+|-
+| <code>isnumeric</code>
+| <code>1</code> if the value is all digits, else <code>0</code>
+|-
+| <code>(#)</code> or <code>(#,#)</code> — numeric args
+| Substring form: single number = start index to end; two numbers = start,length (negative length trims from the end instead)
+|}
+
+Example, given <code>&amp;Test</code> = <code>-abc123.zyx89</code>:
+<pre>
+[&amp;Test(numbersonly)]  → 12389
+[&amp;Test(nonumbers)]    → -abc.zyx
+[&amp;Test(alphaonly)]    → abczyx
+[&amp;Test(numericonly)]  → -123.89
+[&amp;Test(reverse)]      → 98yzx.321cba-
+</pre>
+
+=== System 2 — Function calls: <code>--~|string;function;...</code> ===
+
+A completely separate family, invoked via the function-call tag rather than inline. Confirmed list, grouped by parameter count:
+
+'''Two parameters''' (<code>--~ResultVar|string;function;SourceValue</code>):
+
+{| class="wikitable"
+|-
+! Function
+! Effect
+|-
+| <code>strlength</code> / <code>length</code>
+| Length, returned as a '''roll variable''' (not a string variable)
+|-
+| <code>tolowercase</code>
+| Lowercase
+|-
+| <code>touppercase</code>
+| Uppercase
+|-
+| <code>striphtml</code>
+| Strips HTML tags
+|-
+| <code>striplinefeeds</code> (aliases <code>linefeedstobr</code>, <code>linefeedstobrs</code>)
+| Replaces line breaks (<code>\r\n</code>/<code>\n</code>) with <code>&lt;br&gt;</code>
+|-
+| <code>brtolinefeed</code> (aliases <code>brtolinefeeds</code>, <code>brstolinefeed</code>, <code>brstolinefeeds</code>)
+| Replaces <code>&lt;br&gt;</code> tags back with <code>\n</code>
+|-
+| <code>trim</code>
+| Trims leading/trailing whitespace
+|-
+| <code>onlynumbers</code>
+| Strips non-digits, preserving a leading <code>-</code> if present
+|-
+| <code>nonumbers</code>
+| Strips digits
+|-
+| <code>totitlecase</code>
+| Title Case
+|-
+| <code>bytes</code>
+| Logs the character-code of each character in the named string variable to console (debug aid, not a transform — note this takes the ''variable name'', not its value)
+|}
+
+'''Three parameters''' (<code>--~ResultVar|string;function;Arg;SourceValue</code>):
+
+{| class="wikitable"
+|-
+! Function
+! Effect
+|-
+| <code>split</code>
+| Splits <code>SourceValue</code> on delimiter <code>Arg</code>; results go into <code>ResultVar1</code>, <code>ResultVar2</code>, ... and the count goes into a roll variable <code>ResultVarCount</code>
+|-
+| <code>before</code>
+| Everything before the first occurrence of <code>Arg</code> in <code>SourceValue</code>
+|-
+| <code>after</code>
+| Everything after the first occurrence of <code>Arg</code>
+|-
+| <code>left</code>
+| First <code>Arg</code> characters of <code>SourceValue</code>
+|-
+| <code>right</code>
+| Last <code>Arg</code> characters of <code>SourceValue</code>
+|-
+| <code>stripchars</code>
+| Removes every character found in <code>Arg</code> from <code>SourceValue</code>
+|}
+
+'''Four parameters''' (<code>--~ResultVar|string;function;Arg1;Arg2;SourceValue</code>):
+
+{| class="wikitable"
+|-
+! Function
+! Effect
+|-
+| <code>substring</code>
+| <code>substring;start;length;SourceValue</code> — 1-based start position
+|-
+| <code>replace</code>
+| Replaces the first occurrence of <code>Arg1</code> with <code>Arg2</code>
+|-
+| <code>replaceall</code>
+| Replaces every occurrence (same self-reference guard as the inline version)
+|}
+
+'''Variable parameters:'''
+
+{| class="wikitable"
+|-
+! Function
+! Effect
+|-
+| <code>replaceencoding</code>
+| Decodes <code>%xx</code>-style percent-encoded characters (angle/square/curly brackets, quotes, commas, percent, ampersand, parens, plus, minus, divide, equals) across all remaining parameters joined together
+|}
+
+'''Global escaping:''' <code>\[</code> and <code>\]</code> are automatically converted to literal <code>[</code> and <code>]</code> anywhere in a script (v2.7.26+), letting you include literal brackets without them being parsed as a reference.
+
+----
+
+== Additional Command Families ==
+
+These don't appear in the wiki summary, the changelog, or any forum thread I found — they only turned up by reading the dispatcher directly. All are confirmed from source.
+
+=== Case Statement ===
+
+A multi-way branch, similar in spirit to a <code>switch</code> statement, and sharing its destination mini-language with <code>--?</code> conditionals (see the destination-code table below):
+
+<pre>
+--cVariableOrValue|Match1:Destination1|Match2:Destination2|...
+</pre>
+
+<code>VariableOrValue</code> (the tag content after <code>c</code>) is compared case-insensitively against each <code>Match</code> in turn. On the first match, the corresponding <code>Destination</code> is executed. Escaped <code>\|</code> inside a destination lets a literal <code>|</code> appear where needed.
+
+'''Destination codes''' (shared with <code>--?</code> block conditionals):
+
+{| class="wikitable"
+|-
+! Prefix
+! Meaning
+|-
+| ''(none)''
+| GOTO — jump to a label
+|-
+| <code>&gt;LabelName;params</code>
+| GOSUB — call a label, pushing a return address
+|-
+| <code>&lt;</code>
+| Return from the current GOSUB
+|-
+| <code>%</code> or <code>%!</code>
+| Loop control — advance the current loop, or (<code>%!</code>) break out of it
+|-
+| <code>+Tag;Content</code>
+| Emit a normal output line directly
+|-
+| <code>*Tag;Content</code>
+| Emit a GM-only output line directly
+|-
+| <code>=VarName;Value</code>
+| Set a roll variable
+|-
+| <code>&amp;VarName;Value</code>
+| Set a string variable
+|}
+
+<pre>
+!script {{
+--&amp;Choice|B
+--cChoice|A:GoA|B:GoB|C:GoC
+--X|
+--:GoA|
+--+|You picked A
+--&lt;|
+--:GoB|
+--+|You picked B
+--&lt;|
+--:GoC|
+--+|You picked C
+--&lt;|
+}}
+</pre>
+
+=== Data / Read Queue ===
+
+A BASIC-style <code>DATA</code>/<code>READ</code> mechanism — a script can preload a queue of values and pull from it sequentially.
+
+<pre>
+--d!|Value1;Value2;Value3;...
+</pre>
+Preloads the queue (processed in the pre-pass, before the script runs, so it works regardless of where in the script it's placed).
+
+<pre>
+--dVariableName|
+</pre>
+Reads the next value off the queue into string variable <code>VariableName</code>. If the queue is empty, the variable is set to <code>EndOfDataError</code>.
+
+<pre>
+--d&lt;|
+</pre>
+Resets ("restores") the queue back to its original loaded state, so it can be read through again from the start.
+
+=== GOTO ===
+
+<pre>
+--^LabelName|
+</pre>
+Jumps directly to a label with no return address pushed — see Procedures & Subroutines.
+
+=== API Integration — calling another API script directly ===
+
+<pre>
+--@apicommandname|params...
+</pre>
+Builds and sends <code>!apicommandname params...</code> to Roll20's chat/API pipeline as the executing player — this is the general-purpose "API Integration" feature referenced in the wiki's feature summary. Full details, including the underscore-escaping and SelectManager/ZeroFrame/Fetch deferral behavior, and how this compares to the separate <code>system;runaction</code> mechanism, are in API Integration (Calling Other Scripts).
+
+=== Emote ===
+
+<pre>
+--eSpeakerName|MessageContent
+</pre>
+Sends <code>MessageContent</code> to chat as spoken by <code>SpeakerName</code> (via Roll20's <code>sendChat</code>) — independent of the card itself. Useful for narration/flavor text that shouldn't be part of the formatted card.
+
+=== Wait / Delay ===
+
+<pre>
+--wSeconds:TagAndContent|
+</pre>
+or, with no delay parsing (just wait for game-driven continuation):
+<pre>
+--w|
+</pre>
+
+Delays execution of a follow-up mini-script by <code>Seconds</code>, re-invoking ScriptCards after the delay with the given tag/content, automatically hiding the card (or just the title card, if the delayed tag starts with <code>+</code> or <code>*</code>) for that follow-up run.
+
+=== Visual Effects ===
+
+<pre>
+--vtoken|effectParams...
+</pre>
+Triggers Roll20's built-in visual-effects system (spell-effect animations, etc.) targeting a token, using space-separated parameters. This wraps Roll20's native <code>spawnFx</code>/visual effects API rather than implementing its own animation system.
+
+----
+
+== Console Logging & Debugging ==
+
+=== <code>--\</code> — direct console log ===
+
+'''Correcting the first draft:''' the console-log tag is a '''backslash (<code>--\</code>)''', not the comment tag (<code>--/</code>). These are two completely different tags that happen to look similar — <code>--/</code> lines are filtered out before the script ever executes and produce no output anywhere, while <code>--\</code> lines are actively processed and write their content to the API console.
+
+<pre>
+--\|Whatever you want logged appears here
+</pre>
+
+=== <code>--~|system;dumpvariables;TYPE</code> ===
+
+Logs the current value of all variables of the given type to the API console. '''Complete, confirmed list of types:'''
+
+{| class="wikitable"
+|-
+! Type
+! Dumps
+|-
+| <code>rolls</code>
+| All roll variables
+|-
+| <code>string</code>
+| All string variables
+|-
+| <code>array</code>
+| All array variables
+|-
+| <code>hash</code> (aliases <code>hashtable</code>, <code>hashtables</code>)
+| All hash tables
+|}
+
+Console logs are accessible via Game Settings → API Scripts → the console log, persist across a script's execution, and remain visible after the script finishes — useful for reviewing execution history without exposing internal mechanics to players (unlike chat output, which is visible in-game).
+
+<code>--#functionbenchmarking|1</code> (see Card Settings) logs per-procedure call counts and total script execution time after the run completes.
+
+=== <code>--~|system;readsetting;SettingName</code> ===
+
+A small related utility found in source but not documented anywhere: reads the current value of any card setting into a string variable, e.g. <code>--~CurrentTitle|system;readsetting;title</code>.
+
+----
+
+== Known Limitations ==
+
+* '''Does not parse Roll20 native inline rolls''' (<code>[[ ... ]]</code>). Use ScriptCards' own <code>--=</code> roll statements.
+* '''<code>[[</code>/<code>]]</code> adjacency''': nested bracket syntax (e.g. deeply nested inline conditionals) can accidentally produce adjacent <code>[[</code> or <code>]]</code> sequences, which Roll20 misinterprets as inline-roll delimiters. Separate them with a space.
+* '''Only graphic objects''' can currently be deleted via <code>--!x</code> (not characters, handouts, etc., through that specific command).
+* '''API-invoked actions lack player/session context''' (selected tokens, sending player ID) unless explicitly passed — relevant when using <code>system;runaction</code> to call another script's macro.
+* '''DataGrids''' are experimental, with a known text-qualifier parsing issue when using <code>"</code> as the qualifier character (use <code>`</code> instead for now).
+* Roll20's own sandbox will detect and halt genuine infinite loops automatically.
+* '''Dice formula edge cases:''' several dice-formula modifiers documented under Dice Roll Formula Syntax above — the <code>&lt;</code>/<code>&gt;</code> direction on success counting, the <code>f&gt;Q</code> failure-counting variant, and the <code>!l</code> (keep-lowest) exploding-die modifier — appear to behave differently from their documented description when read against the current source. These are flagged there as potential issues under review rather than confirmed bugs.
+
+----
+
+== Version History Highlights ==
+
+This is a '''summarized''' version history covering major/breaking changes, not a full line-by-line changelog (the complete changelog is authoritative and lives at <code>ScriptCards_API/changelog.txt</code> in the GitHub repo — link this document to it rather than duplicating it in full).
+
+* '''v3.0.30 (experimental):''' Major expansion of Beacon/D&D 2024 sheet support (primarily by Timothy B.), including a field-mapping reference doc.
+* '''v3.0.24a–v3.0.25a (experimental):''' <code>!sc-runhandout</code> (run scripts stored in handouts); DataGrids (CSV-backed tabular variables from handouts).
+* '''v3.0.23:''' <code>--!x</code> token deletion command.
+* '''v3.0.22:''' Literal-text blocks (<code>${ ... $}</code>) and <code>{{</code>/<code>}}</code> escaping (<code>!{!{</code>/<code>!}!}</code>); repeating-row copy by field name.
+* '''v3.0.21:''' Repeating-row copy by index (experimental); new turn-order <code>next</code>/<code>previous</code> functions.
+* '''v3.0.19:''' Message queuing (prevents concurrent script runs from clobbering shared variables); handout creation/modification (<code>--!oh</code>/<code>--!h</code>).
+* '''v3.0.17:''' Pointer variables (<code>--P</code>); array <code>abilities</code> function.
+* '''v3.0.0 — BREAKING:''' Script converted to '''async''' code to support Beacon sheets. Direct <code>bio</code>/<code>notes</code>/<code>gmnotes</code> field access added. Beacon fields accessible via <code>b-</code>/<code>c-</code> prefixes (Experimental sandbox required).
+* '''v2.7.36:''' <code>chat:message</code> triggers (experimental).
+* '''v2.7.30:''' Graphic/token creation (<code>--!ot</code>) and deletion (<code>object;token;delete</code>).
+* '''v2.7.29:''' Initial Beacon SDK nested-reference support (<code>-&gt;</code> syntax) for pre-2024-sheet Beacon sheets like Candela Obscura.
+* '''v2.7.28:''' Regex conditional operators (<code>-match</code>/<code>-imatch</code>); <code>\|</code> escaping in tag/content separation.
+* '''v2.7.0:''' Major refactor for maintainability/sandbox friendliness; <code>--z</code> (z-order); <code>--#storagecharid</code>; <code>--#gmoutputtarget</code>; <code>--#functionbenchmarking</code>; <code>SC_VERSION_NUMERIC</code>.
+* '''v2.6.4 — BREAKING:''' <code>[*...]</code> object-type specifier changed from <code>::</code> to <code>:::</code> to avoid colliding with status-marker names. ''(Scripts written before this version using the old <code>::</code> object-type syntax may need review.)''
+* '''v2.6.2:''' Hash tables (associative arrays) introduced.
+* '''v2.6.0 (experimental):''' Typed persistent save/load system (<code>--s$</code>/<code>--s&amp;</code>/<code>--s@</code>/<code>--s:</code>/<code>--s#</code> and load counterparts) via a dedicated <code>ScriptCards_Storage</code> character.
+* '''v2.5.0:''' <code>speakingas</code> settable via object modification using <code>^</code> instead of <code>|</code>.
+* '''v2.4.5:''' Rollable table/table-entry creation (<code>--!o#</code>/<code>--!oe</code>).
+* '''v2.4.3:''' Explicit indexed repeating-section references (<code>[*R:CharID:section:rowindex:attribute]</code> and the <code>[*R&gt;...]</code> attribute-name form).
