@@ -1,7 +1,7 @@
 # D&D 2024 Beacon Sheet — ScriptCards Location Reference
 
-**Core behavior described:** experimental `.136` (accepted `.135` baseline plus local proficiency fast paths)  
-**Updated:** August 20, 2026
+**Core behavior described:** experimental `.139` (accepted `.135` baseline plus `.136` proficiency fast paths and `.139` Speed / NPC Initiative fixes)  
+**Updated:** September 3, 2026
 
 This document lists reusable **ScriptCards direct aliases and structured locations** for the D&D 2024 by Roll20 character sheet.
 
@@ -23,6 +23,15 @@ The documented D&D 2024 proficiency aliases now resolve locally from the same ca
 - `<skill>_type`
 
 `<skill>_type` normalizes the active proficiency tier to `0`, `0.5`, `1`, or `2`. The public names, backing records, and write guidance are unchanged; `.136` removes unnecessary native `getSheetItem()` fallback when the canonical match is unambiguous.
+
+
+### `.139` Speed and NPC Initiative fixes
+
+`.139` makes two targeted D&D 2024 compatibility corrections:
+
+- **Speed regression fix.** `.138` incorrectly made the `speed` and `npc_speed` aliases resolve only Walking speed. In `.139`, bare `speed`, `npc_speed`, and `speeds` reads use the same typed-collection aggregate and return the character's movement modes. The bare aggregate includes `Walk`, `Burrow`, `Climb`, `Fly`, `Fly (Hover)`, and `Swim` records when present, while filtering internal/helper Speed records such as `speed = All`. Explicit typed selectors such as `speeds->Walk->valueFormula->flatValue` are unchanged.
+- **Beacon NPC Initiative fix.** For a Beacon NPC, `initiative_bonus` and `initmod` first read the stored final Initiative modifier directly from `store.current.npc.initiativeModOverride` (exposed through the structured ScriptCards path `sheet->npc->initiativeModOverride`). This is a local structured read; it does not call `getSheetItem()` or `getComputed()`. When that NPC value is absent, the existing calculated Initiative path remains available.
+
 
 ## Migrating scripts that use `b-` or `c-`
 
@@ -98,15 +107,17 @@ A typed collection may also be read without selecting a particular record. For e
 [*S:speeds]
 ```
 
-On the tested Goblin Minion, this returns one string:
+In `.139`, the tested Goblin Minion returns one string:
 
 ```text
-Grappled 0, Paralyzed 0, Petrified 0, Restrained 0, Stunned 0, Unconscious 0, Walk 30
+Walk 30
 ```
+
+For the `speeds` collection specifically, the bare aggregate includes movement-mode records (`Walk`, `Burrow`, `Climb`, `Fly`, `Fly (Hover)`, and `Swim`) and filters internal/helper Speed records such as condition modifiers with `speed = All`. Those filtered records remain available through explicit typed selectors when a script deliberately needs the underlying canonical record.
 
 Each collection entry is separated by a **comma followed by one space** (`", "`). The result is a single string, not a ScriptCards array.
 
-For each record, ScriptCards begins with the record's identifying name or value. When the record also contains a recognized primary value, ScriptCards appends that value after a space. In the example above, `Walk` is the record identity and `30` is its primary value, producing `Walk 30`. A record with no recognized primary value is represented by its identity alone.
+For each included record, ScriptCards begins with the record's identifying name or value. When the record also contains a recognized primary value, ScriptCards appends that value after a space. In the example above, `Walk` is the record identity and `30` is its primary value, producing `Walk 30`. A record with no recognized primary value is represented by its identity alone.
 
 ScriptCards builds these collections from the Beacon sheet and hides the sheet's internal storage keys. A typed collection path has three parts:
 
@@ -240,7 +251,7 @@ A high `sheetItemSdkCalls` count still means the card crossed the Roll20 SDK bou
 - Use `--!c` for Beacon direct aliases, fixed structured paths, and typed canonical paths.
 - Use `--!a` for existing native sheet items, repeating compatibility fields, and `user.*` custom fields. Prefix a custom name with `!` to create it, for example `--!a:[&CharacterID]|!user.MyField:VALUE`.
 - Copy documented names exactly. Some names preserve Roll20 spellings, including `aboutTabApperancesDisplayOrder`, `encumberance`, and `simpleproficencies`.
-- The ordinary movement record is internally named `Walk`. The direct alias is `speed`; special movement records use `Burrow`, `Climb`, `Fly`, and `Swim`.
+- The ordinary movement record is internally named `Walk`; special movement records use `Burrow`, `Climb`, `Fly`, `Fly (Hover)`, and `Swim`. In `.139`, bare reads of `speed` and `npc_speed` are aliases of the bare `speeds` aggregate and therefore return all included movement modes rather than only `Walk`. Use an explicit `speeds->Walk->...` path when a script needs the Walking record itself.
 
 ## Values and writable domains
 
@@ -568,7 +579,7 @@ These aliases expose finite stored state or editable inputs. Use the **Write usi
 | `hp_temp` | Direct alias: `hp_temp`<br>Structured path: `sheet->hitpoints->tempHP` | `STORED` | Finite numeric HP value. `0` is valid; normal use is numeric. `hp` can temporarily exceed maximum HP. | `hp_temp` reads a finite value stored at the structured ScriptCards location shown in the location column. | `Direct alias` |
 | `init_tiebreaker` | Direct alias: `init_tiebreaker`<br>Structured path: `sheet->settings->addDexTiebreaker` | `STORED` | `true` = Dexterity initiative tiebreaker enabled; `false` = tiebreaker disabled. | `init_tiebreaker` reads a finite value stored at the structured ScriptCards location shown in the location column. | `Structured path` |
 | `initiative_style` | Direct alias: `initiative_style`<br>Structured path: `sheet->settings->rolls->mode` | `STORED` compatibility view | `Automatic` = normal single-d20 sheet behavior; `Advantage` = roll with Advantage; `Disadvantage` = roll with Disadvantage. Use the literal capitalization shown. | Despite the legacy name, on the Beacon D&D 2024 sheet this compatibility alias reflects the **global d20 roll mode**, not an initiative-only setting. | `Structured path`: `sheet->settings->rolls->mode` — write the global roll mode there. |
-| `speed` | Direct alias: `speed`<br>Typed collection: `speeds`<br>Match: `speed = Walk` | `INPUT` | Finite numeric Walking speed input. Units follow the sheet's movement convention; special movement modes belong in `speeds` records. | `speed` is the finite Speed input. | `Direct alias` |
+| `speed` | Direct alias: `speed`<br>Typed collection: `speeds`<br>Bare read: same aggregate as `speeds`<br>Write target: ordinary `Walk` speed input | `SYNTH` read / `INPUT` write | **Read:** comma-separated movement modes from the filtered `speeds` aggregate. **Write:** finite numeric Walking speed input; special movement modes belong in explicit `speeds` records. | In `.139`, a bare `speed` read is an aggregate compatibility view of the Speed collection, not a Walk-only read. Existing direct-alias writes continue to represent the ordinary Walking speed input. | `Direct alias` for ordinary Walk-speed writes; use `speeds->[selector]->...` for explicit movement records. |
 
 #### Ability scores
 
@@ -677,7 +688,7 @@ Conflicting bases, mixed simple and calculated records, blank or nonnumeric valu
 | `npc_hpformula` | Direct alias: `npc_hpformula`<br>Structured path: `sheet->npc->rollHP` | `STORED` | HP formula text/dice expression string. | `npc_hpformula` reads a finite value stored at the structured ScriptCards location shown in the location column. | `Structured path` |
 | `npc_legendary_actions` | Direct alias: `npc_legendary_actions`<br>Structured path: `sheet->npc->legendaryActionCompendiumNum` | `STORED` | Finite non-negative numeric legendary-action count/allowance. | `npc_legendary_actions` reads a finite value stored at the structured ScriptCards location shown in the location column. | `Structured path` |
 | `npc_legendary_actions_desc` | Direct alias: `npc_legendary_actions_desc`<br>Structured path: `sheet->npc->legendaryActionSummary` | `STORED` | Free-text/HTML-like legendary-action summary; blank allowed. | `npc_legendary_actions_desc` reads a finite value stored at the structured ScriptCards location shown in the location column. | `Structured path` |
-| `npc_speed` | Direct alias: `npc_speed`<br>Typed collection: `speeds`<br>Match: `speed = Walk` | `INPUT` | Finite numeric Walking speed input. Units follow the sheet's movement convention; special movement modes belong in `speeds` records. | `npc_speed` is the finite NPC-compatible Speed input. | `Direct alias` |
+| `npc_speed` | Direct alias: `npc_speed`<br>Typed collection: `speeds`<br>Bare read: same aggregate as `speeds`<br>Write target: ordinary `Walk` speed input | `SYNTH` read / `INPUT` write | **Read:** comma-separated movement modes from the filtered `speeds` aggregate. **Write:** finite numeric Walking speed input; special movement modes belong in explicit `speeds` records. | In `.139`, a bare `npc_speed` read is an aggregate compatibility view of the Speed collection, not a Walk-only read. Existing direct-alias writes continue to represent the ordinary NPC Walking speed input. | `Direct alias` for ordinary Walk-speed writes; use `speeds->[selector]->...` for explicit movement records. |
 
 #### Identity, progression, and biography
 
@@ -831,8 +842,8 @@ These aliases expose values calculated, aggregated, translated, or assembled fro
 
 | Direct alias | ScriptCards read location | Value role | Values / writable domain | Description | Write using |
 |---|---|---|---|---|---|
-| `initiative_bonus` | Direct alias: `initiative_bonus`<br>Source inputs: `dexterity`; applicable initiative `rollbonuses` or `modifiers` records | `COMPUTED` | Numeric compatibility/computed result. To change the value, use the backing location named in **Write using**; its accepted values are documented in the corresponding structured/typed leaf table. | Calculated from the Dexterity modifier and bonuses that apply to Initiative. `init_tiebreaker` changes tie handling, not this number. | `Source inputs`: `dexterity`; applicable initiative `rollbonuses->[selector]` or `modifiers->[selector]` fields |
-| `initmod` | Direct alias: `initmod`<br>Source inputs: `dexterity`; applicable initiative `rollbonuses` or `modifiers` records | `COMPUTED` | Numeric compatibility/computed result. To change the value, use the backing location named in **Write using**; its accepted values are documented in the corresponding structured/typed leaf table. | Calculated from the Dexterity modifier and bonuses that apply to Initiative. `init_tiebreaker` changes tie handling, not this number. | `Source inputs`: `dexterity`; applicable initiative `rollbonuses->[selector]` or `modifiers->[selector]` fields |
+| `initiative_bonus` | Direct alias: `initiative_bonus`<br>Beacon NPC source: `sheet->npc->initiativeModOverride`<br>Fallback source inputs: `dexterity`; applicable Initiative records / `rollbonuses` / `modifiers` | `COMPUTED` compatibility result | Numeric Initiative modifier. For a Beacon NPC with a stored `initiativeModOverride`, `.139` returns that finite numeric value directly. | For Beacon NPCs, `.139` first reads the stored final modifier from `store.current.npc.initiativeModOverride` through the local structured path. If that value is absent, ScriptCards uses the existing calculated Initiative path. `init_tiebreaker` changes tie handling, not this number. | NPC: `sheet->npc->initiativeModOverride`. Otherwise change the applicable Initiative source inputs rather than writing this computed alias. |
+| `initmod` | Direct alias: `initmod`<br>Beacon NPC source: `sheet->npc->initiativeModOverride`<br>Fallback source inputs: `dexterity`; applicable Initiative records / `rollbonuses` / `modifiers` | `COMPUTED` compatibility result | Numeric Initiative modifier. For a Beacon NPC with a stored `initiativeModOverride`, `.139` returns that finite numeric value directly. | For Beacon NPCs, `.139` first reads the stored final modifier from `store.current.npc.initiativeModOverride` through the local structured path. If that value is absent, ScriptCards uses the existing calculated Initiative path. `init_tiebreaker` changes tie handling, not this number. | NPC: `sheet->npc->initiativeModOverride`. Otherwise change the applicable Initiative source inputs rather than writing this computed alias. |
 
 #### Shared character values
 
@@ -2886,6 +2897,7 @@ A path appearing here means the location was observed and its value type is know
 | `sheet->npc->customXP` | string<br>`STORED` | Blank or numeric-text XP override. A nonblank numeric value overrides CR-derived XP in the tested behavior; blank allows CR-derived XP. | This location stores the value named `customXP` within NPC-only scalar metadata. | `PATH` — Use only for a manual NPC XP override; Challenge Rating remains at `challengeRating`. |
 | `sheet->npc->gear` | string<br>`STORED` | Free-text Gear string; blank allowed. | This location stores the value named `gear` within NPC-only scalar metadata. | `PATH` — Direct NPC Gear text; no canonical-record lookup is required. |
 | `sheet->npc->habitat` | string<br>`STORED` | Free-text Habitat string; blank allowed. | This location stores the value named `habitat` within NPC-only scalar metadata. | `PATH` — Direct NPC Habitat text; no canonical-record lookup is required. |
+| `sheet->npc->initiativeModOverride` | number<br>`STORED` | Finite numeric final NPC Initiative modifier. Blank/absent means no stored NPC override is available to the `.139` local fast path. | This is the structured ScriptCards view of `store.current.npc.initiativeModOverride`. In `.139`, Beacon NPC `initiative_bonus` and `initmod` read this value directly before attempting calculated Initiative resolution. | `PATH` — Direct NPC Initiative state. Read locally; no `getSheetItem()` or `getComputed()` call is required. |
 | `sheet->npc->legendaryActionCompendiumNum` | number<br>`STORED` | Finite numeric legendary-action count/allowance. Normal use is a non-negative integer. | This location stores the value named `legendaryActionCompendiumNum` within NPC-only scalar metadata. | `PATH` — Stores the legendary-action count or allowance, not the action descriptions. |
 | `sheet->npc->legendaryActionSummary` | string<br>`STORED` | Free-text/HTML-like legendary-action summary; blank allowed. | This location stores the value named `legendaryActionSummary` within NPC-only scalar metadata. | `PATH` — Stores the legendary-action summary text, not the individual Action records. |
 | `sheet->npc->mythicActionSummary` | string<br>`STORED` | Free-text/HTML-like mythic-action summary; blank allowed. | This location stores the value named `mythicActionSummary` within NPC-only scalar metadata. | `PATH` — Stores mythic-action summary text, not the individual Action records. |
@@ -3906,9 +3918,9 @@ Live records also show reciprocal attachment relationships: Resource `relations`
 
 **Purpose:** Speed records store movement modes and the finite inputs used to calculate each speed.
 
-**Calculation:** The direct aliases `speed` and `npc_speed` are finite Speed inputs. Speed records preserve movement-mode and formula details.
+**Calculation:** In `.139`, bare reads of `speed` and `npc_speed` are aggregate aliases of `speeds` and return the included movement modes. Direct-alias writes still represent the ordinary Walking speed input. Speed records preserve movement-mode and formula details.
 
-**General use:** Use the direct Speed aliases marked writable for ordinary changes. Use Speed records when you need another movement mode or deliberate record-level control.
+**General use:** Use bare `speed`, `npc_speed`, or `speeds` when you want the formatted movement-mode aggregate. Use the direct Speed aliases for ordinary Walk-speed writes, and explicit Speed records when you need one movement mode, an `All` helper/modifier record, or deliberate record-level control.
 
 > **Value kinds**
 >
@@ -3928,7 +3940,7 @@ Live records also show reciprocal attachment relationships: Resource `relations`
 
 | Field | ScriptCards location | Value kind | Values / writable domain | Description | Use |
 |---|---|---|---|---|---|
-| `speed` | `speeds->[selector]->speed` | `STORED` | `Walk`, `Burrow`, `Climb`, `Fly`, `Fly (Hover)`, `Swim`; condition-owned override records can use `All` to affect every movement mode. | On a Speed record, this field identifies the movement mode, such as Walk, Fly, Climb, Swim, or Burrow. | `FIND` + `RECORD` — Identifies the movement mode; the direct alias `speed` represents Speed only. |
+| `speed` | `speeds->[selector]->speed` | `STORED` | `Walk`, `Burrow`, `Climb`, `Fly`, `Fly (Hover)`, `Swim`; condition-owned override records can use `All` to affect every movement mode. | On a Speed record, this field identifies the movement mode. `.139` filters non-movement helper values such as `All` from the **bare aggregate**, but explicit selectors can still address those canonical records. | `FIND` + `RECORD` — Identifies the selected record's movement target; use an explicit selector when you need one record rather than the aggregate `speed` / `npc_speed` view. |
 | `calculation` | `speeds->[selector]->calculation` | `INPUT` | `Set Base` = establish a movement speed; `Set Value` = replace the applicable speed with a fixed value. Condition overrides use `Set Value`, commonly with `speed = All` and value `0`. | On a Speed record, this field identifies the calculation method used by this record. | `FIND` + `INPUT` + `RECORD` |
 | `valueFormula.flatValue` | `speeds->[selector]->valueFormula->flatValue` | `INPUT` | Finite numeric formula input. Meaning depends on the record: score/AC/HP/range/slot/mastery capacity. Range is not globally fixed. | On a Speed record, this field stores a finite value used as an input by a formula. | `FIND` + `INPUT` + `RECORD` — Changes the selected movement mode’s base value, after which the sheet recalculates the final speed. |
 | `name` | `speeds->[selector]->name` | `STORED` | Free-text display name. Blank may be technically storable, but names are used for display and sometimes typed selectors; keep it unique when selecting by name. | On a Speed record, this field stores the record's primary display name. | `FIND` + `IDENTITY` |
